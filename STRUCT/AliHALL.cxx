@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.16  2002/06/12 08:28:28  morsch
+HBMT positioning commented out.
+
 Revision 1.15  2002/05/28 08:47:38  morsch
 Reduces size of pillars to avoid overlap with DIPO.
 
@@ -325,9 +328,9 @@ void AliHALL::CreateGeometry()
   gMC->Gsvolu("HMBU", "PGON", idtmed[1954], ppgon, 10);
 
   gMC->Gspos("HMBU", 1, "HMBT", 0., -70., 0., 0, "ONLY");
-*/
+
   gMC->Gspos("HMBT", 1, "ALIC", 0.,  70., 0., 0, "ONLY");
-  
+*/  
 }
 
 //_____________________________________________________________________________
