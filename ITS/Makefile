@@ -41,7 +41,7 @@ SRCS          = AliITS.cxx AliITSv1.cxx AliITSv3.cxx AliITSv5.cxx \
 		AliITSRad.cxx AliITSgeoinfo.cxx AliITSTrackerV1.cxx\
 		AliITSvtest.cxx	\
                 AliITSclusterV2.cxx AliITStrackV2.cxx AliITStrackerV2.cxx \
-		AliITSPid.cxx AliITStrackV2Pid.cxx  \
+		AliITSPid.cxx AliITStrackV2Pid.cxx AliITSsDigitize.cxx \
                 AliITSDigitizer.cxx AliITSreconstruction.cxx \
 		AliV0vertex.cxx AliV0vertexer.cxx \
 		AliCascadeVertex.cxx AliCascadeVertexer.cxx \
@@ -77,7 +77,7 @@ OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
-CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I../TGeant3 -I$(ALICE_ROOT)/include/ -I$(ALICE_ROOT)/TPC -I$(ALICE_ROOT)/CONTAINERS
+CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(G3INSTALL)/geant3mc -I$(ALICE_ROOT)/include/ -I$(ALICE_ROOT)/TPC -I$(ALICE_ROOT)/CONTAINERS
 
 # FORTRAN compilation flags
 
