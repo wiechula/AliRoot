@@ -50,11 +50,11 @@ AliPHOSEmcRecPoint::AliPHOSEmcRecPoint(Float_t W0, Float_t LocMaxCut)
   fLocPos.SetX(1000000.)  ;      //Local position should be evaluated
 }
 
-// //____________________________________________________________________________
-// AliPHOSEmcRecPoint::~AliPHOSEmcRecPoint() 
-// {
-//   // dtor 
-// }
+//____________________________________________________________________________
+AliPHOSEmcRecPoint::~AliPHOSEmcRecPoint() 
+{
+  // dtor 
+}
 
 //____________________________________________________________________________
 void AliPHOSEmcRecPoint::AddDigit(AliDigitNew & digit, Float_t Energy)
