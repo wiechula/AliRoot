@@ -423,7 +423,8 @@ void AliGenPythia::Generate()
 	Int_t nc = 0;        // Total n. of selected particles
 	Int_t nParents = 0;  // Selected parents
 	Int_t nTkbles = 0;   // Trackable particles
-	if (fProcess != kPyMb && fProcess != kPyJets && fProcess != kPyDirectGamma &&
+	if (fProcess != kPyMb && fProcess != kPyJets && 
+	    fProcess != kPyDirectGamma &&
 	    fProcess != kPyMbNonDiffr) {
 	    
 	    for (i = 0; i<np; i++) {
@@ -752,8 +753,6 @@ Bool_t AliGenPythia::CheckTrigger(TParticle* jet1, TParticle* jet2) const
 	    }
 	}
     }
-    
-    
     return triggered;
 }
 	  
