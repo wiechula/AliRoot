@@ -1,3 +1,25 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.6  1999/09/29 09:24:14  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 //  Forward Multiplicity Detector                                            //
@@ -6,7 +28,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliFMDClass.gif">
+<img src="picts/AliFMDClass.gif">
 </pre>
 <br clear=left>
 <font size=+2 color=red>
@@ -24,7 +46,6 @@
 #include <TNode.h>
 #include "AliRun.h"
 #include "AliFMD.h"
-#include "TGeant3.h"
  
 ClassImp(AliFMD)
  
@@ -48,6 +69,7 @@ AliFMD::AliFMD(const char *name, const char *title)
   //
   // Initialise Hit array
   fHits   = new TClonesArray("AliFMDhit",  405);
+  gAlice->AddHitList(fHits);
   
   fIshunt     =  0;
 }
@@ -136,13 +158,14 @@ void AliFMD::StepManager()
   //
   
   Float_t       hits[3];
-  Int_t         copy,vol[1];
+  Int_t         i,copy,vol[1];
   TClonesArray &lhits = *fHits;
-  AliMC* pMC=AliMC::GetMC();
+  TLorentzVector p;
   
-  pMC->CurrentVol(0, copy);
+  gMC->CurrentVolID(copy);
   vol[0] = copy;
-  pMC->TrackPosition(hits);
+  gMC->TrackPosition(p);
+  for(i=0;i<3;++i) hits[i]=p[i];
   new(lhits[fNhits++]) AliFMDhit(fIshunt,gAlice->CurrentTrack(),vol,hits);
 }
 

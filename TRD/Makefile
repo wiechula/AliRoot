@@ -11,7 +11,18 @@ PACKAGE	      = TRD
 
 # C++ sources
 
-SRCS          = AliTRD.cxx	AliTRDv0.cxx      AliTRDv1.cxx    AliTRDv2.cxx 
+SRCS          = AliTRD.cxx AliTRDv0.cxx AliTRDv1.cxx             \
+                AliTRDhit.cxx AliTRDdigit.cxx                    \
+		AliTRDpixel.cxx AliTRDmatrix.cxx                 \
+                AliTRDgeometry.cxx AliTRDgeometryFull.cxx        \
+                AliTRDgeometryHole.cxx AliTRDdigitizer.cxx       \
+                AliTRDclusterizer.cxx AliTRDclusterizerV0.cxx    \
+                AliTRDclusterizerV1.cxx AliTRDrecPoint.cxx       \
+                AliTRDsegmentArray.cxx AliTRDdataArray.cxx       \
+                AliTRDdataArrayI.cxx AliTRDdataArrayF.cxx        \
+                AliTRDdigitsManager.cxx                          \
+                AliTRDsegmentID.cxx AliTRDsegmentArrayBase.cxx   \
+                AliTRDarrayI.cxx AliTRDarrayF.cxx
 
 # C++ Headers
 
@@ -21,19 +32,19 @@ HDRS          = $(SRCS:.cxx=.h) TRDLinkDef.h
 
 DICT          = TRDCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.f=.o)
+FOBJS         = $(patsubst %.f,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -47,20 +58,20 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libTRD.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libTRD.a
+SLIBRARY	= $(LIBDIR)/libTRD.$(SL)
+ALIBRARY	= $(LIBDIR)/libTRD.a
 
-default:	$(SLIBRARY) headers
+default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libTRD.$(SL):	$(OBJS)
+$(LIBDIR)/libTRD.$(SL):	$(OBJS)
 
 TRDCint.cxx:			$(HDRS)
-
-HEADERS			=	$(filter-out LinkDef,$(HDRS))
 
 depend:				$(SRCS)
 
 TOCLEAN			= $(OBJS) *Cint.h *Cint.cxx
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
 
 ############################### General Macros ################################
 
@@ -68,4 +79,12 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
+
+

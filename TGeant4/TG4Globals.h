@@ -11,16 +11,13 @@
 #include "TG3Flag.h"
 
 #include <globals.hh>
-
+#include <g4std/vector>
 #include <g4rw/tvordvec.h>
 #include <g4rw/tpordvec.h>
-
-#include <vector.h>
 
 class G4Material;
 class G4Element;
 
-//typedef G4RWTValOrderedVector<G4bool>   TG4boolVector;
 typedef vector<G4bool>   TG4boolVector;
 typedef G4RWTValOrderedVector<G4double> TG4doubleVector;
 typedef G4RWTValOrderedVector<G4String> TG4StringVector;

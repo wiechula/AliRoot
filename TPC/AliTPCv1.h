@@ -1,8 +1,14 @@
-#ifndef TPCv1_H
-#define TPCv1_H
+#ifndef ALITPCV1_H
+#define ALITPCV1_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
 //  Version 1 for TPC                         //
 ////////////////////////////////////////////////
+
  
 #include "AliTPC.h"
 
@@ -20,8 +26,10 @@ public:
   virtual void  DrawDetector();
 
 protected:
-  Int_t fIdSens1;    //First  sensitive volume identifier
-  Int_t fIdSens2;    //Second sensitive volume identifier
+  Int_t fIdSens;    //Sensitive volume identifier
+  Int_t fIdLSec;    // Lower sector identifier
+  Int_t fIdUSec;    // Upper sector identifier
+
   
   ClassDef(AliTPCv1,1)  // Time Projection Chamber version 1
 };

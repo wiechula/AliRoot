@@ -9,7 +9,16 @@ PACKAGE = RICH
 
 # C++ sources
 
-SRCS          = AliRICH.cxx
+SRCS   = AliRICH.cxx AliRICHv0.cxx AliRICHv1.cxx AliRICHv2.cxx\
+	 AliRICHDisplay.cxx AliRICHPoints.cxx AliRICHGeometry.cxx\
+	 AliRICHHitMap.cxx AliRICHHitMapA1.cxx AliRICHSegmentation.cxx \
+	 AliRICHSegmentationV0.cxx AliRICHTresholdMap.cxx\
+	 AliRICHSegmentationV1.cxx AliRICHResponse.cxx AliRICHResponseV0.cxx \
+	 AliRICHClusterFinder.cxx \
+	 AliRICHChamber.cxx AliRICHDetect.cxx AliRICHPatRec.cxx \
+         AliRICHHit.cxx AliRICHCerenkov.cxx AliRICHPadHit.cxx \
+	 AliRICHDigit.cxx AliRICHTransientDigit.cxx \
+	 AliRICHRawCluster.cxx AliRICHRecHit.cxx AliRICHEllipse.cxx 
 
 # C++ Headers
 
@@ -19,23 +28,26 @@ HDRS          = $(SRCS:.cxx=.h) RICHLinkDef.h
 
 DICT          = RICHCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.f=.o)
+FOBJS         = $(patsubst %.f,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
 CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include/
+
+CXXFLAGS      += -I$(ALICE_ROOT)/TGeant3
+DEPINC        += -I$(ALICE_ROOT)/TGeant3
  
 # FORTRAN compilation flags
 
@@ -45,12 +57,12 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libRICH.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libRICH.a
+SLIBRARY	= $(LIBDIR)/libRICH.$(SL)
+ALIBRARY	= $(LIBDIR)/libRICH.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libRICH.$(SL):		$(OBJS)
+$(LIBDIR)/libRICH.$(SL):		$(OBJS)
 
 $(DICT):				$(HDRS)
 
@@ -58,10 +70,18 @@ depend:					$(SRCS)
 
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
 
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
 ############################### General Macros ################################
 
 include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+

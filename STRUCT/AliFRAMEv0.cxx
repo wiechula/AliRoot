@@ -1,66 +1,93 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.12  2000/02/23 16:25:24  fca
+AliVMC and AliGeant3 classes introduced
+ReadEuclid moved from AliRun to AliModule
+
+Revision 1.11  1999/11/01 20:42:42  fca
+FRAME version 1 is now the symmetric one.
+
+Revision 1.10  1999/10/06 20:56:55  fca
+Introducing new frame 1099
+
+Revision 1.9  1999/09/29 09:24:30  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 ////////////////////////////////////////////////
 //  space frame class                            /
 ////////////////////////////////////////////////
 
-#include <stdio.h> 
-#include <TMath.h>
-#include <TRandom.h>
-#include <TVector.h>
 #include "AliFRAMEv0.h"
 #include "AliRun.h"
-#include "stdlib.h"
-#include "AliMC.h"
 #include "TSystem.h"
  
 ClassImp(AliFRAMEv0)
  
 //_____________________________________________________________________________
-AliFRAMEv0::AliFRAMEv0() : AliFRAME()
+AliFRAMEv0::AliFRAMEv0()
 {
+// Constructor
 }
 
 //_____________________________________________________________________________
 AliFRAMEv0::AliFRAMEv0(const char *name, const char *title)
   : AliFRAME(name,title)
 {
-  printf("Create FRAMEv0 object");  
+// Constructor
+  printf("Create FRAMEv0 object\n");  
+  fEuclidGeometry="$(ALICE_ROOT)/Euclid/frame1099h.euc";
+  fEuclidMaterial="$(ALICE_ROOT)/Euclid/frame.tme";
 }
 
  
 //___________________________________________
 void AliFRAMEv0::CreateGeometry()
 {
-  printf("Create FRAMEv0 geometry ");
 //Begin_Html
 /*
-<img src="gif/frame.gif">
+<img src="picts/frame.gif">
 */
 //End_Html
 
 
 //Begin_Html
 /*
-<img src="gif/tree_frame.gif">
+<img src="picts/tree_frame.gif">
 */
 //End_Html
 
-  AliMC* pMC=AliMC::GetMC();
   char *filetmp;
-  const char *framename = "$(ALICE_ROOT)/Euclid/frame0399.euc";
   char topvol[5];
-  printf("Create FRAMEv0 geometry ");
   
 //
 // The Space frame
-  filetmp = gSystem->ExpandPathName(framename);
+  filetmp = gSystem->ExpandPathName(fEuclidGeometry.Data());
   FILE *file = fopen(filetmp,"r");
   delete [] filetmp;
   if(file) {
     fclose(file);
-    printf(" Reading FRAME \n");
-    gAlice->ReadEuclid(framename,12,topvol);
+    printf(" Reading FRAME geometry\n");
+    ReadEuclid(fEuclidGeometry.Data(),topvol);
   } else {
-    printf(" THE GEOM FILE %s DOES NOT EXIST !\n",framename);
+    Warning("CreateGeometry","The Euclid file %s does not exist!\n",
+	    fEuclidGeometry.Data());
     exit(1);
   }
 //
@@ -68,36 +95,48 @@ void AliFRAMEv0::CreateGeometry()
 //    and make it invisible
 // 
 //  AliMatrix(idrotm[2001],90.,0.,90.,90.,180.,0.);
-  
-  pMC->Gspos("B010",1,"ALIC",0,0,0,0,"ONLY");
 
-  pMC->Gsatt("B010", "SEEN", 0);
+  gMC->Gspos(topvol,1,"ALIC",0,0,0,0,"ONLY");
+
+  gMC->Gsatt(topvol, "SEEN", 0);
 }
 
  
 //___________________________________________
-void AliFRAMEv0::DrawDetector()
-{
-}
-
-//___________________________________________
 void AliFRAMEv0::CreateMaterials()
 {
   char *filetmp;
-  printf("Create FRAMEv0 materials");
-  const char *name = "$(ALICE_ROOT)/Euclid/frame.tme";
-  filetmp = gSystem->ExpandPathName(name);
+  printf("Create FRAMEv0 materials\n");
+  filetmp = gSystem->ExpandPathName(fEuclidMaterial.Data());
   FILE *file = fopen(filetmp,"r");
   delete [] filetmp;
   if(file) {
     fclose(file);
-    gAlice->ReadEuclidMedia(name,12);
+    ReadEuclidMedia(fEuclidMaterial.Data());
   } else {
-    printf(" THE MEDIA FILE %s DOES NOT EXIST !\n",name);
+    Warning("CreateMaterials","The material file %s does not exist!\n",
+	    fEuclidMaterial.Data());
     exit(1);
   }
 }
 
+//_____________________________________________________________________________
+void AliFRAMEv0::Init()
+{
+  //
+  // Initialise the module after the geometry has been defined
+  //
+
+  printf("**************************************"
+	 " FRAME "
+	 "**************************************\n");
+  printf("\n     Version 0 of FRAME initialised, "
+	 "with openings for PHOS and RICH\n\n");
+  printf("**************************************"
+	 " FRAME "
+	 "**************************************\n");
+
+}
 
 
 

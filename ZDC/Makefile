@@ -9,15 +9,11 @@ PACKAGE = ZDC
 
 # FORTRAN sources
 
-FSRCS	      = AliZDCf.F
+FSRCS	      =
 
 # C++ sources
 
-SRCS          = AliZDC.cxx
-
-# Fortran sources
-
-FSRCS	       = AliZDCf.F 
+SRCS          = AliZDC.cxx AliZDCv1.cxx AliGenZDC.cxx
 
 # C++ Headers
 
@@ -27,19 +23,19 @@ HDRS          = $(SRCS:.cxx=.h) ZDCLinkDef.h
 
 DICT          = ZDCCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.F=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS)
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # Global Macros
 
@@ -47,7 +43,8 @@ ALLOBJS       = $(OBJS) $(FOBJS)
 
 # C++ compilation flags
 
-CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include
+CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include \
+		-I$(ALICE_ROOT)/RALICE
  
 # FORTRAN compilation flags
 
@@ -57,12 +54,12 @@ FFLAGS      = $(FOPT) -I$(ALICE_ROOT)/GEANT321
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libZDC.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libZDC.a
+SLIBRARY	= $(LIBDIR)/libZDC.$(SL)
+ALIBRARY	= $(LIBDIR)/libZDC.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libZDC.$(SL):	$(OBJS) $(FOBJS)
+$(LIBDIR)/libZDC.$(SL):	$(OBJS) $(FOBJS)
 
 $(DICT):			$(HDRS)
 
@@ -72,11 +69,19 @@ depend:				$(SRCS) $(FSRCS)
 
 TOCLEAN		= $(OBJS) $(FOBJS) *Cint.cxx *Cint.h
 
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
 ############################### General Macros ################################
 
 include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
 

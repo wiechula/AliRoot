@@ -1,5 +1,10 @@
 #ifndef FMD_H
 #define FMD_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
 //  Manager and hits classes for set:FMD     //
 ////////////////////////////////////////////////
@@ -21,7 +26,7 @@ public:
   Int_t          DistancetoPrimitive(Int_t, Int_t);
   virtual Int_t  IsVersion() const =0;
   virtual void   Init();
-  virtual void   DrawDetector()=0;
+  virtual void   DrawModule()=0;
   virtual void   StepManager();
   
   ClassDef(AliFMD,1)  //Class for the FMD detector

@@ -1,3 +1,25 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.5  1999/09/29 09:24:31  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 //  Interface Class to the Geant3.21 MonteCarlo                              //
@@ -12,7 +34,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/TPaveTreeClass.gif">
+<img src="picts/TPaveTreeClass.gif">
 */
 //End_Html
 //                                                                           //
@@ -25,6 +47,7 @@
 #include <Buttons.h>
 #include "TPaveTree.h"
 #include "TGeant3.h"
+
 
 ClassImp(TPaveTree)
 
@@ -56,32 +79,12 @@ TPaveTree::~TPaveTree()
 }
 
 //_____________________________________________________________________________
-TPaveTree::TPaveTree(const TPaveTree &PaveTree)
-{
-  //
-  // Copy Constructor
-  //
-  ((TPaveTree&)PaveTree).Copy(*this);
-}
-
-//_____________________________________________________________________________
-void TPaveTree::Copy(TObject &obj)
-{
-  //
-  //  Copy this PaveTree to PaveTree
-  //
-  TPaveLabel::Copy(obj);
-}
-
-//_____________________________________________________________________________
 void TPaveTree::DrawSpec()
 {
   //
   //  Draw specs of the volume in this TPaveTree
   //
-  AliMC* pMC = AliMC::GetMC();
-  
-  pMC->DrawOneSpec(GetLabel());
+  gMC->DrawOneSpec(GetLabel());
 }
 
 //_____________________________________________________________________________
@@ -90,8 +93,7 @@ void TPaveTree::DrawTree(Int_t levmax, Int_t isel)
   //
   //  Draw tree of the volume in this TPaveTree
   //
-  TGeant3 *geant3=(TGeant3*)AliMC::GetMC();
-  geant3->Gdtree(GetLabel(),levmax,isel);
+  ((TGeant3*)gMC)->Gdtree(GetLabel(),levmax,isel);
 }
 
 //_____________________________________________________________________________
@@ -100,8 +102,7 @@ void TPaveTree::DrawTreeParent(Int_t levmax, Int_t isel)
   //
   //  Draw parent tree of the volume in this TPaveTree
   //
-  TGeant3 *geant3=(TGeant3*)AliMC::GetMC();
-  geant3->GdtreeParent(GetLabel(),levmax,isel);
+  ((TGeant3*)gMC)->GdtreeParent(GetLabel(),levmax,isel);
 }
 
 //_____________________________________________________________________________
@@ -112,14 +113,13 @@ void TPaveTree::ExecuteEvent(Int_t event, Int_t px, Int_t py)
   // Invokes TPabeLabel::ExecuteEvent. In case of a double click
   // draw specs of volume corresponding to this TPaveTree
   //
-  AliMC* pMC = AliMC::GetMC();
   
   TPaveLabel::ExecuteEvent(event,px,py);
   
   if (event == kButton1Double) {
     //printf("TPaveTree::ExecuteEvent\n");
     gPad->SetCursor(kWatch);
-    pMC->DrawOneSpec(GetLabel());
+    gMC->DrawOneSpec(GetLabel());
   }
 }
 

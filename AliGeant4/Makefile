@@ -22,6 +22,7 @@ TARGET  = aligeant4
 # C++ sources
 
 SRCS           = $(wildcard *.cxx)
+SRCS          := $(filter-out $(TARGET).cxx,$(SRCS))
 
 # C++ Headers
 
@@ -45,9 +46,8 @@ POBJ          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(PSRC))
 
 # C++ compilation flags
 
-CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include/ \
-		-I$(ALICE_ROOT)/TGeant4/
- 
+CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include \
+	        -I$(ALICE_ROOT)/TGeant4       
 
 ##### TARGETS #####
  
@@ -67,6 +67,8 @@ $(DICT):				$(DICTH)
 
 depend:					$(SRCS)
 
+clean: macroclean
+
 #HEADERS =	$(filter-out %LinkDef.h,$(HDRS))
 
 # filter-out Geant3 dependent libraries (ZDC requires symbols from G3)
@@ -75,9 +77,10 @@ ALILIBS := $(filter-out -lTGeant3,$(ALILIBS))
 ALILIBS := $(filter-out -lZDC,$(ALILIBS))
 ALILIBS += -lTGeant4 -lAliGeant4
 
-LIBS = $(ALILIBS) $(G4LDLIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia -lpythia -lpdf
+LIBS = $(ALILIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia -lpythia -lpdf \
+	-lTHijing -lhijing $(G4LDLIBS) 
 
-TOCLEAN	      = $(OBJS) *Cint.cxx *Cint.h
+TOCLEAN	      = $(OBJS) $(POBJ) *Cint.cxx *Cint.h
 
 CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
 

@@ -1,33 +1,92 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.9  2000/06/14 15:20:56  morsch
+Include clean-up (IH)
+
+Revision 1.8  2000/06/09 20:32:11  morsch
+All coding rule violations except RS3 corrected
+
+Revision 1.7  2000/05/02 08:12:13  morsch
+Coding rule violations corrected.
+
+Revision 1.6  1999/09/29 09:24:14  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 #include "AliGenMUONlib.h"
-#include "AliRun.h"
+#include "AliMC.h"
+
 ClassImp(AliGenMUONlib)
 //
 //  Pions
-Double_t AliGenMUONlib::PtPion(Double_t *px, Double_t *)
+Double_t AliGenMUONlib::PtPion(Double_t *px, Double_t *dummy)
 {
 //
 //     PT-PARAMETERIZATION CDF, PRL 61(88) 1819
 //     POWER LAW FOR PT > 500 MEV
 //     MT SCALING BELOW (T=160 MEV)
 //
-  const Double_t p0 = 1.3;
-  const Double_t xn = 8.28;
-  const Double_t xlim=0.5;
-  const Double_t t=0.160;
-  const Double_t xmpi=0.139;
-  const Double_t b=1.;
+  const Double_t kp0 = 1.3;
+  const Double_t kxn = 8.28;
+  const Double_t kxlim=0.5;
+  const Double_t kt=0.160;
+  const Double_t kxmpi=0.139;
+  const Double_t kb=1.;
   Double_t y, y1, xmpi2, ynorm, a;
   Double_t x=*px;
   //
-  y1=TMath::Power(p0/(p0+xlim),xn);
-  xmpi2=xmpi*xmpi;
-  ynorm=b*(TMath::Exp(-sqrt(xlim*xlim+xmpi2)/t));
+  y1=TMath::Power(kp0/(kp0+kxlim),kxn);
+  xmpi2=kxmpi*kxmpi;
+  ynorm=kb*(TMath::Exp(-sqrt(kxlim*kxlim+xmpi2)/kt));
   a=ynorm/y1;
-  if (x > xlim)
-    y=a*TMath::Power(p0/(p0+x),xn);
+  if (x > kxlim)
+    y=a*TMath::Power(kp0/(kp0+x),kxn);
   else
-    y=b*TMath::Exp(-sqrt(x*x+xmpi2)/t);
+    y=kb*TMath::Exp(-sqrt(x*x+xmpi2)/kt);
   return y*x;
+}
+//
+// y-distribution
+//
+Double_t AliGenMUONlib::YPion( Double_t *py, Double_t *dummy)
+{
+// Pion y
+  const Double_t ka    = 7000.;
+  const Double_t kdy   = 4.;
+
+  Double_t y=TMath::Abs(*py);
+  //
+  Double_t ex = y*y/(2*kdy*kdy);
+  return ka*TMath::Exp(-ex);
+}
+//                 particle composition
+//
+Int_t AliGenMUONlib::IpPion()
+{
+// Pion composition 
+    Float_t random[1];
+    gMC->Rndm(random,1);
+    if (random[0] < 0.5) {
+	return  211;
+    } else {
+	return -211;
+    }
 }
 
 //____________________________________________________________
@@ -38,69 +97,95 @@ Double_t AliGenMUONlib::PtScal(Double_t pt, Int_t np)
 {
   //    SCALING EN MASSE PAR RAPPORT A PTPI
   //    MASS PI,K,ETA,RHO,OMEGA,ETA',PHI
-  const Double_t hm[10] = {.13957,.493,.5488,.769,.7826,.958,1.02,0,0,0};
+  const Double_t khm[10] = {.13957,.493,.5488,.769,.7826,.958,1.02,0,0,0};
   //     VALUE MESON/PI AT 5 GEV
-  const Double_t fmax[10]={1.,0.3,0.55,1.0,1.0,1.0,1.0,0,0,0};
+  const Double_t kfmax[10]={1.,0.3,0.55,1.0,1.0,1.0,1.0,0,0,0};
   np--;
-  Double_t f5=TMath::Power(((sqrt(100.018215)+2.)/(sqrt(100.+hm[np]*hm[np])+2.0)),12.3);
-  Double_t fmax2=f5/fmax[np];
+  Double_t f5=TMath::Power(((sqrt(100.018215)+2.)/(sqrt(100.+khm[np]*khm[np])+2.0)),12.3);
+  Double_t fmax2=f5/kfmax[np];
   // PIONS
   Double_t ptpion=100.*PtPion(&pt, (Double_t*) 0);
   Double_t fmtscal=TMath::Power(((sqrt(pt*pt+0.018215)+2.)/
-				 (sqrt(pt*pt+hm[np]*hm[np])+2.0)),12.3)/ fmax2;
+				 (sqrt(pt*pt+khm[np]*khm[np])+2.0)),12.3)/ fmax2;
   return fmtscal*ptpion;
 }
 //
-// eta-distribution for kaons
+// kaon
+//
+//                pt-distribution
 //____________________________________________________________
-Double_t AliGenMUONlib::EtaKaon( Double_t *py, Double_t *)
+Double_t AliGenMUONlib::PtKaon( Double_t *px, Double_t *dummy)
 {
-  const Double_t a1    = 497.6;
-  const Double_t a2    = 215.6;
-  const Double_t eta1  = 0.79;
-  const Double_t eta2  = 4.09;
-  const Double_t deta1 = 1.54;
-  const Double_t deta2 = 1.40;
+// Kaon pT
+  return PtScal(*px,2);
+}
+
+// y-distribution
+//____________________________________________________________
+Double_t AliGenMUONlib::YKaon( Double_t *py, Double_t *dummy)
+{
+// Kaon y
+  const Double_t ka    = 1000.;
+  const Double_t kdy   = 4.;
+  
+
   Double_t y=TMath::Abs(*py);
   //
-  Double_t ex1 = (y-eta1)*(y-eta1)/(2*deta1*deta1);
-  Double_t ex2 = (y-eta2)*(y-eta2)/(2*deta2*deta2);
-  return a1*TMath::Exp(-ex1)+a2*TMath::Exp(-ex2);
+  Double_t ex = y*y/(2*kdy*kdy);
+  return ka*TMath::Exp(-ex);
 }
+
+//                 particle composition
+//
+Int_t AliGenMUONlib::IpKaon()
+{
+// Kaon composition
+    Float_t random[1];
+    gMC->Rndm(random,1);
+    if (random[0] < 0.5) {
+	return  321;
+    } else {
+	return -321;
+    }
+}
+
 //                    J/Psi 
 //
 //
 //                pt-distribution
 //____________________________________________________________
-Double_t AliGenMUONlib::PtJpsi( Double_t *px, Double_t *)
+Double_t AliGenMUONlib::PtJpsi( Double_t *px, Double_t *dummy)
 {
-  const Double_t pt0 = 4.;
-  const Double_t xn  = 3.6;
+// J/Psi pT
+  const Double_t kpt0 = 4.;
+  const Double_t kxn  = 3.6;
   Double_t x=*px;
   //
-  Double_t pass1 = 1.+(x/pt0)*(x/pt0);
-  return x/TMath::Power(pass1,xn);
+  Double_t pass1 = 1.+(x/kpt0)*(x/kpt0);
+  return x/TMath::Power(pass1,kxn);
 }
 //
 //               y-distribution
 //____________________________________________________________
-Double_t AliGenMUONlib::YJpsi(Double_t *py, Double_t *)
+Double_t AliGenMUONlib::YJpsi(Double_t *py, Double_t *dummy)
 {
-  const Double_t y0 = 4.;
-  const Double_t b=1.;
+// J/psi y
+  const Double_t ky0 = 4.;
+  const Double_t kb=1.;
   Double_t yj;
   Double_t y=TMath::Abs(*py);
   //
-  if (y < y0)
-    yj=b;
+  if (y < ky0)
+    yj=kb;
   else
-    yj=b*TMath::Exp(-(y-y0)*(y-y0)/2);
+    yj=kb*TMath::Exp(-(y-ky0)*(y-ky0)/2);
   return yj;
 }
 //                 particle composition
 //
 Int_t AliGenMUONlib::IpJpsi()
 {
+// J/Psi composition
     return 443;
 }
 
@@ -109,36 +194,39 @@ Int_t AliGenMUONlib::IpJpsi()
 //
 //                  pt-distribution
 //____________________________________________________________
-Double_t AliGenMUONlib::PtUpsilon( Double_t *px, Double_t * )
+Double_t AliGenMUONlib::PtUpsilon( Double_t *px, Double_t *dummy )
 {
-  const Double_t pt0 = 5.3;
-  const Double_t xn  = 2.5;
+// Upsilon pT
+  const Double_t kpt0 = 5.3;
+  const Double_t kxn  = 2.5;
   Double_t x=*px;
   //
-  Double_t pass1 = 1.+(x/pt0)*(x/pt0);
-  return x/TMath::Power(pass1,xn);
+  Double_t pass1 = 1.+(x/kpt0)*(x/kpt0);
+  return x/TMath::Power(pass1,kxn);
 }
 //
 //                    y-distribution
 //
 //____________________________________________________________
-Double_t AliGenMUONlib::YUpsilon(Double_t *py, Double_t *)
+Double_t AliGenMUONlib::YUpsilon(Double_t *py, Double_t *dummy)
 {
-  const Double_t y0 = 3.;
-  const Double_t b=1.;
+// Upsilon y
+  const Double_t ky0 = 3.;
+  const Double_t kb=1.;
   Double_t yu;
   Double_t y=TMath::Abs(*py);
   //
-  if (y < y0)
-    yu=b;
+  if (y < ky0)
+    yu=kb;
   else
-    yu=b*TMath::Exp(-(y-y0)*(y-y0)/2);
+    yu=kb*TMath::Exp(-(y-ky0)*(y-ky0)/2);
   return yu;
 }
 //                 particle composition
 //
 Int_t AliGenMUONlib::IpUpsilon()
 {
+// y composition
     return 553;
 }
 
@@ -148,20 +236,23 @@ Int_t AliGenMUONlib::IpUpsilon()
 //
 //    pt-distribution (by scaling of pion distribution)
 //____________________________________________________________
-Double_t AliGenMUONlib::PtPhi( Double_t *px, Double_t *)
+Double_t AliGenMUONlib::PtPhi( Double_t *px, Double_t *dummy)
 {
+// Phi pT
   return PtScal(*px,7);
 }
 //    y-distribution
-Double_t AliGenMUONlib::YPhi( Double_t *px, Double_t *)
+Double_t AliGenMUONlib::YPhi( Double_t *px, Double_t *dummy)
 {
-    Double_t *dummy=0;
-    return YJpsi(px,dummy);
+// Phi y
+    Double_t *dum=0;
+    return YJpsi(px,dum);
 }
 //                 particle composition
 //
 Int_t AliGenMUONlib::IpPhi()
 {
+// Phi composition
     return 41;
 }
 
@@ -171,29 +262,31 @@ Int_t AliGenMUONlib::IpPhi()
 //
 //                    pt-distribution
 //____________________________________________________________
-Double_t AliGenMUONlib::PtCharm( Double_t *px, Double_t *)
+Double_t AliGenMUONlib::PtCharm( Double_t *px, Double_t *dummy)
 {
-  const Double_t pt0 = 4.08;
-  const Double_t xn  = 9.40;
+// Charm pT
+  const Double_t kpt0 = 4.08;
+  const Double_t kxn  = 9.40;
   Double_t x=*px;
   //
-  Double_t pass1 = 1.+(x/pt0)*(x/pt0);
-  return x/TMath::Power(pass1,xn);
+  Double_t pass1 = 1.+(x/kpt0)*(x/kpt0);
+  return x/TMath::Power(pass1,kxn);
 }
 //                  y-distribution
-Double_t AliGenMUONlib::YCharm( Double_t *px, Double_t *)
+Double_t AliGenMUONlib::YCharm( Double_t *px, Double_t *dummy)
 {
-    Double_t *dummy=0;
-    return YJpsi(px,dummy);
+// Charm y
+    Double_t *dum=0;
+    return YJpsi(px,dum);
 }
 
 Int_t AliGenMUONlib::IpCharm()
 {  
-    AliMC* pMC = AliMC::GetMC();
+// Charm composition
     Float_t random[2];
     Int_t ip;
 //    411,421,431,4122
-    pMC->Rndm(random,2);
+    gMC->Rndm(random,2);
     if (random[0] < 0.5) {
 	ip=411;
     } else if (random[0] < 0.75) {
@@ -215,28 +308,30 @@ Int_t AliGenMUONlib::IpCharm()
 //
 //                    pt-distribution
 //____________________________________________________________
-Double_t AliGenMUONlib::PtBeauty( Double_t *px, Double_t *)
+Double_t AliGenMUONlib::PtBeauty( Double_t *px, Double_t *dummy)
 {
-  const Double_t pt0 = 4.;
-  const Double_t xn  = 3.6;
+// Beauty pT
+  const Double_t kpt0 = 4.;
+  const Double_t kxn  = 3.6;
   Double_t x=*px;
   //
-  Double_t pass1 = 1.+(x/pt0)*(x/pt0);
-  return x/TMath::Power(pass1,xn);
+  Double_t pass1 = 1.+(x/kpt0)*(x/kpt0);
+  return x/TMath::Power(pass1,kxn);
 }
 //                     y-distribution
-Double_t AliGenMUONlib::YBeauty( Double_t *px, Double_t *)
+Double_t AliGenMUONlib::YBeauty( Double_t *px, Double_t *dummy)
 {
-    Double_t *dummy=0;
-    return YJpsi(px,dummy);
+// Beauty y
+    Double_t *dum=0;
+    return YJpsi(px,dum);
 }
 
 Int_t AliGenMUONlib::IpBeauty()
 {  
-    AliMC* pMC = AliMC::GetMC();
+// Beauty Composition
     Float_t random[2];
     Int_t ip;
-    pMC->Rndm(random,2);
+    gMC->Rndm(random,2);
     if (random[0] < 0.5) {
 	ip=511;
     } else if (random[0] < 0.75) {
@@ -252,76 +347,108 @@ Int_t AliGenMUONlib::IpBeauty()
 }
 
 typedef Double_t (*GenFunc) (Double_t*,  Double_t*);
-GenFunc AliGenMUONlib::GetPt(Int_t ipart)
+GenFunc AliGenMUONlib::GetPt(Param_t param,  const char* tname)
 {
+// Return pointer to pT parameterisation
     GenFunc func;
-    switch (ipart) 
+    switch (param) 
     {
-    case 333:
+    case phi_p:
 	func=PtPhi;
 	break;
-    case 443:
+    case jpsi_p:
 	func=PtJpsi;
 	break;
-    case 553:
+    case upsilon_p:
 	func=PtUpsilon;
 	break;
-    case 400:
+    case charm_p:
 	func=PtCharm;
 	break;
-    case 500:
+    case beauty_p:
 	func=PtBeauty;
 	break;
+    case pion_p:
+	func=PtPion;
+	break;
+    case kaon_p:
+	func=PtKaon;
+	break;
+    default:
+        func=0;
+        printf("<AliGenMUONlib::GetPt> unknown parametrisation\n");
     }
     return func;
 }
 
-GenFunc AliGenMUONlib::GetY(Int_t ipart)
+GenFunc AliGenMUONlib::GetY(Param_t param, const char* tname)
 {
+// Return pointer to y- parameterisation
     GenFunc func;
-    switch (ipart) 
+    switch (param) 
     {
-    case 333:
+    case phi_p:
 	func=YPhi;
 	break;
-    case 443:
+    case jpsi_p:
 	func=YJpsi;
 	break;
-    case 553:
+    case upsilon_p:
 	func=YUpsilon;
 	break;
-    case 400:
+    case charm_p:
 	func=YCharm;
 	break;
-    case 500:
+    case beauty_p:
 	func=YBeauty;
 	break;
+    case pion_p:
+	func=YPion;
+	break;
+    case kaon_p:
+	func=YKaon;
+	break;
+    default:
+        func=0;
+        printf("<AliGenMUONlib::GetY> unknown parametrisation\n");
     }
     return func;
 }
 typedef Int_t (*GenFuncIp) ();
-GenFuncIp AliGenMUONlib::GetIp(Int_t ipart)
+GenFuncIp AliGenMUONlib::GetIp(Param_t param,  const char* tname)
 {
+// Return pointer to particle type parameterisation
     GenFuncIp func;
-    switch (ipart) 
+    switch (param) 
     {
-    case 333:
+    case phi_p:
 	func=IpPhi;
 	break;
-    case 443:
+    case jpsi_p:
 	func=IpJpsi;
 	break;
-    case 553:
+    case upsilon_p:
 	func=IpUpsilon;
 	break;
-    case 400:
+    case charm_p:
 	func=IpCharm;
 	break;
-    case 500:
+    case beauty_p:
 	func=IpBeauty;
 	break;
+    case pion_p:
+	func=IpPion;
+	break;
+    case kaon_p:
+	func=IpKaon;
+	break;
+    default:
+        func=0;
+        printf("<AliGenMUONlib::GetIp> unknown parametrisation\n");
     }
     return func;
 }
+
+
 
 

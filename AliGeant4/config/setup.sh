@@ -295,7 +295,7 @@ export G4LEVELGAMMADATA=$G4INSTALL/data/PhotonEvaporation
 SYSTEM=`uname`
 if [ "$SYSTEM" = "HP-UX" ]; then
   export G4SYSTEM="HP-aCC"
-  export G4USE_OSPACE=1
+  #export G4USE_OSPACE=1      # compiling with Object Space STL
 fi  
 if [ "$SYSTEM" = "Linux" ]; then
   export G4SYSTEM="Linux-g++"
@@ -363,7 +363,6 @@ if [ $AG4_VISUALIZE ]; then
   export DAWN_HOME=${G4_BASE}/tools/bin
   if [ "`echo ${PATH} | grep ${DAWN_HOME} `" = "" ]; then
     export PATH=$PATH:$DAWN_HOME
-    rehash
   fi
   export G4DAWN_MULTI_WINDOW=1
   if [ `uname` = "Linux" ]; then
@@ -390,6 +389,7 @@ if [ $AG4_VISUALIZE ]; then
       echo "  Dawn named pipe selected"
     fi
   fi
+
 
   # David flags
   # Set colors for overlappings
@@ -438,12 +438,8 @@ if [ $AG4_VISUALIZE ]; then
   export G4VIS_BUILD_OPENGLXM_DRIVER=1
   export G4VIS_USE_OPENGLX=1
   export G4VIS_USE_OPENGLXM=1
-  if [ "$SYSTEM" = "Linux" ]; then
-    export OGLHOME=/usr/local
-    export OGLLIBS="-L$OGLHOME/lib -lMesaGLU -lMesaGL"
-  else
-    export OGLHOME=$LHCXX_BASE/OpenGL/pro
-  fi
+  export OGLHOME=/usr/local
+  export OGLLIBS="-L$OGLHOME/lib -lMesaGLU -lMesaGL"
 
   if [ "$VERBOSE" = "YES" ]; then
     if [ $G4VIS_USE_OPENGLX ]; then
@@ -530,7 +526,6 @@ if [ $AG4_VISUALIZE ]; then
   export MOMOPATH=${G4_BASE}/tools/GAG/tcltk
   if [ "`echo ${PATH} | grep ${MOMOPATH} `" = "" ]; then
     export PATH=$PATH:$MOMOPATH
-    rehash
   fi
   NCLASSPATH=".:${G4_BASE}/tools/swing-1.0.3/swingall.jar:${G4_BASE}/tools/GAG/java/GAG.jar"
   if [ "$CLASSPATH" = "" ]; then
@@ -550,6 +545,7 @@ if [ $AG4_VISUALIZE ]; then
       echo "    NOTE: Run "\'java gag\'" to use GAG (java version)"
     fi
   fi
+
 
 else
   if [ "$VERBOSE" = "YES" ]; then
@@ -622,12 +618,8 @@ if [ $AG4_OPACS ]; then
   #
   export G4VIS_BUILD_OPENGLX_DRIVER=1
   export G4VIS_USE_OPENGLX=1
-  if [ `uname` = "Linux" ]; then
-    export OGLHOME=/usr/local
-    export OGLLIBS="-L$OGLHOME/lib -lMesaGLU -lMesaGL"
-  else
-    export OGLHOME=$LHCXX_BASE/OpenGL/pro
-  fi
+  export OGLHOME=/usr/local
+  export OGLLIBS="-L$OGLHOME/lib -lMesaGLU -lMesaGL"
     
   #
   # OPACS

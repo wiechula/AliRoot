@@ -9,7 +9,18 @@ PACKAGE = PHOS
 
 # C++ sources
 
-SRCS          =    AliPHOS.cxx AliPHOSv0.cxx AliPHOSv1.cxx AliPHOSv2.cxx
+SRCS          =  AliPHOS.cxx AliPHOSv0.cxx AliPHOSv1.cxx AliPHOSv2.cxx \
+                 AliPHOSv3.cxx AliPHOSv4.cxx \
+                 AliPHOSHit.cxx \
+                 AliPHOSGeometry.cxx \
+                 AliPHOSDigit.cxx  \
+                 AliPHOSRecPoint.cxx AliPHOSEmcRecPoint.cxx AliPHOSPpsdRecPoint.cxx \
+		 AliPHOSClusterizer.cxx AliPHOSClusterizerv1.cxx  AliPHOSLink.cxx \
+		 AliPHOSReconstructioner.cxx  AliPHOSTrackSegment.cxx \
+                 AliPHOSTrackSegmentMaker.cxx AliPHOSTrackSegmentMakerv1.cxx \
+                 AliPHOSRecParticle.cxx AliPHOSPID.cxx AliPHOSPIDv1.cxx \
+                 AliPHOSAnalyze.cxx AliPHOSFastRecParticle.cxx \
+                 AliPHOSIndexToObject.cxx \
 
 # C++ Headers
 
@@ -19,42 +30,15 @@ HDRS          = $(SRCS:.cxx=.h) PHOSLinkDef.h
 
 DICT          = PHOSCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
-
-# FORTRAN sources
-
-FSRCS = AliPHOSf.F AliPHOScommon.F
-
-# FORTRAN Objectrs
-
-FOBJS         = $(FSRCS:.F=.o)
-
-# C Objects
-
-COBJS         = $(CSRCS:.c=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
 CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include/
- 
-# FORTRAN compilation flags
-
-FFLAGS      = $(FOPT)
-
-##### Other Libraries #####
-
-SHSRCS  = $(wildcard shaker/*.f)
-SHOBJS  = $(SHSRCS:.f=.o)
-
-RCSRCS  = $(wildcard reconstruction/*.f) $(wildcard utils/*.cxx) $(wildcard utils/*.f) 
-RCOBJS  = $(patsubst %.f,%.o,$(patsubst %.cxx,%.o,$(RCSRCS))) 
-
-DUSRCS	= libPHOSdummy.cxx
-DUOBJS	= $(DUSRCS:.cxx=.o)
 
 ALSRCS  = $(SRCS) $(SHSRCS) $(RCSRCS) $(DUSRCS) dummies.c
 
@@ -62,30 +46,35 @@ ALOBJS  = $(SHOBJS) $(RCOBJS) $(DUOBJS)
 
 ##### COMMANDS ##### 
 
-SLIBRARY     	= $(ALICE_ROOT)/lib/libPHOSdummy.$(SL) $(ALICE_ROOT)/lib/libPHOSshaker.$(SL) \
-                  $(ALICE_ROOT)/lib/libPHOSreconstruction.$(SL) $(ALICE_ROOT)/lib/libPHOS.$(SL)
+SLIBRARY     	= $(LIBDIR)/libPHOS.$(SL)
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libPHOSdummy.$(SL):		$(DUOBJS)
-
-$(ALICE_ROOT)/lib/libPHOSshaker.$(SL):		$(SHOBJS)
-
-$(ALICE_ROOT)/lib/libPHOSreconstruction.$(SL):	$(RCOBJS)
-
-$(ALICE_ROOT)/lib/libPHOS.$(SL):			$(OBJS) $(FOBJS)
+$(LIBDIR)/libPHOS.$(SL):			$(OBJS) $(FOBJS)
 
 $(DICT):					$(HDRS)
 
-depend:				$(SRCS) $(DUSRCS) $(SHSRCS) $(RCSRCS)
+depend:				$(SRCS) 
 
-TOCLEAN		=	$(DUOBJS) $(SHOBJS) $(RCOBJS) $(OBJS) $(FOBJS) \
-                        *Cint.cxx *Cint.h
+TOCLEAN		=	 $(OBJS) *Cint.cxx *Cint.h
 
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+REVENGS       = $(patsubst %.cxx,check/%.ii,$(SRCS))
+
+# IRST reverse engineering
+reveng : $(REVENGS)
+	@$(REV_ENG) $(REVENGS)
 ############################### General Macros ################################
 
 include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
+

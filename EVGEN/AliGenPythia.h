@@ -1,45 +1,24 @@
-#ifndef AliGenPythia_H
-#define AliGenPythia_H
-/////////////////////////////////////////////////////////
-//  Manager and hits classes for set:MUON version 0    //
-/////////////////////////////////////////////////////////
+#ifndef ALIGENPYTHIA_H
+#define ALIGENPYTHIA_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
+
 #include "AliGenerator.h"
-#include "TNamed.h"
-#include "TF1.h"
-#include "TArrayF.h"
-#include "TTree.h"
-#include "AliPythia.h"
-#include "TArrayI.h"
-#include "TMCParticle.h"
+#include "GenTypeDefs.h"
+#include <TArrayI.h>    
+
+class AliPythia;
+class TParticle;
 
 class AliGenPythia : public AliGenerator
 {
- protected:
-    Process_t   fProcess;
-    StrucFunc_t fStrucFunc;
-    Decay_t     fForceDecay;
-    Float_t     fEnergyCMS;
-    Float_t     fKineBias;
-    Int_t       fTrials;
-    TArrayI     fParentSelect;
-    TArrayI     fChildSelect;
-    Float_t     fXsection;
-    AliPythia   *fPythia;
-    Float_t     fPtHardMin;
-    Float_t     fPtHardMax;    
-
- private:
-    // check if particle is selected as parent particle
-    Bool_t ParentSelected(Int_t ip);
-    // check if particle is selected as child particle
-    Bool_t ChildSelected(Int_t ip);
-    // all kinematic selection cuts go here 
-    Bool_t KinematicSelection(TMCParticle *particle);
-    // adjust the weight from kinematic cuts
-    void   AdjustWeights();
  public:
     AliGenPythia();
     AliGenPythia(Int_t npart);
+    AliGenPythia(const AliGenPythia &Pythia);
     virtual ~AliGenPythia();
     virtual void    Generate();
     virtual void    Init();
@@ -53,10 +32,38 @@ class AliGenPythia : public AliGenerator
     // set centre of mass energy
     virtual void    SetEnergyCMS(Float_t energy=5500) {fEnergyCMS=energy;}
     // force decay type
-    virtual void    ForceDecay(Decay_t decay=semimuonic) {fForceDecay=decay;}
+    virtual void    SetForceDecay(Decay_t decay=semimuonic) {fForceDecay=decay;}
     // get cross section of process
     virtual Float_t GetXsection() {return fXsection;}
-    ClassDef(AliGenPythia,1)
+    // Check PDG code
+    virtual Int_t CheckPDGCode(Int_t pdgcode);
+    // Assignment Operator
+    AliGenPythia & operator=(const AliGenPythia & rhs);
+ protected:
+    Process_t   fProcess;       // Process type
+    StrucFunc_t fStrucFunc;     // Structure Function
+    Decay_t     fForceDecay;    // Decay channel  are forced
+    Float_t     fEnergyCMS;     // Centre of mass energy
+    Float_t     fKineBias;      // Bias from kinematic selection
+    Int_t       fTrials;        // Number of trials
+    TArrayI     fParentSelect;  // Parent particles to be selected 
+    TArrayI     fChildSelect;   // Decay products to be selected
+    Float_t     fXsection;      // Cross-section
+    AliPythia   *fPythia;       // Pythia 
+    Float_t     fPtHardMin;     // lower pT-hard cut 
+    Float_t     fPtHardMax;     // higher pT-hard cut
+
+ private:
+    // check if particle is selected as parent particle
+    Bool_t ParentSelected(Int_t ip);
+    // check if particle is selected as child particle
+    Bool_t ChildSelected(Int_t ip);
+    // all kinematic selection cuts go here 
+    Bool_t KinematicSelection(TParticle *particle);
+    // adjust the weight from kinematic cuts
+    void   AdjustWeights();
+
+    ClassDef(AliGenPythia,1) // AliGenerator interface to Pythia
 };
 #endif
 

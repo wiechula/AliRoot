@@ -1,27 +1,37 @@
-#ifndef ITSv5_H
-#define ITSv5_H
-/////////////////////////////////////////////////////////
-//  Manager and hits classes for set: ITS version 4    //
-/////////////////////////////////////////////////////////
- 
+#ifndef ALIITSV5_H
+#define ALIITSV5_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
+////////////////////////////////////////////////////////////////////////
+//     Manager and hits classes for  ITS version 5
+////////////////////////////////////////////////////////////////////////
+
+#include "TBRIK.h"
 #include "AliITS.h"
-#include "TString.h"
- 
+
 class AliITSv5 : public AliITS {
 
-private:
+ public:
+    AliITSv5();
+    AliITSv5(const char *name, const char *title);
+    AliITSv5(const AliITSv5 &source); // copy constructor
+    AliITSv5& operator=(const AliITSv5 &source); // assignment operator	 
+    virtual       ~AliITSv5() ;
+    virtual void   BuildGeometry();
+    virtual void  CreateGeometry();
+    virtual void  CreateMaterials();
+    virtual void  Init();   
+    virtual Int_t IsVersion() const {
+      // returns the ITS version number
+      return 5;
+    }
+    virtual void  StepManager();
 
-public:
-  AliITSv5();
-  AliITSv5(const char *name, const char *title);
-  virtual       ~AliITSv5() {}
-  virtual void   CreateGeometry();
-  virtual void   CreateMaterials();
-  virtual void   Init();   
-  virtual Int_t  IsVersion() const {return 5;}
-  virtual void   StepManager();
-  
-  ClassDef(AliITSv5,1)  //Hits manager for set:ITS version 4
+
+    ClassDef(AliITSv5,1)//Hits manager for ITS version 5 Official detailed geometry
 };
  
 #endif

@@ -19,7 +19,7 @@ HDRS          = $(SRCS:.cxx=.h) CASTORLinkDef.h
 
 DICT          = CASTORCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
@@ -27,11 +27,11 @@ FOBJS         = $(FSRCS:.f=.o)
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -45,12 +45,12 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libCASTOR.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libCASTOR.a
+SLIBRARY	= $(LIBDIR)/libCASTOR.$(SL)
+ALIBRARY	= $(LIBDIR)/libCASTOR.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libCASTOR.$(SL):		$(OBJS)
+$(LIBDIR)/libCASTOR.$(SL):		$(OBJS)
 
 $(DICT):				$(HDRS)
 
@@ -58,10 +58,19 @@ depend:					$(SRCS)
 
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
 
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
 ############################### General Macros ################################
 
 include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
+

@@ -1,20 +1,60 @@
-#include "AliGenerator.h"
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.18  2000/06/30 12:40:34  morsch
+Pythia takes care of vertex smearing. Correct conversion from Pythia units (mm) to
+Geant units (cm).
+
+Revision 1.17  2000/06/09 20:34:07  morsch
+All coding rule violations except RS3 corrected
+
+Revision 1.16  2000/05/15 15:04:20  morsch
+The full event is written for fNtrack = -1
+Coding rule violations corrected.
+
+Revision 1.15  2000/04/26 10:14:24  morsch
+Particles array has one entry more than pythia particle list. Upper bound of
+particle loop changed to np-1 (R. Guernane, AM)
+
+Revision 1.14  2000/04/05 08:36:13  morsch
+Check status code of particles in Pythia event
+to avoid double counting as partonic state and final state particle.
+
+Revision 1.13  1999/11/09 07:38:48  fca
+Changes for compatibility with version 2.23 of ROOT
+
+Revision 1.12  1999/11/03 17:43:20  fca
+New version from G.Martinez & A.Morsch
+
+Revision 1.11  1999/09/29 09:24:14  fca
+Introduction of the Copyright and cvs Log
+*/
+
 #include "AliGenPythia.h"
-#include "TGeant3.h"
 #include "AliRun.h"
 #include "AliPythia.h"
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TTree.h>
-#include <stdlib.h>
-#include <AliPythia.h>
-#include <TMCParticle.h>
-#include <GParticle.h>
+#include <TParticle.h>
+
  ClassImp(AliGenPythia)
 
 AliGenPythia::AliGenPythia()
                  :AliGenerator()
 {
+// Constructor
 }
 
 AliGenPythia::AliGenPythia(Int_t npart)
@@ -30,17 +70,24 @@ AliGenPythia::AliGenPythia(Int_t npart)
     for (Int_t i=0; i<5; i++) fParentSelect[i]=fChildSelect[i]=0;
     SetProcess();
     SetStrucFunc();
-    ForceDecay();
+    SetForceDecay();
     SetPtHard();
     SetEnergyCMS();
 }
 
+AliGenPythia::AliGenPythia(const AliGenPythia & Pythia)
+{
+// copy constructor
+}
+
 AliGenPythia::~AliGenPythia()
 {
+// Destructor
 }
 
 void AliGenPythia::Init()
 {
+// Initialisation
     SetMC(new AliPythia());
     fPythia=(AliPythia*) fgMCEvGen;
 //
@@ -48,12 +95,12 @@ void AliGenPythia::Init()
 //
 //  Forward Paramters to the AliPythia object
     fPythia->DefineParticles();
-    fPythia->ForceDecay(fForceDecay);
     fPythia->SetCKIN(3,fPtHardMin);
     fPythia->SetCKIN(4,fPtHardMax);    
     fPythia->ProcInit(fProcess,fEnergyCMS,fStrucFunc);
-    fPythia->LuList(0);
-    fPythia->PyStat(2);
+    fPythia->ForceDecay(fForceDecay);
+    fPythia->Lulist(0);
+    fPythia->Pystat(2);
 //  Parent and Children Selection
     switch (fProcess) 
     {
@@ -87,6 +134,8 @@ void AliGenPythia::Init()
     case jpsi:
 	fParentSelect[0]=443;
 	break;
+    case mb:
+	break;
     }
 
     switch (fForceDecay) 
@@ -101,113 +150,165 @@ void AliGenPythia::Init()
     case dimuon:
     case b_jpsi_dimuon:
     case b_psip_dimuon:
+    case pitomu:
+    case katomu:
 	fChildSelect[0]=13;
+	break;
+    case all:
+    case nodecay:
 	break;
     }
 }
 
 void AliGenPythia::Generate()
 {
-    AliMC* pMC = AliMC::GetMC();
+// Generate one event
 
-    Float_t polar[3] = {0,0,0};
-    Float_t origin[3]= {0,0,0};
-    Float_t origin0[3]= {0,0,0};
-    Float_t p[3], random[6];
+    Float_t polar[3] =   {0,0,0};
+    Float_t origin[3]=   {0,0,0};
+    Float_t originP[3]= {0,0,0};
+    Float_t origin0[3]=  {0,0,0};
+    Float_t p[3], pP[4];
+//    Float_t random[6];
+    static TClonesArray *particles;
+//  converts from mm/c to s
+    const Float_t kconv=0.001/2.999792458e8;
     
     
 //
-    printf("Generate event");
     Int_t nt=0;
+    Int_t ntP=0;
     Int_t jev=0;
-    Int_t j;
+    Int_t j, kf;
+
+    if(!particles) particles=new TClonesArray("TParticle",1000);
     
     fTrials=0;
     for (j=0;j<3;j++) origin0[j]=fOrigin[j];
-    if(fVertexSmear==perEvent) {
-	pMC->Rndm(random,6);
+    if(fVertexSmear==kPerEvent) {
+	fPythia->SetMSTP(151,1);
 	for (j=0;j<3;j++) {
-	    origin0[j]+=fOsigma[j]*TMath::Cos(2*random[2*j]*TMath::Pi())*
-		TMath::Sqrt(-2*TMath::Log(random[2*j+1]));
-	    fPythia->SetMSTP(151,0);
+	    fPythia->SetPARP(151+j, fOsigma[j]/10.);
 	}
-    } else if (fVertexSmear==perTrack) {
+    } else if (fVertexSmear==kPerTrack) {
 	fPythia->SetMSTP(151,0);
-	for (j=0;j<3;j++) {
-	    fPythia->SetPARP(151+j, fOsigma[j]*10.);
-	}
     }
     
-
     while(1)
     {
-	fPythia->PyEvnt();
+	fPythia->Pyevnt();
+//	fPythia->Lulist(1);
 	fTrials++;
-	TObjArray* particles = fPythia->GetPrimaries() ;
+	fPythia->ImportParticles(particles,"All");
 	Int_t np = particles->GetEntriesFast();
 	printf("\n **************************************************%d\n",np);
 	Int_t nc=0;
 	if (np == 0 ) continue;
-	for (Int_t i = 0; i<np; i++) {
-	    TMCParticle *  iparticle = (TMCParticle *) particles->At(i);
-	    Int_t kf = iparticle->GetKF();
-	    fChildWeight=(fPythia->GetBraPart(kf))*fParentWeight;	  
+	if (fProcess != mb) {
+	    for (Int_t i = 0; i<np-1; i++) {
+		TParticle *  iparticle = (TParticle *) particles->At(i);
+		Int_t ks = iparticle->GetStatusCode();
+		kf = CheckPDGCode(iparticle->GetPdgCode());
+		if (ks==21) continue;
+
+		fChildWeight=(fPythia->GetBraPart(kf))*fParentWeight;	  
 //
 // Parent
-	    if (ParentSelected(TMath::Abs(kf))) {
-		
-		if (KinematicSelection(iparticle)) {
-		    nc++;
+		if (ParentSelected(TMath::Abs(kf))) {
+		    if (KinematicSelection(iparticle)) {
+			if (nc==0) {
+//
+// Store information concerning the hard scattering process
+//
+			    Float_t massP  = fPythia->GetPARI(13);
+			    Float_t   ptP  = fPythia->GetPARI(17);
+			    Float_t    yP  = fPythia->GetPARI(37);
+			    Float_t  xmtP  = sqrt(ptP*ptP+massP*massP);
+			    Float_t    ty  = Float_t(TMath::TanH(yP));
+			    pP[0] = ptP;
+			    pP[1] = 0;
+			    pP[2] = xmtP*ty/sqrt(1.-ty*ty);
+			    pP[3] = massP;
+			    gAlice->SetTrack(0,-1,-1,
+					     pP,originP,polar,
+					     0,"Hard Scat.",ntP,fParentWeight);
+			    gAlice->KeepTrack(ntP);
+			}
+			nc++;
 //
 // store parent track information
-		    p[0]=iparticle->GetPx();
-		    p[1]=iparticle->GetPy();
-		    p[2]=iparticle->GetPz();
-		    origin[0]=origin0[0]+iparticle->GetVx()/10;
-		    origin[1]=origin0[1]+iparticle->GetVy()/10;
-		    origin[2]=origin0[2]+iparticle->GetVz()/10;
+			p[0]=iparticle->Px();
+			p[1]=iparticle->Py();
+			p[2]=iparticle->Pz();
+			origin[0]=origin0[0]+iparticle->Vx()*10.;
+			origin[1]=origin0[1]+iparticle->Vy()*10.;
+			origin[2]=origin0[2]+iparticle->Vz()*10.;
 
-		    Int_t ifch=iparticle->GetFirstChild();
-		    Int_t ilch=iparticle->GetLastChild();	
-		    if (ifch !=0 && ilch !=0) {
-			gAlice->SetTrack(0,-1,fPythia->GetGeantCode(kf),
-					 p,origin,polar,
-					 0,"Primary",nt,fParentWeight);
-			Int_t iparent = nt;
+			Int_t ifch=iparticle->GetFirstDaughter();
+			Int_t ilch=iparticle->GetLastDaughter();	
+			if (ifch !=0 && ilch !=0) {
+			    gAlice->SetTrack(0,ntP,kf,
+					     p,origin,polar,
+					     0,"Primary",nt,fParentWeight);
+			    gAlice->KeepTrack(nt);
+			    Int_t iparent = nt;
 //
 // Children	    
 
-			for (Int_t j=ifch; j<=ilch; j++)
-			{
-			    TMCParticle *  ichild = 
-				(TMCParticle *) particles->At(j-1);
-			    Int_t kf = ichild->GetKF();
+			    for (j=ifch; j<=ilch; j++)
+			    {
+				TParticle *  ichild = 
+				    (TParticle *) particles->At(j-1);
+				kf = CheckPDGCode(ichild->GetPdgCode());
 //
 // 
-			    if (ChildSelected(TMath::Abs(kf))) {
-				Int_t kg=fPythia->GetGeantCode(kf);
-				origin[0]=ichild->GetVx();
-				origin[1]=ichild->GetVy();
-				origin[2]=ichild->GetVz();		
-				p[0]=ichild->GetPx();
-				p[1]=ichild->GetPy();
-				p[2]=ichild->GetPz();
-				Float_t tof=ichild->GetTime();
-				gAlice->SetTrack(1, iparent, kg,
-						 p,origin,polar,
-						 tof,"Decay",nt,fChildWeight);
-				gAlice->KeepTrack(nt);
-			    } // select child
-			} // child loop
-		    }
-		} // kinematic selection
-	    } // select particle 
-	} // particles
+				if (ChildSelected(TMath::Abs(kf))) {
+				    origin[0]=origin0[0]+ichild->Vx()*10.;
+				    origin[1]=origin0[1]+ichild->Vy()*10.;
+				    origin[2]=origin0[2]+ichild->Vz()*10.;		
+				    p[0]=ichild->Px();
+				    p[1]=ichild->Py();
+				    p[2]=ichild->Pz();
+				    Float_t tof=kconv*ichild->T();
+				    gAlice->SetTrack(fTrackIt, iparent, kf,
+						     p,origin,polar,
+						     tof,"Decay",nt,fChildWeight);
+				    gAlice->KeepTrack(nt);
+				} // select child
+			    } // child loop
+			}
+		    } // kinematic selection
+		} // select particle
+	    } // particle loop
+	} else {
+	    for (Int_t i = 0; i<np-1; i++) {
+		TParticle *  iparticle = (TParticle *) particles->At(i);
+		kf = CheckPDGCode(iparticle->GetPdgCode());
+		Int_t ks = iparticle->GetStatusCode();
+
+		if (ks==1 && kf!=0 && KinematicSelection(iparticle)) {
+			nc++;
+//
+// store track information
+			p[0]=iparticle->Px();
+			p[1]=iparticle->Py();
+			p[2]=iparticle->Pz();
+			origin[0]=origin0[0]+iparticle->Vx()*10;
+			origin[1]=origin0[1]+iparticle->Vy()*10;
+			origin[2]=origin0[2]+iparticle->Vz()*10;
+			Float_t tof=kconv*iparticle->T();
+			gAlice->SetTrack(fTrackIt,-1,kf,p,origin,polar,
+					 tof,"Primary",nt);
+			gAlice->KeepTrack(nt);
+		} // select particle
+	    } // particle loop 
+	    printf("\n I've put %i particles on the stack \n",nc);
+	} // mb ?
 	if (nc > 0) {
-	    jev++;
-	    if (jev >= fNpart) {
+	    jev+=nc;
+	    if (jev >= fNpart || fNpart == -1) {
 		fKineBias=Float_t(fNpart)/Float_t(fTrials);
-		printf("\n Trials: %i\n",fTrials);
+		printf("\n Trials: %i %i %i\n",fTrials, fNpart, jev);
 		break;
 	    }
 	}
@@ -220,6 +321,7 @@ void AliGenPythia::Generate()
 
 Bool_t AliGenPythia::ParentSelected(Int_t ip)
 {
+// True if particle is in list of parent particles to be selected
     for (Int_t i=0; i<5; i++)
     {
 	if (fParentSelect[i]==ip) return kTRUE;
@@ -229,6 +331,7 @@ Bool_t AliGenPythia::ParentSelected(Int_t ip)
 
 Bool_t AliGenPythia::ChildSelected(Int_t ip)
 {
+// True if particle is in list of decay products to be selected
     for (Int_t i=0; i<5; i++)
     {
 	if (fChildSelect[i]==ip) return kTRUE;
@@ -236,12 +339,13 @@ Bool_t AliGenPythia::ChildSelected(Int_t ip)
     return kFALSE;
 }
 
-Bool_t AliGenPythia::KinematicSelection(TMCParticle *particle)
+Bool_t AliGenPythia::KinematicSelection(TParticle *particle)
 {
-    Float_t px=particle->GetPx();
-    Float_t py=particle->GetPy();
-    Float_t pz=particle->GetPz();
-    Float_t  e=particle->GetEnergy();
+// Perform kinematic selection
+    Float_t px=particle->Px();
+    Float_t py=particle->Py();
+    Float_t pz=particle->Pz();
+    Float_t  e=particle->Energy();
 
 //
 //  transverse momentum cut    
@@ -262,7 +366,7 @@ Bool_t AliGenPythia::KinematicSelection(TMCParticle *particle)
     
 //
 // theta cut
-    Float_t  theta = Float_t(TMath::ATan2(Double_t(pt),Double_t(p)));
+    Float_t  theta = Float_t(TMath::ATan2(Double_t(pt),Double_t(pz)));
     if (theta > fThetaMax || theta < fThetaMin) 
     {
 //	printf("\n failed theta cut %f %f %f \n",theta,fThetaMin,fThetaMax);
@@ -280,7 +384,7 @@ Bool_t AliGenPythia::KinematicSelection(TMCParticle *particle)
 
 //
 // phi cut
-    Float_t phi=Float_t(TMath::ATan2(Double_t(py),Double_t(px)))+TMath::Pi();
+    Float_t phi=Float_t(TMath::ATan2(Double_t(py),Double_t(px)));
     if (phi > fPhiMax || phi < fPhiMin)
     {
 //	printf("\n failed phi cut %f %f %f \n",phi,fPhiMin,fPhiMax);
@@ -291,14 +395,55 @@ Bool_t AliGenPythia::KinematicSelection(TMCParticle *particle)
 }
 void AliGenPythia::AdjustWeights()
 {
-    TClonesArray *PartArray = gAlice->Particles();
-    GParticle *Part;
+// Adjust the weights after generation of all events
+//
+    TClonesArray *partArray = gAlice->Particles();
+    TParticle *part;
     Int_t ntrack=gAlice->GetNtrack();
     for (Int_t i=0; i<ntrack; i++) {
-	Part= (GParticle*) PartArray->UncheckedAt(i);
-	Part->SetWgt(Part->GetWgt()*fKineBias);
+	part= (TParticle*) partArray->UncheckedAt(i);
+	part->SetWeight(part->GetWeight()*fKineBias);
     }
 }
+
+Int_t AliGenPythia::CheckPDGCode(Int_t pdgcode)
+{
+//
+//  If the particle is in a diffractive state, then take action accordingly
+  switch (pdgcode) {
+  case 110:
+    //rho_diff0 -- difficult to translate, return rho0
+    return 113;
+  case 210:
+    //pi_diffr+ -- change to pi+
+    return 211;
+  case 220:
+    //omega_di0 -- change to omega0
+    return 223;
+  case 330:
+    //phi_diff0 -- return phi0
+    return 333;
+  case 440:
+    //J/psi_di0 -- return J/psi
+    return 443;
+  case 2110:
+    //n_diffr -- return neutron
+    return 2112;
+  case 2210:
+    //p_diffr+ -- return proton
+    return 2212;
+  }
+  //non diffractive state -- return code unchanged
+  return pdgcode;
+}
+		  
+AliGenPythia& AliGenPythia::operator=(const  AliGenPythia& rhs)
+{
+// Assignment operator
+    return *this;
+}
+
+
 
 
 

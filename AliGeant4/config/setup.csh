@@ -295,7 +295,7 @@ setenv G4LEVELGAMMADATA ${G4INSTALL}/data/PhotonEvaporation
 set SYSTEM = `uname`
 if ( $SYSTEM == "HP-UX" ) then
   setenv G4SYSTEM "HP-aCC"
-  setenv G4USE_OSPACE 1
+  #setenv G4USE_OSPACE 1      # compiling with Object Space STL
 endif 
 if ( $SYSTEM == "Linux" ) then
   setenv G4SYSTEM "Linux-g++"
@@ -438,12 +438,8 @@ if ( "$?AG4_VISUALIZE" == 1 ) then
   setenv G4VIS_BUILD_OPENGLXM_DRIVER 1
   setenv G4VIS_USE_OPENGLX           1
   setenv G4VIS_USE_OPENGLXM          1
-  if ( $SYSTEM == "Linux" ) then
-    setenv OGLHOME /usr/local
-    setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
-  else
-    setenv OGLHOME $LHCXX_BASE/OpenGL/pro
-  endif
+  setenv OGLHOME /usr/local
+  setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
 
   if ( "$VERBOSE" == "YES" ) then
     if ("$?G4VIS_USE_OPENGLX" == 1) then
@@ -622,12 +618,8 @@ if ( "$?AG4_OPACS" == 1 ) then
   #
   setenv G4VIS_BUILD_OPENGLX_DRIVER 1
   setenv G4VIS_USE_OPENGLX          1
-  if ( $SYSTEM == "Linux" ) then
-    setenv OGLHOME /usr/local
-    setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
-  else
-    setenv OGLHOME $LHCXX_BASE/OpenGL/pro
-  endif
+  setenv OGLHOME /usr/local
+  setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
 
   #
   # OPACS

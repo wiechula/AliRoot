@@ -1,8 +1,14 @@
-#ifndef TPCv2_H
-#define TPCv2_H
+#ifndef ALITPCV2_H
+#define ALITPCV2_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
 //  Version 2 for TPC                         //
 ////////////////////////////////////////////////
+
  
 #include "AliTPC.h"
 
@@ -20,10 +26,9 @@ public:
   virtual void  DrawDetector();
 
 protected:
-  Int_t fIdSens1;    //First  sensitive volume identifier - lower sector
-  Int_t fIdSens2;    //Second sensitive volume identifier - upper sector
-  Int_t fIdSens3;    //Sensitive strip - lower sector
-  Int_t fIdSens4;    //Sensitive strip - upper sector     
+  Int_t fIdSens;    // sensitive strip
+  Int_t fIdLSec;    // lower sector
+  Int_t fIdUSec;    // upper sector    
 
 private:
 

@@ -9,10 +9,16 @@ PACKAGE = EVGEN
 
 # C++ sources
 
-SRCS          = AliSimpleGen.cxx AliGenCocktail.cxx AliGenFLUKAsource.cxx \
+SRCS          = AliGenHIJINGpara.cxx AliGenBox.cxx AliGenFixed.cxx \
+		AliGenCocktail.cxx AliGenFLUKAsource.cxx \
+		AliGenLib.cxx \
                 AliGenMUONlib.cxx AliGenParam.cxx AliGenPythia.cxx \
-                AliPythia.cxx DimuonCombinator.cxx AliGenHalo.cxx
-
+                AliPythia.cxx AliDimuCombinator.cxx AliGenHalo.cxx \
+                AliGenExtFile.cxx AliGenScan.cxx AliGenPHOSlib.cxx \
+		AliGenDoubleScan.cxx AliGenCocktailEntry.cxx \
+		AliGenGSIlib.cxx \
+	        AliGenHijing.cxx \
+		AliGenEventHeader.cxx AliGenHijingEventHeader.cxx 
 # C++ Headers
 
 HDRS          = $(SRCS:.cxx=.h) EVGENLinkDef.h
@@ -21,19 +27,19 @@ HDRS          = $(SRCS:.cxx=.h) EVGENLinkDef.h
 
 DICT          = EVGENCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.F=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -47,20 +53,20 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libEVGEN.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libEVGEN.a
+SLIBRARY	= $(LIBDIR)/libEVGEN.$(SL)
+ALIBRARY	= $(LIBDIR)/libEVGEN.a
 
-default:	$(SLIBRARY) headers
+default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libEVGEN.$(SL):		$(OBJS)
+$(LIBDIR)/libEVGEN.$(SL):		$(OBJS)
 
 $(DICT):				$(HDRS)
 
 depend:					$(SRCS)
 
-HEADERS		=	$(filter-out %LinkDef.h,$(HDRS))
-
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
 
 ############################### General Macros ################################
 
@@ -68,4 +74,11 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
+

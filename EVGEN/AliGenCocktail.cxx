@@ -1,30 +1,48 @@
-#include "AliGenerator.h"
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.4  1999/09/29 09:24:12  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 #include "AliGenCocktail.h"
-#include "TGeant3.h"
+#include "AliGenCocktailEntry.h"
 #include "AliRun.h"
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TTree.h>
 #include <stdlib.h>
-ClassImp(AliGenCocktailEntry)
-void AliGenCocktailEntry::PrintInfo()
-{
-printf("\n Generator: %s Generated Events: %d First: %d Last: %d",
-       (const char *) fName, fGenerator->NumberParticles(), fFirst, fLast);
-}
 
 ClassImp(AliGenCocktail)
 
 AliGenCocktail::AliGenCocktail()
                  :AliGenerator()
 {
+// Constructor
     fEntries = new TList;
     fNGenerators=0;
 }
 
+AliGenCocktail::AliGenCocktail(const AliGenCocktail & cocktail)
+{
+// copy constructor
+}
 
 AliGenCocktail::~AliGenCocktail()
 {
+// Destructor
     delete fEntries;
 }
 
@@ -44,67 +62,73 @@ AddGenerator(AliGenerator *Generator, TString Name, Float_t RateExp)
 	SetOrigin(fOrigin[0], fOrigin[1], fOrigin[2]);
     Generator->
 	SetSigma(fOsigma[0], fOsigma[1], fOsigma[2]);
+    Generator->SetVertexSmear(fVertexSmear);
+    Generator->SetTrackingFlag(fTrackIt);    
 //
 //  Add generator to list   
-    AliGenCocktailEntry *Entry = 
+    AliGenCocktailEntry *entry = 
 	new AliGenCocktailEntry(Generator, Name, RateExp);
-     fEntries->Add(Entry);
+     fEntries->Add(entry);
      fNGenerators++;
  }
 
   void AliGenCocktail::Init()
-  {
-      TIter next(fEntries);
-      AliGenCocktailEntry *Entry;
-     //
-     // Loop over generators and initialize
-     while((Entry = (AliGenCocktailEntry*)next())) {
- 	Entry->Generator()->Init();
-     }  
- }
+{
+// Initialisation
+    TIter next(fEntries);
+    AliGenCocktailEntry *entry;
+    //
+    // Loop over generators and initialize
+    while((entry = (AliGenCocktailEntry*)next())) {
+	entry->Generator()->Init();
+    }  
+}
 
  void AliGenCocktail::Generate()
- {
-     TIter next(fEntries);
-     AliGenCocktailEntry *Entry;
-     AliGenCocktailEntry *e1;
-     AliGenCocktailEntry *e2;
-     TClonesArray *PartArray = gAlice->Particles();
-     //
-     // Loop over generators and generate events
-     Int_t igen=0;
-     while((Entry = (AliGenCocktailEntry*)next())) {
-	 igen++;
-	 if (igen ==1) {
-	     Entry->SetFirst(0);
-	 } else {
-	     Entry->SetFirst((PartArray->GetEntriesFast())+1);
-	 }
-	 Entry->Generator()->Generate();
-	 Entry->SetLast(PartArray->GetEntriesFast());
-     }  
-     next.Reset();
-     while((Entry = (AliGenCocktailEntry*)next())) {
-	 Entry->PrintInfo();
-     }
-     for (Entry=FirstGenerator();
-	  Entry;
-	  Entry=NextGenerator()
-	 ) {
-	 Entry->PrintInfo();
-     }
-     for (FirstGeneratorPair(e1,e2);
-	  (e1&&e2);
-	  NextGeneratorPair(e1,e2)
-	 ){
-	 printf("\n -----------------------------");
-	 e1->PrintInfo();
-	 e2->PrintInfo();
-     }
- }
+{
+//
+// Generate event 
+    TIter next(fEntries);
+    AliGenCocktailEntry *entry;
+    AliGenCocktailEntry *e1;
+    AliGenCocktailEntry *e2;
+    TClonesArray *partArray = gAlice->Particles();
+    //
+    // Loop over generators and generate events
+    Int_t igen=0;
+    while((entry = (AliGenCocktailEntry*)next())) {
+	igen++;
+	if (igen ==1) {
+	    entry->SetFirst(0);
+	} else {
+	    entry->SetFirst((partArray->GetEntriesFast())+1);
+	}
+	entry->Generator()->Generate();
+	entry->SetLast(partArray->GetEntriesFast());
+    }  
+    next.Reset();
+    while((entry = (AliGenCocktailEntry*)next())) {
+	entry->PrintInfo();
+    }
+    for (entry=FirstGenerator();
+	 entry;
+	 entry=NextGenerator()
+	) {
+	entry->PrintInfo();
+    }
+    for (FirstGeneratorPair(e1,e2);
+	 (e1&&e2);
+	 NextGeneratorPair(e1,e2)
+	){
+	printf("\n -----------------------------");
+	e1->PrintInfo();
+	e2->PrintInfo();
+    }
+}
 
 AliGenCocktailEntry *  AliGenCocktail::FirstGenerator()
 {
+// Iterator over generators: Initialisation
     flnk1 = fEntries->FirstLink();
     if (flnk1) {
 	return (AliGenCocktailEntry*) (flnk1->GetObject());
@@ -115,6 +139,7 @@ AliGenCocktailEntry *  AliGenCocktail::FirstGenerator()
 
 AliGenCocktailEntry*  AliGenCocktail::NextGenerator()
 {
+// Iterator over generators: Increment
     flnk1 = flnk1->Next();
     if (flnk1) {
 	return (AliGenCocktailEntry*) (flnk1->GetObject());
@@ -126,6 +151,7 @@ AliGenCocktailEntry*  AliGenCocktail::NextGenerator()
 void AliGenCocktail::
 FirstGeneratorPair(AliGenCocktailEntry*& e1, AliGenCocktailEntry*& e2)
 {
+// Iterator over generator pairs: Initialisation
     flnk2 = flnk1 = fEntries->FirstLink();
     if (flnk1) {
 	e2 = e1 = (AliGenCocktailEntry*) (flnk1->GetObject());
@@ -137,6 +163,7 @@ FirstGeneratorPair(AliGenCocktailEntry*& e1, AliGenCocktailEntry*& e2)
 void AliGenCocktail::
 NextGeneratorPair(AliGenCocktailEntry*& e1, AliGenCocktailEntry*& e2)
 {
+// Iterator over generators: Increment
     flnk2 = flnk2->Next();
     if (flnk2) {
 	e1 = (AliGenCocktailEntry*) (flnk1->GetObject());
@@ -156,29 +183,35 @@ NextGeneratorPair(AliGenCocktailEntry*& e1, AliGenCocktailEntry*& e2)
 
 void AliGenCocktail::Streamer(TBuffer &R__b)
 {
-   // Stream an object of class AliGenCocktail.
-     TIter next(fEntries);
-     AliGenCocktailEntry *Entry;
+    // Stream an object of class AliGenCocktail.
+    TIter next(fEntries);
+    AliGenCocktailEntry *entry;
+    
+    if (R__b.IsReading()) {
+	Version_t R__v = R__b.ReadVersion(); if (R__v) { }
+	AliGenerator::Streamer(R__b);
+	R__b >> fNGenerators;
+	R__b >> fEntries;
+// Stream generation related information
+	while((entry = (AliGenCocktailEntry*)next())) {
+	    entry->Streamer(R__b);
+	}  
+    } else {
+	R__b.WriteVersion(AliGenCocktail::IsA());
+	AliGenerator::Streamer(R__b);
+	R__b << fNGenerators;
+	R__b << fEntries;
+// Stream generation related information
+	while((entry = (AliGenCocktailEntry*)next())) {
+	    entry->Streamer(R__b);
+	}  
+    }
+}
 
-   if (R__b.IsReading()) {
-      Version_t R__v = R__b.ReadVersion(); if (R__v) { }
-      AliGenerator::Streamer(R__b);
-      R__b >> fNGenerators;
-      R__b >> fEntries;
-// Stream generation related information
-      while((Entry = (AliGenCocktailEntry*)next())) {
-	  Entry->Streamer(R__b);
-      }  
-   } else {
-       R__b.WriteVersion(AliGenCocktail::IsA());
-       AliGenerator::Streamer(R__b);
-       R__b << fNGenerators;
-       R__b << fEntries;
-// Stream generation related information
-      while((Entry = (AliGenCocktailEntry*)next())) {
-	  Entry->Streamer(R__b);
-      }  
-   }
+AliGenCocktail& AliGenCocktail::operator=(const  AliGenCocktail& rhs)
+{
+// Assignment operator
+    return *this;
 }
 
 

@@ -360,7 +360,7 @@ void TGeant4::StartGeantUI() {
 
 void TGeant4::StartRootUI() {
 //
-  fRunManager->StartGeantUI();
+  fRunManager->StartRootUI();
 }  
 
 void TGeant4::ProcessGeantMacro(const char* macroName) {
@@ -418,9 +418,9 @@ void TGeant4::Gtreve() {
   TG4Globals:: Warning("TGeant4::Gtreve() is not implemented."); 
 }
 
-void TGeant4::Gtreve_root() { 
+void TGeant4::GtreveRoot() { 
 //
-  TG4Globals:: Warning("TGeant4::Gtreve_root() is not implemented."); 
+  TG4Globals:: Warning("TGeant4::GtreveRoot() is not implemented."); 
 }
 
 void TGeant4::Gckmat(Int_t itmed, char* natmed) { 

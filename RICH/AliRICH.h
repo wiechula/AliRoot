@@ -1,192 +1,151 @@
-#ifndef RICH_H
-#define RICH_H
+#ifndef ALIRICH_H
+#define ALIRICH_H
+
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
+
 ////////////////////////////////////////////////
 //  Manager and hits classes for set:RICH     //
 ////////////////////////////////////////////////
- 
 #include "AliDetector.h"
-#include "AliHit.h"
+#include "AliRICHConst.h"
+#include "AliRICHChamber.h"
+static const int kNCH=7;
 
-class AliRICH : public AliDetector {
-  
-protected:
-  Int_t               fNmips;            //Number of mips in RICH
-  Int_t               fNckovs;           //Number of cerenkovs in RICH
-  Int_t               fNpadhits;         //Number of pad hits in RICH
-  
-  TClonesArray        *fMips;              //List of mips
-  TClonesArray        *fCkovs;             //List of cerenkovs
-  TClonesArray        *fPadhits;           //List of Padhits
-  
-  Float_t             fChslope;            //Charge slope
-  Float_t             fAlphaFeed;          //Feed-back coefficient
-  Float_t             fSxcharge;           //Charge slope along x
-  Int_t               fIritri;             //Trigger flag
 
-public:
-  AliRICH();
-  AliRICH(const char *name, const char *title);
-  virtual              ~AliRICH();
-  virtual void         AddHit(Int_t, Int_t*, Float_t*);
-  virtual void         AddMipHit(Int_t, Int_t*, Float_t*);
-  virtual void         AddCkovHit(Int_t, Int_t*, Float_t*);
-  virtual void         AddPadHit(Int_t, Int_t*, Float_t*);
-  virtual void         BuildGeometry();
-  virtual void         CreateGeometry() {}
-  virtual void         CreateMaterials() {}
-  Int_t                DistancetoPrimitive(Int_t px, Int_t py);
-  inline virtual int   GetNmips() {return fNmips;}
-  inline virtual int   GetNckovs() {return fNckovs;}
-  inline virtual int   GetNpadhits() {return fNpadhits;}
-  virtual Int_t        IsVersion() const =0;
-  virtual void         Init();
-  inline TClonesArray  *Mips()    {return fMips;}
-  inline TClonesArray  *Ckovs()    {return fCkovs;}
-  inline TClonesArray  *Padhits()    {return fPadhits;}
-  void                 FinishEvent(void){;} 
-  virtual void         MakeBranch(Option_t *); 
-  void                 SetTreeAddress(void);
-  virtual void         StepManager();
-  virtual void         PreTrack();
-  
-  virtual void         SetSP(Float_t chslope){ fChslope=chslope;}
-  virtual void         SetFEED(Float_t alphafeed){fAlphaFeed=alphafeed;}
-  virtual void         SetSIGM(Float_t sxcharge){fSxcharge=sxcharge;}
-  virtual void         SetTRIG(Int_t iritri) {fIritri=iritri;}
-  virtual void         ResetHits();
-  virtual void         UpdateMipHit(Float_t*);
-  virtual void         RichIntegration();
-  virtual void         AnodicWires(Float_t &);
-  virtual void         GetChargeMip(Float_t &);
-  virtual void         GetCharge(Float_t &);
-  virtual void         FeedBack(Float_t *, Float_t );
-  virtual Float_t      FMathieson(Float_t , Float_t );
-  
-  ClassDef(AliRICH,1)  // Base class for RICH
+class AliRICHHit;
+class AliRICHPadHit;
+class AliRICHRawCluster;
+class AliRICHRecHit;
+class AliRICHClusterFinder;
+class AliRICHDetect;
+class AliRICHChamber;
+class AliRICHCerenkov;
+class AliRICHSegmentation;
+class AliRICHResponse;
+class AliRICHEllipse;
+class AliRICHGeometry;
+
+class AliRICH : public  AliDetector {
+ public:
+    AliRICH();
+    AliRICH(const char *name, const char *title);
+    AliRICH(const AliRICH& RICH);
+    virtual       ~AliRICH();
+    virtual void   AddHit(Int_t track, Int_t *vol, Float_t *hits);
+    virtual void   AddCerenkov(Int_t track, Int_t *vol, Float_t *cerenkovs);
+    virtual void   AddPadHit(Int_t *clhits);
+    virtual void   AddDigits(Int_t id, Int_t *tracks, Int_t *charges, Int_t *digits);
+    virtual void   AddRawCluster(Int_t id, const AliRICHRawCluster& cluster);
+    virtual void   AddRecHit(Int_t id, Float_t* rechit, Float_t* photons, Int_t* padsx, Int_t* padsy);
+
+
+    virtual void   BuildGeometry();
+    virtual void   CreateGeometry();
+    virtual void   CreateMaterials();
+    virtual Float_t AbsoCH4(Float_t x);
+    virtual Float_t Fresnel(Float_t ene,Float_t pdoti, Bool_t pola);
+    virtual void   StepManager();
+    Int_t          DistancetoPrimitive(Int_t px, Int_t py);
+    virtual Int_t  IsVersion() const =0;
+//
+    TClonesArray  *PadHits() {return fPadHits;}
+    TClonesArray  *Cerenkovs() {return fCerenkovs;}
+    virtual void   MakeBranch(Option_t *opt=" ");
+    void           SetTreeAddress();
+    virtual void   ResetHits();
+    virtual void   ResetDigits();
+    virtual void   ResetRawClusters();
+    virtual void   ResetRecHits();
+    virtual void   FindClusters(Int_t nev,Int_t lastEntry);
+    virtual void   Digitise(Int_t nev,Int_t flag,Option_t *opt=" ",Text_t *name=" ");
+// 
+// Configuration Methods (per station id)
+//
+// Set Chamber Segmentation Parameters
+// id refers to the station and isec to the cathode plane   
+// Set Segmentation and Response Model
+    virtual void   SetGeometryModel(Int_t id, AliRICHGeometry *geometry);
+    virtual void   SetSegmentationModel(Int_t id, AliRICHSegmentation *segmentation);
+    virtual void   SetResponseModel(Int_t id, AliRICHResponse *response);
+    virtual void   SetNsec(Int_t id, Int_t nsec);
+// Set Reconstruction Model
+    virtual void   SetReconstructionModel(Int_t id, AliRICHClusterFinder *reconstruction);
+// Set source debugging level
+    void SetDebugLevel(Int_t level) {fDebugLevel=level;}
+// Get source debugging level
+    Int_t GetDebugLevel() {return fDebugLevel;}
+// Response Simulation
+    virtual Int_t   MakePadHits(Float_t xhit,Float_t yhit,Float_t eloss,Int_t id, ResponseType res);
+// Return reference to Chamber #id
+    virtual AliRICHChamber& Chamber(Int_t id) {return *((AliRICHChamber *) (*fChambers)[id]);}
+// Retrieve pad hits for a given Hit
+    virtual AliRICHPadHit* FirstPad(AliRICHHit *hit, TClonesArray *clusters);
+    virtual AliRICHPadHit* NextPad(TClonesArray *clusters);
+// Return pointers to digits 
+    TObjArray            *Dchambers() {return fDchambers;}
+    Int_t                *Ndch() {return fNdch;}
+    virtual TClonesArray *DigitsAddress(Int_t id) {return ((TClonesArray *) (*fDchambers)[id]);}
+// Return pointers to rec. hits
+    TObjArray            *RecHits() {return fRecHits;}
+    Int_t                *Nrechits() {return fNrechits;}
+    virtual TClonesArray *RecHitsAddress(Int_t id) {return ((TClonesArray *) (*fRecHits)[id]);}
+// Return pointers to reconstructed clusters
+    virtual TClonesArray *RawClustAddress(Int_t id) {return ((TClonesArray *) (*fRawClusters)[id]);}    
+// Assignment operator
+    AliRICH& operator=(const AliRICH& rhs);
+    
+    
+ protected:
+    TObjArray            *fChambers;           // List of Tracking Chambers
+    Int_t                 fNPadHits;           // Number of clusters
+    Int_t                 fNcerenkovs;         // Number of cerenkovs
+    TClonesArray         *fPadHits;            // List of clusters
+    TObjArray            *fDchambers;          // List of digits
+    TClonesArray         *fCerenkovs;          // List of cerenkovs
+    Int_t                *fNdch;               // Number of digits
+    Text_t               *fFileName;           // Filename for event mixing
+    TObjArray            *fRawClusters;        // List of raw clusters
+    TObjArray            *fRecHits;            // List of rec. hits
+    Int_t                *fNrawch;             // Number of raw clusters
+    Int_t                *fNrechits;           // Number of rec hits 
+    Int_t                 fDebugLevel;          // Source debugging level
+
+    Int_t fCkovNumber;                   // Number of Cerenkov photons
+    Int_t fCkovQuarz;                    // Cerenkovs crossing quartz
+    Int_t fCkovGap;                      // Cerenkovs crossing gap
+    Int_t fCkovCsi;                      // Cerenkovs crossing csi
+    Int_t fLostRfreo;                    // Cerenkovs reflected in freon
+    Int_t fLostRquar;                    // Cerenkovs reflected in quartz
+    Int_t fLostAfreo;                    // Cerenkovs absorbed in freon 
+    Int_t fLostAquarz;                   // Cerenkovs absorbed in quartz
+    Int_t fLostAmeta;                    // Cerenkovs absorbed in methane
+    Int_t fLostCsi;                      // Cerenkovs below csi quantum efficiency 
+    Int_t fLostWires;                    // Cerenkovs lost in wires
+    Int_t fFreonProd;                    // Cerenkovs produced in freon
+    Float_t fMipx;                       // x coord. of MIP
+    Float_t fMipy;                       // y coord. of MIP
+    Int_t fFeedbacks;                    // Number of feedback photons
+    Int_t fLostFresnel;                  // Cerenkovs lost by Fresnel reflection
+    
+    ClassDef(AliRICH,1)  //Hits manager for set:RICH
 };
-
-class AliRICHv1 : public AliRICH {
-  
-public:
-  AliRICHv1();
-  AliRICHv1(const char *name, const char *title);
-  virtual              ~AliRICHv1();
-  virtual void          CreateGeometry();
-  virtual void          CreateMaterials();
-  virtual Int_t         IsVersion() const {return 1;}
-  virtual void          DrawDetector();
-  
-  
-  ClassDef(AliRICHv1,1)  // RICH version 1
-};
-
-//_____________________________________________________________________________
-class AliRICHhit: public AliHit {
-public:
-  Int_t     fVolume[2];  //array of volumes
-  
-  //Pad informations
-  Int_t     fFirstpad;   //First index in padhits
-  Int_t     fLastpad;    //Last index in padhits
-  
-  //Hit information
-  Int_t     fModule;     //Module number
-  Float_t   fTheta;      //Theta of the particle generating the hit
-  
-  Float_t   fArrivaltime;// Time of hit.
-  Int_t     fPart;       //Particle type
-  
-  // we don't know what is this for :
-  Int_t     fFeed;       //Type of feedback (origin of charge deposition)
-  
-public:
-  AliRICHhit() {}
-  AliRICHhit(Int_t shunt, Int_t track, Int_t *vol, Float_t *hits,
-	     Int_t fNpadhits);
-  virtual ~AliRICHhit(){}
-  
-  void SetLastpad(Int_t lastpad){fLastpad=lastpad;}
-  
-  ClassDef(AliRICHhit,1)  // Hits for set RICH
-};
-
-//_____________________________________________________________________________
-class AliRICHmip: public AliRICHhit 
-{
-public:
-  // Hit information keep
-  Float_t   fPhi;        //Phi of the particle generating the hit
-  Float_t   fPs;         //Momentum of the particle generating the hit
-  Float_t   fQ;          //Charge of the particle
-  
-  // Generated cerenkov information (Z of generation stored in fZ of AliHit)
-  Int_t     fFirstCkov;  //Index in the ckov TcloneArray of the first generated 
-  Int_t     fLastCkov;   //Here the last.
-  
-public:
-  AliRICHmip() {}
-  AliRICHmip(Int_t shunt, Int_t track, Int_t *vol, Float_t *hits,
-	     Int_t fNckovs, Int_t fNpadhits);
-  virtual ~AliRICHmip() {}
-  
-  Float_t GetZ()                 { return fZ;}
-  void    SetX(Float_t x)        { fX        = x;     }
-  void    SetY(Float_t y)        { fY        = y;     }
-  void    SetZ(Float_t z)        { fZ        = z;     }
-  void    SetLastCkov(Int_t last){ fLastCkov = last;  }
-  void    SetModule(Int_t module){ fModule   = module;}
-  void    SetTheta(Float_t theta){ fTheta    = theta; }
-  void    SetPhi(Float_t phi)    { fPhi      = phi;   }
-  
-  ClassDef(AliRICHmip,1)  //Mip hits for RICH
-};
-
-//_____________________________________________________________________________
-class AliRICHckov: public AliRICHhit 
-{
-public:
-  // Hit information keep
-  Float_t   fEnergy;     //Photon energy
-  Int_t     fStop;       //Stop mechanism (cut, threshold, ...)
-  
-  //Parent info
-  Int_t     fParent;     //Index in array of mips of parent which generatethis
-public:
-  AliRICHckov() {}
-  AliRICHckov(Int_t shunt, Int_t track, Int_t *vol, Float_t *hits,
-	      Int_t fNmips, Int_t fNpadhits);
-  virtual ~AliRICHckov() {}
-  
-  ClassDef(AliRICHckov,1) //Cerenkov hits for RICH
-};
-
-//_____________________________________________________________________________
-class AliRICHpadhit: public AliHit
-{
-public:
-  Int_t     fVolume[2];  //array of volumes
-  
-  // Hit information
-  Int_t     fX;          //Integer x position in pad
-  Int_t     fY;          //Integer y position in pad
-  Int_t     fModule;     //Module number
-  // Particle info
-  Int_t     fParentMip;  //Parent particle
-  Int_t     fParentCkov; //Parent CKOV
-  // physics info
-  Int_t     fProd;       //Production mechanism
-  Float_t   fCharge;     //Charge deposited
-
-public:
-  AliRICHpadhit(){}
-  AliRICHpadhit(Int_t shunt, Int_t track, Int_t *vol, Float_t *hits,
-		Int_t fNmips,Int_t fNckovs);
-  virtual ~AliRICHpadhit() {}
-  
-  ClassDef(AliRICHpadhit,1) //Pad hits for RICH
-};  
-
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

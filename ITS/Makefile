@@ -9,11 +9,31 @@ PACKAGE = ITS
 
 # C++ sources
 
-SRCS          = AliITS.cxx AliITSv0.cxx    AliITSv1.cxx      AliITSv3.cxx    AliITSv4.cxx AliITSv5.cxx  
+SRCS          = AliITS.cxx AliITSv1.cxx AliITSv3.cxx AliITSv5.cxx \
+		AliITSvtest.cxx AliITShit.cxx AliITSDetType.cxx \
+		AliITSgeom.cxx AliITSgeomSPD.cxx AliITSgeomSDD.cxx \
+		AliITSgeomSSD.cxx AliITSmodule.cxx \
+		AliITSsimulationFastPoints.cxx \
+		AliITSsimulationFastPointsV0.cxx AliITSsimulation.cxx \
+		AliITSsimulationSPD.cxx AliITSsimulationSDD.cxx \
+		AliITSetfSDD.cxx AliITSsimulationSSD.cxx AliITSdcsSSD.cxx \
+		AliITSdigit.cxx AliITSRawCluster.cxx AliITSRecPoint.cxx \
+		AliITStrack.cxx AliITSMap.cxx AliITSMapA1.cxx AliITSMapA2.cxx \
+		AliITSsegmentation.cxx AliITSsegmentationSPD.cxx \
+		AliITSsegmentationSDD.cxx AliITSsegmentationSSD.cxx\
+		AliITSresponse.cxx AliITSresponseSPD.cxx \
+		AliITSresponseSDD.cxx AliITSresponseSSD.cxx \
+		AliITSClusterFinder.cxx AliITSClusterFinderSPD.cxx \
+		AliITSClusterFinderSDD.cxx AliITSRawData.cxx \
+		AliITSHuffman.cxx AliITSClusterFinderSSD.cxx \
+		AliITSclusterSSD.cxx AliITSpackageSSD.cxx \
+		AliITSdictSSD.cxx AliITSgeomSPD300.cxx AliITSgeomSPD425.cxx \
+		AliITSstatistics.cxx AliITSstatistics2.cxx \
+		AliITSAlignmentTrack.cxx AliITSAlignmentModule.cxx 
 
 # Fortran sources
 
-FSRCS	       = AliITSf.F 
+FSRCS	       = 
 
 # C++ Headers
 
@@ -23,19 +43,19 @@ HDRS          = $(SRCS:.cxx=.h) ITSLinkDef.h
 
 DICT          = ITSCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.F=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -49,12 +69,13 @@ FFLAGS      = $(FOPT) -I$(ALICE_ROOT)/GEANT321
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libITS.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libITS.a
+SLIBRARY	= $(LIBDIR)/libITS.$(SL)
+ALIBRARY	= $(LIBDIR)/libITS.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libITS.$(SL):	$(OBJS) $(FOBJS)
+
+$(LIBDIR)/libITS.$(SL):		$(OBJS)
 
 $(DICT):			$(HDRS)
 
@@ -64,10 +85,14 @@ depend:				$(SRCS) $(FSRCS)
 
 TOCLEAN		= $(OBJS) $(FOBJS) *Cint.cxx *Cint.h
 
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
 ############################### General Macros ################################
 
 include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
