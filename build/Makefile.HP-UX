@@ -44,7 +44,7 @@ GLIBS         = $(ROOTLIBS) -L/usr/lib/X11R6 -lX11
 SOEXT 	      = sl
 
 # additional ROOT libraries
-ROOTLIBS  += -lEGPythia6 -lcrypt 
+ROOTLIBS  += -lcrypt 
 
 # rmkdepend flags for building dependencies of FORTRAN files
 DEPENDFFLAGS = $(FFLAGS)
