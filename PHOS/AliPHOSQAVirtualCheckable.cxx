@@ -38,7 +38,7 @@
 #include "AliPHOSQAVirtualCheckable.h"
 #include "AliPHOSQAChecker.h"
 #include "AliPHOSQAAlarm.h" 
-#include "AliPHOSGetter.h" 
+#include "AliPHOSLoader.h" 
 #include "AliPHOS.h" 
 
 ClassImp(AliPHOSQAVirtualCheckable)
@@ -50,8 +50,21 @@ ClassImp(AliPHOSQAVirtualCheckable)
   fType   = "" ; 
   fChange = kFALSE ; 
   // create a new folder that will hold the list of alarms
-  //  the folder that contains the alarms for PHOS   
-  fAlarms = (TFolder*)gROOT->FindObjectAny("Folders/Run/Conditions/QA/PHOS");   
+  //  the folder that con tains the alarms for PHOS   
+  
+  TFolder* topfold = AliConfig::Instance()->GetTopFolder(); //get top aliroot folder; skowron
+  TString phosqafn(AliConfig::Instance()->GetQAFolderName()); //get name of QAaut folder relative to top; skowron
+  phosqafn+="/PHOS"; //hard wired string!!! add the detector name to the pathname; skowron 
+  fAlarms = (TFolder*)topfold->FindObjectAny(phosqafn); //get the folder
+// 4 lines above substitute the one below  
+//  fAlarms = (TFolder*)gROOT->FindObjectAny("Folders/Run/Conditions/QA/PHOS");   
+  
+  if(fAlarms == 0x0)  //if there is no folder; skowron
+   {
+     Fatal("AliPHOSQAVirtualCheckable","Can not find folder with Alarms for PHOS"); //abort
+     return;//never reached
+   }
+  
   //  make it the owner of the objects that it contains
   fAlarms->SetOwner() ;
   //  add the alarms list to //Folders/Run/Conditions/QA/PHOS

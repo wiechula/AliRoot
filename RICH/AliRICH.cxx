@@ -15,6 +15,9 @@
 
 /*
   $Log$
+  Revision 1.58  2001/11/14 09:49:37  dibari
+  Use debug methods
+
   Revision 1.57  2001/11/09 17:29:31  dibari
   Setters fro models moved to header
 
@@ -1832,15 +1835,12 @@ void AliRICH::MakeBranch(Option_t* option, const char *file)
 
     if (cH) {
       sprintf(branchname,"%sCerenkov",GetName());
-      if (fCerenkovs   && gAlice->TreeH()) {
-	//TBranch* branch = MakeBranchInTree(gAlice->TreeH(),branchname, &fCerenkovs, kBufferSize, file) ;
-	MakeBranchInTree(gAlice->TreeH(),branchname, &fCerenkovs, kBufferSize, file) ;
-	//branch->SetAutoDelete(kFALSE);
+      if (fCerenkovs   && TreeH()) {
+         MakeBranchInTree(TreeH(),branchname, &fCerenkovs, kBufferSize, file) ;
       } 
       sprintf(branchname,"%sSDigits",GetName());
-      if (fSDigits   && gAlice->TreeH()) {
-	//TBranch* branch = MakeBranchInTree(gAlice->TreeH(),branchname, &fSDigits, kBufferSize, file) ;
-	MakeBranchInTree(gAlice->TreeH(),branchname, &fSDigits, kBufferSize, file) ;
+      if (fSDigits   && TreeH()) {
+	MakeBranchInTree(TreeH(),branchname, &fSDigits, kBufferSize, file) ;
 	//branch->SetAutoDelete(kFALSE);
 	//printf("Making branch %sSDigits in TreeH\n",GetName());
       }
@@ -1921,7 +1921,7 @@ void AliRICH::SetTreeAddress()
     AliDetector::SetTreeAddress();
     
     TBranch *branch;
-    TTree *treeH = gAlice->TreeH();
+    TTree *treeH = TreeH();
     TTree *treeD = gAlice->TreeD();
     TTree *treeR = gAlice->TreeR();
     TTree *treeS = gAlice->TreeS();
@@ -2726,7 +2726,7 @@ void AliRICH::DiagnosticsFE(Int_t evNumber1,Int_t evNumber2)
        
        AliRICH *pRICH = (AliRICH *) gAlice->GetDetector("RICH");
      
-       TTree *treeH = gAlice->TreeH();
+       TTree *treeH = TreeH();
        Int_t ntracks =(Int_t) treeH->GetEntries();
             
 // Start loop on tracks in the hits containers
@@ -3301,7 +3301,7 @@ AliRICH *pRICH  = (AliRICH*)gAlice->GetDetector("RICH");
 // Get pointers to RICH detector and Hits containers
        
 
-       TTree *TH = gAlice->TreeH(); 
+       TTree *TH = TreeH(); 
        Stat_t ntracks = TH->GetEntries();
 
        // Start loop on tracks in the hits containers

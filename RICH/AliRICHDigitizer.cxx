@@ -15,12 +15,19 @@
 
 /* 
    $Log$
+   Revision 1.3  2001/12/05 14:53:34  hristov
+   Destructor corrected
+
    Revision 1.2  2001/11/07 14:50:31  hristov
    Minor correction of the Log part
 
    Revision 1.1  2001/11/02 15:37:26  hristov
    Digitizer class created. Code cleaning and bug fixes (J.Chudoba)
 */
+//Piotr.Skowronski@cern.ch :
+//Corrections applied in order to compile (only) with new I/O and folder structure
+//To be implemented correctly by responsible
+
 #include <iostream> 
 
 #include <TTree.h> 
@@ -28,6 +35,9 @@
 #include <TFile.h>
 #include <TDirectory.h>
 #include <TParticle.h>
+
+#include "AliRunLoader.h"
+#include "AliLoader.h"
 
 #include "AliRICHDigitizer.h"
 #include "AliRICHChamber.h"
@@ -66,7 +76,7 @@ AliRICHDigitizer::AliRICHDigitizer(AliRunDigitizer* manager)
   fDebug   = 0; 
   if (GetDebug()>2) 
     cerr<<"AliRICHDigitizer::AliRICHDigitizer"
-	<<"(AliRunDigitizer* manager) was processed"<<endl;
+      <<"(AliRunDigitizer* manager) was processed"<<endl;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -107,7 +117,7 @@ void AliRICHDigitizer::Update(AliRICHSDigit *padhit)
   //
   Int_t iqpad    = Int_t(padhit->QPad()); // charge per pad
   pdigit->AddSignal(iqpad);
-  pdigit->AddPhysicsSignal(iqpad);		
+  pdigit->AddPhysicsSignal(iqpad);            
 
   // update list of tracks
   //
@@ -165,11 +175,21 @@ void AliRICHDigitizer::Exec(Option_t* option)
 
   AliRICHChamber*       iChamber;
   AliSegmentation*  segmentation;
-  
+ 
+  AliRunLoader *inRL, *outRL;//in and out Run Loaders
+  AliLoader *ingime, *outgime;// in and out ITSLoaders
+ 
+  outRL = AliRunLoader::GetRunLoader(fManager->GetOutputFolderName());
+  outgime = outRL->GetLoader("RICHLoader");
+
   fTDList = new TObjArray;
-    
+  
+     
   AliRICH *pRICH = (AliRICH *) gAlice->GetDetector("RICH");
-  pRICH->MakeBranchInTreeD(fManager->GetTreeD());
+  
+  if (outgime->TreeD() == 0x0) outgime->MakeTree("D");
+  
+  pRICH->MakeBranchInTreeD(outgime->TreeD());
   fHitMap= new AliHitMap* [kNCH];
         
   for (Int_t i =0; i<kNCH; i++) {
@@ -181,36 +201,41 @@ void AliRICHDigitizer::Exec(Option_t* option)
 // Loop over files to digitize
   fSignal = kTRUE;
   fCounter = 0;
-  for (Int_t inputFile=0; inputFile<fManager->GetNinputs();
-       inputFile++) {
-
+  for (Int_t inputFile=0; inputFile<fManager->GetNinputs(); inputFile++) 
+   {
+    inRL = AliRunLoader::GetRunLoader(fManager->GetInputFolderName(inputFile));
+    ingime = inRL->GetLoader("RICHLoader");
+    
 // Connect RICH branches
 
     if (inputFile > 0 ) fSignal = kFALSE;
     TBranch *branchHits = 0;
     TBranch *branchSDigits = 0;
-    TTree *treeH = fManager->GetInputTreeH(inputFile);
+
+    ingime->LoadHits("READ");
+    TTree *treeH = ingime->TreeH();
     if (GetDebug()>2) {
       cerr<<"   inputFile  "<<inputFile<<endl;
       cerr<<"   treeH, fHits "<<treeH<<" "<<fHits<<endl;
     }
     if (treeH && fHits) {
       branchHits = treeH->GetBranch("RICH");
-      if (branchHits) {
-	fHits->Clear();
-	branchHits->SetAddress(&fHits);
+      if (branchHits) 
+       {
+         fHits->Clear();
+          branchHits->SetAddress(&fHits);
       }
       else
-	Error("Exec","branch RICH was not found");
+      Error("Exec","branch RICH was not found");
     }
     if (GetDebug()>2) cerr<<"   branchHits = "<<branchHits<<endl;
 
     if (treeH && fSDigits) {
       branchSDigits = treeH->GetBranch("RICHSDigits");
       if (branchSDigits) 
-	branchSDigits->SetAddress(&fSDigits);
+      branchSDigits->SetAddress(&fSDigits);
       else
-	Error("exec","branch RICHSDigits was not found");
+      Error("exec","branch RICHSDigits was not found");
     }
     if (GetDebug()>2) cerr<<"   branchSDigits = "<<branchSDigits<<endl;
 
@@ -230,36 +255,36 @@ void AliRICHDigitizer::Exec(Option_t* option)
       //
       //   Loop over hits
       for(Int_t i = 0; i < fHits->GetEntriesFast(); ++i) {
-	AliRICHHit* mHit = static_cast<AliRICHHit*>(fHits->At(i));
-	fNch = mHit->Chamber()-1;  // chamber number
-	if (fNch >= kNCH) {
-	  cerr<<"AliRICHDigitizer: chamber nr. fNch out of range: "<<fNch<<endl;
-	  cerr<<"               track: "<<fTrack<<endl;
-	  continue;
-	}
-	iChamber = &(pRICH->Chamber(fNch));
-	  
-	//
-	// Loop over pad hits
-	for (AliRICHSDigit* mPad=
-	       (AliRICHSDigit*)pRICH->FirstPad(mHit,fSDigits);
-	     mPad;
-	     mPad=(AliRICHSDigit*)pRICH->NextPad(fSDigits))
-	{
-	  Int_t iqpad    = mPad->QPad();       // charge per pad
-	  fDigits[0]=mPad->PadX();
-	  fDigits[1]=mPad->PadY();
-	  fDigits[2]=iqpad;
-	  fDigits[3]=iqpad;
-	  fDigits[4]=mPad->HitNumber();
-		  
-	  // build the list of fired pads and update the info
-	  if (Exists(mPad)) {
-	    Update(mPad);
-	  } else {
-	    CreateNew(mPad);
-	  }
-	} //end loop over clusters
+      AliRICHHit* mHit = static_cast<AliRICHHit*>(fHits->At(i));
+      fNch = mHit->Chamber()-1;  // chamber number
+      if (fNch >= kNCH) {
+        cerr<<"AliRICHDigitizer: chamber nr. fNch out of range: "<<fNch<<endl;
+        cerr<<"               track: "<<fTrack<<endl;
+        continue;
+      }
+      iChamber = &(pRICH->Chamber(fNch));
+        
+      //
+      // Loop over pad hits
+      for (AliRICHSDigit* mPad=
+             (AliRICHSDigit*)pRICH->FirstPad(mHit,fSDigits);
+           mPad;
+           mPad=(AliRICHSDigit*)pRICH->NextPad(fSDigits))
+      {
+        Int_t iqpad    = mPad->QPad();       // charge per pad
+        fDigits[0]=mPad->PadX();
+        fDigits[1]=mPad->PadY();
+        fDigits[2]=iqpad;
+        fDigits[3]=iqpad;
+        fDigits[4]=mPad->HitNumber();
+              
+        // build the list of fired pads and update the info
+        if (Exists(mPad)) {
+          Update(mPad);
+        } else {
+          CreateNew(mPad);
+        }
+      } //end loop over clusters
       } // hit loop
     } // track loop
   } // end file loop
@@ -325,8 +350,8 @@ void AliRICHDigitizer::Exec(Option_t* option)
     }      //end loop over list of tracks for one pad
     if (nptracks < kMAXTRACKSPERRICHDIGIT ) {
       for (Int_t t=nptracks; t<kMAXTRACKSPERRICHDIGIT; t++) {
-	tracks[t]=0;
-	charges[t]=0;
+      tracks[t]=0;
+      charges[t]=0;
       }
     }
     //write file
@@ -335,8 +360,8 @@ void AliRICHDigitizer::Exec(Option_t* option)
       
     // fill digits
     pRICH->AddDigits(ich,tracks,charges,fDigits);
-  }	
-  fManager->GetTreeD()->Fill();
+  }      
+  outgime->TreeD()->Fill();
 
   pRICH->ResetDigits();
   fTDList->Delete();    // or fTDList->Clear(); ???
@@ -354,7 +379,8 @@ void AliRICHDigitizer::Exec(Option_t* option)
     printf ("Chamber %d digits %d \n",k,ndigit);
   }
   pRICH->ResetDigits(); /// ??? should it be here???
-  fManager->GetTreeD()->Write(0,TObject::kOverwrite);
+  
+  outgime->WriteDigits("OVERWRITE");
   delete [] fHitMap;
   delete fTDList;
 

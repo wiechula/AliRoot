@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.18  2001/12/19 14:46:26  morsch
+Add possibility to disable StepManager() for each module separately.
+
 Revision 1.17  2001/08/29 14:28:33  morsch
 Use visibility flags -1 and 3 instead of 0 and 1.
 
@@ -77,6 +80,10 @@ Introduction of the Copyright and cvs Log
 #include "AliMC.h"
 #include "AliConfig.h"
 
+#include "AliLoader.h"
+
+
+
 ClassImp(AliModule)
  
 //_____________________________________________________________________________
@@ -91,6 +98,9 @@ AliModule::AliModule()
   fIdmate     = 0;
   fDebug      = 0;
   fEnable     = 1;
+  
+  fLoader     = 0x0; //skowron
+  AliConfig::Instance()->Add(this);//skowron 4.02.2002
 }
  
 //_____________________________________________________________________________
@@ -131,6 +141,7 @@ AliModule::AliModule(const char* name,const char *title):TNamed(name,title)
   fLoMedium = 65536;
   fHiMedium = 0;
 
+  fLoader     = 0x0; //skowron
   AliConfig::Instance()->Add(this);    
     
   SetDebug(gAlice->GetDebug());
@@ -221,8 +232,8 @@ void AliModule::Enable()
 
 //_____________________________________________________________________________
 void AliModule::AliMaterial(Int_t imat, const char* name, Float_t a, 
-			      Float_t z, Float_t dens, Float_t radl,
-			      Float_t absl, Float_t *buf, Int_t nwbuf) const
+                            Float_t z, Float_t dens, Float_t radl,
+                            Float_t absl, Float_t *buf, Int_t nwbuf) const
 {
   //
   // Store the parameters for a material
@@ -654,4 +665,11 @@ void AliModule::ReadEuclidMedia(const char* filnam)
   Warning("ReadEuclidMedia","reading error or premature end of file\n");
 } 
  
- 
+//_____________________________________________________________________________
+
+AliLoader*  AliModule::MakeLoader(const char* topfoldername) 
+ {
+   cout<<"Module::MakeLoader"<<endl;
+   fLoader = 0x0;
+   return 0x0;
+ }//skowron   

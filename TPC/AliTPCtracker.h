@@ -18,13 +18,14 @@
 
 class TFile;
 class AliTPCParam;
+class AliRunLoader;
 
 class AliTPCtracker : public AliTracker {
 public:
    AliTPCtracker():AliTracker(),fkNIS(0),fkNOS(0) {
       fInnerSec=fOuterSec=0; fSeeds=0; 
    }
-   AliTPCtracker(const AliTPCParam *par, Int_t eventn=0);
+   AliTPCtracker(const AliTPCParam *par, const char* evfoldname, Int_t eventn=0);
   ~AliTPCtracker();
 
    Int_t ReadSeeds(const TFile *in);
@@ -35,7 +36,7 @@ public:
    void UnloadOuterSectors();
 
    AliCluster *GetCluster(Int_t index) const;
-   Int_t Clusters2Tracks(const TFile *in, TFile *out);
+   Int_t Clusters2Tracks();
    Int_t PropagateBack(const TFile *in, TFile *out);
 
    virtual void  CookLabel(AliKalmanTrack *t,Float_t wrong) const; 
@@ -67,7 +68,7 @@ public:
 //**************** Internal tracker class ********************** 
    class AliTPCSector {
    public:
-     AliTPCSector() { fN=0; fRow = 0; }
+     AliTPCSector() { fN=0; fRow = 0;}
     ~AliTPCSector() { delete[] fRow; }
      AliTPCRow& operator[](Int_t i) const { return *(fRow+i); }
      Int_t GetNRows() const { return fN; }
@@ -95,7 +96,8 @@ public:
      Double_t fAlpha;                    //opening angle
      Double_t fAlphaShift;               //shift angle;
      Double_t fPadPitchWidth;            //pad pitch width
-     Double_t fPadPitchLength;           //pad pitch length    
+     Double_t fPadPitchLength;           //pad pitch length
+     
    private:
      AliTPCSector(const AliTPCSector &s);           //dummy copy contructor
      AliTPCSector& operator=(const AliTPCSector &s);//dummy assignment operator
@@ -140,6 +142,7 @@ private:
    Int_t fEventN;                      //event number
    AliTPCClustersArray fClustersArray; //array of TPC clusters
    TObjArray *fSeeds;                  //array of track seeds
+   TString fEvFolderName;//! name of data folder
 };
 
 #endif

@@ -32,6 +32,7 @@
 // --- AliRoot header files ---
 
 #include "AliPHOSClusterizer.h"
+#include "AliRunLoader.h"
 
 ClassImp(AliPHOSClusterizer)
 
@@ -44,11 +45,14 @@ ClassImp(AliPHOSClusterizer)
 AliPHOSClusterizer::AliPHOSClusterizer(const char* headerFile, const char* name):
 TTask(name, headerFile)
 {
-  // ctor
+  fRunLoader = AliRunLoader::Open(headerFile,name,"READ");
+  if (fRunLoader == 0x0)
+    Fatal("AliPHOSClusterizer","Can not open session");
 }
 
 //____________________________________________________________________________
 AliPHOSClusterizer::~AliPHOSClusterizer()
 {
   // dtor
+  delete fRunLoader;
 }

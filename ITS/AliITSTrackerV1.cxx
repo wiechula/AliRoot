@@ -15,6 +15,9 @@
  
 /*
 $Log$
+Revision 1.21  2002/02/05 09:12:26  hristov
+Small mods for gcc 3.02
+
 Revision 1.20  2001/11/21 14:47:45  barbera
 Some unuseful print-out commented out
 
@@ -63,6 +66,7 @@ cleanded up a little bit of code.
 
 #include "TParticle.h"
 #include "AliRun.h"
+#include "AliLoader.h"
 #include "AliITS.h"
 #include "AliITSsegmentationSSD.h"
 #include "AliITSgeomSPD.h"
@@ -551,7 +555,9 @@ void AliITSTrackerV1::DoTracking(Int_t evNumber,Int_t minTr,Int_t maxTr,
     if (!digp) { cerr<<"TPC parameters have not been found !\n"; getchar();}
 
     cf->cd();
-    AliTPCtracker *tracker = new AliTPCtracker(digp,evNumber);  
+    TString foldname(fITS->GetLoader()->GetEventFolder()->GetName());
+    
+    AliTPCtracker *tracker = new AliTPCtracker(digp,foldname,evNumber);  
 
     // Load clusters
     tracker->LoadInnerSectors();

@@ -34,13 +34,16 @@
 
 // --- AliRoot header files ---
 
+#include "AliRunLoader.h"
+#include "AliLoader.h"
+
 #include "AliFMDdigit.h"
 #include "AliFMDReconstParticles.h"
 #include "AliFMD.h"
 #include "AliFMDv1.h"
 #include "AliFMDReconstruction.h"
 #include "AliRun.h"
-
+#include "AliConfig.h"
 ClassImp(AliFMDReconstruction)
 
         
@@ -49,9 +52,8 @@ ClassImp(AliFMDReconstruction)
 AliFMDReconstruction::AliFMDReconstruction():TTask("AliFMDReconstruction","") 
 {
   fNevents = 0 ;  // Number of events to rreconnstraction, 0 means all events in current file
-  // add Task to //root/Tasks folder
-  TTask * roottasks = (TTask*)gROOT->GetRootFolder()->FindObject("Tasks") ; 
-  roottasks->Add(this) ; 
+  fRunLoader = 0x0;
+  
 }
 //____________________________________________________________________________ 
 
@@ -59,17 +61,25 @@ AliFMDReconstruction::AliFMDReconstruction(char* HeaderFile, char *ReconstPartic
 {
   fNevents = 0 ;    // Number of events to rreconnstraction, 0 means all events in current file
   fReconstParticlesFile=ReconstParticlesFile ;
-  fHeadersFile=HeaderFile ;
+  
+  fHeadersFile=HeaderFile;
+  
+  fRunLoader = AliRunLoader::Open(fHeadersFile);//Load event in default folder
+  AliLoader* gime = fRunLoader->GetLoader("FMDLoader");
+  if (gime == 0x0)
+   {
+     Fatal("AliFMDReconstruction","Can not find FMD (loader) in specified event");
+     return;//never reached
+   }
   //add Task to //root/Tasks folder
-  TTask * roottasks = (TTask*)gROOT->GetRootFolder()->FindObject("Tasks") ; 
-  roottasks->Add(this) ;     
+  gime->PostReconstructioner(this);
 }
 
 //____________________________________________________________________________ 
 
 AliFMDReconstruction::~AliFMDReconstruction()
 {
- 
+ delete fRunLoader;
 }
 
 //____________________________________________________________________________
@@ -77,28 +87,71 @@ AliFMDReconstruction::~AliFMDReconstruction()
 void AliFMDReconstruction::Exec(Option_t *option) 
 { 
  //Collects all digits in the same active volume into number of particles
+  
+  if (fRunLoader)
+   {
+    Error("Exec","Run Loader loader is NULL - Session not opened");
+    return;
+   }
+  AliLoader* gime = fRunLoader->GetLoader("FMDLoader");
+  if (gime == 0x0)
+   {
+     Fatal("AliFMDReconstruction","Can not find FMD (loader) in specified event");
+     return;//never reached
+   }
+   
+  fRunLoader->LoadgAlice();
+  Int_t retval;
+  
+  retval = gime->LoadHits("READ"); 
+  if (retval)
+   {
+     Error("Exec","Error occured while loading hits. Exiting.");
+     return;
+   }
 
+  retval = gime->LoadDigits("READ"); 
+  if (retval)
+   {
+     Error("Exec","Error occured while loading digits. Exiting.");
+     return;
+   }
+  
   AliFMD * FMD = (AliFMD *) gAlice->GetDetector("FMD");
   TClonesArray *fReconParticles=FMD->ReconParticles();
-  if(fNevents == 0) fNevents=(Int_t)gAlice->TreeD()->GetEntries(); 
+  
+  TTree* treeD = gime->TreeD();
+  if (treeD == 0x0)
+   {
+     Error("Exec","Can not get Tree with Digits. Nothing to reconstruct - Exiting");
+     return;
+   }
+  if(fNevents == 0) fNevents=(Int_t)treeD->GetEntries(); 
   for(Int_t ievent=0;ievent<fNevents;ievent++)
     { 
-      gAlice->GetEvent(ievent) ;
-      if(gAlice->TreeH()==0) return; 
-      if(gAlice->TreeR()==0) gAlice->MakeTree("R");
+      fRunLoader->GetEvent(ievent) ;
+
+      TTree* treeH = gime->TreeH();
+      if (treeH == 0x0)
+       {
+         Error("Exec","Can not get TreeH");
+         return;
+       }
+/******************************************************************/     
+      if(gime->TreeR()==0) gime->MakeTree("R");
       //Make branches
       FMD->MakeBranch("R");
       
-      Int_t threshold[]={ 0,     14,  28,    42,   57, 
-			  72,    89,  104,  124,  129, 
-			  164,  174,  179,  208,  228, 
-			  248,  268,   317,  337,  357, 
-			  392,  407,  416,  426,  436, 
-			  461,  468,  493,  506,  515, 
-			  541,  566,  592,  617,  642, 
-			  668,  693,  719,  744,  770, 
-			  795,  821,  846,  871,  897, 
-			  922,  948,  973,  999, 1024};
+      Int_t threshold[]={  0,   14,  28,    42,   57, 
+                          72,   89,  104,  124,  129, 
+                         164,  174,  179,  208,  228, 
+                         248,  268,  317,  337,  357, 
+                         392,  407,  416,  426,  436, 
+                         461,  468,  493,  506,  515, 
+                         541,  566,  592,  617,  642, 
+                         668,  693,  719,  744,  770, 
+                         795,  821,  846,  871,  897, 
+                         922,  948,  973,  999, 1024};
       
 
       /*
@@ -119,7 +172,7 @@ void AliFMDReconstruction::Exec(Option_t *option)
       //    cout<<" AliFMDdigit "<<AliFMDdigit<<endl;
       if (FMD)
 	{
-	  gAlice->TreeD()->GetEvent(0); 
+	  gime->TreeD()->GetEvent(0); 
 	  TClonesArray *FMDdigits=FMD->Digits();
 	  Int_t nDigits=FMDdigits->GetEntries();
 	   Int_t RecParticles[4];
@@ -140,9 +193,9 @@ void AliFMDReconstruction::Exec(Option_t *option)
 	      new((*fReconParticles)[nRecPart++]) AliFMDReconstParticles(RecParticles); 
 	     } //digit loop
 	 }//if FMD
-       gAlice->TreeR()->Reset();
-       gAlice->TreeR()->Fill(); 
-       gAlice->TreeR()->Write(0,TObject::kOverwrite);
+       gime->TreeR()->Reset();
+       gime->TreeR()->Fill(); 
+       gime->WriteRecPoints("OVERWRITE");
     } //event loop
   cout<<"\nAliFMDReconstruction::Exec finished"<<endl;
 }
@@ -165,26 +218,4 @@ void AliFMDReconstruction::Print(Option_t* option)const
     cout<<"\nWriting reconstructed particles to file  "<<
       (char*) fReconstParticlesFile.Data() << endl ;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

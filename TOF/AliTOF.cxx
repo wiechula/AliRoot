@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.34  2002/02/20 13:41:38  hristov
+Default arguments set only in the header file
+
 Revision 1.33  2002/02/19 10:39:38  vicinanz
 t0 classes added and material update (steel added)
 
@@ -159,15 +162,13 @@ AliTOF::AliTOF()
   fFGeom = 0;
   fDTask = 0;
   fReTask = 0;
-  fIshunt   = 0;
   fSDigits       = 0 ;
-  fDigits        = 0 ;
   fReconParticles = 0;
-  fName="TOF";
   fMerger = 0;
-/* fp
-  CreateTOFFolders();
-*/
+
+  fIshunt   = 0;
+  fDigits        = 0 ;
+  fName="TOF";
 }
  
 //_____________________________________________________________________________
@@ -182,6 +183,12 @@ AliTOF::AliTOF(const char *name, const char *title, Option_t *option)
 
   // Initialization of hits, sdigits and digits array
   // added option for time zero analysis
+  fFGeom = 0x0; //skowron
+  fDTask = 0x0;
+  fReTask= 0x0;
+  fReconParticles= 0x0;
+  fMerger = 0x0;
+
   if (strstr(option,"tzero")){
     fHits   = new TClonesArray("AliTOFhitT0",  1000);
     cout << "tzero option requires AliTOFv4T0 as TOF version (check Your Config.C)" << endl;
@@ -241,10 +248,7 @@ AliTOF::AliTOF(const char *name, const char *title, Option_t *option)
                       // (TARODA)
   fNTdc       = 32;   // number of Tdc (Time to Digital Converter)
   fNPadXRoc   = (Int_t)fPadXSector/fNRoc; // number of pads for each ROC
-  /* fp 25 Sept 2001
-  // Create TOF Folder Structure
-  CreateTOFFolders();
-  */ 
+  
 }
 
 //_____________________________________________________________________________

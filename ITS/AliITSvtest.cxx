@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.13  2001/10/01 19:34:09  nilsen
+Fixed a bug in asigning detector types in SetDefaults under SSD layer 6.
+
 Revision 1.12  2001/08/24 21:04:36  nilsen
 Added some include files. Needed due to new forward declorations in other
 files

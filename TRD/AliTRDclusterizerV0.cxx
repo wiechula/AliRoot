@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.10  2001/12/05 15:04:34  hristov
+Changes related to the corrections of AliRecPoint
+
 Revision 1.9  2001/05/28 17:07:58  hristov
 Last minute changes; ExB correction in AliTRDclusterizerV1; taking into account of material in G10 TEC frames and material between TEC planes (C.Blume,S.Sedykh)
 
@@ -169,7 +172,7 @@ Bool_t AliTRDclusterizerV0::MakeClusters()
   AliTRDhit *hit;
   
   // Get the pointer to the hit tree
-  TTree     *hitTree      = gAlice->TreeH();
+  TTree     *hitTree      = fTRD->TreeH();
   // Get the pointer to the reconstruction tree
   TTree     *clusterTree  = gAlice->TreeR();
 

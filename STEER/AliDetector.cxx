@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.16  2001/10/04 15:30:56  hristov
+Changes to accommodate the set of PHOS folders and tasks (Y.Schutz)
+
 Revision 1.15  2001/07/27 13:03:13  hristov
 Default Branch split level set to 99
 
@@ -82,7 +85,7 @@ Introduction of the Copyright and cvs Log
 #include "AliRun.h"
 #include "AliHit.h"
 #include "AliPoints.h"
-
+#include "AliLoader.h"
 // Static variables for the hit iterator routines
 static Int_t sMaxIterHit=0;
 static Int_t sCurIterHit=0;
@@ -103,6 +106,7 @@ AliDetector::AliDetector()
   fTimeGate   = 200.e-9;
   fBufferSize = 16000;
   fDigitsFile = 0;
+
 }
  
 //_____________________________________________________________________________
@@ -154,31 +158,11 @@ AliDetector::~AliDetector()
 //_____________________________________________________________________________
 void AliDetector::Publish(const char *dir, void *address, const char *name)
 {
-  //
-  // Register pointer to detector objects. 
-  // 
-  TFolder *topFolder = (TFolder *)gROOT->FindObjectAny("/Folders");
-  if  (topFolder) { 
-    TFolder *folder = (TFolder *)topFolder->FindObjectAny(dir);
-    // TFolder *folder = (TFolder *)gROOT->FindObjectAny(dir);
-    if (!folder)  {
-      cerr << "Cannot register: Missing folder: " << dir << endl;
-    } else {
-      TFolder *subfolder = (TFolder *) folder->FindObjectAny(this->GetName()); 
-
-      if(!subfolder)
-         subfolder = folder->AddFolder(this->GetName(),this->GetTitle());
-      if (address) {
-        TObject **obj = (TObject **) address;
-        if ((*obj)->InheritsFrom(TCollection::Class())) {
-           TCollection *collection = (TCollection *) (*obj); 
-           if (name)
-             collection->SetName(name);
-        } 
-        subfolder->Add(*obj);
-      } 
-    }  
-  }
+//
+// Register pointer to detector objects. 
+// 
+//  TFolder *topFolder = (TFolder *)gROOT->FindObjectAny("/Folders");
+  MayNotUse("Publish");
 }
 
 //_____________________________________________________________________________
@@ -188,63 +172,30 @@ TBranch* AliDetector::MakeBranchInTree(TTree *tree, const char* name, void* addr
 }
 
 //_____________________________________________________________________________
-TBranch* AliDetector::MakeBranchInTree(TTree *tree, const char* name, const char *classname, void* address,Int_t size, Int_t splitlevel, const char *file)
+TBranch* AliDetector::
+MakeBranchInTree(TTree *tree, const char* name, const char *classname, 
+                 void* address,Int_t size, Int_t splitlevel, const char *file)
 { 
-    //
-    // Makes branch in given tree and diverts them to a separate file
-    //  
-    if (GetDebug()>1)
-      printf("* MakeBranch * Making Branch %s \n",name);
+//
+// Makes branch in given tree and diverts them to a separate file
+// 
+//
+//
+// if (GetDebug()>1)
+ printf("* MakeBranch * Making Branch %s \n",name);
       
-    TDirectory *cwd = gDirectory;
-    TBranch *branch = 0;
+ TBranch *branch = 0;
     
-    if (classname) {
-      branch = tree->Branch(name,classname,address,size,splitlevel);
-    } else {
-      branch = tree->Branch(name,address,size);
-    }
-       
-    if (file) {
-        char * outFile = new char[strlen(gAlice->GetBaseFile())+strlen(file)+2];
-        sprintf(outFile,"%s/%s",gAlice->GetBaseFile(),file);
-        branch->SetFile(outFile);
-        TIter next( branch->GetListOfBranches());
-        while ((branch=(TBranch*)next())) {
-           branch->SetFile(outFile);
-        } 
-       delete outFile;
-        
-       cwd->cd();
-        
-       if (GetDebug()>1)
-           printf("* MakeBranch * Diverting Branch %s to file %s\n",name,file);
-    }
-    char *folder = 0;
-    TString folderName(name);  
-    
-    if (!strncmp(tree->GetName(),"TreeE",5)) folder = "RunMC/Event/Data";
-    if (!strncmp(tree->GetName(),"TreeK",5)) folder = "RunMC/Event/Data";
-    if (!strncmp(tree->GetName(),"TreeH",5)) {
-      folder     = "RunMC/Event/Data/Hits";
-      folderName = "Hits" ; 
-    }
-    if (!strncmp(tree->GetName(),"TreeD",5)) {
-      folder     = "Run/Event/Data";
-      folderName = "Digits" ; 
-    }
-    if (!strncmp(tree->GetName(),"TreeS",5)) {
-      folder     = "RunMC/Event/Data/SDigits";
-      folderName = "SDigits" ; 
-    }
-    if (!strncmp(tree->GetName(),"TreeR",5)) folder = "Run/Event/RecData";
+ if (classname) 
+  {
+    branch = tree->Branch(name,classname,address,size,splitlevel);
+  } 
+ else 
+  {
+    branch = tree->Branch(name,address,size);
+  }
 
-    if (folder) {
-      if (GetDebug())
-          printf("%15s: Publishing %s to %s\n",ClassName(),name,folder);
-      Publish(folder,address, folderName.Data());
-    }  
-    return branch;
+ return branch;
 }
 
 //_____________________________________________________________________________
@@ -281,6 +232,10 @@ void AliDetector::FinishRun()
   //
   // Procedure called at the end of a run.
   //
+ if (GetLoader())
+  {
+    GetLoader()->CloseFiles();
+  }
 }
 
 //_____________________________________________________________________________
@@ -294,8 +249,8 @@ AliHit* AliDetector::FirstHit(Int_t track)
   // track is returned
   // 
   if(track>=0) {
-    gAlice->ResetHits();
-    gAlice->TreeH()->GetEvent(track);
+    gAlice->ResetHits(); //stupid = if N detector this method is called N times
+    TreeH()->GetEvent(track); //skowron
   }
   //
   sMaxIterHit=fHits->GetEntriesFast();
@@ -327,10 +282,18 @@ void AliDetector::LoadPoints(Int_t)
   //
   // Store x, y, z of all hits in memory
   //
-  if (fHits == 0) return;
+  if (fHits == 0) 
+   {
+    Error("LoadPoints","fHits == 0. Name is %s",GetName());
+    return;
+   }
   //
   Int_t nhits = fHits->GetEntriesFast();
-  if (nhits == 0) return;
+  if (nhits == 0) 
+   {
+    Error("LoadPoints","nhits == 0. Name is %s",GetName());
+    return;
+   }
   Int_t tracks = gAlice->GetNtrack();
   if (fPoints == 0) fPoints = new TObjArray(tracks);
   AliHit *ahit;
@@ -399,25 +362,20 @@ void AliDetector::MakeBranch(Option_t *option, const char *file)
   // The branch of fHits is automatically split
   //
  
+  cout<<GetName()<<"::MakeBranch"<<endl;
+ 
   char branchname[10];
   sprintf(branchname,"%s",GetName());
   //
   // Get the pointer to the header
   const char *cH = strstr(option,"H");
   //
-  if (fHits && gAlice->TreeH() && cH) {
-    MakeBranchInTree(gAlice->TreeH(), 
-                     branchname, &fHits, fBufferSize, file) ;              
-  }	
+  if (fHits && TreeH() && cH) 
+   {
+     MakeBranchInTree(TreeH(), branchname, &fHits, fBufferSize, file);
+   }	
   
-  const char *cD = strstr(option,"D");
 
-  if (cD) {
-    if (file) {
-       fDigitsFile = new char[strlen (file)];
-       strcpy(fDigitsFile,file);
-    }
-  }
 }
 
 //_____________________________________________________________________________
@@ -427,7 +385,7 @@ void AliDetector::ResetDigits()
   // Reset number of digits and the digits array
   //
   fNdigits   = 0;
-  if (fDigits)   fDigits->Clear();
+  if (fDigits) fDigits->Clear();
 }
 
 //_____________________________________________________________________________
@@ -437,7 +395,7 @@ void AliDetector::ResetHits()
   // Reset number of hits and the hits array
   //
   fNhits   = 0;
-  if (fHits)   fHits->Clear();
+  if (fHits) fHits->Clear();
 }
 
 //_____________________________________________________________________________
@@ -464,18 +422,91 @@ void AliDetector::SetTreeAddress()
   sprintf(branchname,"%s",GetName());
   //
   // Branch address for hit tree
-  TTree *treeH = gAlice->TreeH();
+  cout<<"#########################################"<<endl;
+  
+  TTree *treeH = TreeH();
   if (treeH && fHits) {
     branch = treeH->GetBranch(branchname);
-    if (branch) branch->SetAddress(&fHits);
+    if (branch) 
+     {
+       cout<<GetName()<<"::SetTreeAddress Setting"<<endl;
+       branch->SetAddress(&fHits);
+     }
+    else
+     {
+       cout<<GetName()<<"::SetTreeAddress Failed"<<endl;
+     }
   }
   //
   // Branch address for digit tree
-  TTree *treeD = gAlice->TreeD();
+  TTree *treeD = fLoader->TreeD();
   if (treeD && fDigits) {
     branch = treeD->GetBranch(branchname);
     if (branch) branch->SetAddress(&fDigits);
   }
 }
+/************************************************************/
+/*
+void AliDetector::Streamer(TBuffer &R__b)
+ {
+ // Stream an object of class AliDetector.
+ // 
+   if (R__b.IsReading()) 
+    {
+      AliDetector::Class()->ReadBuffer(R__b, this);
+      AliConfig::Instance()->Add(this);
+      
+    } 
+   else 
+    {
+      AliDetector::Class()->WriteBuffer(R__b, this);
+    }
+ }
+*/
+/************************************************************/
 
+void AliDetector::MakeTree(Option_t *option)
+ {
+ //makes a tree (container) for the data defined in option
+ //"H" - hits
+ //"D" - digits
+ //"S" - summable digits
+ //"R" - recontructed points and tracks
  
+    AliLoader* loader = GetLoader();
+    if (loader == 0x0)
+     {
+       Error("MakeTree","Can not get loader for %s",GetName());
+       return;
+     }
+    loader->MakeTree(option); //delegate this job to getter
+ }
+/************************************************************/
+
+AliLoader* AliDetector::MakeLoader(const char* topfoldername)
+{ 
+//builds standard getter (AliLoader type)
+//if detector wants to use castomized getter, it must overload this method
+
+ cout<<"AliDetector::MakeLoader: Creating standard getter for detector "<<GetName()
+     <<". top folder is "<<topfoldername<<endl;
+     
+ fLoader = new AliLoader(GetName(),topfoldername);
+ return fLoader;
+ 
+}
+/************************************************************/
+
+TTree* AliDetector::TreeH()
+{
+//Get the hits container from the folder
+  if (GetLoader() == 0x0) 
+    {
+    //sunstitude this with make getter when we can obtain the event folder name 
+     Error("TreeH","Can not get the getter");
+     return 0x0;
+    }
+ 
+  TTree* tree = (TTree*)GetLoader()->TreeH();
+  return tree;
+}

@@ -72,7 +72,7 @@ public:
                                             //class member function (not object member function)
   static void UnfoldingChiSquare(Int_t & nPar, Double_t * Grad, Double_t & fret, Double_t * x, Int_t iflag)  ;
                                             // Chi^2 of the fit. Should be static to be passes to MINUIT
-  virtual const char * Version() const { return "clu-v1" ; }  
+  virtual const char * Version() const { return "clu-v1"; }  
 
 protected:
 

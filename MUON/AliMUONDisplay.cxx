@@ -15,6 +15,10 @@
 
 /*
 $Log$
+Revision 1.17  2001/09/03 14:54:55  gosset
+Corrections for suppressing "segmentation violation" errors
+when using buttons "Chamber +", "Chamber -", "Cathode <>"
+
 Revision 1.16  2001/08/31 08:18:43  jchudoba
 Changes needed to run with Root 3.01
 
@@ -1053,11 +1057,11 @@ void AliMUONDisplay::LoadHits(Int_t chamber)
     iChamber = &(pMUON->Chamber(chamber-1));
     Float_t zpos=iChamber->Z();
 
-    Int_t ntracks = (Int_t)gAlice->TreeH()->GetEntries();
+    Int_t ntracks = (Int_t)pMUON->TreeH()->GetEntries(); //skowron
     Int_t nthits  = 0;
     for (track = 0; track < ntracks; track++) {
 	gAlice->ResetHits();
-	gAlice->TreeH()->GetEvent(track);
+	pMUON->TreeH()->GetEvent(track);//skowron
 	TClonesArray *muonHits  = pMUON->Hits();
 	if (muonHits == 0) return;
 	nthits += muonHits->GetEntriesFast();
@@ -1066,7 +1070,7 @@ void AliMUONDisplay::LoadHits(Int_t chamber)
     Int_t nhold=0;
     for (track=0; track<ntracks;track++) {
 	gAlice->ResetHits();
-	gAlice->TreeH()->GetEvent(track);
+	pMUON->TreeH()->GetEvent(track);//skowron
 	TClonesArray *muonHits  = pMUON->Hits();
 	if (muonHits == 0) return;
 	Int_t nhits = muonHits->GetEntriesFast();

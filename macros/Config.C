@@ -14,9 +14,17 @@ void Config()
 
     if (!gSystem->Getenv("CONFIG_FILE"))
     {
-        TFile  *rootfile = new TFile("galice.root", "recreate");
-
-        rootfile->SetCompressionLevel(2);
+        cout<<"Config.C: Creating Run Loader ..."<<endl;
+        AliRunLoader* rl = AliRunLoader::Open("galice.root",AliConfig::fgkDefaultEventFolderName,
+                                              "recreate");
+        if (rl == 0x0)
+         {
+           gAlice->Fatal("Config.C","Can not instatiate the Run Loader");
+           return;
+         }
+        rl->SetCompressionLevel(2);
+        
+        gAlice->SetRunLoader(rl);
     }
 
     TGeant3 *geant3 = (TGeant3 *) gMC;
@@ -71,15 +79,15 @@ void Config()
         int     nParticles = atoi(gSystem->Getenv("CONFIG_NPARTICLES"));
     } else
     {
-        int     nParticles = 50;
+        int     nParticles = 100;
     }
     AliGenHIJINGpara *gener = new AliGenHIJINGpara(nParticles);
 
     gener->SetMomentumRange(0, 999);
     gener->SetPhiRange(0, 360);
     // Set pseudorapidity range from -8 to 8.
-    Float_t thmin = EtaToTheta(8);   // theta min. <---> eta max
-    Float_t thmax = EtaToTheta(-8);  // theta max. <---> eta min 
+    Float_t thmin = EtaToTheta(1.);   // theta min. <---> eta max
+    Float_t thmax = EtaToTheta(-1);  // theta max. <---> eta min 
     gener->SetThetaRange(thmin,thmax);
     gener->SetOrigin(0, 0, 0);  //vertex position
     gener->SetSigma(0, 0, 0);   //Sigma in (X,Y,Z) (cm) on IP position
@@ -92,25 +100,28 @@ void Config()
 
     gAlice->SetField(-999, 2);  //Specify maximum magnetic field in Tesla (neg. ==> default field)
 
+    Int_t   iRest = 0;
+    
     Int_t   iABSO = 1;
-    Int_t   iCASTOR = 1;
+    Int_t   iCASTOR = iRest;
     Int_t   iDIPO = 1;
-    Int_t   iFMD = 1;
+    Int_t   iFMD = iRest;
     Int_t   iFRAME = 1;
     Int_t   iHALL = 1;
     Int_t   iITS = 1;
     Int_t   iMAG = 1;
-    Int_t   iMUON = 1;
+    Int_t   iMUON = iRest;
     Int_t   iPHOS = 1;
     Int_t   iPIPE = 1;
-    Int_t   iPMD = 1;
-    Int_t   iRICH = 1;
+    Int_t   iPMD = iRest;
+    Int_t   iRICH = iRest;
     Int_t   iSHIL = 1;
-    Int_t   iSTART = 1;
-    Int_t   iTOF = 1;
+    Int_t   iSTART = iRest;
+    Int_t   iTOF = iRest;
     Int_t   iTPC = 1;
-    Int_t   iTRD = 1;
-    Int_t   iZDC = 1;
+    Int_t   iTRD = iRest;
+    Int_t   iZDC = iRest;
+    
     Int_t   iEMCAL = 0;
 
     //=================== Alice BODY parameters =============================

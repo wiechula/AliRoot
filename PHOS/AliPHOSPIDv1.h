@@ -55,11 +55,11 @@ public:
   Float_t  GetDistance(AliPHOSEmcRecPoint * emc, AliPHOSRecPoint * cpv, Option_t * Axis)const ; // Relative Distance CPV-EMC
   TVector3 GetMomentumDirection(AliPHOSEmcRecPoint * emc, AliPHOSRecPoint * cpv)const ;
   void     PrintRecParticles(Option_t * option) ;
-  virtual void WriteRecParticles(Int_t event) ; 
+  virtual void WriteRecParticles(); 
 
  private:
 
-  TString                fHeaderFileName ;    // file name with event header
+  TString                fEventFolderName ;    // file name with event header
   TString                fTrackSegmentsTitle; // branch name with track segments
   TString                fRecPointsTitle ;    // branch name with rec points
   TString                fRecParticlesTitle ; // branch name with rec particles

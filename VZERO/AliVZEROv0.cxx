@@ -1391,8 +1391,8 @@ void AliVZEROv0::MakeBranch(Option_t *option)
   
   char *H = strstr(option,"H");
   
-  if (fHits   && gAlice->TreeH() && H) {
-    gAlice->TreeH()->Branch(branchname,&fHits, fBufferSize);
+  if (fHits   && TreeH() && H) {
+    TreeH()->Branch(branchname,&fHits, fBufferSize);
     printf("* AliDetector::MakeBranch * Making Branch %s for hits\n",branchname);
   }     
 

@@ -27,6 +27,9 @@
 #include "TSystem.h"
 #include "TFile.h"
 
+#include "AliRunLoader.h"
+#include "AliLoader.h"
+
 #include "AliTOFHitMap.h"
 #include "AliTOFSDigit.h"
 #include "AliTOFhit.h"
@@ -59,6 +62,7 @@ ClassImp(AliTOFSDigitizer)
   fNevents = 0 ;     
 //  fSDigits = 0 ;
   fHits = 0 ;
+  fRunLoader     = 0 ;
 
 }
            
@@ -67,8 +71,19 @@ ClassImp(AliTOFSDigitizer)
 {
   fNevents = 0 ;     // Number of events to digitize, 0 means all evens in current file
   // add Task to //root/Tasks folder
-  TTask * roottasks = (TTask*)gROOT->GetRootFolder()->FindObject("Tasks") ; 
-  roottasks->Add(this) ; 
+  fRunLoader = AliRunLoader::Open(HeaderFile);//open session and mount on default event folder
+  if (fRunLoader == 0x0)
+   {
+     Fatal("AliTOFSDigitizer","Event is not loaded. Exiting");
+     return;
+   }
+  AliLoader* gime = fRunLoader->GetLoader("TOFLoader");
+  if (gime == 0x0)
+   {
+     Fatal("AliTOFSDigitizer","Can not find TOF loader in event. Exiting.");
+     return;
+   }
+  gime->PostSDigitizer(this);
 }
 
 //____________________________________________________________________________ 
@@ -80,8 +95,11 @@ ClassImp(AliTOFSDigitizer)
 //____________________________________________________________________________
 void AliTOFSDigitizer::Exec(Option_t *option) { 
 
+  fRunLoader->LoadgAlice();
+  fRunLoader->LoadHeader();
+  gAlice = fRunLoader->GetAliRun();
 
-  AliTOF *TOF = (AliTOF *) gAlice->GetDetector ("TOF");
+  AliTOF *TOF = (AliTOF *) gAlice->GetDetector("TOF");
 
   if (!TOF) {
     Error("AliTOFSDigitizer","TOF not found");
@@ -89,22 +107,24 @@ void AliTOFSDigitizer::Exec(Option_t *option) {
   }
 
   if (fNevents == 0)
-    fNevents = (Int_t) gAlice->TreeE()->GetEntries();
+    fNevents = (Int_t) fRunLoader->TreeE()->GetEntries();
+
+  AliLoader* gime = fRunLoader->GetLoader("TOFLoader");
 
   for (Int_t ievent = 0; ievent < fNevents; ievent++) {
-    gAlice->GetEvent(ievent);
-    TTree *TH = gAlice->TreeH ();
+    fRunLoader->GetEvent(ievent);
+    TTree *TH = gime->TreeH ();
     if (!TH)
       return;
-    if (gAlice->TreeS () == 0)
-      gAlice->MakeTree ("S");
+    if (gime->TreeS () == 0)
+      gime->MakeTree ("S");
 
       
     //Make branches
     char branchname[20];
     sprintf (branchname, "%s", TOF->GetName ());
     //Make branch for digits
-    TOF->MakeBranch ("S");
+    TOF->MakeBranch("S");
     
     //Now made SDigits from hits
 
@@ -127,48 +147,49 @@ void AliTOFSDigitizer::Exec(Option_t *option) {
 
       for (Int_t hit = 0; hit < nhits; hit++)
       {
-	tofHit = (AliTOFhit *) TOFhits->UncheckedAt(hit);
-	vol[0] = tofHit->GetSector();
-	vol[1] = tofHit->GetPlate();
-	vol[2] = tofHit->GetStrip();
-	vol[3] = tofHit->GetPadx();
-	vol[4] = tofHit->GetPadz();
+      tofHit = (AliTOFhit *) TOFhits->UncheckedAt(hit);
+      vol[0] = tofHit->GetSector();
+      vol[1] = tofHit->GetPlate();
+      vol[2] = tofHit->GetStrip();
+      vol[3] = tofHit->GetPadx();
+      vol[4] = tofHit->GetPadz();
 
-	// 95% of efficiency to be inserted here
-	// edge effect to be inserted here
-	// cross talk  to be inserted here
+      // 95% of efficiency to be inserted here
+      // edge effect to be inserted here
+      // cross talk  to be inserted here
 
-	Float_t idealtime = tofHit->GetTof(); // unit s
-	idealtime *= 1.E+12;  // conversion from s to ps
-	// fTimeRes is given usually in ps
-	Float_t tdctime   = gRandom->Gaus(idealtime, TOF->GetTimeRes());
-	digit[0] = tdctime;
+      Float_t idealtime = tofHit->GetTof(); // unit s
+      idealtime *= 1.E+12;  // conversion from s to ps
+      // fTimeRes is given usually in ps
+      Float_t tdctime   = gRandom->Gaus(idealtime, TOF->GetTimeRes());
+      digit[0] = tdctime;
 
-	// typical Landau Distribution to be inserted here
-	// instead of Gaussian Distribution
-	Float_t idealcharge = tofHit->GetEdep();
-	Float_t adccharge = gRandom->Gaus(idealcharge, TOF->GetChrgRes());
-	digit[1] = adccharge;
-	Int_t tracknum = tofHit->GetTrack();
+      // typical Landau Distribution to be inserted here
+      // instead of Gaussian Distribution
+      Float_t idealcharge = tofHit->GetEdep();
+      Float_t adccharge = gRandom->Gaus(idealcharge, TOF->GetChrgRes());
+      digit[1] = adccharge;
+      Int_t tracknum = tofHit->GetTrack();
 
-	// check if two digit are on the same pad; in that case we sum
-	// the two or more digits
-	if (hitMap->TestHit(vol) != kEmpty) {
-	  AliTOFSDigit *sdig = static_cast<AliTOFSDigit*>(hitMap->GetHit(vol));
-	  sdig->Update(tdctime,adccharge,tracknum);
-	} else {
-	  TOF->AddSDigit(tracknum, vol, digit);
-	  hitMap->SetHit(vol);
-	}
+      // check if two digit are on the same pad; in that case we sum
+      // the two or more digits
+      if (hitMap->TestHit(vol) != kEmpty) {
+        AliTOFSDigit *sdig = static_cast<AliTOFSDigit*>(hitMap->GetHit(vol));
+        sdig->Update(tdctime,adccharge,tracknum);
+      } else {
+        TOF->AddSDigit(tracknum, vol, digit);
+        hitMap->SetHit(vol);
+      }
       } // end loop on hits for the current track
     } // end loop on ntracks
 
     delete hitMap;
       
-    gAlice->TreeS()->Reset();
-    gAlice->TreeS()->Fill();
-    gAlice->TreeS()->Write(0,TObject::kOverwrite) ;
-  }				//event loop
+    gime->TreeS()->Reset();
+    gime->TreeS()->Fill();
+    gime->WriteSDigits("OVERWRITE");
+    
+  }                        //event loop
 
 
 }

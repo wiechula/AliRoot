@@ -170,7 +170,7 @@ class AliITS : public AliDetector {
     void ResetRecPoints();
     // Return pointer to rec points 
     TClonesArray  *RecPoints()   {return fRecPoints;}
-
+     
  protected:
     //================== Data Members ==================================
     AliITSgeom   *fITSgeom;    // Pointer to ITS geometry

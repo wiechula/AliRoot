@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.33  2002/02/12 17:32:03  cblume
+Rearrange the deleting of the list of sdigitsmanager
+
 Revision 1.32  2002/02/12 16:07:21  cblume
 Add new constructor
 
@@ -173,6 +176,9 @@ Add new TRD classes
 #include <TTask.h>
 
 #include "AliRun.h"
+#include "AliRunLoader.h"
+#include "AliLoader.h"
+#include "AliConfig.h"
 #include "AliMagF.h"
 #include "AliRunDigitizer.h"
 
@@ -657,7 +663,10 @@ void AliTRDdigitizer::Exec(Option_t* option)
     sdigitsManager = new AliTRDdigitsManager();
     sdigitsManager->SetDebug(fDebug);
     sdigitsManager->SetSDigits(kTRUE);
-    sdigitsManager->ReadDigits(fManager->GetInputTreeTRDS(iInput));
+    
+    AliRunLoader* rl = AliRunLoader::GetRunLoader(fManager->GetInputFolderName(iInput));
+    AliLoader* gime = rl->GetLoader("TRDLoader");
+    sdigitsManager->ReadDigits(gime->TreeS());
 
     // Add the s-digits to the input list 
     AddSDigitsManager(sdigitsManager);
@@ -676,8 +685,15 @@ void AliTRDdigitizer::Exec(Option_t* option)
     printf("<AliTRDdigitizer::Exec> ");
     printf("Write the digits\n");
   }
-  fDigitsManager->MakeBranch(fManager->GetTreeDTRD());
-  fDigitsManager->WriteDigits();
+  
+  AliRunLoader* orl = AliRunLoader::GetRunLoader(fManager->GetOutputFolderName());
+  AliLoader* ogime = orl->GetLoader("TRDLoader");
+
+  ogime->WriteDigits("OVERWRITE");
+  
+//  fDigitsManager->MakeBranch(fManager->GetTreeDTRD());
+//  fDigitsManager->WriteDigits();
+
   if (fDebug > 0) {
     printf("<AliTRDdigitizer::Exec> ");
     printf("Done\n");
@@ -1347,7 +1363,28 @@ Bool_t AliTRDdigitizer::MakeDigits()
   }
 
   // Get the pointer to the hit tree
-  TTree *HitTree = gAlice->TreeH();
+/******************************************************************/
+      AliConfig* config = AliConfig::Instance();
+      TFolder* topfold = (TFolder*)config->GetTopFolder();
+      if (topfold == 0x0)
+       {
+         Error("MakeDigits","Can not get Alice top folder");
+         return kFALSE; 
+       }
+      TString fmdfoldname(config->GetDataFolderName()+"/"+"TRD");
+      TFolder* fmdfold = (TFolder*)topfold->FindObject(fmdfoldname);
+      if (fmdfold == 0x0)
+       {
+         Error("MakeDigits","Can not get TRD folder");
+         return kFALSE; 
+       }
+      TTree* HitTree = dynamic_cast<TTree*>(fmdfold->FindObject("TreeH"));
+      if (HitTree == 0x0)
+       {
+         Error("MakeDigits","Can not get TreeH");
+         return kFALSE;
+       }
+/******************************************************************/     
 
   // Get the number of entries in the hit tree
   // (Number of primary particles creating a hit somewhere)

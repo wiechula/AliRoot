@@ -55,6 +55,8 @@ class AliPHOS : public AliDetector {
     abort() ;
     return *this ; 
   }
+
+  virtual AliLoader* MakeLoader(const char* topfoldername);
  
 protected:
   

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.36  2002/02/11 14:25:27  cblume
+Geometry update, compressed hit structure
+
 Revision 1.35  2001/11/14 12:08:44  cblume
 Remove unneccessary header files
 
@@ -1304,7 +1307,7 @@ AliHit* AliTRD::FirstHit2(Int_t track)
 
   if (track >= 0) {
     gAlice->ResetHits();
-    gAlice->TreeH()->GetEvent(track);
+    TreeH()->GetEvent(track);
   }
   
   if (fTrackHits) {
@@ -1356,43 +1359,11 @@ void AliTRD::MakeBranch2(Option_t *option, const char *file)
     fTrackHits = new AliTRDtrackHits();
   }
 
-  if (fTrackHits && gAlice->TreeH() && cH) {
-
-    gAlice->TreeH()->Branch(branchname,"AliTRDtrackHits"
-                                      ,&fTrackHits
-                                      ,fBufferSize,99);
-
-    if (GetDebug() > 1) {
-      printf("<AliTRD::MakeBranch2> Making Branch %s for trackhits\n"
-            ,branchname);
-    }
-
-    const char folder[] = "RunMC/Event/Data";
-
-    if (GetDebug()) {
-      printf("<AliTRD::MakeBranch2> %15s: Publishing %s to %s\n"
-            ,ClassName(),branchname,folder);
-    }
-
-    Publish(folder,&fTrackHits,branchname);
-
-    if (file) {
-      TBranch *b = gAlice->TreeH()->GetBranch(branchname);
-      TDirectory *wd = gDirectory;
-      b->SetFile(file);
-      TIter next(b->GetListOfBranches());
-      while ((b = (TBranch*) next())) {
-        b->SetFile(file);
-      }
-      wd->cd();
-      if (GetDebug() > 1) {
-        printf("<AliTRD::MakeBranch2> Diverting branch %s to file %s\n"
-              ,branchname,file);
-      }
-    }
-
-  }
-
+  if (fTrackHits && TreeH() && cH) 
+   {
+    TreeH()->Branch(branchname,"AliTRDtrackHits",&fTrackHits,fBufferSize,99);
+    printf("<AliTRD::MakeBranch2> Making Branch %s for trackhits\n",branchname);
+   }
 }
 
 //_____________________________________________________________________________
@@ -1401,20 +1372,27 @@ void AliTRD::SetTreeAddress2()
   //
   // Set the branch address for the trackHits tree
   //
+  cout<<"AliTRD::SetTreeAddress2()"<<endl;
 
   TBranch *branch;
-
   char branchname[20];
-
   sprintf(branchname,"%s2",GetName());
   
   // Branch address for hit tree
-  TTree *treeH = gAlice->TreeH();
+  TTree *treeH = TreeH();
   if ((treeH) && (fHitType > 0)) {
     branch = treeH->GetBranch(branchname);
-    if (branch) {
-      branch->SetAddress(&fTrackHits);
-    }
+    if (branch) 
+     {
+       branch->SetAddress(&fTrackHits);
+       cout<<"Success"<<endl;
+     }
+    else
+     {
+       cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+       cout<<"AliTRD::SetTreeAddress2() Can NOT get the branch "<<branchname<<endl;
+       cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+     }
   }
 
 }

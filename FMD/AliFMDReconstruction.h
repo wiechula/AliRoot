@@ -12,6 +12,8 @@
 #include "TString.h"
 #include "AliFMD.h"
 
+class AliRunLoader;
+
 class AliFMDReconstruction: public TTask 
 {
  public:
@@ -29,6 +31,7 @@ class AliFMDReconstruction: public TTask
   Int_t   fNevents ;                         // Number of events
   TString fReconstParticlesFile;             //output file 
   TString fHeadersFile ;                     //input file
+  AliRunLoader* fRunLoader;  //!Run Loader of that event
   ClassDef(AliFMDReconstruction,2) 
 };
 #endif

@@ -13,11 +13,13 @@ class TGeometry;
 class TDatabasePDG;
 class TRandom;
 class TParticle;
+class TFile;
 #include <TArrayI.h>
 #include "TClonesArray.h"
 #include <TArrayF.h>
 #include <TStopwatch.h>
 #include "TNamed.h"
+#include "AliRunLoader.h"
 
 class AliDetector;
 class AliModule;
@@ -69,7 +71,7 @@ public:
    virtual  void  FlagTrack(Int_t track);
    void           AddEnergyDeposit(Int_t id, Float_t edep) 
                                        {fEventEnergy[id]+=edep;}
-   Int_t          GetEvNumber() const {return fEvent;}
+   Int_t          GetEvNumber() const;
    Int_t          GetRunNumber() const {return fRun;}
    void           SetRunNumber(Int_t run) {fRun=run;}
    void           SetEventNrInRun(Int_t event) {fEventNrInRun=event;}
@@ -89,7 +91,6 @@ public:
    virtual  const char *GetConfigFunction() const 
     {return fConfigFunction.Data();}
    TGeometry     *GetGeometry();
-   AliHeader*     GetHeader() {return fHeader;}
    virtual  void  SetGenEventHeader(AliGenEventHeader* header);
    virtual  void  GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
 			       Float_t &e, Float_t *vpos, Float_t *polar, 
@@ -104,7 +105,6 @@ public:
    virtual  void  Init(const char *setup="Config.C") {InitMC(setup);}
    Bool_t         IsFolder() const {return kTRUE;}
    virtual AliLego* Lego() const {return fLego;}
-   virtual  void  MakeTree(Option_t *option="KH", const char *file = 0);
 
    TObjArray     *Particles();
    TParticle     *Particle(Int_t i);
@@ -117,11 +117,10 @@ public:
    virtual  void  SetBaseFile(char *filename="galice.root");
    virtual  void  ReadTransPar();
    virtual  void  RunMC(Int_t nevent=1, const char *setup="Config.C");
-   virtual  void  Run(Int_t nevent=1, const char *setup="Config.C") 
-  {RunMC(nevent,setup);}
+   virtual  void  Run(Int_t nevent=1, const char *setup="Config.C") {RunMC(nevent,setup);}
    virtual  void  RunLego(const char *setup="Config.C",Int_t nc1=60,Float_t c1min=2,Float_t c1max=178,
-			  Int_t nc2=60,Float_t c2min=0,Float_t c2max=360,Float_t rmin=0,
-			  Float_t rmax=430,Float_t zmax=10000, AliLegoGenerator* gener=NULL);
+                          Int_t nc2=60,Float_t c2min=0,Float_t c2max=360,Float_t rmin=0,
+                          Float_t rmax=430,Float_t zmax=10000, AliLegoGenerator* gener=NULL);
    virtual  Bool_t IsLegoRun() const {return (fLego!=0);}
    virtual  void  RunReco(const char *detector=0, Int_t first = 0, Int_t last = 0);
    virtual  void  SetCurrentTrack(Int_t track);                           
@@ -131,14 +130,15 @@ public:
    virtual  void  SetField(Int_t type=2, Int_t version=1, Float_t scale=1, Float_t maxField=10, char*filename="$(ALICE_ROOT)/data/field01.dat");
    virtual  void  SetField(AliMagF* magField);
    virtual  void  SetTrack(Int_t done, Int_t parent, Int_t pdg, 
-  			       Float_t *pmom, Float_t *vpos, Float_t *polar, 
-                               Float_t tof, AliMCProcess mech, Int_t &ntr,
-                               Float_t weight=1);
+			   Float_t *pmom, Float_t *vpos, Float_t *polar, 
+			   Float_t tof, AliMCProcess mech, Int_t &ntr,
+			   Float_t weight = 1, Int_t is = 0);
    virtual  void  SetTrack(Int_t done, Int_t parent, Int_t pdg,
-  	              Double_t px, Double_t py, Double_t pz, Double_t e,
-  		      Double_t vx, Double_t vy, Double_t vz, Double_t tof,
-		      Double_t polx, Double_t poly, Double_t polz,
-		      AliMCProcess mech, Int_t &ntr, Float_t weight=1);
+			   Double_t px, Double_t py, Double_t pz, Double_t e,
+			   Double_t vx, Double_t vy, Double_t vz, Double_t tof,
+			   Double_t polx, Double_t poly, Double_t polz,
+			   AliMCProcess mech, Int_t &ntr, Float_t weight=1,
+			   Int_t is = 0);
    virtual  void  SetHighWaterMark(const Int_t nt);
    
    virtual  void  KeepTrack(const Int_t itra);
@@ -154,29 +154,28 @@ public:
    virtual  TDatabasePDG* PDGDB() const {return fPDGDB;}
 
 
-   TTree         *TreeD() {return fTreeD;}
-   TTree         *TreeS() {return fTreeS;}
-   TTree         *TreeE() {return fTreeE;}
-   TTree         *TreeH() {return fTreeH;}
-   TTree         *TreeK() ;
-   TTree         *TreeR() {return fTreeR;}
+   TTree         *TreeE() {return (fRunLoader)?fRunLoader->TreeE():0x0;}
+   TTree         *TreeK() {return (fRunLoader)?fRunLoader->TreeK():0x0;}
+   AliStack      *Stack() {return (fRunLoader)?fRunLoader->Stack():0x0;}
+   AliHeader*     GetHeader() {return (fRunLoader)?fRunLoader->GetHeader():0x0;}
 
-   AliStack      *Stack() {return fStack;}
+   TTree         *TreeD() {MayNotUse("TreeD"); return 0x0;}
+   TTree         *TreeS() {MayNotUse("TreeS"); return 0x0;}
+   TTree         *TreeR() {MayNotUse("TreeR"); return 0x0;}
 
+   
+   void SetRunLoader(AliRunLoader* rloader);
+//   void SetEventFolderName(const char* eventfoldername);
 protected:
   virtual  void  Tree2Tree(Option_t *option, const char *detector=0);
+  virtual  void  InitLoaders(); //prepares run (i.e. creates getters)
 
   Int_t          fRun;               //! Current run number
   Int_t          fEvent;             //! Current event number (from 1)
   Int_t          fEventNrInRun;      //! Current unique event number in run
   Int_t          fEventsPerRun;      //  Number of events per run
   Int_t          fDebug;             //  Debug flag
-  AliHeader     *fHeader;            //  Header information
-  TTree         *fTreeD;             //! Pointer to Tree for Digits
-  TTree         *fTreeS;             //! Pointer to Tree for SDigits
-  TTree         *fTreeH;             //! Pointer to Tree for Hits
-  TTree         *fTreeE;             //! Pointer to Tree for Header
-  TTree         *fTreeR;             //! Pointer to Tree for Reconstructed Objects
+
   TObjArray     *fModules;           //  List of Detectors
   TGeometry     *fGeometry;          //  Pointer to geometry
   AliDisplay    *fDisplay;           //! Pointer to event display
@@ -200,13 +199,14 @@ protected:
   AliMCQA       *fMCQA;              //  Pointer to MC Quality assurance class
   TString        fTransParName;      //  Name of the transport parameters file
   TString        fBaseFileName;      //  Name of the base root file
-  AliStack*      fStack;             //! Particle Stack
+  
+  AliRunLoader  *fRunLoader;         //!run getter - written as a separate object
 private:
 
    AliRun(const AliRun &right) 
      {}  
    AliRun& operator = (const AliRun &) {return *this;}
-   ClassDef(AliRun,5)      //Supervisor class for all Alice detectors
+   ClassDef(AliRun,6)      //Supervisor class for all Alice detectors
 };
  
 R__EXTERN  AliRun *gAlice;

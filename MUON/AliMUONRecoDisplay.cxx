@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.7  2001/05/16 14:57:17  alibrary
+New files for folders and Stack
+
 Revision 1.6  2001/01/26 21:50:43  morsch
 Use access functions to AliMUONHit member data.
 
@@ -30,6 +33,9 @@ RN3 violations corrected
 Revision 1.2  2000/11/23 10:09:39  gosset
 Bug correction in AliMUONRecoDisplay.
 Copyright, $Log$
+Copyright, Revision 1.7  2001/05/16 14:57:17  alibrary
+Copyright, New files for folders and Stack
+Copyright,
 Copyright, Revision 1.6  2001/01/26 21:50:43  morsch
 Copyright, Use access functions to AliMUONHit member data.
 Copyright,
@@ -77,6 +83,7 @@ in AliMUONRecoEvent and AliMUONRecoDisplay
 
 #include <iostream.h>
 #include <AliRun.h>
+#include <AliConfig.h>
 #include <TClonesArray.h>
 #include "AliMUONRecoEvent.h"
 #include "AliMUONRecoDisplay.h"
@@ -198,7 +205,7 @@ void AliMUONRecoDisplay::MapEvent(Int_t nevent)
       gApplication->Terminate(0);
    }
    // get the number of generated tracks
-   Int_t ntracks = (Int_t)gAlice->TreeH()->GetEntries();
+   Int_t ntracks = (Int_t)pMUON->TreeH()->GetEntries();
    // Fill the fEvGen object
    AliMUONRecoTrack *gtrack = 0;
    AliMUONHit *hit = 0;
@@ -435,7 +442,29 @@ void AliMUONRecoDisplay::ShowNextEvent(Int_t delta)
       if (newEvent<0 || newEvent>(gAlice->TreeE()->GetEntries() - 1)) return;
       Int_t nparticles = gAlice->GetEvent(newEvent);
       cout << "Event : " << newEvent << " with " << nparticles << " particles\n";
-      if (!gAlice->TreeH()) return;
+
+/******************************************************************/
+      AliConfig* config = AliConfig::Instance();
+      TFolder* topfold = (TFolder*)config->GetTopFolder();
+      if (topfold == 0x0)
+       {
+         Error("Exec","Can not get Alice top folder");
+         return; 
+       }
+      TString fmdfoldname(config->GetDataFolderName()+"/"+"MUON");
+      TFolder* fmdfold = (TFolder*)topfold->FindObject(fmdfoldname);
+      if (fmdfold == 0x0)
+       {
+         Error("Exec","Can not get MUON folder");
+         return; 
+       }
+      TTree* treeH = dynamic_cast<TTree*>(fmdfold->FindObject("TreeH"));
+      if (treeH == 0x0)
+       {
+         Error("Exec","Can not get TreeH");
+         return;
+       }
+/******************************************************************/     
       MapEvent(newEvent);
       fHighlited = -1;
    }

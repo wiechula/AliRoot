@@ -33,7 +33,7 @@
 #include "AliPHOSGeometry.h"
 #include "AliPHOSDigit.h"
 #include "AliPHOSRecPoint.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 
 ClassImp(AliPHOSRecPoint)
 
@@ -108,8 +108,13 @@ void AliPHOSRecPoint::ExecuteEvent(Int_t event, Int_t px, Int_t py)
     
   case kButton1Down:{
     AliPHOSDigit * digit ;
-    AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
-    AliPHOSGeometry * phosgeom =  const_cast<AliPHOSGeometry*>(gime->PHOSGeometry());
+  
+//  Accessing geometry this way is equivalent to getting from gAlice
+// to have Detector in Folder one have to load gAlice anyway
+//    AliPHOSLoader * gime = AliPHOSLoader::GetInstance();
+//    AliPHOSGeometry * phosgeom =  const_cast<AliPHOSGeometry*>(gime->PHOSGeometry());
+
+    AliPHOSGeometry * phosgeom = AliPHOSLoader::GetPHOSGeometry();
 
     Int_t iDigit;
     Int_t relid[4] ;
@@ -181,8 +186,7 @@ void AliPHOSRecPoint::EvalPHOSMod(AliPHOSDigit * digit)
   if( fPHOSMod == 0){
   Int_t relid[4] ; 
   
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
-  AliPHOSGeometry * phosgeom =  const_cast<AliPHOSGeometry*>(gime->PHOSGeometry());
+  AliPHOSGeometry * phosgeom = AliPHOSLoader::GetPHOSGeometry();
 
   phosgeom->AbsToRelNumbering(digit->GetId(), relid) ;
   fPHOSMod = relid[0];
@@ -243,10 +247,7 @@ void AliPHOSRecPoint::GetGlobalPosition(TVector3 & gpos, TMatrix & gmat) const
 {
   // returns the position of the cluster in the global reference system of ALICE
   // and the uncertainty on this position
-  
-  
-  AliPHOSGetter::GetInstance()->PHOSGeometry()->GetGlobal(this, gpos, gmat) ;
- 
+  AliPHOSLoader::GetPHOSGeometry()->GetGlobal(this, gpos, gmat);
 }
 
 
@@ -271,3 +272,5 @@ void AliPHOSRecPoint::Paint(Option_t *)
   gPad->SetAttMarkerPS(markercolor,markerstyle,markersize) ;
   gPad->PaintPolyMarker(1,&x,&y,"") ;
 }
+//______________________________________________________________________________
+

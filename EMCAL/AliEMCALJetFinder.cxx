@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.19  2002/02/27 00:46:33  pavlinov
+Added method FillFromParticles()
+
 Revision 1.18  2002/02/21 08:48:59  morsch
 Correction in FillFromHitFlaggedTrack. (Jennifer Klay)
 
@@ -797,7 +800,7 @@ void AliEMCALJetFinder::FillFromHits(Int_t flag)
 // Access hit information    
     AliEMCAL* pEMCAL = (AliEMCAL*) gAlice->GetModule("EMCAL");
     
-    TTree *treeH = gAlice->TreeH();
+    TTree *treeH = pEMCAL->TreeH();
     Int_t ntracks = (Int_t) treeH->GetEntries();
 //
 //   Loop over tracks
@@ -1114,7 +1117,7 @@ void AliEMCALJetFinder::BuildTrackFlagTable() {
 	fTrackList[i] = 0;
     }
     
-    TTree *treeH = gAlice->TreeH();
+    TTree *treeH = pEMCAL->TreeH();
     Int_t ntracks = (Int_t) treeH->GetEntries();
 //
 //   Loop over tracks

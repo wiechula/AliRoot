@@ -17,6 +17,7 @@
 // --- Standard library ---
 
 // --- AliRoot header files ---
+class AliRunLoader;
 
 class AliPHOSIhepAnalyze : public TObject {
 
@@ -37,7 +38,8 @@ class AliPHOSIhepAnalyze : public TObject {
   Bool_t IsCharged(Int_t pdg_code);
 
  private:
-
+ 
+  AliRunLoader *fRunLoader;
   TString fFileName;
 
 ClassDef(AliPHOSIhepAnalyze,1)  // PHOSv1 event analyzis algorithm

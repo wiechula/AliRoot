@@ -37,7 +37,7 @@
 #include "AliRun.h"
 #include "AliConst.h"
 #include "AliEMCALGeometry.h"
-#include "AliEMCALGetter.h"
+#include "AliEMCALLoader.h"
 
 ClassImp(AliEMCALHit)
 
@@ -105,7 +105,8 @@ const Bool_t AliEMCALHit::IsInPreShower() const
 {
   Bool_t rv = kFALSE ;
   
-  const AliEMCALGeometry * geom = AliEMCALGetter::GetInstance()->EMCALGeometry() ;
+  const AliEMCALGeometry * geom = AliEMCALLoader::GetEMCALGeometry() ;
+  
   if((GetId()/geom->GetNPhi()) < (2*geom->GetNZ())) 
     rv = kTRUE; 
   return rv; 

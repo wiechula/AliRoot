@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.53  2002/02/25 11:02:56  kowal2
+Changes towards speeding up the code. Thanks to Marian Ivanov.
+
 Revision 1.52  2002/02/18 09:26:09  kowal2
 Removed compiler warning
 
@@ -218,7 +221,6 @@ Introduction of the Copyright and cvs Log
 
 #include <TInterpreter.h>
 #include <TTree.h>
-
 
 
 ClassImp(AliTPC) 
@@ -452,13 +454,14 @@ Int_t AliTPC::DistancetoPrimitive(Int_t , Int_t )
   return 9999;
 }
 
-void AliTPC::Clusters2Tracks(TFile *of) {
+void AliTPC::Clusters2Tracks() 
+ {
   //-----------------------------------------------------------------
   // This is a track finder.
   //-----------------------------------------------------------------
-  AliTPCtracker tracker(fTPCParam);
-  tracker.Clusters2Tracks(gFile,of);
-}
+  AliTPCtracker tracker(fTPCParam,fLoader->GetEventFolder()->GetName());
+  tracker.Clusters2Tracks();
+ }
 
 //_____________________________________________________________________________
 void AliTPC::CreateMaterials()
@@ -927,16 +930,24 @@ void    AliTPC::SetActiveSectors()
   fActiveSectors = new Bool_t[fTPCParam->GetNSector()];
   for (Int_t i=0;i<fTPCParam->GetNSector();i++) fActiveSectors[i]=kFALSE;
   TBranch * branch=0;
-  if (fHitType>1) branch = gAlice->TreeH()->GetBranch("TPC2");
-  else branch = gAlice->TreeH()->GetBranch("TPC");
-  Stat_t ntracks = gAlice->TreeH()->GetEntries();
+  if (TreeH() == 0x0)
+   {
+     Fatal("SetActiveSectors","Can not find TreeH in folder");
+     return;
+   }
+  if (fHitType>1) branch = TreeH()->GetBranch("TPC2");
+  else branch = TreeH()->GetBranch("TPC");
+  Stat_t ntracks = TreeH()->GetEntries();
   // loop over all hits
-  for(Int_t track=0;track<ntracks;track++){
+  cout<<"\nAliTPC::SetActiveSectors():  Got "<<ntracks<<" tracks\n";
+  
+  for(Int_t track=0;track<ntracks;track++)
+   {
     ResetHits();
     //
     if (fTrackHits && fHitType&4) {
-      TBranch * br1 = gAlice->TreeH()->GetBranch("fVolumes");
-      TBranch * br2 = gAlice->TreeH()->GetBranch("fNVolumes");    
+      TBranch * br1 = TreeH()->GetBranch("fVolumes");
+      TBranch * br2 = TreeH()->GetBranch("fNVolumes");
       br1->GetEvent(track);
       br2->GetEvent(track);
       Int_t *volumes = fTrackHits->GetVolumes();
@@ -946,7 +957,7 @@ void    AliTPC::SetActiveSectors()
     
     //
     if (fTrackHitsOld && fHitType&2) {
-      TBranch * br = gAlice->TreeH()->GetBranch("fTrackHitsInfo");
+      TBranch * br = TreeH()->GetBranch("fTrackHitsInfo");
       br->GetEvent(track);
       AliObjectArray * ar = fTrackHitsOld->fTrackHitsInfo;
       for (UInt_t j=0;j<ar->GetSize();j++){
@@ -960,12 +971,12 @@ void    AliTPC::SetActiveSectors()
 
 
 
-void AliTPC::Digits2Clusters(TFile *of, Int_t eventnumber)
+void AliTPC::Digits2Clusters(Int_t eventnumber)
 {
   //-----------------------------------------------------------------
   // This is a simple cluster finder.
   //-----------------------------------------------------------------
-  AliTPCclusterer::Digits2Clusters(fTPCParam,of,eventnumber);
+  AliTPCclusterer::Digits2Clusters(fTPCParam, fLoader,eventnumber);
 }
 
 extern Double_t SigmaY2(Double_t, Double_t, Double_t);
@@ -1003,9 +1014,8 @@ void AliTPC::Hits2Clusters(TFile *of, Int_t eventn)
   const Float_t kBCz=0.55938e-3;
   const Float_t kCCz=0.30428;
 
-  TDirectory *savedir=gDirectory; 
 
-  if (!of->IsOpen()) {
+  if (!fLoader) {
      cerr<<"AliTPC::Hits2Clusters(): output file not open !\n";
      return;
   }
@@ -1026,21 +1036,30 @@ void AliTPC::Hits2Clusters(TFile *of, Int_t eventn)
   //  Get the access to the tracks 
   //---------------------------------------------------------------
   
-  TTree *tH = gAlice->TreeH();
+  TTree *tH = TreeH();
+  if (tH == 0x0)
+   {
+     Fatal("Hits2Clusters","Can not find TreeH in folder");
+     return;
+   }
+  SetTreeAddress();
+  
   Stat_t ntracks = tH->GetEntries();
 
   //Switch to the output file
-  of->cd();
-
-  char   cname[100];
-
-  sprintf(cname,"TreeC_TPC_%d",eventn);
-
+  
+  if (fLoader->TreeR() == 0x0) fLoader->MakeTree("R");
+  
+  cout<<"fTPCParam->GetTitle() = "<<fTPCParam->GetTitle()<<endl;
+  
+  AliRunLoader* rl = (AliRunLoader*)fLoader->GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName);
+  rl->CdGAFile();
   fTPCParam->Write(fTPCParam->GetTitle());
+
   AliTPCClustersArray carray;
   carray.Setup(fTPCParam);
   carray.SetClusterType("AliTPCcluster");
-  carray.MakeTree();
+  carray.MakeTree(fLoader->TreeR());
 
   Int_t nclusters=0; //cluster counter
   
@@ -1155,10 +1174,8 @@ void AliTPC::Hits2Clusters(TFile *of, Int_t eventn)
   } // end of loop over sectors  
 
   cerr<<"Number of made clusters : "<<nclusters<<"                        \n";
-  carray.GetTree()->SetName(cname);
-  carray.GetTree()->Write();
-
-  savedir->cd(); //switch back to the input file
+  fLoader->WriteRecPoints("OVERWRITE");
+  
   
 } // end of function
 
@@ -1194,7 +1211,14 @@ void AliTPC::Hits2ExactClustersSector(Int_t isec)
   //  Get the access to the tracks 
   //---------------------------------------------------------------
   
-  TTree *tH = gAlice->TreeH();
+  TTree *tH = TreeH();
+  if (tH == 0x0)
+   {
+     Fatal("Hits2Clusters","Can not find TreeH in folder");
+     return;
+   }
+  SetTreeAddress();
+
   Stat_t ntracks = tH->GetEntries();
   Int_t npart = gAlice->GetNtrack();
   //MI change
@@ -1340,13 +1364,15 @@ void AliTPC::SDigits2Digits2(Int_t eventnumber)
 {
   //create digits from summable digits
   GenerNoise(500000); //create teble with noise
-  char  sname[100];
-  char  dname[100];
-  sprintf(sname,"TreeS_%s_%d",fTPCParam->GetTitle(),eventnumber);
-  sprintf(dname,"TreeD_%s_%d",fTPCParam->GetTitle(),eventnumber);
 
   //conect tree with sSDigits
-  TTree *t = (TTree *)gDirectory->Get(sname); 
+  fLoader->LoadSDigits("READ");
+  fLoader->LoadDigits("UPDATE");
+  
+  TTree *t = fLoader->TreeS();
+  
+  if (fLoader->TreeD() == 0x0) fLoader->MakeTree("D");
+  
   AliSimDigits digarr, *dummy=&digarr;
   t->GetBranch("Segment")->SetAddress(&dummy);
   Stat_t nentries = t->GetEntries();
@@ -1364,9 +1390,9 @@ void AliTPC::SDigits2Digits2(Int_t eventnumber)
   AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
   arr->SetClass("AliSimDigits");
   arr->Setup(fTPCParam);
-  arr->MakeTree(fDigitsFile);
+  arr->MakeTree(fLoader->TreeD());
   
-  AliTPCParam * par =fTPCParam;
+  AliTPCParam * par = fTPCParam;
 
   //Loop over segments of the TPC
 
@@ -1377,7 +1403,15 @@ void AliTPC::SDigits2Digits2(Int_t eventnumber)
       cerr<<"AliTPC warning: invalid segment ID ! "<<digarr.GetID()<<endl;
       continue;
     }
-    if (!IsSectorActive(sec)) continue;
+    if (!IsSectorActive(sec)) 
+     {
+//       cout<<n<<" NOT Active \n";
+       continue;
+     }
+    else
+     {
+//       cout<<n<<" Active \n";
+     }
     AliSimDigits * digrow =(AliSimDigits*) arr->CreateRow(sec,row);
     Int_t nrows = digrow->GetNRows();
     Int_t ncols = digrow->GetNCols();
@@ -1427,10 +1461,8 @@ void AliTPC::SDigits2Digits2(Int_t eventnumber)
 
     
   //write results
-
-  
-  arr->GetTree()->SetName(dname);  
-  arr->GetTree()->Write();  
+  fLoader->WriteDigits("OVERWRITE");
+   
   delete arr;
 }
 //_________________________________________
@@ -1570,7 +1602,11 @@ void AliTPC::SetDefaults(){
 
   // Set response functions
 
+  //
+  AliRunLoader* rl = (AliRunLoader*)fLoader->GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName);
+  rl->CdGAFile();
   AliTPCParamSR *param=(AliTPCParamSR*)gDirectory->Get("75x40_100x60");
+  
   AliTPCPRF2D    * prfinner   = new AliTPCPRF2D;
   AliTPCPRF2D    * prfouter   = new AliTPCPRF2D;
   AliTPCRF1D     * rf    = new AliTPCRF1D(kTRUE);
@@ -1607,7 +1643,26 @@ void AliTPC::Hits2Digits(Int_t eventnumber)
  //----------------------------------------------------
  // Loop over all sectors for a single event
  //----------------------------------------------------
-
+  AliRunLoader* rl = (AliRunLoader*)fLoader->GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName);
+  rl->GetEvent(eventnumber);
+  if (fLoader->TreeH() == 0x0)
+   {
+     if(fLoader->LoadHits())
+      {
+        Error("Hits2Digits","Can not load hits.");
+      }
+   }
+  SetTreeAddress();
+  
+  if (fLoader->TreeD() == 0x0 ) 
+   {
+     fLoader->MakeTree("D");
+     if (fLoader->TreeD() == 0x0 ) 
+      {
+       Error("Hits2Digits","Can not get TreeD");
+       return;
+      }
+   }
 
   if(fDefaults == 0) SetDefaults();  // check if the parameters are set
   GenerNoise(500000); //create teble with noise
@@ -1619,24 +1674,28 @@ void AliTPC::Hits2Digits(Int_t eventnumber)
   AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
   arr->SetClass("AliSimDigits");
   arr->Setup(fTPCParam);
-  arr->MakeTree(fDigitsFile);
+  arr->MakeTree(fLoader->TreeD());
   SetDigitsArray(arr);
 
   fDigitsSwitch=0; // standard digits
 
   cerr<<"Digitizing TPC -- normal digits...\n";
 
- for(Int_t isec=0;isec<fTPCParam->GetNSector();isec++) if (IsSectorActive(isec)) Hits2DigitsSector(isec);
+ for(Int_t isec=0;isec<fTPCParam->GetNSector();isec++) 
+  if (IsSectorActive(isec)) 
+   {
+    cout<<"Sector "<<isec<<"is active\n";
+    Hits2DigitsSector(isec);
+   }
+  else
+   {
+    cout<<"Sector "<<isec<<"is NOT active\n";
+   }
 
   // write results
 
-  char treeName[100];
 
-  sprintf(treeName,"TreeD_%s_%d",fTPCParam->GetTitle(),eventnumber);
-  
-  GetDigitsArray()->GetTree()->SetName(treeName);  
-  GetDigitsArray()->GetTree()->Write();  
-
+  fLoader->WriteDigits("OVERWRITE"); 
 
 }
 
@@ -1653,18 +1712,35 @@ void AliTPC::Hits2SDigits2(Int_t eventnumber)
  //----------------------------------------------------
  // Loop over all sectors for a single event
  //----------------------------------------------------
+  AliRunLoader* rl = (AliRunLoader*)fLoader->GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName);
+  rl->GetEvent(eventnumber);
+  if (fLoader->TreeH() == 0x0)
+   {
+     if(fLoader->LoadHits())
+      {
+        Error("Hits2Digits","Can not load hits.");
+      }
+   }
+  SetTreeAddress();
 
 
+  if (fLoader->TreeS() == 0x0 ) 
+   {
+     fLoader->MakeTree("S");
+   }
+  
   if(fDefaults == 0) SetDefaults();
+  
   GenerNoise(500000); //create table with noise
   //setup TPCDigitsArray 
 
   if(GetDigitsArray()) delete GetDigitsArray();
 
+  
   AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
   arr->SetClass("AliSimDigits");
   arr->Setup(fTPCParam);
-  arr->MakeTree(fDigitsFile);
+  arr->MakeTree(fLoader->TreeS());
   SetDigitsArray(arr);
 
   cerr<<"Digitizing TPC -- summable digits...\n"; 
@@ -1675,18 +1751,14 @@ void AliTPC::Hits2SDigits2(Int_t eventnumber)
 
   fTPCParam->SetZeroSup(0);
 
- for(Int_t isec=0;isec<fTPCParam->GetNSector();isec++) if (IsSectorActive(isec)) Hits2DigitsSector(isec);
+ for(Int_t isec=0;isec<fTPCParam->GetNSector();isec++) 
+  if (IsSectorActive(isec)) 
+   {
+//    cout<<"Sector "<<isec<<" is active\n";
+    Hits2DigitsSector(isec);
+   }
 
-
-  // write results
-
-  char treeName[100];
-
-  sprintf(treeName,"TreeS_%s_%d",fTPCParam->GetTitle(),eventnumber);
-  
-  GetDigitsArray()->GetTree()->SetName(treeName); 
-  GetDigitsArray()->GetTree()->Write(); 
-
+ fLoader->WriteSDigits("OVERWRITE");
 }
 
 
@@ -1703,7 +1775,18 @@ void AliTPC::Hits2SDigits()
  // Loop over all sectors for a single event
  //----------------------------------------------------
   //MI change - for pp run
-  Int_t eventnumber = gAlice->GetEvNumber();
+//  Int_t eventnumber = gAlice->GetEvNumber();
+//  AliRunLoader* rl = (AliRunLoader*)fLoader->GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName);
+//  rl->GetEvent(eventnumber);
+
+  if (fLoader->TreeH() == 0x0)
+   {
+     if(fLoader->LoadHits())
+      {
+        Error("Hits2Digits","Can not load hits.");
+      }
+   }
+  SetTreeAddress();
 
   if(fDefaults == 0) SetDefaults();
   GenerNoise(500000); //create table with noise
@@ -1712,10 +1795,15 @@ void AliTPC::Hits2SDigits()
 
   if(GetDigitsArray()) delete GetDigitsArray();
 
+  if (fLoader->TreeS() == 0x0 ) 
+   {
+     fLoader->MakeTree("S");
+   }
+  
   AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
   arr->SetClass("AliSimDigits");
   arr->Setup(fTPCParam);
-  arr->MakeTree(fDigitsFile);
+  arr->MakeTree(fLoader->TreeS());
   SetDigitsArray(arr);
 
   cerr<<"Digitizing TPC -- summable digits...\n"; 
@@ -1724,15 +1812,10 @@ void AliTPC::Hits2SDigits()
 
   for(Int_t isec=0;isec<fTPCParam->GetNSector();isec++) if (IsSectorActive(isec)) Hits2DigitsSector(isec);
 
-
   // write results
-  char treeName[100];
-
-  sprintf(treeName,"TreeD_%s_%d",fTPCParam->GetTitle(),eventnumber);
-  
-  GetDigitsArray()->GetTree()->SetName(treeName); 
-  GetDigitsArray()->GetTree()->Write(); 
-
+  //
+  cout<<"Why method TPC::Hits2SDigits writes digits and not sdigits? skowron\n";
+  fLoader->WriteDigits("OVERWRITE");
 }
 
 
@@ -1756,7 +1839,13 @@ void AliTPC::Hits2DigitsSector(Int_t isec)
 
   if(fDefaults == 0) SetDefaults();
 
-  TTree *tH = gAlice->TreeH(); // pointer to the hits tree
+  TTree *tH = TreeH(); // pointer to the hits tree
+  if (tH == 0x0)
+   {
+     Fatal("Hits2DigitsSector","Can not find TreeH in folder");
+     return;
+   }
+
   Stat_t ntracks = tH->GetEntries();
 
   if( ntracks > 0){
@@ -1784,7 +1873,10 @@ void AliTPC::Hits2DigitsSector(Int_t isec)
 
       Int_t i;
 
-      if (fDigitsArray->GetTree()==0) fDigitsArray->MakeTree(fDigitsFile);
+      if (fDigitsArray->GetTree()==0) 
+       {
+         Fatal("Hits2DigitsSector","Tree not set in fDigitsArray");
+       }
 
       for (i=0;i<nrows;i++){
 
@@ -1795,7 +1887,9 @@ void AliTPC::Hits2DigitsSector(Int_t isec)
 	fDigitsArray->StoreRow(isec,i);
 
 	Int_t ndig = dig->GetDigitSize(); 
-	if (gDebug > 10) printf("*** Sector, row, compressed digits %d %d %d ***\n",isec,i,ndig);        
+	
+	//if (gDebug > 10) 
+	printf("*** Sector, row, compressed digits %d %d %d ***\n",isec,i,ndig);        
  	
         fDigitsArray->ClearRow(isec,i);  
 
@@ -2550,11 +2644,11 @@ void AliTPC::MakeBranch2(Option_t *option,const char *file)
   // Get the pointer to the header
   const char *cH = strstr(option,"H");
   //
-  if (fTrackHits   && gAlice->TreeH() && cH && fHitType&4) {    
+  if (fTrackHits   && TreeH() && cH && fHitType&4) {    
     //    AliObjectBranch * branch = new AliObjectBranch(branchname,"AliTPCTrackHitsV2",&fTrackHits, 
-    //						   gAlice->TreeH(),fBufferSize,99);
+    //            gAlice->TreeH(),fBufferSize,99);
     //TBranch * branch = 
-    gAlice->TreeH()->Branch(branchname,"AliTPCTrackHitsV2",&fTrackHits, 
+    TreeH()->Branch(branchname,"AliTPCTrackHitsV2",&fTrackHits, 
     						   fBufferSize,99);
 
     // gAlice->TreeH()->GetListOfBranches()->Add(branch);
@@ -2565,7 +2659,7 @@ void AliTPC::MakeBranch2(Option_t *option,const char *file)
       printf("%15s: Publishing %s to %s\n",ClassName(),branchname,folder);
     Publish(folder,&fTrackHits,branchname);
     if (file) {
-        TBranch *b = gAlice->TreeH()->GetBranch(branchname);
+        TBranch *b = TreeH()->GetBranch(branchname);
         TDirectory *wd = gDirectory;
         b->SetFile(file);
         TIter next( b->GetListOfBranches());
@@ -2578,13 +2672,13 @@ void AliTPC::MakeBranch2(Option_t *option,const char *file)
     }
   }	
 
-  if (fTrackHitsOld   && gAlice->TreeH() && cH && fHitType&2) {    
+  if (fTrackHitsOld   && TreeH() && cH && fHitType&2) {    
     AliObjectBranch * branch = new AliObjectBranch(branchname,"AliTPCTrackHits",&fTrackHitsOld, 
-    						   gAlice->TreeH(),fBufferSize,99);
+                                                   TreeH(),fBufferSize,99);
     //TBranch * branch = gAlice->TreeH()->Branch(branchname,"AliTPCTrackHitsV2",&fTrackHits, 
     //    						   fBufferSize,99);
 
-    gAlice->TreeH()->GetListOfBranches()->Add(branch);
+    TreeH()->GetListOfBranches()->Add(branch);
     if (GetDebug()>1) 
       printf("* AliDetector::MakeBranch * Making Branch %s for trackhits\n",branchname);
     const char folder [] = "RunMC/Event/Data";
@@ -2592,7 +2686,7 @@ void AliTPC::MakeBranch2(Option_t *option,const char *file)
       printf("%15s: Publishing %s to %s\n",ClassName(),branchname,folder);
     Publish(folder,&fTrackHitsOld,branchname);
     if (file) {
-        TBranch *b = gAlice->TreeH()->GetBranch(branchname);
+        TBranch *b = TreeH()->GetBranch(branchname);
         TDirectory *wd = gDirectory;
         b->SetFile(file);
         TIter next( b->GetListOfBranches());
@@ -2617,19 +2711,32 @@ void AliTPC::SetTreeAddress2()
   //
   // Set branch address for the TrackHits Tree
   // 
+  cout<<"#########################################"<<endl;
+  cout<<"AliTPC::SetTreeAddress2()"<<endl;
+  
   TBranch *branch;
   char branchname[20];
   sprintf(branchname,"%s2",GetName());
   //
   // Branch address for hit tree
-  TTree *treeH = gAlice->TreeH();
+  TTree *treeH = TreeH();
   if ((treeH)&&(fHitType&4)) {
     branch = treeH->GetBranch(branchname);
-    if (branch) branch->SetAddress(&fTrackHits);
+    if (branch) 
+     {
+       branch->SetAddress(&fTrackHits);
+       cout<<"AliTPC::SetTreeAddress2 fHitType&4 Setting"<<endl;       
+     }
+    else cout<<"AliTPC::SetTreeAddress2 fHitType&4  Failed"<<endl;
   }
   if ((treeH)&&(fHitType&2)) {
     branch = treeH->GetBranch(branchname);
-    if (branch) branch->SetAddress(&fTrackHitsOld);
+    if (branch) 
+     {
+       branch->SetAddress(&fTrackHitsOld);
+       cout<<"AliTPC::SetTreeAddress2 fHitType&2 Setting"<<endl;       
+     }
+    else cout<<"AliTPC::SetTreeAddress2 fHitType&2  Failed"<<endl;
   }
 
 }
@@ -2659,15 +2766,15 @@ void AliTPC::AddHit2(Int_t track, Int_t *vol, Float_t *hits)
   //  cout<<"bad track number\n";
   if (fTrackHits && fHitType&4) 
     fTrackHits->AddHitKartez(vol[0],rtrack, hits[0],
-			     hits[1],hits[2],(Int_t)hits[3]);
+                             hits[1],hits[2],(Int_t)hits[3]);
   if (fTrackHitsOld &&fHitType&2 ) 
     fTrackHitsOld->AddHitKartez(vol[0],rtrack, hits[0],
-			     hits[1],hits[2],(Int_t)hits[3]);
+                                hits[1],hits[2],(Int_t)hits[3]);
   
 }
 
 void AliTPC::ResetHits()
-{
+{ 
   if (fHitType&1) AliDetector::ResetHits();
   if (fHitType>1) ResetHits2();
 }
@@ -2704,7 +2811,7 @@ AliHit* AliTPC::FirstHit2(Int_t track)
   // 
   if(track>=0) {
     gAlice->ResetHits();
-    gAlice->TreeH()->GetEvent(track);
+    TreeH()->GetEvent(track);
   }
   //
   if (fTrackHits && fHitType&4) {
@@ -2780,7 +2887,7 @@ Bool_t   AliTPC::TrackInVolume(Int_t id,Int_t track)
   //
   //  return kTRUE;
   if (fTrackHitsOld && fHitType&2) {
-    TBranch * br = gAlice->TreeH()->GetBranch("fTrackHitsInfo");
+    TBranch * br = TreeH()->GetBranch("fTrackHitsInfo");
     br->GetEvent(track);
     AliObjectArray * ar = fTrackHitsOld->fTrackHitsInfo;
     for (UInt_t j=0;j<ar->GetSize();j++){
@@ -2789,8 +2896,8 @@ Bool_t   AliTPC::TrackInVolume(Int_t id,Int_t track)
   }
 
   if (fTrackHits && fHitType&4) {
-    TBranch * br1 = gAlice->TreeH()->GetBranch("fVolumes");
-    TBranch * br2 = gAlice->TreeH()->GetBranch("fNVolumes");    
+    TBranch * br1 = TreeH()->GetBranch("fVolumes");
+    TBranch * br2 = TreeH()->GetBranch("fNVolumes");    
     br2->GetEvent(track);
     br1->GetEvent(track);    
     Int_t *volumes = fTrackHits->GetVolumes();
@@ -2804,7 +2911,7 @@ Bool_t   AliTPC::TrackInVolume(Int_t id,Int_t track)
   }
 
   if (fHitType&1) {
-    TBranch * br = gAlice->TreeH()->GetBranch("fSector");
+    TBranch * br = TreeH()->GetBranch("fSector");
     br->GetEvent(track);
     for (Int_t j=0;j<fHits->GetEntriesFast();j++){
       if (  ((AliTPChit*)fHits->At(j))->fSector==id) return kTRUE;
@@ -3126,7 +3233,7 @@ void AliTPC::Digits2Reco(Int_t firstevent,Int_t lastevent)
   for(Int_t iev=firstevent;iev<lastevent+1;iev++){
 
     printf("Processing event %d\n",iev);
-    Digits2Clusters(out,iev);
+    Digits2Clusters(iev);
   }
   cout<<"AliTPC::Digits2Reco - determination of rec points ended"<<endl;
   timer.Stop();
@@ -3135,4 +3242,21 @@ void AliTPC::Digits2Reco(Int_t firstevent,Int_t lastevent)
   cwd->cd(); 
 
 
+}
+AliLoader* AliTPC::MakeLoader(const char* topfoldername)
+{
+ cout<<"AliTPC::MakeLoader ";
+ 
+ fLoader = new AliTPCLoader(GetName(),topfoldername);
+ 
+ if (fLoader)
+  {
+   cout<<"Success"<<endl;
+  }
+ else
+  {
+   cout<<"Failure"<<endl;
+  }
+
+ return fLoader;
 }

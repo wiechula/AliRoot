@@ -14,6 +14,9 @@
  **************************************************************************/
 /*
 $Log$
+Revision 1.7  2001/01/26 21:48:44  morsch
+Use access functions to AliMUONDigit member data.
+
 Revision 1.6  2000/10/03 13:51:57  egangler
 Removal of useless dependencies via forward declarations
 
@@ -241,7 +244,8 @@ AliMUONHit *AliMUONPoints::GetHit() const
   //   Returns pointer to hit index in AliRun::fParticles
   //
   AliMUON *pMUON  = (AliMUON*)gAlice->GetModule("MUON");
-  gAlice->TreeH()->GetEvent(fTrackIndex);
+  
+  pMUON->TreeH()->GetEvent(fTrackIndex);
   TClonesArray *muonHits  = pMUON->Hits();
   Int_t nhits = muonHits->GetEntriesFast();
   if (fHitIndex < 0 || fHitIndex >= nhits) return 0;

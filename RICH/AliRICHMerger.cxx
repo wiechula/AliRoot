@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.7  2001/11/02 15:37:26  hristov
+Digitizer class created. Code cleaning and bug fixes (J.Chudoba)
+
 Revision 1.5  2001/10/23 13:03:35  hristov
 The access to several data members was changed from public to protected. The digitisation was adapted to the multi-event case (J.Chudoba)
 
@@ -219,7 +222,7 @@ void AliRICHMerger::Digitise(Int_t nev, Int_t flag)
     
   fSignal = kTRUE;
   fCounter = 0;
-  TTree *treeH = gAlice->TreeH();
+  TTree *treeH = pRICH->TreeH();
   Int_t ntracks =(Int_t) treeH->GetEntries();
   for (fTrack=0; fTrack<ntracks; fTrack++) {
     gAlice->ResetHits();

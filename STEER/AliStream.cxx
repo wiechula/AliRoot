@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.5  2002/04/09 13:38:47  jchudoba
+Add const to the filename argument
+
+Revision 1.4  2001/12/03 07:10:13  jchudoba
+Default ctor cannot create new objects, create dummy default ctor which leaves object in not well defined state - to be used only by root for I/O
+
 Revision 1.3  2001/10/15 17:31:56  jchudoba
 Bug correction
 
@@ -40,10 +46,15 @@ Class to manage input filenames, used by AliRunDigitizer
 #include <iostream.h>
 
 #include "TTree.h"
+#include "TROOT.h"
 
 #include "AliStream.h"
-
 #include "AliRun.h"
+
+#include "TObjString.h"
+#include "TArrayI.h"
+#include "TClonesArray.h"
+#include "TFile.h"
 
 ClassImp(AliStream)
 
@@ -51,19 +62,17 @@ AliStream::AliStream()
 {
 // root requires default ctor, where no new objects can be created
 // do not use this ctor, it is supplied only for root needs
-  fCurrentFile = 0;
   fEvents = 0;
   fFileNames = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
-AliStream::AliStream(Option_t *option)
+AliStream::AliStream(const char* foldername,Option_t *option):fEventFolderName(foldername)
 {
 // ctor
   fLastEventSerialNr = -1;
   fLastEventNr = 0;
   fCurrentFileIndex = -1;
-  fCurrentFile = 0;
   fEvents = 0;
   fFileNames = new TObjArray(1);
   fMode = option;
@@ -77,7 +86,7 @@ AliStream::~AliStream()
 }
 
 ////////////////////////////////////////////////////////////////////////
-void AliStream::AddFile(char *fileName)
+void AliStream::AddFile(const char *fileName)
 {
 // stores the name of the file
   TObjString *name = new TObjString(fileName);
@@ -85,7 +94,7 @@ void AliStream::AddFile(char *fileName)
 }
 
 ////////////////////////////////////////////////////////////////////////
-Bool_t AliStream::NextEventInStream(Int_t &serialNr)
+Bool_t AliStream::NextEventInStream()
 {
 // returns kFALSE if no more events
 // returns kTRUE and the serial nr of the next event
@@ -93,15 +102,19 @@ Bool_t AliStream::NextEventInStream(Int_t &serialNr)
 
 // no files given:
   if (fFileNames->GetLast() < 0) return kFALSE;
-
-  if (!fCurrentFile) {
-    if (!OpenNextFile()) return kFALSE;
-  }
   
-  if (fLastEventSerialNr+1 >= fEvents) {
+  AliRunLoader* currentloader = AliRunLoader::GetRunLoader(fEventFolderName);
+  if (!currentloader) 
+   {
     if (!OpenNextFile()) return kFALSE;
-  }
-  serialNr = ++fLastEventSerialNr;
+   }
+  
+  if (fLastEventSerialNr+1 >= fEvents) 
+   {
+    if (!OpenNextFile()) return kFALSE;
+   }
+
+  currentloader->GetEvent(++fLastEventSerialNr);
   return kTRUE;
 }
 
@@ -111,9 +124,11 @@ void AliStream::ChangeMode(Option_t* option)
 // only change from UPDATE to READ have sense in the current scheme,
 // other changes are possible but not usefull
 {
+
   fMode = option;
-  if (fCurrentFile) {
-    fCurrentFile->Close();
+  AliRunLoader* currentloader = AliRunLoader::GetRunLoader(fEventFolderName);
+  if (currentloader) {
+    delete currentloader;
     fCurrentFileIndex--;
     OpenNextFile();
   }
@@ -127,27 +142,39 @@ Bool_t AliStream::OpenNextFile()
     return kFALSE;
   }
 
-  if (fCurrentFile) {
-    if (fCurrentFile->IsOpen()) {
-      fCurrentFile->Close();
-    }
-  }
-
   const char * filename = 
     static_cast<TObjString*>(fFileNames->At(fCurrentFileIndex))->GetName();
-  fCurrentFile = TFile::Open(filename,fMode.Data());
-  if (!fCurrentFile) {
+
+// check if the file was already opened by some other code
+  TFile *f = (TFile *)(gROOT->GetListOfFiles()->FindObject(filename));
+  if (f) f->Close();
+
+  AliRunLoader* currentloader = AliRunLoader::GetRunLoader(fEventFolderName);
+  
+  if (currentloader) 
+   {
+     delete currentloader;
+   }
+  
+  currentloader = AliRunLoader::Open(filename,fEventFolderName,fMode);
+  
+
+  if (currentloader) 
+   {
 // cannot open file specified on input. Do not skip it silently.
-    cerr<<"Cannot open file "<<filename<<endl;
+    cerr<<"Cannot open session "<<filename<<endl;
     return kFALSE;
-  }
+   }
+   
 // find nr of events in the given file  
-  TTree * te = (TTree *) fCurrentFile->Get("TE") ;
-  if (!te) {
-    Error("OpenNextFile", "input file does not contain TE");
-    return kFALSE;
-  }
-  fEvents = static_cast<Int_t>(te->GetEntries());
+  Int_t res = currentloader->LoadHeader();
+  if (res)
+   {
+     Error("OpenNextFile","Problems with loading header");
+     return kFALSE;
+   }
+  
+  fEvents = static_cast<Int_t>(currentloader->TreeE()->GetEntries());
   fLastEventSerialNr = -1;
   return kTRUE;
 }
@@ -156,10 +183,14 @@ Bool_t AliStream::OpenNextFile()
 Bool_t AliStream::ImportgAlice()
 {
   if (fFileNames->GetLast() < 0) return kFALSE;
-  if (!fCurrentFile) {
+  
+  AliRunLoader* currentloader = AliRunLoader::GetRunLoader(fEventFolderName);
+  if (!currentloader) 
+   {
     if (!OpenNextFile()) return kFALSE;
-  }
-  gAlice = (AliRun*)fCurrentFile->Get("gAlice");
+    currentloader = AliRunLoader::GetRunLoader(fEventFolderName);
+   }
+  currentloader->LoadgAlice();
   if (!gAlice)  return kFALSE;
   return kTRUE;
 }

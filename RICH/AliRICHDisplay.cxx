@@ -15,6 +15,9 @@
 
 /*
   $Log$
+  Revision 1.17  2001/10/23 13:03:35  hristov
+  The access to several data members was changed from public to protected. The digitisation was adapted to the multi-event case (J.Chudoba)
+
   Revision 1.16  2001/10/21 18:31:24  hristov
   Several pointers were set to zero in the default constructors to avoid memory management problems
 
@@ -1065,7 +1068,7 @@ void AliRICHDisplay::LoadHits(Int_t chamber)
     AliRICHChamber*  iChamber;
     
     iChamber = &(pRICH->Chamber(chamber-1));
-    Int_t ntracks = (Int_t)gAlice->TreeH()->GetEntries();
+    Int_t ntracks = (Int_t)pRICH->TreeH()->GetEntries();
     Int_t track;
     
     if (fPhits == 0) fPhits = new TObjArray(ntracks);
@@ -1077,7 +1080,7 @@ void AliRICHDisplay::LoadHits(Int_t chamber)
     Int_t nAllHits=0;
     for (track=0; track<ntracks;track++) {
 	gAlice->ResetHits();
-	gAlice->TreeH()->GetEvent(track);
+	pRICH->TreeH()->GetEvent(track);
 	TClonesArray *pRICHhits  = pRICH->Hits();
 	if (pRICHhits == 0) return;
 	Int_t nhits = pRICHhits->GetEntriesFast();
@@ -1089,7 +1092,7 @@ void AliRICHDisplay::LoadHits(Int_t chamber)
     Int_t npoints=0;
     for (track=0; track<ntracks;track++) {
 	gAlice->ResetHits();
-	gAlice->TreeH()->GetEvent(track);
+	pRICH->TreeH()->GetEvent(track);
 	TClonesArray *pRICHhits  = pRICH->Hits();
 	if (pRICHhits == 0) return;
 	Int_t nhits = pRICHhits->GetEntriesFast();
@@ -1137,7 +1140,7 @@ void AliRICHDisplay::LoadCerenkovs(Int_t chamber)
     iChamber = &(pRICH->Chamber(chamber-1));
     
     pRICH->SetTreeAddress();
-    Int_t ntracks = (Int_t)gAlice->TreeH()->GetEntries();
+    Int_t ntracks = (Int_t)pRICH->TreeH()->GetEntries();
     
     if (fPCerenkovs == 0) fPCerenkovs = new TObjArray(ntracks);
     TVector *xp = new TVector(1000);
@@ -1147,7 +1150,7 @@ void AliRICHDisplay::LoadCerenkovs(Int_t chamber)
     TVector *phit = new TVector(1000);
     for (Int_t track=0; track<ntracks;track++) {
 	gAlice->ResetHits();
-	gAlice->TreeH()->GetEvent(track);
+	pRICH->TreeH()->GetEvent(track);
 	TClonesArray *pRICHCerenkovs  = pRICH->Cerenkovs();
 	if (pRICHCerenkovs == 0) return;
 	Int_t nhits = pRICHCerenkovs->GetEntriesFast();

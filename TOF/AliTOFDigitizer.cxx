@@ -44,6 +44,10 @@
 // -- Author :  F. Pierella (Bologna University) pierella@bo.infn.it
 //////////////////////////////////////////////////////////////////////////////
 
+//Piotr.Skowronski@cern.ch :
+//Corrections applied in order to compile (only) with new I/O and folder structure
+//To be implemented correctly by responsible
+
 #include "TFile.h"
 #include "TTask.h"
 #include "TTree.h"
@@ -56,11 +60,15 @@
 #include <iomanip.h>
 
 #include "AliRun.h"
+#include "AliConfig.h"
+#include "AliRunLoader.h"
+#include "AliLoader.h"
+#include "AliStack.h"
 #include "AliTOF.h"
 #include "AliTOFdigit.h"
 #include "AliTOFhit.h"
 #include "AliTOFDigitizer.h"
-
+#include "AliConfig.h"
 
 ClassImp(AliTOFDigitizer)
 
@@ -74,6 +82,7 @@ ClassImp(AliTOFDigitizer)
   fNevents       = 0 ;      
   fDigits        = 0 ;
   fHits          = 0 ;
+  fRunLoader     = 0 ;
   fIsInitialized = kFALSE ;
 
 }
@@ -88,6 +97,7 @@ AliTOFDigitizer::AliTOFDigitizer(const char* headerFile, const char *digitsTitle
   fDigitsTitle   = digitsTitle ;
   fHeadersFile   = headerFile ;
   fIsInitialized = kFALSE ;
+  fRunLoader     = 0 ;
   Init();
 }
 
@@ -99,6 +109,7 @@ AliTOFDigitizer::~AliTOFDigitizer()
     delete fDigits ;
   if(fHits)
     delete fHits ;
+  if(fRunLoader) delete fRunLoader;
 }
 //____________________________________________________________________________ 
 void AliTOFDigitizer::Init()
@@ -108,36 +119,17 @@ void AliTOFDigitizer::Init()
   // 
   // Initialization can not be done in the default constructor
 
-  if(!fIsInitialized){
-
+  if(!fIsInitialized)
+   {
     if(fHeadersFile.IsNull())
       fHeadersFile="galice.root" ;
-
-    TFile * file = (TFile*) gROOT->GetFile(fHeadersFile.Data() ) ;
+//    if (fRunLoader ) delete fRunLoader;
+    fRunLoader = AliRunLoader::Open(fHeadersFile);//open session and mount on default event folder
     
-    //if file was not opened yet, read gAlice
-    if(file == 0){
-      if(fHeadersFile.Contains("rfio"))
-	file =	TFile::Open(fHeadersFile,"update") ;
-      else
-	file = new TFile(fHeadersFile.Data(),"update") ;
-      gAlice = (AliRun *) file->Get("gAlice") ;
-    }
+    
     fHits    = new TClonesArray("AliTOFhit"  , 405);
     fDigits  = new TClonesArray("AliTOFdigit", 405);
     
-    //add Task to //FPAlice/tasks/(S)Digitizer/TOF
-    TList * aList = gROOT->GetListOfBrowsables();
-    if (aList) {
-      TFolder * alice  = (TFolder*)aList->FindObject("FPAlice") ;
-      if (alice) {
-        TTask * aliceSD  = (TTask*)alice->FindObject("tasks/(S)Digitizer") ;
-        if (aliceSD) {
-          TTask * tofD   = (TTask*)aliceSD->GetListOfTasks()->FindObject("TOF") ;   
-          tofD->Add(this) ;
-        }
-      }
-    }
 
     fIsInitialized = kTRUE ;
   }
@@ -153,25 +145,67 @@ void AliTOFDigitizer::Exec(Option_t *option)
   
   if(!fIsInitialized)
     Init() ;
+  
+  if (fRunLoader == 0x0)
+   {
+     Error("Exec","Event is not loaded. Exiting");
+     return;
+   }
+  Int_t retval;
+  
+  retval = fRunLoader->LoadgAlice();
+  if (retval)
+   {
+     Error("Exec","Error occured while loading gAlice. Exiting");
+     return;
+   }
+  
+  retval = fRunLoader->LoadHeader();
+  if (retval)
+   {
+     Error("Exec","Error occured while loading header. Exiting");
+     return;
+   }
+  
+  AliLoader* gime = fRunLoader->GetLoader("TOFLoader");
+  if (gime == 0x0)
+   {
+     Error("Exec","Can not find TOF loader in event. Exiting.");
+     return;
+   }
+  retval = gime->LoadHits("READ");
+  if (retval)
+   {
+     Error("Exec","Error occured while loading Hits. Exiting");
+     return;
+   }
+
+//  gime->LoadSDigits();
 
   if(strstr(option,"tim"))
     gBenchmark->Start("TOFDigitizer");
   
-  fNevents = (Int_t) gAlice->TreeE()->GetEntries() ; 
+  fNevents = (Int_t) fRunLoader->TreeE()->GetEntries() ; 
   
   Int_t ievent ;
   // start loop on events
-  for(ievent = 0; ievent < fNevents; ievent++){
-    gAlice->GetEvent(ievent) ;
-    gAlice->SetEvent(ievent) ;
+  for(ievent = 0; ievent < fNevents; ievent++)
+   {
+    retval = fRunLoader->GetEvent(ievent);
+    if (retval)
+     {
+       Error("Exec","Error occured while loading Event %d. Exiting",ievent);
+       return;
+     }
     
-    if(gAlice->TreeH()==0){
-      cout << "AliTOFDigitizer: There is no Hit Tree" << endl;
-      return ;
-    }
-    
+    TTree* treeH = gime->TreeH();
+    if (treeH == 0x0)
+     {
+       Error("Exec","Can not get TreeH");
+       return;
+     }
     //set address of the hits 
-    TBranch * branch = gAlice->TreeH()->GetBranch("TOF");
+    TBranch * branch = treeH->GetBranch("TOF");
     if (branch) 
       branch->SetAddress(&fHits);
     else{
@@ -187,7 +221,7 @@ void AliTOFDigitizer::Exec(Option_t *option)
     //Now made Digits from hits, for TOF it is the same a part for the tof smearing
     // and some missing MC variables     
     Int_t itrack ;
-    for (itrack=0; itrack < gAlice->GetNtrack(); itrack++){
+    for (itrack=0; itrack < fRunLoader->Stack()->GetNtrack(); itrack++){
 
       //=========== Get the TOF branch from Hits Tree for the Primary track itrack
       branch->GetEntry(itrack,0);
@@ -195,7 +229,7 @@ void AliTOFDigitizer::Exec(Option_t *option)
       Int_t i;
       for ( i = 0 ; i < fHits->GetEntries() ; i++ ) {
 
-	AliTOFhit * hit = (AliTOFhit*)fHits->At(i) ;
+       AliTOFhit * hit = (AliTOFhit*)fHits->At(i) ;
 
         vol[0] = hit->GetSector();
         vol[1] = hit->GetPlate();
@@ -217,7 +251,7 @@ void AliTOFDigitizer::Exec(Option_t *option)
         digit[1] = adccharge;
         // to be added a check for overlaps
         new((*fDigits)[ndigits]) AliTOFdigit(tracks, vol, digit);
-	ndigits++ ;  
+       ndigits++ ;  
       } 
       
     } // end loop over tracks
@@ -225,31 +259,31 @@ void AliTOFDigitizer::Exec(Option_t *option)
     ndigits = fDigits->GetEntriesFast() ;
     printf("AliTOFDigitizer: Total number of digits %d\n",ndigits);
 
-    if(gAlice->TreeD() == 0)
-      gAlice->MakeTree("D") ;
+    if(gime->TreeD() == 0)  gime->MakeTree("D");
     
     //check, if this branch already exits
     TBranch * digitsBranch = 0;
     TBranch * digitizerBranch = 0;
     
-    TObjArray * branches = gAlice->TreeD()->GetListOfBranches() ;
+    TObjArray * branches = gime->TreeD()->GetListOfBranches() ;
     Int_t ibranch;
     Bool_t tofNotFound = kTRUE ;
     Bool_t digitizerNotFound = kTRUE ;
     
-    for(ibranch = 0;ibranch <branches->GetEntries();ibranch++){
+    for(ibranch = 0;ibranch <branches->GetEntries();ibranch++)
+     {
       
-      if(tofNotFound){
-	digitsBranch=(TBranch *) branches->At(ibranch) ;
-	if( (strcmp("TOF",digitsBranch->GetName())==0 ) &&
-	    (fDigitsTitle.CompareTo(digitsBranch->GetTitle()) == 0) )
-	  tofNotFound = kFALSE ;
+      if(tofNotFound)
+       {
+         digitsBranch=(TBranch *) branches->At(ibranch) ;
+         if( (strcmp("TOF",digitsBranch->GetName())==0 ) &&   (fDigitsTitle.CompareTo(digitsBranch->GetTitle()) == 0) )
+         tofNotFound = kFALSE ;
       }
       if(digitizerNotFound){
-	digitizerBranch = (TBranch *) branches->At(ibranch) ;
-	if( (strcmp(digitizerBranch->GetName(),"AliTOFDigitizer") == 0)&&
-	    (fDigitsTitle.CompareTo(digitizerBranch->GetTitle()) == 0) )
-	  digitizerNotFound = kFALSE ;
+       digitizerBranch = (TBranch *) branches->At(ibranch) ;
+       if( (strcmp(digitizerBranch->GetName(),"AliTOFDigitizer") == 0)&&
+           (fDigitsTitle.CompareTo(digitizerBranch->GetTitle()) == 0) )
+         digitizerNotFound = kFALSE ;
       }
     }
 
@@ -277,7 +311,7 @@ void AliTOFDigitizer::Exec(Option_t *option)
       TIter next( digitsBranch->GetListOfBranches());
       TBranch * subbr;
       while ((subbr=(TBranch*)next())) {
-	subbr->SetFile(file);
+       subbr->SetFile(file);
       }   
       cwd->cd();
     } 
@@ -286,14 +320,14 @@ void AliTOFDigitizer::Exec(Option_t *option)
     Int_t splitlevel = 0 ;
     AliTOFDigitizer * digtz = this ;
     digitizerBranch = gAlice->TreeD()->Branch("AliTOFDigitizer","AliTOFDigitizer",
-					       &digtz,bufferSize,splitlevel); 
+                                          &digtz,bufferSize,splitlevel); 
     digitizerBranch->SetTitle(fDigitsTitle.Data());
     if (file) {
       digitizerBranch->SetFile(file);
       TIter next( digitizerBranch->GetListOfBranches());
       TBranch * subbr ;
       while ((subbr=(TBranch*)next())) {
-	subbr->SetFile(file);
+       subbr->SetFile(file);
       }   
       cwd->cd();
       delete file;
@@ -312,7 +346,7 @@ void AliTOFDigitizer::Exec(Option_t *option)
     gBenchmark->Stop("TOFDigitizer");
     cout << "AliTOFDigitizer:" << endl ;
     cout << "   took " << gBenchmark->GetCpuTime("TOFDigitizer") << " seconds for Digitizing " 
-	 <<  gBenchmark->GetCpuTime("TOFDigitizer")/fNevents << " seconds per event " << endl ;
+        <<  gBenchmark->GetCpuTime("TOFDigitizer")/fNevents << " seconds per event " << endl ;
     cout << endl ;
   }
   
@@ -373,12 +407,12 @@ void AliTOFDigitizer::PrintDigits(Option_t * option)
 
       cout << setw(7)  <<  index << " " 
            << setw(13) <<  digit->GetTdc()    << "  "  
-	   << setw(13) <<  digit->GetAdc()    << "  "   
-	   << setw(6)  <<  digit->GetSector() << "  "   
-	   << setw(6)  <<  digit->GetPlate()  << "  "   
-	   << setw(6)  <<  digit->GetStrip()  << "  "   
-	   << setw(7)  <<  digit->GetPadx()   << "  "   
-	   << setw(7)  <<  digit->GetPadz()   << "  " << endl;   
+          << setw(13) <<  digit->GetAdc()    << "  "   
+          << setw(6)  <<  digit->GetSector() << "  "   
+          << setw(6)  <<  digit->GetPlate()  << "  "   
+          << setw(6)  <<  digit->GetStrip()  << "  "   
+          << setw(7)  <<  digit->GetPadx()   << "  "   
+          << setw(7)  <<  digit->GetPadz()   << "  " << endl;   
       
     } // end loop on digits
     

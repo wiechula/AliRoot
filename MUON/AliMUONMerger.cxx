@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.8  2002/02/22 12:14:21  morsch
+Validate pad hit before digitization.
+
 Revision 1.7  2001/11/22 11:15:41  jchudoba
 Proper deletion of arrays (thanks to Rene Brun)
 
@@ -38,7 +41,7 @@ Revision 1.1  2001/02/02 14:11:53  morsch
 AliMUONMerger prototype to be called by the merge manager.
 
 */
-
+#include <iostream.h> 
 #include <TTree.h> 
 #include <TObjArray.h>
 #include <TFile.h>
@@ -231,7 +234,17 @@ void AliMUONMerger::Digitise()
 //   Loop over tracks
 //
 
-	TTree *treeH  = gAlice->TreeH();
+/******************************************************************/
+      TTree* treeH = pMUON->TreeH();
+      if (treeH == 0x0)
+       {
+         cerr<<"AliMUONMerger::Exec: Can not get TreeH"<<endl;
+         return;
+       }
+/******************************************************************/     
+
+	
+	
 	Int_t ntracks = (Int_t) treeH->GetEntries();
 
 	for (fTrack = 0; fTrack < ntracks; fTrack++) {

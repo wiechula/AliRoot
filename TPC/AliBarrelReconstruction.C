@@ -13,19 +13,27 @@
 
 #ifndef __CINT__
   #include "alles.h"
+  #include "AliRun.h"
+  #include "AliRunLoader.h"
+  #include "AliLoader.h"
   #include "AliMagF.h"
   #include "AliTPCtracker.h"
-
   #include "AliITS.h"
   #include "AliITSgeom.h"
   #include "AliITSRecPoint.h"
   #include "AliITSclusterV2.h"
   #include "AliITSsimulationFastPoints.h"
   #include "AliITStrackerV2.h"
+
 #endif
 
-Int_t TPCFindClusters(const Char_t *inname, const Char_t *outname, Int_t n);
-Int_t TPCFindTracks(const Char_t *inname, const Char_t *outname, Int_t n);
+ AliRunLoader *rl = 0x0;
+ AliTPCLoader *tpcl = 0x0;   
+ AliTPCParam  *param = 0x0;
+
+
+Int_t TPCFindClusters( Int_t n);
+Int_t TPCFindTracks(Int_t n);
 Int_t TPCSortTracks(const Char_t *inname, const Char_t *inname2, const Char_t *outname,  Int_t n);
 Int_t TPCPropagateBack(const Char_t *inname, const Char_t *outname);
 
@@ -34,7 +42,8 @@ Int_t ITSFindTracks(const Char_t *inname, const Char_t *inname2, const Char_t *o
 Int_t ITSPropagateBack(const Char_t *inname, const Char_t *outname);
 
 
-Int_t AliBarrelReconstruction(Int_t n=1) {
+Int_t AliBarrelReconstruction(Int_t n=1) 
+ {
    const Char_t *TPCdigName="rfio:galice.root";
    const Char_t *TPCclsName="AliTPCclusters.root";
    const Char_t *TPCtrkName="AliTPCtracks.root";
@@ -45,21 +54,50 @@ Int_t AliBarrelReconstruction(Int_t n=1) {
    const Char_t *ITSclsName="AliITSclustersV2.root";
    const Char_t *ITStrkName="AliITStracksV2.root";
 
-   AliKalmanTrack::SetConvConst(100/0.299792458/0.2/gAlice->Field()->Factor());
-
+   if (gAlice)
+    {
+     delete gAlice;
+     gAlice = 0x0;
+    }
     
-// ********** Find TPC clusters *********** //
-   if (TPCFindClusters(TPCdigName,TPCclsName, n)) {
-      cerr<<"Failed to get TPC clusters !\n";
-      return 1;
-   }      
-
-// ********** Find TPC tracks *********** //
-    if (TPCFindTracks(TPCclsName,TPCtrkName,n)) {
-      cerr<<"Failed to get TPC tracks !\n";
+   rl = AliRunLoader::Open();
+   if (rl == 0x0)
+    {
+      cerr<<"Can not open session"<<endl;
       return 1;
     }
-  
+   
+   if (rl->LoadgAlice())
+    {
+      cerr<<"Error occured while l"<<endl;
+      return 1;
+    }
+   AliKalmanTrack::SetConvConst(100/0.299792458/0.2/gAlice->Field()->Factor());
+   
+   tpcl = (AliTPCLoader*)rl->GetLoader("TPCLoader");
+   if (tpcl == 0x0)
+    {
+      cerr<<"Can not get TPC Loader"<<endl;
+      return 1;
+    }
+
+// ********** Find TPC clusters *********** //
+   if ( TPCFindClusters(  n) ) 
+    {
+      cerr<<"Failed to get TPC clusters !\n";
+      return 1;
+    }      
+   
+// ********** Find TPC tracks *********** //
+    if (TPCFindTracks(n)) 
+     {
+      cerr<<"Failed to get TPC tracks !\n";
+      return 1;
+     }
+   cout<<"Stopping tracking on TPC\n";
+   delete rl;
+   rl = 0x0;
+   return 0;
 // ********** Sort and label TPC tracks *********** //
    if (TPCSortTracks(TPCclsName,TPCtrkName,TPCtrkNameS,n)) {
       cerr<<"Failed to sort TPC tracks !\n";
@@ -103,58 +141,83 @@ Int_t AliBarrelReconstruction(Int_t n=1) {
 }
 
 
-Int_t TPCFindClusters(const Char_t *inname, const Char_t *outname, Int_t n) {
+Int_t TPCFindClusters(Int_t n) 
+ {
    Int_t rc=0;
    const Char_t *name="TPCFindClusters";
    cerr<<'\n'<<name<<"...\n";
+   rl->CdGAFile();
+   param=(AliTPCParam *)gDirectory->Get("75x40_100x60");
+   
+   if (!param) 
+    {
+      cerr<<"TPC parameters have not been found !\n";
+      return 1;
+    }
+//   param->Dump();
+   param->Update();
+   param->Dump();   
+
    gBenchmark->Start(name);
 
-   TFile *out=TFile::Open(outname,"recreate");
-   TFile *in =TFile::Open(inname);
-
-   AliTPCParam *param=(AliTPCParam *)in->Get("75x40_100x60");
-   if (!param) {cerr<<"TPC parameters have not been found !\n"; return 1;}
    AliTPCv2 tpc;
    tpc.SetParam(param);
+   tpc.SetLoader(tpcl);
+ 
+   tpcl->LoadDigits("read");
+   tpcl->LoadRecPoints("recreate");
+  
 
    //tpc.Digits2Clusters(out); //MI change
-   for (Int_t i=0;i<n;i++){
-     printf("Processing event %d\n",i);
-     tpc.Digits2Clusters(out,i);
+   for (Int_t i=0;i<n;i++)
+    {
+      printf("Processing event %d\n",i);
+      tpc.Digits2Clusters(i);
      //	 AliTPCclusterer::Digits2Clusters(dig, out, i);
-   }
-   in->Close();
-   out->Close();
+    }
+   
+   tpcl->UnloadDigits();
+   tpcl->UnloadRecPoints();
    gBenchmark->Stop(name);
    gBenchmark->Show(name);
 
    return rc;
 }
 
-Int_t TPCFindTracks(const Char_t *inname, const Char_t *outname, Int_t n) {
+Int_t TPCFindTracks(Int_t n) {
+
    Int_t rc=0;
    const Char_t *name="TPCFindTracks";
-   cerr<<'\n'<<name<<"...\n";
+   rl->CdGAFile();
+   param=(AliTPCParam *)gDirectory->Get("75x40_100x60");
+   
+   if (!param) 
+    {
+      cerr<<"TPC parameters have not been found !\n";
+      return 1;
+    }
+//   param->Dump();
+   param->Update();
+   param->Dump();   
+
    gBenchmark->Start(name);
-   TFile *out=TFile::Open(outname,"recreate");
-   TFile *in =TFile::Open(inname);
-   AliTPCParam *param=(AliTPCParam *)in->Get("75x40_100x60");
-   if (!param) {cerr<<"TPC parameters have not been found !\n"; return 1;}
+
+   tpcl->LoadRecPoints("read");
+   tpcl->LoadTracks("recreate");
 
    //AliTPCtracker *tracker=new AliTPCtracker(param);
    //rc=tracker->Clusters2Tracks(0,out);
    //delete tracker;
-
    for (Int_t i=0;i<n;i++){
      printf("Processing event %d\n",i);
-     AliTPCtracker *tracker = new AliTPCtracker(param,i);
+     AliTPCtracker *tracker = new AliTPCtracker(param,AliConfig::fgkDefaultEventFolderName,i);
      //Int_t rc=
-       tracker->Clusters2Tracks(0,out);
+     tracker->Clusters2Tracks();
      delete tracker;
    }
+   tpcl->UnloadRecPoints();
+   tpcl->UnloadTracks();
 
-   in->Close();
-   out->Close();
    gBenchmark->Stop(name);
    gBenchmark->Show(name);
 
@@ -169,10 +232,6 @@ Int_t TPCSortTracks(const Char_t *inname, const Char_t *inname2, const Char_t * 
    TFile *out =TFile::Open(outname,"recreate");
    TFile *in1 =TFile::Open(inname);
    TFile *in2 =TFile::Open(inname2);
-
-
-   AliTPCParam *param=(AliTPCParam *)in1->Get("75x40_100x60");
-   if (!param) {cerr<<"TPC parameters have not been found !\n"; return 1;}
 
 
 

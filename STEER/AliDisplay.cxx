@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.17  2001/10/21 18:38:44  hristov
+Several pointers were set to zero in the default constructors to avoid memory management problems
+
 Revision 1.16  2001/07/25 15:23:50  hristov
 Changes needed to run with Root 3.01 (R.Brun)
 
@@ -786,9 +789,14 @@ void AliDisplay::LoadPoints()
    Int_t ntracks = gAlice->GetNtrack();
    for (Int_t track=0; track<ntracks;track++) {
       gAlice->ResetHits();
-      gAlice->TreeH()->GetEvent(track);
       while((module = (AliModule*)next())) {
-         module->LoadPoints(track);
+         AliDetector* detector = dynamic_cast<AliDetector*>(module);
+         if(detector)
+           {
+             detector->SetTreeAddress();
+             detector->TreeH()->GetEvent(track);
+             detector->LoadPoints(track);
+           }
       }
       next.Reset();
    }
@@ -877,11 +885,11 @@ void AliDisplay::ShowNextEvent(Int_t delta)
 //    delta = -1 show previous event
 
   if (delta) {
-     gAlice->Clear();
+//     gAlice->Clear();
      Int_t currentEvent = gAlice->GetHeader()->GetEvent();
      Int_t newEvent     = currentEvent + delta;
-     gAlice->GetEvent(newEvent);
-     if (!gAlice->TreeH()) return; 
+     Int_t tmp = gAlice->GetEvent(newEvent);
+     if (tmp <= 0) return; 
    }
   LoadPoints();
   fPad->cd(); 

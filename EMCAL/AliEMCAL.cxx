@@ -152,7 +152,7 @@ void AliEMCAL::SetTreeAddress()
   sprintf(branchname,"%s",GetName());
   
   // Branch address for hit tree
-  TTree *treeH = gAlice->TreeH();
+  TTree *treeH = TreeH();
   if (treeH && fHits) {
     branch = treeH->GetBranch(branchname);
     if (branch) branch->SetAddress(&fHits);

@@ -16,14 +16,17 @@
 
 // --- AliRoot header files ---
 
+class AliRunLoader;
 //#include "AliPHOSDigit.h"
+
+
 
 class AliPHOSClusterizer : public TTask {
 
 public:
 
   AliPHOSClusterizer() ;        // default ctor
-  AliPHOSClusterizer(const char * headerFile, const char * name) ;
+  AliPHOSClusterizer(const char * headerFile, const char * name);
   virtual ~AliPHOSClusterizer() ; // dtor
 
   virtual Float_t GetEmcClusteringThreshold()const = 0 ; 
@@ -51,7 +54,9 @@ public:
   virtual void SetRecPointsBranch(const char *title) = 0 ;
   virtual void SetUnfolding(Bool_t toUnfold ) = 0 ;
   virtual const char * Version() const = 0 ;  
-
+protected:
+  AliRunLoader* fRunLoader;//!
+public:
   ClassDef(AliPHOSClusterizer,1)  // Clusterization algorithm class 
 
 } ;

@@ -41,7 +41,7 @@
 #include "AliPHOSFastRecParticle.h"
 #include "AliPHOSGeometry.h"
 #include "AliPHOSvFast.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 #include "AliRun.h"
 #include "AliConst.h"
 #include "AliMC.h"
@@ -76,8 +76,7 @@ AliPHOSvFast::AliPHOSvFast(const char *name, const char *title):
   // ctor
 
   
-  // create the Getter 
-  AliPHOSGetter::GetInstance(gDirectory->GetName(), 0) ; 
+  // create the Loader 
   
   SetBigBox(0, GetGeometry()->GetOuterBoxSize(0) ) ;
   SetBigBox(1, GetGeometry()->GetOuterBoxSize(3) + GetGeometry()->GetCPVBoxSize(1) ) ; 

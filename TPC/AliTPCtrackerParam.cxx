@@ -116,7 +116,7 @@ Int_t AliTPCtrackerParam::BuildTPCtracks(const TFile *inp, TFile *out, Int_t n)
     TPC->SetParam(digp);
 
     // Get TreeH with hits
-    TTree *TH=gAlice->TreeH(); 
+    TTree *TH=TPC->TreeH(); 
     Int_t ntracks=(Int_t)TH->GetEntries();
     cerr<<"+++\n+++ Number of particles in event "<<evt<<":  "<<nparticles<<"\n+++\n+++ Number of \"primary tracks\" (entries in TreeH): "<<ntracks<<"\n+++\n\n";
 

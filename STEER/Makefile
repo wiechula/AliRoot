@@ -9,7 +9,8 @@ PACKAGE = STEER
 
 # C++ sources
 
-SRCS          = AliDetector.cxx	AliHeader.cxx	AliMagF.cxx \
+SRCS          = AliLoader.cxx AliRunLoader.cxx AliRun.cxx \
+                AliDetector.cxx AliHeader.cxx AliMagF.cxx \
                 AliDigit.cxx	AliHit.cxx	AliPoints.cxx \
                 AliDisplay.cxx	AliMC.cxx	AliRun.cxx AliGenerator.cxx \
 		AliLego.cxx	AliModule.cxx	AliDigitNew.cxx \
@@ -21,10 +22,9 @@ SRCS          = AliDetector.cxx	AliHeader.cxx	AliMagF.cxx \
 		AliKalmanTrack.cxx AliCluster.cxx AliTracker.cxx\
 		AliMCQA.cxx AliPDG.cxx AliDebugVolume.cxx \
 		AliGenEventHeader.cxx AliStack.cxx AliConfig.cxx \
-		AliRunDigitizer.cxx AliDigitizer.cxx\
-		AliStream.cxx AliMergeCombi.cxx \
-		AliMagFMaps.cxx AliFieldMap.cxx \
-        AliGausCorr.cxx
+		AliRunDigitizer.cxx AliDigitizer.cxx AliStream.cxx \
+		AliMergeCombi.cxx   AliFieldMap.cxx \
+		AliMagFMaps.cxx AliGausCorr.cxx
 
 # C++ Headers
 
@@ -72,7 +72,7 @@ $(DICT):				$(HDRS)
 
 depend:					$(SRCS)
 
-HEADERS 	= $(SRCS:.cxx=.h) AliPDG.h AliConst.h AliCallf77.h AliMCProcess.h AliConfig.h AliGenEventHeader.h AliGausCorr.h
+HEADERS 	= $(SRCS:.cxx=.h) AliPDG.h AliConst.h AliCallf77.h AliMCProcess.h AliConfig.h AliGenEventHeader.h
 
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
 

@@ -10,40 +10,44 @@
 #include <TStopwatch.h>
 
 #include "AliMCProcess.h"
-
+#include "AliConfig.h"
 class TObjArray;
 class TClonesArray;
 class TParticle;
 class AliHeader;
 class TFile;
 class TTree;
+class TString;
 
 
-
-class AliStack : public TObject
+class AliStack : public TNamed
 {
   public:
     // creators, destructors
-    AliStack(Int_t size);
+    AliStack(Int_t size, const char* evfoldname = AliConfig::fgkDefaultEventFolderName);
     AliStack();
     virtual ~AliStack();
 
     // methods
-    void  MakeTree(Int_t event, const char *file);
-    void  BeginEvent(Int_t event);
+    void  ConnectTree();
+    void  BeginEvent();
     void  FinishRun();
-    Bool_t GetEvent(Int_t nevent);
+    Bool_t GetEvent();
     void  SetTrack(Int_t done, Int_t parent, Int_t pdg, 
-  	           Float_t *pmom, Float_t *vpos, Float_t *polar, 
+                   Float_t *pmom, Float_t *vpos, Float_t *polar, 
                    Float_t tof, AliMCProcess mech, Int_t &ntr,
-                   Float_t weight=1);
+                   Float_t weight = 1, Int_t is = 0);
+
     void  SetTrack(Int_t done, Int_t parent, Int_t pdg,
-  	           Double_t px, Double_t py, Double_t pz, Double_t e,
-  		   Double_t vx, Double_t vy, Double_t vz, Double_t tof,
-		   Double_t polx, Double_t poly, Double_t polz,
-		   AliMCProcess mech, Int_t &ntr, Float_t weight=1);
+                   Double_t px, Double_t py, Double_t pz, Double_t e,
+                   Double_t vx, Double_t vy, Double_t vz, Double_t tof,
+                   Double_t polx, Double_t poly, Double_t polz,
+                   AliMCProcess mech, Int_t &ntr, Float_t weight = 1,
+                   Int_t is = 0);
+
     void  GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
-		   Float_t &e, Float_t *vpos, Float_t *polar, Float_t &tof);
+                       Float_t &e, Float_t *vpos, Float_t *polar, Float_t &tof);
+
     void  PurifyKine();
     void  FinishEvent();
     void  FlagTrack(Int_t track);
@@ -64,8 +68,8 @@ class AliStack : public TObject
     TObjArray*  Particles() const;
     TParticle*  Particle(Int_t id);
     Int_t       GetPrimary(Int_t id);
-    TTree*      TreeK() const {return fTreeK;}
-    
+    TTree*      TreeK();
+    void        SetEventFolderName(const char* foldname);
   protected:
     // methods
     void  CleanParents();
@@ -86,6 +90,7 @@ class AliStack : public TObject
     Int_t          fHgwmk;             //! Last track purified
     Int_t          fLoadPoint;         //! Next free position in the particle buffer
     TStopwatch     fTimer;             //! Timer object
+    TString        fEventFolderName;   //! Folder name where event is mounted
     ClassDef(AliStack,2) //Particles stack
 };
 

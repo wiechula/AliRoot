@@ -12,8 +12,7 @@
 
 #include "TTask.h"
 #include "TString.h"
-#include "AliTOF.h"
-#include "AliDetector.h"
+class AliRunLoader;
 
 class AliTOFSDigitizer: public TTask {
 
@@ -42,7 +41,8 @@ private:
   TClonesArray *fSDigits;   // array of summable digits
   TClonesArray *fHits;      // array of summable digits
   TString fHeadersFile;     // input file
-
+  AliRunLoader* fRunLoader;  //! Run Loader
+  
  protected:
 
 

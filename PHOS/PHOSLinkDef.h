@@ -33,7 +33,7 @@
 #pragma link C++ class AliPHOSRecParticle+;
 #pragma link C++ class AliPHOSPID+;
 #pragma link C++ class AliPHOSPIDv1+;
-#pragma link C++ class AliPHOSGetter+;
+#pragma link C++ class AliPHOSLoader+;
 #pragma link C++ class AliPHOSAnalyze+;
 #pragma link C++ class AliPHOSCPVDigit+;
 #pragma link C++ class AliPHOSQAVirtualCheckable+;

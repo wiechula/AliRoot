@@ -14,6 +14,9 @@
  **************************************************************************/
 /*
 $Log$
+Revision 1.56  2001/11/22 11:26:28  jchudoba
+Proper deletion of arrays, deletion of unused variables (thanks to Rene Brun)
+
 Revision 1.55  2001/09/07 08:38:30  hristov
 Pointers initialised to 0 in the default constructors
 
@@ -567,10 +570,10 @@ void AliMUON::MakeBranch(Option_t* option, const char *file)
     const char *cR = strstr(option,"R");
     const char *cH = strstr(option,"H");
 
-    if (fPadHits   && gAlice->TreeH() && cH) {
-      MakeBranchInTree(gAlice->TreeH(), 
-                       branchname, &fPadHits, kBufferSize, file);
-    }
+    if (fPadHits   && TreeH() && cH) 
+     {
+      MakeBranchInTree(TreeH(), branchname, &fPadHits, kBufferSize, file);
+     }
     
     if (cD) {
       //
@@ -633,7 +636,7 @@ void AliMUON::SetTreeAddress()
   AliDetector::SetTreeAddress();
 
   TBranch *branch;
-  TTree *treeH = gAlice->TreeH();
+  TTree *treeH = TreeH();
   TTree *treeD = gAlice->TreeD();
   TTree *treeR = gAlice->TreeR();
 

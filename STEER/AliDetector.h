@@ -9,6 +9,7 @@
 class AliHit;
 class TTree;
 class TBranch;
+class AliLoader;
 
 class AliDetector : public AliModule {
 
@@ -51,7 +52,12 @@ public:
   virtual void        SetBufferSize(Int_t bufsize=8000) {fBufferSize = bufsize;}  
   virtual TBranch*    MakeBranchInTree(TTree *tree, const char* cname, void* address, Int_t size=32000, const char *file=0);
   virtual TBranch*    MakeBranchInTree(TTree *tree, const char* cname, const char* name, void* address, Int_t size=32000, Int_t splitlevel=99, const char *file=0);
-   
+  
+  void MakeTree(Option_t *option); //skowron
+  
+  virtual AliLoader* MakeLoader(const char* topfoldername); //builds standard getter (AliLoader type)
+  
+  TTree* TreeH();
   // Data members
 protected:      
   
@@ -66,6 +72,8 @@ protected:
   char         *fDigitsFile;  //!File to store branches of digits tree for detector 
   TObjArray    *fPoints;      //!Array of points for each track (all tracks in memory)
 
+  
+  
   ClassDef(AliDetector,1)  //Base class for ALICE detectors
 };
 #endif

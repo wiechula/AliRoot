@@ -8,7 +8,7 @@
 
 // --- AliRoot header files ---
 #include "AliPHOSClusterizerv2.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 #include "TFolder.h"
 #include "AliPHOSEvalRecPoint.h"
 #include "AliPHOSRecCpvManager.h"
@@ -25,8 +25,12 @@ AliPHOSClusterizerv2::AliPHOSClusterizerv2(const char* File, const char* name):
 
 void AliPHOSClusterizerv2::GetNumberOfClustersFound(int* numb) const
 {
-
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ;   
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("GetNumberOfClustersFound","Can not get PHOS Loader");
+     return;
+   }
   numb[0] = gime->EmcRecPoints()->GetEntries();  
   numb[1] = gime->CpvRecPoints()->GetEntries();  
 }
@@ -40,7 +44,12 @@ void AliPHOSClusterizerv2::Exec(Option_t* option)
   if(strstr(option,"print"))
     Print("") ; 
 
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("Exec","Can not get PHOS Loader");
+     return;
+   }
 
   TFolder* aliceF  = (TFolder*)gROOT->FindObjectAny("YSAlice");
   TFolder* storage = (TFolder*)aliceF->FindObject("WhiteBoard/RecPoints/PHOS"); 
@@ -51,18 +60,17 @@ void AliPHOSClusterizerv2::Exec(Option_t* option)
   wPoolF->Add(wPool);
   wPoolF->Add(this);
 
-  Int_t nevents = (Int_t) gAlice->TreeE()->GetEntries() ;
+  fRunLoader->LoadDigits("read");
+  fRunLoader->LoadHeader();
+  
+  Int_t nevents = (Int_t) fRunLoader->TreeE()->GetEntries() ;
   Int_t ievent ;
 
+  
   for(ievent = 0; ievent<nevents; ievent++) {
     
-    gAlice->GetEvent(ievent) ;
-    gAlice->SetEvent(ievent) ;
-    
-    gime->Event(ievent,"D") ;
-//      if(!ReadDigits(ievent))  //reads digits for event fEvent
-//        continue;
-    
+    fRunLoader->GetEvent(ievent);
+
     cout<<" MakeClusters invoked..";
     MakeClusters() ;
     cout<<" done."<<endl;
@@ -169,7 +177,13 @@ Int_t AliPHOSClusterizerv2::AreNeighbours(AliPHOSDigit* d1, AliPHOSDigit* d2) co
   // The order of d1 and d2 is important: first (d1) should be a digit already in a cluster 
   // which is compared to a digit (d2)  not yet in a cluster  
 
-  const AliPHOSGeometry * geom = AliPHOSGetter::GetInstance()->PHOSGeometry();
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("AreNeighbours","Can not get PHOS Loader");
+     return -1;
+   }
+  const AliPHOSGeometry * geom = gime->PHOSGeometry();
 
   Int_t rv = 0 ; 
 

@@ -228,7 +228,7 @@ void AliTOFT0::Exec(Option_t *option)
 
   for (Int_t ievent = 0; ievent < fNevents; ievent++) {
     gAlice->GetEvent(ievent);
-    TTree *TH = gAlice->TreeH ();
+    TTree *TH = TOF->TreeH ();
     if (!TH)
       return;
     TParticle*    particle;

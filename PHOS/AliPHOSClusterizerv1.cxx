@@ -37,7 +37,7 @@
 //  This TTask is normally called from Reconstructioner, but can as well be used in 
 //  standalone mode.
 // Use Case:
-//  root [0] AliPHOSClusterizerv1 * cl = new AliPHOSClusterizerv1("galice.root")  
+//  root [0] AliPHOSClusterizerv1 * cl = new AliPHOSClusterizerv1("galice.root")
 //  Warning in <TDatabasePDG::TDatabasePDG>: object already instantiated
 //               //reads gAlice from header file "..."                      
 //  root [1] cl->ExecuteTask()  
@@ -71,6 +71,7 @@
 #include <iomanip.h>
 
 // --- AliRoot header files ---
+#include "AliRunLoader.h"
 
 #include "AliPHOSClusterizerv1.h"
 #include "AliPHOSCpvRecPoint.h"
@@ -78,7 +79,7 @@
 #include "AliPHOSDigitizer.h"
 #include "AliPHOSEmcRecPoint.h"
 #include "AliPHOS.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 #include "AliRun.h"
 
 ClassImp(AliPHOSClusterizerv1)
@@ -161,8 +162,6 @@ void AliPHOSClusterizerv1::Exec(Option_t * option)
 {
   // Steering method
 
-  if( strcmp(GetName(), "")== 0 ) 
-    Init() ;
 
   if(strstr(option,"tim"))
     gBenchmark->Start("PHOSClusterizer"); 
@@ -170,10 +169,18 @@ void AliPHOSClusterizerv1::Exec(Option_t * option)
   if(strstr(option,"print"))
     Print("") ; 
 
-  gAlice->GetEvent(0) ;
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("Exec","Can not get PHOS Loader");
+     return;
+   }
+  fRunLoader->GetEvent(0);
+  gime->LoadDigits();
+  
   
  //check, if the branch with name of this" already exits?
-  TObjArray * lob = (TObjArray*)gAlice->TreeR()->GetListOfBranches() ;
+  TObjArray * lob = (TObjArray*)gime->TreeR()->GetListOfBranches() ;
   TIter next(lob) ; 
   TBranch * branch = 0 ;  
   Bool_t phosemcfound = kFALSE, phoscpvfound = kFALSE, clusterizerfound = kFALSE ; 
@@ -192,26 +199,24 @@ void AliPHOSClusterizerv1::Exec(Option_t * option)
       clusterizerfound = kTRUE ; 
   }
 
-  if ( phoscpvfound || phosemcfound || clusterizerfound ) {
+  if ( phoscpvfound || phosemcfound || clusterizerfound ) 
+   {
     cerr << "WARNING: AliPHOSClusterizer::Exec -> Emc(Cpv)RecPoints and/or Clusterizer branch with name " 
-	 << branchname.Data() << " already exits" << endl ;
+         << branchname.Data() << " already exits" << endl ;
     return ; 
-  }       
-
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ;
-  Int_t nevents = (Int_t) gAlice->TreeE()->GetEntries() ;
+   }       
+  
+  Int_t nevents = (Int_t) fRunLoader->TreeE()->GetEntries();
   Int_t ievent ;
 
-  for(ievent = 0; ievent < nevents; ievent++){
-
+  for(ievent = 0; ievent < nevents; ievent++)
+   {
     if(ievent == 0) GetCalibrationParameters() ;
 
     fNumberOfEmcClusters  = 0 ;
     fNumberOfCpvClusters  = 0 ;
    
-    gime->Event(ievent,"D") ;
-    
-    //    if(!ReadDigits(ievent))   continue;  //reads digits for event ievent
+    fRunLoader->GetEvent(ievent);
     
     MakeClusters() ;
     
@@ -225,7 +230,7 @@ void AliPHOSClusterizerv1::Exec(Option_t * option)
     //increment the total number of digits per run 
     fRecPointsInRun += gime->EmcRecPoints()->GetEntriesFast() ;  
     fRecPointsInRun += gime->CpvRecPoints()->GetEntriesFast() ;  
- }
+   }
   
   if(strstr(option,"tim")){
     gBenchmark->Stop("PHOSClusterizer");
@@ -239,14 +244,20 @@ void AliPHOSClusterizerv1::Exec(Option_t * option)
 
 //____________________________________________________________________________
 Bool_t AliPHOSClusterizerv1::FindFit(AliPHOSEmcRecPoint * emcRP, int * maxAt, Float_t * maxAtEnergy,
-				    Int_t nPar, Float_t * fitparameters) const
+                                     Int_t nPar, Float_t * fitparameters) const
 { 
   // Calls TMinuit to fit the energy distribution of a cluster with several maxima 
   // The initial values for fitting procedure are set equal to the positions of local maxima.
   // Cluster will be fitted as a superposition of nPar/3 electromagnetic showers
 
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
-  TClonesArray * digits = gime->Digits() ; 
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("FindFit","Can not get PHOS Loader");
+     return kFALSE;
+   }
+
+  TClonesArray * digits = gime->Digits(); 
   
 
   gMinuit->mncler();                     // Reset Minuit's list of paramters
@@ -333,10 +344,14 @@ Bool_t AliPHOSClusterizerv1::FindFit(AliPHOSEmcRecPoint * emcRP, int * maxAt, Fl
 //____________________________________________________________________________
 void AliPHOSClusterizerv1::GetCalibrationParameters() 
 {
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ;
-  TString branchname = GetName() ;
-  branchname.Remove(branchname.Index(Version())-1) ;
-  AliPHOSDigitizer * dig = gime->Digitizer(branchname) ;
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("GetCalibrationParameters","Can not get PHOS Loader");
+     return;
+   }
+  
+  AliPHOSDigitizer* dig = dynamic_cast<AliPHOSDigitizer*>(gime->Digitizer());
   fADCchanelEmc   = dig->GetEMCchannel() ;
   fADCpedestalEmc = dig->GetEMCpedestal();
 
@@ -350,17 +365,16 @@ void AliPHOSClusterizerv1::Init()
   // Make all memory allocations which can not be done in default constructor.
   // Attach the Clusterizer task to the list of PHOS tasks
   
-  if ( strcmp(GetTitle(), "") == 0 )
-    SetTitle("galice.root") ;
 
   TString branchname = GetName() ;
   branchname.Remove(branchname.Index(Version())-1) ;
 
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance(GetTitle(), branchname) ; 
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
   if ( gime == 0 ) {
-    cerr << "ERROR: AliPHOSClusterizerv1::Init -> Could not obtain the Getter object !" << endl ; 
+    cerr << "ERROR: AliPHOSClusterizerv1::Init -> Could not obtain the Loader object !" << endl ; 
     return ;
   } 
+  
     
   const AliPHOSGeometry * geom = gime->PHOSGeometry() ;
   fEmcCrystals = geom->GetNModules() *  geom->GetNCristalsInModule() ;
@@ -370,10 +384,10 @@ void AliPHOSClusterizerv1::Init()
 
   gime->PostClusterizer(this) ;
   // create a folder on the white board //YSAlice/WhiteBoard/RecPoints/PHOS/recpointsName
-  gime->PostRecPoints(branchname ) ;
+  gime->LoadRecPoints();
 
-  gime->PostDigits(branchname) ;
-  gime->PostDigitizer(branchname) ;
+  gime->LoadDigits();//Load Digits (read only mode)
+  gime->LoadDigitizer();//Load Digitizer (read only mode)
   
 }
 
@@ -387,7 +401,7 @@ Int_t AliPHOSClusterizerv1::AreNeighbours(AliPHOSDigit * d1, AliPHOSDigit * d2)c
   // The order of d1 and d2 is important: first (d1) should be a digit already in a cluster 
   //                                      which is compared to a digit (d2)  not yet in a cluster  
 
-  const AliPHOSGeometry * geom = AliPHOSGetter::GetInstance()->PHOSGeometry() ;
+  const AliPHOSGeometry * geom = AliPHOSLoader::GetPHOSGeometry() ;
 
   Int_t rv = 0 ; 
 
@@ -428,7 +442,7 @@ Bool_t AliPHOSClusterizerv1::IsInEmc(AliPHOSDigit * digit) const
   // Tells if (true) or not (false) the digit is in a PHOS-EMC module
  
   Bool_t rv = kFALSE ; 
-  const AliPHOSGeometry * geom = AliPHOSGetter::GetInstance()->PHOSGeometry() ;
+  const AliPHOSGeometry * geom = AliPHOSLoader::GetPHOSGeometry() ;
 
   Int_t nEMC = geom->GetNModules()*geom->GetNPhi()*geom->GetNZ();  
 
@@ -443,7 +457,7 @@ Bool_t AliPHOSClusterizerv1::IsInCpv(AliPHOSDigit * digit) const
   // Tells if (true) or not (false) the digit is in a PHOS-CPV module
  
   Bool_t rv = kFALSE ; 
-  const AliPHOSGeometry * geom = AliPHOSGetter::GetInstance()->PHOSGeometry() ;
+  const AliPHOSGeometry * geom = AliPHOSLoader::GetPHOSGeometry() ;
 
   Int_t nEMC = geom->GetNModules()*geom->GetNPhi()*geom->GetNZ();
 
@@ -462,10 +476,15 @@ void AliPHOSClusterizerv1::WriteRecPoints(Int_t event)
   TString branchName(GetName() ) ;
   branchName.Remove(branchName.Index(Version())-1) ;
 
-  AliPHOSGetter *gime = AliPHOSGetter::GetInstance() ; 
-  TObjArray * emcRecPoints = gime->EmcRecPoints(branchName) ; 
-  TObjArray * cpvRecPoints = gime->CpvRecPoints(branchName) ; 
-  TClonesArray * digits = gime->Digits(branchName) ; 
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("WriteRecPoints","Can not get PHOS Loader");
+     return;
+   }
+  TObjArray * emcRecPoints = gime->EmcRecPoints() ; 
+  TObjArray * cpvRecPoints = gime->CpvRecPoints() ; 
+  TClonesArray * digits = gime->Digits() ; 
 
   Int_t index ;
   //Evaluate position, dispersion and other RecPoint properties...
@@ -505,7 +524,7 @@ void AliPHOSClusterizerv1::WriteRecPoints(Int_t event)
   Int_t splitlevel = 0 ;
 
   //First EMC
-  TBranch * emcBranch = gAlice->TreeR()->Branch("PHOSEmcRP","TObjArray",&emcRecPoints,bufferSize,splitlevel);
+  TBranch * emcBranch = gime->TreeR()->Branch("PHOSEmcRP","TObjArray",&emcRecPoints,bufferSize,splitlevel);
   emcBranch->SetTitle(branchName);
   if (filename) {
     emcBranch->SetFile(filename);
@@ -519,7 +538,7 @@ void AliPHOSClusterizerv1::WriteRecPoints(Int_t event)
   }
     
   //Now CPV branch
-  TBranch * cpvBranch = gAlice->TreeR()->Branch("PHOSCpvRP","TObjArray",&cpvRecPoints,bufferSize,splitlevel);
+  TBranch * cpvBranch = gime->TreeR()->Branch("PHOSCpvRP","TObjArray",&cpvRecPoints,bufferSize,splitlevel);
   cpvBranch->SetTitle(branchName);
   if (filename) {
     cpvBranch->SetFile(filename);
@@ -532,24 +551,13 @@ void AliPHOSClusterizerv1::WriteRecPoints(Int_t event)
   } 
     
   //And Finally  clusterizer branch
-  AliPHOSClusterizerv1 * cl = (AliPHOSClusterizerv1*)gime->Clusterizer(branchName) ;
-  TBranch * clusterizerBranch = gAlice->TreeR()->Branch("AliPHOSClusterizer","AliPHOSClusterizerv1",
-					      &cl,bufferSize,splitlevel);
-  clusterizerBranch->SetTitle(branchName);
-  if (filename) {
-    clusterizerBranch->SetFile(filename);
-    TIter next( clusterizerBranch->GetListOfBranches());
-    TBranch * sb ;
-    while ((sb=(TBranch*)next())) {
-      sb->SetFile(filename);
-    }   
-    cwd->cd();
-  }
   emcBranch        ->Fill() ;
   cpvBranch        ->Fill() ;
-  clusterizerBranch->Fill() ;
-
-  gAlice->TreeR()->Write(0,kOverwrite) ;  
+  
+  gime->WriteRecPoints("OVERWRITE");
+  gime->WriteReconstructioner("OVERWRITE");
+  
+  
   
 }
 
@@ -561,14 +569,19 @@ void AliPHOSClusterizerv1::MakeClusters()
   TString branchName(GetName()) ; 
   branchName.Remove(branchName.Index(Version())-1) ; 
 
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("MakeClusters","Can not get PHOS Loader");
+     return;
+   }
 
-  TObjArray * emcRecPoints = gime->EmcRecPoints(branchName) ; 
-  TObjArray * cpvRecPoints = gime->CpvRecPoints(branchName) ; 
+  TObjArray * emcRecPoints = gime->EmcRecPoints() ; 
+  TObjArray * cpvRecPoints = gime->CpvRecPoints() ; 
   emcRecPoints->Delete() ;
   cpvRecPoints->Delete() ;
   
-  TClonesArray * digits = gime->Digits(branchName) ; 
+  TClonesArray * digits = gime->Digits();
   TClonesArray * digitsC =  (TClonesArray*)digits->Clone() ;
   
  
@@ -676,9 +689,15 @@ void AliPHOSClusterizerv1::MakeUnfolding()
   // Unfolds clusters using the shape of an ElectroMagnetic shower
   // Performs unfolding of all EMC/CPV clusters
 
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("WriteRecPoints","Can not get PHOS Loader");
+     return;
+   }
   
-  const AliPHOSGeometry * geom = gime->PHOSGeometry() ;
+  const AliPHOSGeometry * geom = gime->GetPHOSGeometry() ;
+
   TObjArray * emcRecPoints = gime->EmcRecPoints() ; 
   TObjArray * cpvRecPoints = gime->CpvRecPoints() ; 
   TClonesArray * digits = gime->Digits() ; 
@@ -769,14 +788,18 @@ Double_t  AliPHOSClusterizerv1::ShowerShape(Double_t r)
 
 //____________________________________________________________________________
 void  AliPHOSClusterizerv1::UnfoldCluster(AliPHOSEmcRecPoint * iniEmc, 
-						 Int_t nMax, 
-						 int * maxAt, 
-						 Float_t * maxAtEnergy)
+ Int_t nMax,  int * maxAt,  Float_t * maxAtEnergy)
 { 
   // Performs the unfolding of a cluster with nMax overlapping showers 
 
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
-  const AliPHOSGeometry * geom = gime->PHOSGeometry() ;
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("WriteRecPoints","Can not get PHOS Loader");
+     return;
+   }
+
+  const AliPHOSGeometry * geom = gime->GetPHOSGeometry() ;
   const TClonesArray * digits = gime->Digits() ; 
   TObjArray * emcRecPoints = gime->EmcRecPoints() ; 
   TObjArray * cpvRecPoints = gime->CpvRecPoints() ; 
@@ -898,7 +921,7 @@ void AliPHOSClusterizerv1::UnfoldingChiSquare(Int_t & nPar, Double_t * Grad, Dou
 
   Float_t * emcEnergies = emcRP->GetEnergiesList() ;
 
-  const AliPHOSGeometry * geom = AliPHOSGetter::GetInstance()->PHOSGeometry() ; 
+  const AliPHOSGeometry * geom = AliPHOSLoader::GetPHOSGeometry() ; 
   fret = 0. ;     
   Int_t iparam ;
 
@@ -1014,8 +1037,15 @@ void AliPHOSClusterizerv1::PrintRecPoints(Option_t * option)
 {
   // Prints list of RecPoints produced at the current pass of AliPHOSClusterizer
 
-  TObjArray * emcRecPoints = AliPHOSGetter::GetInstance()->EmcRecPoints() ; 
-  TObjArray * cpvRecPoints = AliPHOSGetter::GetInstance()->CpvRecPoints() ; 
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("PrintRecPoints","Can not get PHOS Loader");
+     return;
+   }
+
+  TObjArray * emcRecPoints = gime->EmcRecPoints() ; 
+  TObjArray * cpvRecPoints = gime->CpvRecPoints() ; 
 
   cout << "AliPHOSClusterizerv1: : event "<<gAlice->GetEvNumber() << endl ;
   cout << "       Found "<< emcRecPoints->GetEntriesFast() << " EMC Rec Points and " 

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.7  2001/10/21 19:04:55  hristov
+Several patches were done to adapt the barel reconstruction to the multi-event case. Some memory leaks were corrected. (Yu.Belikov)
+
 Revision 1.6  2001/08/30 09:28:48  hristov
 TTree names are explicitly set via SetName(name) and then Write() is called
 
@@ -52,6 +55,8 @@ Splitted from AliTPCtracking
 #include "AliTPCParam.h"
 #include <iostream.h>
 #include <TTree.h>
+#include "AliRunLoader.h"
+#include "AliLoader.h"
 
 void AliTPCclusterer::FindPeaks(Int_t k,Int_t max,
 AliBin *b,Int_t *idx,UInt_t *msk,Int_t& n) {
@@ -105,54 +110,54 @@ AliTPCcluster &c) {
 }
 
 //_____________________________________________________________________________
-void AliTPCclusterer::Digits2Clusters(const AliTPCParam *par, TFile *of, Int_t eventn)
+void AliTPCclusterer::Digits2Clusters(const AliTPCParam *par, AliLoader *of, Int_t eventn)
 {
   //-----------------------------------------------------------------
   // This is a simple cluster finder.
   //-----------------------------------------------------------------
+  AliRunLoader* rl = (AliRunLoader*)of->GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName);
+  rl->GetEvent(eventn);
   TDirectory *savedir=gDirectory; 
 
-  if (!of->IsOpen()) {
+  if (of->TreeR() == 0x0) of->MakeTree("R");
+  
+  
+  if (of == 0x0) 
+   {
      cerr<<"AliTPC::Digits2Clusters(): output file not open !\n";
      return;
-  }
+   }
 
   const Int_t kMAXZ=par->GetMaxTBin()+2;
 
-  char  dname[100];
-  char   cname[100];
-  if (eventn==-1) {
-
-    // for backward compatibility
-    
-    sprintf(dname,"TreeD_75x40_100x60");
-    sprintf(cname,"TreeC_TPC");
-  }
-  else {
-    sprintf(dname,"TreeD_75x40_100x60_%d",eventn);
-    sprintf(cname,"TreeC_TPC_%d",eventn);
-  }
-  TTree *t = (TTree *)gDirectory->Get(dname);
+  
+  TTree *t = (TTree *)of->TreeD();
 
   AliSimDigits digarr, *dummy=&digarr;
   t->GetBranch("Segment")->SetAddress(&dummy);
   Stat_t nentries = t->GetEntries();
 
-  of->cd();
+  cout<<"Got "<<nentries<<" from TreeD"<<endl;
 
-  ((AliTPCParam*)par)->Write(par->GetTitle());
+//  ((AliTPCParam*)par)->Write(par->GetTitle());
+  
   AliTPCClustersArray carray;
   carray.Setup(par);
   carray.SetClusterType("AliTPCcluster");
-  carray.MakeTree();
+
+  TTree* treeR = of->TreeR();
+  carray.MakeTree(treeR);
 
 
 
   Int_t nclusters=0;
 
-  for (Int_t n=0; n<nentries; n++) {
-    t->GetEvent(n);
+  for (Int_t n=0; n<nentries; n++) 
+   {
+   
     Int_t sec, row;
+    t->GetEvent(n);
+
     if (!par->AdjustSectorRow(digarr.GetID(),sec,row)) {
        cerr<<"AliTPC warning: invalid segment ID ! "<<digarr.GetID()<<endl;
        continue;
@@ -280,10 +285,10 @@ void AliTPCclusterer::Digits2Clusters(const AliTPCParam *par, TFile *of, Int_t e
 
   cerr<<"Number of found clusters : "<<nclusters<<"                        \n";
 
-  carray.GetTree()->SetName(cname);
-  carray.GetTree()->Write();
+  of->WriteRecPoints("OVERWRITE");
+  
   savedir->cd();
 
-  delete t;  //Thanks to Mariana Bondila
+//  delete t;  //Thanks to Mariana Bondila
 }
 

@@ -49,7 +49,7 @@
 #include "AliConst.h"
 #include "AliMC.h"
 #include "AliPHOSGeometry.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 
 ClassImp(AliPHOSv0)
 
@@ -58,10 +58,6 @@ AliPHOSv0::AliPHOSv0(const char *name, const char *title):
   AliPHOS(name,title)
 {
   // ctor : title is used to identify the layout
- 
-  // create the getter
-  AliPHOSGetter::GetInstance(gDirectory->GetName(), 0);
-  
 }
 
 //____________________________________________________________________________

@@ -15,6 +15,10 @@
 
 /*
 $Log$
+Revision 1.53  2001/11/28 01:35:45  nilsen
+Using standard constructors instead of default constructors for Clusterfinder,
+Response, and FastSimulator.
+
 Revision 1.52  2001/10/22 11:00:54  hristov
 New naming schema of the rotation matrices in BuildGeometry() to avoid redefinition in other detectors (R.Barbera)
 
@@ -223,6 +227,7 @@ New ITS detailed geometry to be used for the PPR
 #include "AliITSClusterFinderSDD.h"
 #include "AliITSClusterFinderSSD.h"
 
+//AliITSvPPRasymm its("its","test");
 
 ClassImp(AliITSvPPRasymm)
  

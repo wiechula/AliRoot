@@ -15,6 +15,13 @@
 
 /*
 $Log$
+Revision 1.11  2002/03/20 10:21:13  hristov
+Set fPtMax to 15 GeV in order to avoid some numerical problems
+
+Revision 1.10  2001/10/15 16:44:46  morsch
+- Possibility for vertex distribution truncation.
+- Write mc header with vertex position.
+
 Revision 1.9  2001/07/27 17:09:36  morsch
 Use local SetTrack, KeepTrack and SetHighWaterMark methods
 to delegate either to local stack or to stack owned by AliRun.
@@ -195,6 +202,7 @@ AliGenHIJINGpara::AliGenHIJINGpara()
     fETApic = 0;
     fETAkac = 0;
     SetCutVertexZ();
+    SetPtRange();
 }
 
 //_____________________________________________________________________________
@@ -211,6 +219,7 @@ AliGenHIJINGpara::AliGenHIJINGpara(Int_t npart)
     fETApic = 0;
     fETAkac = 0;
     SetCutVertexZ();
+    SetPtRange();
 }
 
 //_____________________________________________________________________________
@@ -371,4 +380,7 @@ AliGenHIJINGpara& AliGenHIJINGpara::operator=(const  AliGenHIJINGpara& rhs)
     return *this;
 }
 
+void AliGenHIJINGpara::SetPtRange(Float_t ptmin, Float_t ptmax) {
+  AliGenerator::SetPtRange(ptmin, ptmax);
+}
 

@@ -17,7 +17,7 @@
 #pragma link C++ class AliEMCALDigitizer+;
 #pragma link C++ class AliEMCALClusterizer+;
 #pragma link C++ class AliEMCALClusterizerv1+;
-#pragma link C++ class AliEMCALGetter+;
+#pragma link C++ class AliEMCALLoader+;
 #pragma link C++ class AliEMCALJetFinder+;
 #pragma link C++ class AliEMCALJet+;
 #pragma link C++ class AliEMCALJetMicroDst+;

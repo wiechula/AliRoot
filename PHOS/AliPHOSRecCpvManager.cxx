@@ -30,7 +30,7 @@
 #include "AliPHOSRecCpvManager.h"
 #include "AliPHOS.h"
 #include "AliRun.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 
 ClassImp(AliPHOSRecCpvManager) 
 
@@ -117,8 +117,7 @@ void AliPHOSRecCpvManager::AG(Float_t Ei, Float_t Xi, Float_t Yi, Float_t& Ai, F
   //Xi and Yi are the distances along x and y from reference point 
   // to the pad center.
 
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
-  const AliPHOSGeometry* geom = gime->PHOSGeometry();
+  const AliPHOSGeometry* geom = AliPHOSLoader::GetPHOSGeometry();
   Float_t CelZ = geom->GetPadSizeZ();
   Float_t CelY = geom->GetPadSizePhi();
 

@@ -42,10 +42,14 @@
 
 // --- AliRoot header files ---
 
+#include "AliRunLoader.h"
+#include "AliHeader.h"
+
+// --- PHOS header files ---
 #include "AliPHOSIhepAnalyze.h"
 #include "AliPHOSDigit.h"
 #include "AliPHOSRecParticle.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 #include "AliPHOSHit.h"
 #include "AliPHOSImpact.h"
 #include "AliPHOSvImpacts.h"
@@ -58,11 +62,21 @@ ClassImp(AliPHOSIhepAnalyze)
 
 //____________________________________________________________________________
 
-  AliPHOSIhepAnalyze::AliPHOSIhepAnalyze() {}
+AliPHOSIhepAnalyze::AliPHOSIhepAnalyze() 
+ {
+   fRunLoader = 0x0;
+ }
 
 //____________________________________________________________________________
 
-AliPHOSIhepAnalyze::AliPHOSIhepAnalyze(Text_t * name) : fFileName(name) {}
+AliPHOSIhepAnalyze::AliPHOSIhepAnalyze(Text_t * name) : fFileName(name) 
+ {
+  fRunLoader = AliRunLoader::Open(fFileName);
+  if (fRunLoader == 0x0)
+   {
+     Fatal("AliPHOSIhepAnalyze","Can not load event from file %s",name);
+   }
+ }
 
 //____________________________________________________________________________
 void AliPHOSIhepAnalyze::AnalyzeCPV1(Int_t Nevents)
@@ -90,7 +104,15 @@ void AliPHOSIhepAnalyze::AnalyzeCPV1(Int_t Nevents)
   TList * fCpvImpacts ;
   TBranch * branchCPVimpacts;
 
-  AliPHOSGetter * please = AliPHOSGetter::GetInstance(GetFileName().Data(),"PHOS");
+  
+  
+  AliPHOSLoader* please = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if ( please == 0 )
+   {
+     Error("AnalyzeCPV1","Could not obtain the Loader object !");
+     return ;
+   }
+
   const AliPHOSGeometry *  fGeom  = please->PHOSGeometry();
 
   cout << "Start CPV Analysis-1. Resolutions, cluster multiplicity and lengths"<<endl;
@@ -102,8 +124,17 @@ void AliPHOSIhepAnalyze::AnalyzeCPV1(Int_t Nevents)
     Int_t ntracks = gAlice->GetEvent(ievent);
     cout<<" >>>>>>>Event "<<ievent<<".<<<<<<<"<<endl;
     
+  /******************************************************************/
+      TTree* treeH = please->TreeH();
+      if (treeH == 0x0)
+       {
+         Error("AnalyzeCPV1","Can not get TreeH");
+         return;
+       }
+/******************************************************************/     
+
     // Get branch of CPV impacts
-    if (! (branchCPVimpacts =gAlice->TreeH()->GetBranch("PHOSCpvImpacts")) ) {
+    if (! (branchCPVimpacts =treeH->GetBranch("PHOSCpvImpacts")) ) {
       cout<<" Couldn't find branch PHOSCpvImpacts. Exit."<<endl;
       return;
     }
@@ -151,7 +182,7 @@ void AliPHOSIhepAnalyze::AnalyzeCPV1(Int_t Nevents)
     // The distance from the rec.point to the closest hit
     // gives the coordinate resolution of the CPV
 
-    please->Event(ievent);
+    fRunLoader->GetEvent(ievent);
     TIter nextRP(please->CpvRecPoints()) ;
     AliPHOSCpvRecPoint *cpvRecPoint ;
     Float_t xgen, ygen, zgen;
@@ -310,7 +341,13 @@ void AliPHOSIhepAnalyze::AnalyzeEMC1(Int_t Nevents)
   TList * fEmcImpacts ;
   TBranch * branchEMCimpacts;
 
-  AliPHOSGetter * please = AliPHOSGetter::GetInstance(GetFileName().Data(),"PHOS");
+  AliPHOSLoader* please = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if ( please == 0 )
+   {
+     Error("AnalyzeEMC1","Could not obtain the Loader object !");
+     return ;
+   }
+
   const AliPHOSGeometry *  fGeom  = please->PHOSGeometry();
 
   cout << "Start EMC Analysis-1. Resolutions, cluster multiplicity and lengths"<<endl;
@@ -320,9 +357,16 @@ void AliPHOSIhepAnalyze::AnalyzeEMC1(Int_t Nevents)
 
     Int_t ntracks = gAlice->GetEvent(ievent);
     cout<<" >>>>>>>Event "<<ievent<<".<<<<<<<"<<endl;
-    
+
+    TTree* treeH = please->TreeH();
+    if (treeH == 0x0)
+     {
+       Error("AnalyzeEMC1","Can not get TreeH");
+       return;
+     }
+
     // Get branch of EMC impacts
-    if (! (branchEMCimpacts =gAlice->TreeH()->GetBranch("PHOSEmcImpacts")) ) {
+    if (! (branchEMCimpacts =treeH->GetBranch("PHOSEmcImpacts")) ) {
       cout<<" Couldn't find branch PHOSEmcImpacts. Exit."<<endl;
       return;
     }
@@ -368,7 +412,7 @@ void AliPHOSIhepAnalyze::AnalyzeEMC1(Int_t Nevents)
     // The distance from the rec.point to the closest hit
     // gives the coordinate resolution of the EMC
 
-    please->Event(ievent);
+    fRunLoader->GetEvent(ievent);
     TIter nextRP(please->EmcRecPoints()) ;
     AliPHOSEmcRecPoint *emcRecPoint ;
     Float_t xgen, ygen, zgen;
@@ -514,20 +558,33 @@ void AliPHOSIhepAnalyze::AnalyzeCPV2(Int_t Nevents)
   TList * fCpvImpacts = new TList();
   TBranch * branchCPVimpacts;
 
-  AliPHOSGetter * please = AliPHOSGetter::GetInstance(GetFileName().Data(),"PHOS");
+  AliPHOSLoader* please = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if ( please == 0 )
+   {
+     Error("AnalyzeCPV2","Could not obtain the Loader object !");
+     return ;
+   }
   const AliPHOSGeometry *  fGeom  = please->PHOSGeometry();
+  fRunLoader->LoadHeader();
 
   for (Int_t nev=0; nev<Nevents; nev++) 
     { 
       printf("\n=================== Event %10d ===================\n",nev);
-      Int_t ntracks = gAlice->GetEvent(nev);
-      please->Event(nev);
+      fRunLoader->GetEvent(nev);
+      Int_t ntracks = fRunLoader->GetHeader()->GetNtrack();
     
       Int_t nrec_cpv = 0; // Reconstructed points in event
       Int_t ngen_cpv = 0; // Impacts in event
 
       // Get branch of CPV impacts
-      if (! (branchCPVimpacts =gAlice->TreeH()->GetBranch("PHOSCpvImpacts")) )  return;
+      TTree* treeH = please->TreeH();
+      if (treeH == 0x0)
+       {
+        Error("AnalyzeCPV2","Can not get TreeH");
+        return;
+       }
+
+      if (! (branchCPVimpacts =treeH->GetBranch("PHOSCpvImpacts")) )  return;
       
       // Create and fill arrays of hits for each CPV module
       Int_t nOfModules = fGeom->GetNModules();
@@ -643,11 +700,16 @@ void AliPHOSIhepAnalyze::CpvSingle(Int_t nevents)
   TH1S *hNrpX = new TH1S("hNrpX","CPV rec.point Phi-length"  ,21,-0.5,20.5);
   TH1S *hNrpZ = new TH1S("hNrpZ","CPV rec.point Z-length"    ,21,-0.5,20.5);
  
-  AliPHOSGetter* gime = AliPHOSGetter::GetInstance(GetFileName().Data(),"PHOS");
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if ( gime == 0 )
+   {
+     Error("CpvSingle","Could not obtain the Loader object !");
+     return ;
+   }
   
   for(Int_t ievent=0; ievent<nevents; ievent++)
     {
-      gime->Event(ievent);
+      fRunLoader->GetEvent(ievent);
       if(gime->CpvRecPoints()->GetEntriesFast()>1) continue;
 
       AliPHOSCpvRecPoint* pt = (AliPHOSCpvRecPoint*)(gime->CpvRecPoints())->At(0);
@@ -723,19 +785,31 @@ void AliPHOSIhepAnalyze::HitsCPV(TClonesArray& hits, Int_t nev)
   TList * fCpvImpacts ;
   TBranch * branchCPVimpacts;
 
-  AliPHOSGetter * please = AliPHOSGetter::GetInstance(GetFileName().Data(),"PHOS");
+  AliPHOSLoader* please = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
+  if ( please == 0 )
+   {
+     Error("HitsCPV","Could not obtain the Loader object !");
+     return ;
+   }
   const AliPHOSGeometry *  fGeom  = please->PHOSGeometry();
 
      
   printf("\n=================== Event %10d ===================\n",nev);
-  Int_t ntracks = gAlice->GetEvent(nev);
-  please->Event(nev);
+  fRunLoader->GetEvent(nev);
+  Int_t ntracks = fRunLoader->GetHeader()->GetNtrack();
     
 //    Int_t nrec_cpv = 0; // Reconstructed points in event // 01.10.2001
 //    Int_t ngen_cpv = 0; // Impacts in event
 
   // Get branch of CPV impacts
-  if (! (branchCPVimpacts =gAlice->TreeH()->GetBranch("PHOSCpvImpacts")) )  return;
+   TTree* treeH = please->TreeH();
+   if (treeH == 0x0)
+    {
+      Error("CPVSingle","Can not get TreeH");
+      return;
+    }
+
+  if (! (branchCPVimpacts =treeH->GetBranch("PHOSCpvImpacts")) )  return;
       
   // Create and fill arrays of hits for each CPV module
   Int_t nOfModules = fGeom->GetNModules();
@@ -774,7 +848,7 @@ void AliPHOSIhepAnalyze::HitsCPV(TClonesArray& hits, Int_t nev)
 //    AliPHOSImpact* impact;
 //    TClonesArray* impacts;
 
-//    AliPHOSGetter * please = AliPHOSGetter::GetInstance(GetFileName().Data(),"PHOS");
+//    AliPHOSLoader * please = AliPHOSLoader::GetInstance(GetFileName().Data(),"PHOS");
 //    const AliPHOSGeometry *  fGeom  = please->PHOSGeometry();
 
 //    Int_t ntracks = gAlice->GetEvent(ievent);

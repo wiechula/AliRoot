@@ -48,7 +48,7 @@ public:
   virtual void SetTrackSegmentsBranch(const char* title) = 0 ;
   virtual void SetRecParticlesBranch (const char* title) = 0 ;
   virtual const char * Version() const = 0 ;   
-  virtual void WriteRecParticles(Int_t event)= 0 ; 
+  virtual void WriteRecParticles()= 0 ; 
 
 protected:
 

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.28  2001/08/31 06:50:11  gosset
+Different handling of TreeR for track reconstruction from raw clusters
+
 Revision 1.27  2001/07/27 13:03:12  hristov
 Default Branch split level set to 99
 
@@ -173,7 +176,7 @@ Addition of files for track reconstruction in C++
 #include "AliMUONTrackHit.h"
 #include "AliMagF.h"
 #include "AliRun.h" // for gAlice
-
+#include "AliConfig.h"
 //************* Defaults parameters for reconstruction
 static const Double_t kDefaultMinBendingMomentum = 3.0;
 static const Double_t kDefaultMaxBendingMomentum = 500.0;
@@ -532,7 +535,31 @@ void AliMUONEventReconstructor::MakeEventToBeReconstructed(void)
     // Signal hits
     // AliMUON *MUON  = (AliMUON*) gAlice->GetModule("MUON"); // necessary ????
     // Security on MUON ????
-    AddHitsForRecFromGEANT(gAlice->TreeH());
+    
+ 
+      AliConfig* config = AliConfig::Instance();
+      TFolder* topfold = (TFolder*)config->GetTopFolder();
+      if (topfold == 0x0)
+       {
+         Error("Exec","Can not get Alice top folder");
+         return; 
+       }
+      TString fmdfoldname(config->GetDataFolderName()+"/"+"MUON");
+      TFolder* fmdfold = (TFolder*)topfold->FindObject(fmdfoldname);
+      if (fmdfold == 0x0)
+       {
+         Error("Exec","Can not get FMD folder");
+         return; 
+       }
+      TTree* treeH = dynamic_cast<TTree*>(fmdfold->FindObject("TreeH"));
+      if (treeH == 0x0)
+       {
+         Error("Exec","Can not get TreeH");
+         return;
+       }
+    
+    AddHitsForRecFromGEANT(treeH);
+    
     // Background hits
     AddHitsForRecFromBkgGEANT(fBkgGeantTH, fBkgGeantHits);
     // Sort HitsForRec in increasing order with respect to chamber number

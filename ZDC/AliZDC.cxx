@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.28  2002/02/04 09:18:08  coppedis
+Merging and reconstruction code review
+
 Revision 1.26.2.2  2001/11/12 18:41:44  hristov
 All the changes from the head are merged to the release
 
@@ -406,7 +409,7 @@ void AliZDC::Hits2SDigits()
     Float_t MHits[7];
     fNMergedhits = 0;
 
-    TTree *treeH = gAlice->TreeH();
+    TTree *treeH = TreeH();
     Int_t ntracks = (Int_t) treeH->GetEntries();
     gAlice->ResetHits();
   

@@ -6,9 +6,11 @@
 #include "TFolder.h"
 
 // --- AliRoot header files ---
+#include "AliConfig.h"
+#include "AliPHOSClusterizer.h"
 #include "AliPHOSEvalRecPoint.h"
 #include "AliRun.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 #include "AliPHOSRecCpvManager.h"
 #include "AliPHOSRecEmcManager.h"
 #include "AliPHOSDigitizer.h"
@@ -19,7 +21,7 @@
 
 ClassImp(AliPHOSEvalRecPoint)
 
-  AliPHOSEvalRecPoint::AliPHOSEvalRecPoint(): AliPHOSCpvRecPoint()
+  AliPHOSEvalRecPoint::AliPHOSEvalRecPoint(): fEventFolderName(AliConfig::fgkDefaultEventFolderName)
 {
   fParent=-333;
   fChi2Dof=-111;
@@ -27,7 +29,8 @@ ClassImp(AliPHOSEvalRecPoint)
   fIsEmc = kFALSE;
 }
 
-AliPHOSEvalRecPoint::AliPHOSEvalRecPoint(Bool_t cpv, AliPHOSEvalRecPoint* parent) : AliPHOSCpvRecPoint()
+AliPHOSEvalRecPoint::AliPHOSEvalRecPoint(Bool_t cpv, AliPHOSEvalRecPoint* parent) 
+  : fEventFolderName(AliConfig::fgkDefaultEventFolderName)
 {
 
   fParent=-333;
@@ -57,7 +60,7 @@ AliPHOSEvalRecPoint::AliPHOSEvalRecPoint(Bool_t cpv, AliPHOSEvalRecPoint* parent
   
 }
 
-AliPHOSEvalRecPoint::AliPHOSEvalRecPoint(Int_t i, Bool_t cpv) : AliPHOSCpvRecPoint()
+AliPHOSEvalRecPoint::AliPHOSEvalRecPoint(Int_t i, Bool_t cpv) : fEventFolderName(AliConfig::fgkDefaultEventFolderName)
 {
 
   fChi2Dof=-111;
@@ -65,15 +68,15 @@ AliPHOSEvalRecPoint::AliPHOSEvalRecPoint(Int_t i, Bool_t cpv) : AliPHOSCpvRecPoi
 
   AliPHOSEmcRecPoint* rp=0;
 
-  AliPHOSGetter* fGetter = AliPHOSGetter::GetInstance();
+  AliPHOSLoader* fLoader = AliPHOSLoader::GetPHOSLoader(fEventFolderName);
 
   if(cpv) {
-    rp = (AliPHOSCpvRecPoint*)fGetter->CpvRecPoints()->At(i);
+    rp = (AliPHOSCpvRecPoint*)fLoader->CpvRecPoints()->At(i);
     fIsEmc = kFALSE;
     fIsCpv = kTRUE;
   }
   else {
-    rp = (AliPHOSEmcRecPoint*)fGetter->EmcRecPoints()->At(i);
+    rp = (AliPHOSEmcRecPoint*)fLoader->EmcRecPoints()->At(i);
     fIsEmc = kTRUE;
     fIsCpv = kFALSE;
   }
@@ -83,7 +86,7 @@ AliPHOSEvalRecPoint::AliPHOSEvalRecPoint(Int_t i, Bool_t cpv) : AliPHOSCpvRecPoi
   Int_t nDigits = rp->GetMultiplicity();
   
   for(Int_t iDigit=0; iDigit<nDigits; iDigit++) {
-    AliPHOSDigit* digit = (AliPHOSDigit*)fGetter->Digits()->At( Digits[iDigit] );
+    AliPHOSDigit* digit = (AliPHOSDigit*)fLoader->Digits()->At( Digits[iDigit] );
     Float_t eDigit = Energies[iDigit];
     this->AddDigit(*digit,eDigit);
   }
@@ -148,7 +151,7 @@ void AliPHOSEvalRecPoint::UpdateWorkingPool()
      Int_t nChild = parent->HasChild(children);
      for(Int_t iChild=0; iChild<nChild; iChild++)
        {
-	 ((AliPHOSEvalRecPoint*)children.At(iChild))->DeleteParent();
+        ((AliPHOSEvalRecPoint*)children.At(iChild))->DeleteParent();
        }
 
      if(nChild) {
@@ -195,7 +198,7 @@ void AliPHOSEvalRecPoint::Init()
     exit(1);
   }
 
-  TClonesArray* digits = AliPHOSGetter::GetInstance()->Digits();
+  TClonesArray* digits = AliPHOSLoader::GetPHOSLoader(fEventFolderName)->Digits();
   Float_t LogWeight=0;  
 
   if(this->IsEmc()) {
@@ -271,14 +274,14 @@ void AliPHOSEvalRecPoint::InitTwoGam(Float_t* gamma1, Float_t* gamma2)
   Float_t sqr;
   Float_t cos2fi = 1.;
 
-  AliPHOSGetter* fGetter = AliPHOSGetter::GetInstance();
-  const AliPHOSGeometry* fGeom = fGetter->PHOSGeometry();
+  AliPHOSLoader* fLoader = AliPHOSLoader::GetPHOSLoader(fEventFolderName);
+  const AliPHOSGeometry* fGeom = fLoader->PHOSGeometry();
 
   Int_t iDigit; //loop variable
 
   for(iDigit = 0 ; iDigit < nDigits ; iDigit ++)
     {
-      digit = (AliPHOSDigit*)fGetter->Digits()->At( Digits[iDigit] ); 
+      digit = (AliPHOSDigit*)fLoader->Digits()->At( Digits[iDigit] ); 
       eDigit = Energies[iDigit];
       fGeom->AbsToRelNumbering(digit->GetId(), relid) ;
       fGeom->RelPosInModule(relid, iy, ix);
@@ -301,7 +304,7 @@ void AliPHOSEvalRecPoint::InitTwoGam(Float_t* gamma1, Float_t* gamma2)
   Float_t eu3 = 0;
   for(iDigit = 0 ; iDigit < nDigits ; iDigit ++)
     {
-      digit = (AliPHOSDigit*)fGetter->Digits()->At( Digits[iDigit] ); 
+      digit = (AliPHOSDigit*)fLoader->Digits()->At( Digits[iDigit] ); 
       eDigit = Energies[iDigit];
       fGeom->AbsToRelNumbering(digit->GetId(), relid) ;
       fGeom->RelPosInModule(relid, iy, ix);
@@ -401,8 +404,8 @@ void AliPHOSEvalRecPoint::TwoGam(Float_t* gamma1, Float_t* gamma2)
   Float_t iy ;
   Int_t relid[4] ; 
 
-  AliPHOSGetter* fGetter = AliPHOSGetter::GetInstance();
-  const AliPHOSGeometry* fGeom = fGetter->PHOSGeometry();
+  AliPHOSLoader* fLoader = AliPHOSLoader::GetPHOSLoader(fEventFolderName);
+  const AliPHOSGeometry* fGeom = fLoader->PHOSGeometry();
 
   for(Int_t Iter=0; Iter<Niter; Iter++)
     {
@@ -415,7 +418,7 @@ void AliPHOSEvalRecPoint::TwoGam(Float_t* gamma1, Float_t* gamma2)
 
       for(Int_t iDigit = 0 ; iDigit < nDigits ; iDigit ++)
 	{
-	  digit = (AliPHOSDigit*)fGetter->Digits()->At( Digits[iDigit] ); 
+	  digit = (AliPHOSDigit*)fLoader->Digits()->At( Digits[iDigit] ); 
 	  eDigit = Energies[iDigit];
 	  fGeom->AbsToRelNumbering(digit->GetId(), relid) ;
 	  fGeom->RelPosInModule(relid, iy, ix);
@@ -558,12 +561,12 @@ void AliPHOSEvalRecPoint::UnfoldTwoMergedPoints(Float_t* gamma1, Float_t* gamma2
   Float_t* Energies = GetEnergiesList();
   Float_t* eFit = new Float_t[nDigits];
 
-  AliPHOSGetter* fGetter = AliPHOSGetter::GetInstance();
-  const AliPHOSGeometry* fGeom = fGetter->PHOSGeometry();
+  AliPHOSLoader* fLoader = AliPHOSLoader::GetPHOSLoader(fEventFolderName);
+  const AliPHOSGeometry* fGeom = fLoader->PHOSGeometry();
 
   for(Int_t iDigit=0; iDigit<nDigits; iDigit++)
     {
-      AliPHOSDigit* digit = (AliPHOSDigit*)fGetter->Digits()->At( Digits[iDigit] ); 
+      AliPHOSDigit* digit = (AliPHOSDigit*)fLoader->Digits()->At( Digits[iDigit] ); 
       Int_t relid[4] ;
       fGeom->AbsToRelNumbering(digit->GetId(), relid) ;
       Float_t x,z;     
@@ -609,7 +612,7 @@ void AliPHOSEvalRecPoint::UnfoldTwoMergedPoints(Float_t* gamma1, Float_t* gamma2
 
       for( Int_t iDigit = 0 ; iDigit < nDigits ; iDigit ++)
 	{
-	  AliPHOSDigit* digit = (AliPHOSDigit*)fGetter->Digits()->At( Digits[iDigit] ); 
+	  AliPHOSDigit* digit = (AliPHOSDigit*)fLoader->Digits()->At( Digits[iDigit] ); 
 	  Float_t eDigit = Energies[iDigit];
 	  Int_t relid[4] ;
 	  fGeom->AbsToRelNumbering(digit->GetId(), relid) ;
@@ -678,8 +681,8 @@ void AliPHOSEvalRecPoint::EvaluatePosition()
   Float_t cosi,x1=0,y1=0;
   Float_t chisqc;
 
-  AliPHOSGetter* fGetter = AliPHOSGetter::GetInstance();
-  const AliPHOSGeometry* fGeom = fGetter->PHOSGeometry();
+  AliPHOSLoader* fLoader = AliPHOSLoader::GetPHOSLoader(fEventFolderName);
+  const AliPHOSGeometry* fGeom = fLoader->PHOSGeometry();
 
   for(Int_t Iter=0; Iter<Niter; Iter++)
     {
@@ -692,7 +695,7 @@ void AliPHOSEvalRecPoint::EvaluatePosition()
 
 	  Float_t* Energies = GetEnergiesList();
 	  Int_t* Digits = GetDigitsList();
-	  digit = (AliPHOSDigit*)fGetter->Digits()->At( Digits[iDigit] );
+	  digit = (AliPHOSDigit*)fLoader->Digits()->At( Digits[iDigit] );
 	  eDigit = Energies[iDigit];
 	  fGeom->AbsToRelNumbering(digit->GetId(), relid) ;
 	  fGeom->RelPosInModule(relid, iy, ix);
@@ -822,8 +825,8 @@ void AliPHOSEvalRecPoint::SplitMergedShowers()
 void AliPHOSEvalRecPoint::MergeClosePoint() 
 {
 
-  AliPHOSGetter* fGetter = AliPHOSGetter::GetInstance();
-//    AliPHOSDigitizer* digitizer = fGetter->Digitizer();
+  AliPHOSLoader* fLoader = AliPHOSLoader::GetPHOSLoader(fEventFolderName);
+//    AliPHOSDigitizer* digitizer = fLoader->Digitizer();
 //    Float_t fPedestal = digitizer->GetPedestal();  // YVK 30.09.2001
 //    Float_t fSlope = digitizer->GetSlope();
   
@@ -857,7 +860,7 @@ void AliPHOSEvalRecPoint::MergeClosePoint()
 
 		  for(Int_t iDigit=0; iDigit<rp->GetDigitsMultiplicity(); iDigit++)
 		    {
-		      AliPHOSDigit* digit = (AliPHOSDigit*)fGetter->Digits()->At(Digits[iDigit]);
+		      AliPHOSDigit* digit = (AliPHOSDigit*)fLoader->Digits()->At(Digits[iDigit]);
 		      Float_t eDigit = Energies[iDigit];
 		      this->AddDigit(*digit,eDigit);
 		    }
@@ -894,7 +897,7 @@ Int_t AliPHOSEvalRecPoint::UnfoldLocalMaxima()
   Float_t xMax;
   Float_t zMax;
 
-//    AliPHOSClusterizer* clusterizer = fGetter->Clusterizer("PHOSclu-v1");  
+//    AliPHOSClusterizer* clusterizer = fLoader->Clusterizer("PHOSclu-v1");  
   AliPHOSClusterizer* clusterizer = GetClusterizer();
   if(!clusterizer) {
     cout<<" Cannot get clusterizer. Exit."<<endl;
@@ -910,9 +913,9 @@ Int_t AliPHOSEvalRecPoint::UnfoldLocalMaxima()
     LogWeight = clusterizer->GetCpvLogWeight();
   }
 
-  AliPHOSGetter* fGetter = AliPHOSGetter::GetInstance();
-  const AliPHOSGeometry* fGeom = fGetter->PHOSGeometry();
-  TClonesArray* digits = fGetter->Digits();
+  AliPHOSLoader* fLoader = AliPHOSLoader::GetPHOSLoader(fEventFolderName);
+  const AliPHOSGeometry* fGeom = fLoader->PHOSGeometry();
+  TClonesArray* digits = fLoader->Digits();
 
   // if number of local maxima less then 2 - nothing to unfold
   Int_t Nmax = GetNumberOfLocalMax(maxAt,maxAtEnergy,LocMaxCut,digits); 
@@ -933,7 +936,7 @@ Int_t AliPHOSEvalRecPoint::UnfoldLocalMaxima()
   for(iDigit=0; iDigit<nDigits; iDigit++)
     {
       
-      AliPHOSDigit* digit = (AliPHOSDigit*)fGetter->Digits()->At( Digits[iDigit] );
+      AliPHOSDigit* digit = (AliPHOSDigit*)fLoader->Digits()->At( Digits[iDigit] );
       fGeom->AbsToRelNumbering(digit->GetId(), relid) ;
       Float_t x,z;
       fGeom->RelPosInModule(relid, x, z);
@@ -967,7 +970,7 @@ Int_t AliPHOSEvalRecPoint::UnfoldLocalMaxima()
       //Neighbous ( matrix 3x3 around the local maximum)
       for(Int_t iDigit=0; iDigit<nDigits; iDigit++)
 	{     
-	  AliPHOSDigit* digit = (AliPHOSDigit*)fGetter->Digits()->At( Digits[iDigit] );
+	  AliPHOSDigit* digit = (AliPHOSDigit*)fLoader->Digits()->At( Digits[iDigit] );
   	  Float_t eDigit = Energies[iDigit];
 	  fGeom->AbsToRelNumbering(digit->GetId(), relid) ;
 	  Float_t ix,iz;
@@ -1083,6 +1086,10 @@ void AliPHOSEvalRecPoint::PrintWorkingPool()
   ((TObjArray*)GetWorkingPool())->Print("");
 }
 
+void AliPHOSEvalRecPoint::SetEventFolderName(const char* evfname)
+{//Sets event folder name
+  fEventFolderName = evfname;
+}
 
 
 

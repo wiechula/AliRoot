@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.15  2002/04/09 13:38:47  jchudoba
+Add const to the filename argument
+
+Revision 1.14  2002/04/04 09:28:04  jchudoba
+Change default names of TPC trees. Use update instead of recreate for the output file. Overwrite the AliRunDigitizer object in the output if it exists.
+
+Revision 1.13  2002/02/13 09:03:32  jchudoba
+Pass option to subtasks. Delete input TTrees. Use gAlice from memory if it is present (user must delete the default one created by aliroot if he/she wants to use gAlice from the input file!). Add new data member to store name of the special TPC TTrees.
+
 Revision 1.12  2001/12/10 16:40:52  jchudoba
 Import gAlice from the signal file before InitGlobal() to allow detectors to use it during initialization
 
@@ -142,6 +151,10 @@ Manager class for merging/digitization
 
 ClassImp(AliRunDigitizer)
 
+const TString AliRunDigitizer::fgkDefOutFolderName("Output");
+const TString AliRunDigitizer::fgkBaseInFolderName("Input");
+
+
 ////////////////////////////////////////////////////////////////////////
 AliRunDigitizer::AliRunDigitizer()
 {
@@ -149,62 +162,56 @@ AliRunDigitizer::AliRunDigitizer()
 // do not use this ctor, it is supplied only for root needs
   
 // just set all pointers - data members to 0
-  fOutput = 0;
-  fTreeD = 0;
-  fTreeDTPC = 0;
-  fTreeDTRD = 0;
-  fInputStreams = 0;
-  for (Int_t i=0;i<kMaxStreamsToMerge;i++) {
-    fArrayTreeS[i]=fArrayTreeH[i]=fArrayTreeTPCS[i]=fArrayTreeTRDS[i]=NULL;
-    fInputFiles[i]=0;
-  }
-  fCombi = 0;
-
+  fInputStreams = 0x0;
+  fCombi = 0x0;
+  fOutputStream = 0x0;
+  
 }
 
 ////////////////////////////////////////////////////////////////////////
 AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliRunDigitizer","The manager for Merging")
 {
 // ctor which should be used to create a manager for merging/digitization
-  if (nInputStreams == 0) {
-    Error("AliRunDigitizer","Specify nr of input streams");
+  if (nInputStreams == 0) 
+   {//kidding
+    Fatal("AliRunDigitizer","Specify nr of input streams");
     return;
-  }
+   }
   Int_t i;
   fNinputs = nInputStreams;
+  
   fOutputFileName = "";
   fOutputDirName = ".";
+  
   fCombination.Set(kMaxStreamsToMerge);
-  for (i=0;i<kMaxStreamsToMerge;i++) {
-    fArrayTreeS[i]=fArrayTreeH[i]=fArrayTreeTPCS[i]=fArrayTreeTRDS[i]=NULL;
-    fCombination[i]=-1;
-  }
+
   fkMASKSTEP = 10000000;
   fkMASK[0] = 0;
-  for (i=1;i<kMaxStreamsToMerge;i++) {
+  
+  for (i=1;i<kMaxStreamsToMerge;i++) 
+   {
     fkMASK[i] = fkMASK[i-1] + fkMASKSTEP;
-  }
+   }
+  
   fInputStreams = new TClonesArray("AliStream",nInputStreams);
   TClonesArray &lInputStreams = *fInputStreams;
 // the first Input is open RW to be output as well
-  new(lInputStreams[0]) AliStream("UPDATE");
+
+  new(lInputStreams[0]) AliStream(fgkBaseInFolderName + "0","UPDATE");
+  fOutputStream =  (AliStream*)lInputStreams.At(0);//redirects output to first input
+  
+  
   for (i=1;i<nInputStreams;i++) {
-    new(lInputStreams[i]) AliStream("READ");
+    new(lInputStreams[i]) AliStream(fgkBaseInFolderName+(Long_t)i,"READ");
   }
-  fOutput = 0;
+
   fEvent = 0;
   fNrOfEventsToWrite = -1;
   fNrOfEventsWritten = 0;
   fCopyTreesFromInput = -1;
   fCombi = new AliMergeCombi(nInputStreams,sperb);
   fDebug = 0;
-  fTreeD = 0;
-  fTreeDTPC = 0;
-  fTreeDTRD = 0;
-  fTreeDTPCBaseName = "TreeD_75x40_100x60_";
-  fTreeTPCSBaseName = "TreeS_75x40_100x60_";
 
-  for (i=0; i<kMaxStreamsToMerge; i++) fInputFiles[i]=0;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -212,14 +219,16 @@ AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliR
 AliRunDigitizer::~AliRunDigitizer() {
 // dtor
 
-  if (fInputStreams) {
-    delete fInputStreams;
-    fInputStreams = 0;
-  }
-  if (fCombi) {
+  if (fInputStreams) 
+   {
+     delete fInputStreams;
+     fInputStreams = 0;
+   }
+  if (fCombi) 
+   {
     delete fCombi;
     fCombi = 0;
-  }
+   }
 
 }
 ////////////////////////////////////////////////////////////////////////
@@ -229,7 +238,7 @@ void AliRunDigitizer::AddDigitizer(AliDigitizer *digitizer)
   this->Add(digitizer);
 }
 ////////////////////////////////////////////////////////////////////////
-void AliRunDigitizer::SetInputStream(Int_t i, char *inputFile)
+void AliRunDigitizer::SetInputStream(Int_t i, const char *inputFile)
 {
   if (i > fInputStreams->GetLast()) {
     Error("SetInputStream","Input stream number too high");
@@ -241,30 +250,26 @@ void AliRunDigitizer::SetInputStream(Int_t i, char *inputFile)
 ////////////////////////////////////////////////////////////////////////
 void AliRunDigitizer::Digitize(Option_t* option)
 {
-// get a new combination of inputs, connect input trees and loop 
-// over all digitizers
+// get a new combination of inputs, loads events to folders
 
 // take gAlice from the first input file. It is needed to access
 //  geometry data
 // If gAlice is already in memory, use it
-  if (!gAlice) {
-    if (!static_cast<AliStream*>(fInputStreams->At(0))->ImportgAlice()) {
-      cerr<<"gAlice object not found in the first file of "
-	  <<"the 1st stream"<<endl;
-      return;
-    }
-  }
-  if (!InitGlobal()) {
-    cerr<<"False from InitGlobal"<<endl;
-    return;
-  }
+
+  if (!InitGlobal()) //calls Init() for all (sub)digitizers
+   {
+     cerr<<"False from InitGlobal"<<endl;
+     return;
+   }
+   
   Int_t eventsCreated = 0;
 // loop until there is anything on the input in case fNrOfEventsToWrite < 0
-  while ((eventsCreated++ < fNrOfEventsToWrite) || (fNrOfEventsToWrite < 0)) {
+  while ((eventsCreated++ < fNrOfEventsToWrite) || (fNrOfEventsToWrite < 0)) 
+   {
     if (!ConnectInputTrees()) break;
+    
     InitEvent();
-// loop over all registered digitizers and let them do the work
-    ExecuteTasks(option);
+    ExecuteTasks(option);// loop over all registered digitizers and let them do the work
     CleanTasks();
     FinishEvent();
   }
@@ -274,52 +279,21 @@ void AliRunDigitizer::Digitize(Option_t* option)
 ////////////////////////////////////////////////////////////////////////
 Bool_t AliRunDigitizer::ConnectInputTrees()
 {
-// fill arrays fArrayTreeS, fArrayTreeH and fArrayTreeTPCS with 
-// pointers to the correct events according fCombination values
-// null pointers can be in the output, AliDigitizer has to check it
-
-  TTree *tree;
-  char treeName[50];
-  Int_t serialNr;
+//loads events 
   Int_t eventNr[kMaxStreamsToMerge], delta[kMaxStreamsToMerge];
   fCombi->Combination(eventNr, delta);
-  for (Int_t i=0;i<fNinputs;i++) {
-    if (delta[i] == 1) {
-      AliStream *iStream = static_cast<AliStream*>(fInputStreams->At(i));
-      if (!iStream->NextEventInStream(serialNr)) return kFALSE;
-      fInputFiles[i]=iStream->CurrentFile();
-      sprintf(treeName,"TreeS%d",serialNr);
-      tree = static_cast<TTree*>(iStream->CurrentFile()->Get(treeName));
-      if (fArrayTreeS[i]) {
-	delete fArrayTreeS[i];
-	fArrayTreeS[i] = 0;
-      }
-      fArrayTreeS[i] = tree;
-      sprintf(treeName,"TreeH%d",serialNr);
-      tree = static_cast<TTree*>(iStream->CurrentFile()->Get(treeName));
-      if (fArrayTreeH[i]) {
-	delete fArrayTreeH[i];
-	fArrayTreeH[i] = 0;
-      }
-      fArrayTreeH[i] = tree;
-      sprintf(treeName,"%s%d",fTreeTPCSBaseName,serialNr);
-      tree = static_cast<TTree*>(iStream->CurrentFile()->Get(treeName));
-      if (fArrayTreeTPCS[i]) {
-	delete fArrayTreeTPCS[i];
-	fArrayTreeTPCS[i] = 0;
-      }
-      fArrayTreeTPCS[i] = tree;
-      sprintf(treeName,"TreeS%d_TRD",serialNr);
-      tree = static_cast<TTree*>(iStream->CurrentFile()->Get(treeName));
-      if (fArrayTreeTRDS[i]) {
-	delete fArrayTreeTRDS[i];
-	fArrayTreeTRDS[i] = 0;
-      }
-      fArrayTreeTRDS[i] = tree;
-    } else if (delta[i] != 0) {
+  for (Int_t i=0;i<fNinputs;i++) 
+   {
+    if (delta[i] == 1)
+     {
+      AliStream *iStream = static_cast<AliStream*>(fInputStreams->At(i));//gets the "i" defined  in combination
+      if (!iStream->NextEventInStream()) return kFALSE; //sets serial number 
+     } 
+    else if (delta[i] != 0) 
+     {
       Error("ConnectInputTrees","Only delta 0 or 1 is implemented");
       return kFALSE;
-    }
+     }
   }
   return kTRUE;
 }
@@ -342,7 +316,8 @@ void AliRunDigitizer::SetOutputFile(TString fn)
 // the output will be to separate file, not to the signal file
 {
   fOutputFileName = fn;
-  (static_cast<AliStream*>(fInputStreams->At(0)))->ChangeMode("READ");
+  
+//  (static_cast<AliStream*>(fInputStreams->At(0)))->ChangeMode("READ");
   InitOutputGlobal();
 }
 
@@ -353,54 +328,35 @@ Bool_t AliRunDigitizer::InitOutputGlobal()
 
   TString fn;
   fn = fOutputDirName + '/' + fOutputFileName;
-  fOutput = new TFile(fn,"recreate");
+  fOutputStream = new AliStream(fgkDefOutFolderName,"update");
+  fOutputStream->AddFile(fn);
+
   if (GetDebug()>2) {
     cerr<<"AliRunDigitizer::InitOutputGlobal(): file "<<fn.Data()<<" was opened"<<endl;
   }
-  if (fOutput) return kTRUE;
-  Error("InitOutputGlobal","Could not create output file.");
-  return kFALSE;
+
+  if (fOutputStream->OpenNextFile() == kFALSE)
+   {
+     Error("InitOutputGlobal","Could not create output file.");
+     return kFALSE;
+   }  
+
+  return kTRUE;
 }
 
 
 ////////////////////////////////////////////////////////////////////////
 void AliRunDigitizer::InitEvent()
 {
-// Creates TreeDxx in the output file, called from Digitize() once for 
-//  each event. xx = fEvent
-
-  if (GetDebug()>2) 
+//redirects output properly
+  if (GetDebug()>2)
     cerr<<"AliRunDigitizer::InitEvent: fEvent = "<<fEvent<<endl;
 
-// if fOutputFileName was not given, write output to signal file
-  if (fOutputFileName == "") {
-    fOutput = (static_cast<AliStream*>(fInputStreams->At(0)))->CurrentFile();
-  }
-  fOutput->cd();
-  char treeName[30];
-  sprintf(treeName,"TreeD%d",fEvent);
-  fTreeD = static_cast<TTree*>(fOutput->Get(treeName));
-  if (!fTreeD) {
-    fTreeD = new TTree(treeName,"Digits");
-    fTreeD->Write(0,TObject::kOverwrite);
-  }
-
-// special tree for TPC
-  sprintf(treeName,"%s%d",fTreeDTPCBaseName,fEvent);
-  fTreeDTPC = static_cast<TTree*>(fOutput->Get(treeName));
-  if (!fTreeDTPC) {
-    fTreeDTPC = new TTree(treeName,"TPC_Digits");
-    fTreeDTPC->Write(0,TObject::kOverwrite);
-  }
-
-// special tree for TRD
-  sprintf(treeName,"TreeD%d_TRD",fEvent);
-  fTreeDTRD = static_cast<TTree*>(fOutput->Get(treeName));
-  if (!fTreeDTRD) {
-    fTreeDTRD = new TTree(treeName,"TRD_Digits");
-    fTreeDTRD->Write(0,TObject::kOverwrite);
-  }
-
+// if fOutputFileName was not given, write output to signal directory
+  if (fOutputFileName == "")
+   {
+     fOutputStream = (AliStream*)fInputStreams->At(0);
+   }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -409,29 +365,40 @@ void AliRunDigitizer::FinishEvent()
 // called at the end of loop over digitizers
 
   Int_t i;
-  fOutput->cd();
-  if (fCopyTreesFromInput > -1) {
-    char treeName[20];
-    i = fCopyTreesFromInput; 
-    sprintf(treeName,"TreeK%d",fCombination[i]);
-    fInputFiles[i]->Get(treeName)->Clone()->Write();
-    sprintf(treeName,"TreeH%d",fCombination[i]);
-    fInputFiles[i]->Get(treeName)->Clone()->Write();
-  }
+  AliRunLoader* outRN = AliRunLoader::GetRunLoader(fOutputStream->GetFolderName());
+  if (outRN == 0x0)
+   {
+     Error("FinishEvent","Can not get RunLoader from Output Stream folder");
+     return;
+   }
+  
   fEvent++;
   fNrOfEventsWritten++;
-  if (fTreeD) {
-    delete fTreeD;
-    fTreeD = 0;
-  }
-  if (fTreeDTPC) {
-    delete fTreeDTPC;
-    fTreeDTPC = 0;
-  }
-  if (fTreeDTRD) {
-    delete fTreeDTRD;
-    fTreeDTRD = 0;
-  }
+  
+  if (fCopyTreesFromInput > -1) 
+   {
+    cout<<"Copy trees from input: Copy or link files manually"<<endl;
+    return;
+    
+    i = fCopyTreesFromInput;
+
+    TFolder* outfolder = outRN->GetEventFolder();
+    if (outfolder == 0x0)
+     {
+       Error("FinishEvent","Can not get Event Folder");
+       return;
+     }
+    
+    AliStream* instream = (AliStream*)fInputStreams->At(fCopyTreesFromInput);
+    AliRunLoader* inRN = AliRunLoader::GetRunLoader(instream->GetFolderName());
+    
+    outfolder->Add( inRN->TreeK() );
+    outRN->WriteKinematics("OVERWRITE");
+    
+//    outfolder->Add( inRN->TreeH() );
+//    outRN->WriteKine("OVERWRITE");
+      
+   }
 }
 ////////////////////////////////////////////////////////////////////////
 void AliRunDigitizer::FinishGlobal()
@@ -439,13 +406,35 @@ void AliRunDigitizer::FinishGlobal()
 // called at the end of Exec
 // save unique objects to the output file
 
-  fOutput->cd();
-  this->Write();
-  if (fCopyTreesFromInput > -1) {
-    fInputFiles[fCopyTreesFromInput]->Get("TE")->Clone()->Write();
-    gAlice->Write();
-  }
-  fOutput->Close();
+  AliRunLoader* outRN = AliRunLoader::GetRunLoader(fOutputStream->GetFolderName());
+  if (outRN == 0x0)
+   {
+     Error("FinishGlobal","Can not get RunLoader from Output Stream folder");
+     return;
+   }
+  outRN->CdGAFile();
+  
+  this->Write(0,TObject::kOverwrite);
+   
+  if (fCopyTreesFromInput > -1) 
+   {
+    TFolder* outfolder = outRN->GetEventFolder();
+    if (outfolder == 0x0)
+     {
+       Error("FinishEvent","Can not get Event Folder");
+       return;
+     }    
+    AliStream* instream = (AliStream*)fInputStreams->At(fCopyTreesFromInput);
+    AliRunLoader* inRN = AliRunLoader::GetRunLoader(instream->GetFolderName());
+    
+    outfolder->Add ( inRN->GetAliRun() );
+    outRN->WriteAliRun();
+
+    outfolder->Add ( inRN->TreeE() );
+    outRN->WriteHeader();
+
+   }
+ 
 }
 
 
@@ -548,53 +537,6 @@ TParticle* AliRunDigitizer::GetParticle(Int_t i, Int_t input, Int_t event) const
 // Must be revised in the version with AliStream
 
   return 0;
-/*
-  TFile *file = ConnectInputFile(input);
-  if (!file) {
-    Error("GetParticle","Cannot open input file");
-    return 0;
-  }
-
-// find the header and get Nprimaries and Nsecondaries
-  TTree* tE = (TTree *)file->Get("TE") ;
-  if (!tE) {
-    Error("GetParticle","input file does not contain TE");
-    return 0;
-  }
-  AliHeader* header;
-  header = 0;
-  tE->SetBranchAddress("Header", &header);
-  if (!tE->GetEntry(event)) {
-    Error("GetParticle","event %d not found",event);
-    return 0;
-  }
-  
-// connect TreeK  
-  char treeName[30];
-  sprintf(treeName,"TreeK%d",event);  
-  TTree* tK = static_cast<TTree*>(file->Get(treeName));
-  if (!tK) {
-    Error("GetParticle","input file does not contain TreeK%d",event);
-    return 0;
-  }
-  TParticle *particleBuffer;
-  particleBuffer = 0;
-  tK->SetBranchAddress("Particles", &particleBuffer);
-
-
-// algorithmic way of getting entry index
-// (primary particles are filled after secondaries)
-  Int_t entry;
-  if (i<header->GetNprimary())
-    entry = i+header->GetNsecondary();
-  else 
-    entry = i-header->GetNprimary();
-  Int_t bytesRead = tK->GetEntry(entry);
-//  new ((*fParticles)[nentries]) TParticle(*fParticleBuffer);
-  if (bytesRead)
-    return particleBuffer;
-  return  0;
-*/
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -607,3 +549,20 @@ void AliRunDigitizer::ExecuteTask(Option_t* option)
   fHasExecuted = kTRUE;
   return;
 }
+
+////////////////////////////////////////////////////////////////////////
+const TString& AliRunDigitizer::GetInputFolderName(Int_t i) const
+{
+  AliStream* stream = dynamic_cast<AliStream*>(fInputStreams->At(i));
+  if (stream == 0x0)
+   {
+     Fatal("GetInputFolderName","Can not get the input stream. Index = %d. Exiting",i);
+   }
+  return stream->GetFolderName();
+}
+////////////////////////////////////////////////////////////////////////
+const TString& AliRunDigitizer::GetOutputFolderName() const
+{
+  return fOutputStream->GetFolderName();
+}
+

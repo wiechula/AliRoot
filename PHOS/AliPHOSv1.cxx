@@ -229,6 +229,7 @@ void AliPHOSv1::FinishEvent()
   // called at the end of each event by AliRun
   // accumulate the hit-multiplicity and total energy per block 
   // if the values have been updated check it
+  
 
   if ( fQATotEner ) { 
     if ( fQATotEner->HasChanged() ) {
@@ -261,6 +262,8 @@ void AliPHOSv1::FinishEvent()
       fQAHitsMul->Reset() ; 
     }
   } 
+
+  AliDetector::FinishEvent(); //must be last->Cleans event folders //skowron
 }
 //____________________________________________________________________________
 void AliPHOSv1::StepManager(void)

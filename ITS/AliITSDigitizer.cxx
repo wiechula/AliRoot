@@ -15,7 +15,19 @@
  
 /*
 $Log$
+Revision 1.1  2001/11/27 16:27:28  nilsen
+Adding AliITSDigitizer class to do merging and digitization . Based on the
+TTask method. AliITSDigitizer class added to the Makefile and ITSLinkDef.h
+file. The following files required minor changes. AliITS, added functions
+SetHitsAddressBranch, MakeBranchInTreeD and modified MakeBranchD.
+AliITSsimulationSDD.cxx needed a Tree indepenent way of returning back to
+the original Root Directory in function Compress1D. Now it uses gDirectory.
+
 */
+
+//Piotr.Skowronski@cern.ch :
+//Corrections applied in order to compile (only) with new I/O and folder structure
+//To be implemented correctly by responsible
 
 #include <stdlib.h>
 #include <iostream.h>
@@ -25,7 +37,7 @@ $Log$
 
 #include <AliRun.h>
 #include <AliRunDigitizer.h>
-
+#include <AliLoader.h>
 #include "AliITSDigitizer.h"
 #include "AliITShit.h"
 #include "AliITSmodule.h"
@@ -112,48 +124,60 @@ void AliITSDigitizer::Exec(Option_t* opt){
     Int_t id=0,module=0,nfls=0,mask=0;
     static Bool_t setDef=kTRUE;
 
+    AliRunLoader *inRL, *outRL;//in and out Run Loaders
+    AliLoader *ingime, *outgime;// in and out ITSLoaders
+   
+   
+    outRL = AliRunLoader::GetRunLoader(fManager->GetOutputFolderName());
+    outgime = outRL->GetLoader("ITSLoader");
+
     if(!fITS) fITS = (AliITS*)(gAlice->GetDetector("ITS"));
     if(!(fITS->GetITSgeom())){
-	Warning("Exec","Need ITS geometry to be properly defined first.");
-	return; // need transformations to do digitization.
+      Warning("Exec","Need ITS geometry to be properly defined first.");
+      return; // need transformations to do digitization.
     } // end if !GetITSgeom()
     if (setDef) fITS->SetDefaultSimulation();
     setDef=kFALSE;
     sprintf(name,"%s",fITS->GetName());
     if(!GetModules()) {
-	fITS->InitModules(0,size);
+      fITS->InitModules(0,size);
     } // end if
 
     nfls = GetManager()->GetNinputs();
-    for(ifls=0;ifls<nfls;ifls++){
-	treeH = GetManager()->GetInputTreeH(ifls);
-	if(!(treeH && GetHits())) continue;
-	brchHits = treeH->GetBranch(name);
-	if(brchHits){
-	    GetHits()->Clear();
-	    fITS->SetHitsAddressBranch(brchHits);
-	} else{
-	    Error("Exec","branch ITS not found");
-	} // end if brchHits
+    for(ifls=0;ifls<nfls;ifls++)
+     {
+      inRL = AliRunLoader::GetRunLoader(fManager->GetInputFolderName(ifls));
+      ingime = inRL->GetLoader("ITSLoader");
 
-	ntracks = (Int_t) treeH->GetEntries();
-	for(trk=0;trk<ntracks;trk++){
-	    GetHits()->Clear();
-	    brchHits->GetEntry(trk);
-	    nhit = GetHits()->GetEntries();
-	    mask = GetManager()->GetMask(ifls);
-	    for(h=0;h<nhit;h++){
-		itsHit = GetHit(h);
-		mod = GetModule(itsHit->GetModule());
-		id       = fITS->GetITSgeom()->GetModuleType(module);
-		if (!all && !det[id]) continue;
-		mod->AddHit(itsHit,trk+mask,h);
-	    } // end for h
-	} // end for trk
+      ingime->LoadHits("READ");//probably it is necessary to load them before
+      treeH = ingime->TreeH();
+      if(!(treeH && GetHits())) continue;
+      brchHits = treeH->GetBranch(name);
+      if(brchHits){
+          GetHits()->Clear();
+          fITS->SetHitsAddressBranch(brchHits);
+      } else{
+          Error("Exec","branch ITS not found");
+      } // end if brchHits
+
+      ntracks = (Int_t) treeH->GetEntries();
+      for(trk=0;trk<ntracks;trk++){
+          GetHits()->Clear();
+          brchHits->GetEntry(trk);
+          nhit = GetHits()->GetEntries();
+          mask = GetManager()->GetMask(ifls);
+          for(h=0;h<nhit;h++){
+            itsHit = GetHit(h);
+            mod = GetModule(itsHit->GetModule());
+            id       = fITS->GetITSgeom()->GetModuleType(module);
+            if (!all && !det[id]) continue;
+            mod->AddHit(itsHit,trk+mask,h);
+          } // end for h
+      } // end for trk
     } // end for ifls
 
     // Digitize 
-    fITS->MakeBranchInTreeD(GetManager()->GetTreeD());
+    fITS->MakeBranchInTreeD(outgime->TreeD());
     for(module=0;module<size;module++){
         id       = fITS->GetITSgeom()->GetModuleType(module);
         if (!all && !det[id]) continue;
@@ -166,14 +190,13 @@ void AliITSDigitizer::Exec(Option_t* opt){
         mod      = GetModule(module);
         sim->DigitiseModule(mod,module,0);
         // fills all branches - wasted disk space
-        GetManager()->GetTreeD()->Fill();
+        outgime->TreeD()->Fill();
         fITS->ResetDigits();
     } // end for module
  
     fITS->ClearModules();
  
-    GetManager()->GetTreeD()->GetEntries();
-    GetManager()->GetTreeD()->Write(0,TObject::kOverwrite);
-    // reset tree
-    GetManager()->GetTreeD()->Reset();
+    outgime->TreeD()->GetEntries();
+    outgime->WriteDigits("OVERWRITE");
+    // reset tree - not necssary, tree is deleted when getting new event
 }

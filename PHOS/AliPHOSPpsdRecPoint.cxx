@@ -36,7 +36,7 @@
 #include "AliPHOSPpsdRecPoint.h"
 #include "AliPHOSCpvRecPoint.h"
 #include "AliRun.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 
 ClassImp(AliPHOSPpsdRecPoint)
 
@@ -187,7 +187,7 @@ void AliPHOSPpsdRecPoint::EvalLocalPosition(Float_t logWeight,TClonesArray * dig
   Float_t x = 0. ;
   Float_t z = 0. ;
 
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  AliPHOSLoader * gime = AliPHOSLoader::GetInstance() ; 
   AliPHOSGeometry * phosgeom =  (AliPHOSGeometry*)gime->PHOSGeometry();
   
   AliPHOSDigit * digit ;
@@ -220,7 +220,7 @@ void AliPHOSPpsdRecPoint::EvalUp(TClonesArray * digits)
 
   Int_t relid[4] ;
   
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  AliPHOSLoader * gime = AliPHOSLoader::GetInstance() ; 
   AliPHOSGeometry * phosgeom =  (AliPHOSGeometry*)gime->PHOSGeometry();
   
   

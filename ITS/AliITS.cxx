@@ -15,6 +15,10 @@
 
 /*
 $Log$
+Revision 1.66  2001/11/28 01:35:45  nilsen
+Using standard constructors instead of default constructors for Clusterfinder,
+Response, and FastSimulator.
+
 Revision 1.65  2001/11/27 16:27:28  nilsen
 Adding AliITSDigitizer class to do merging and digitization . Based on the
 TTask method. AliITSDigitizer class added to the Makefile and ITSLinkDef.h
@@ -268,6 +272,7 @@ the AliITS class.
 
 #include "AliMC.h"
 #include "AliHeader.h"
+#include "AliConfig.h"
 
 #include "AliITS.h"
 #include "AliITSDetType.h"
@@ -397,6 +402,7 @@ AliITS::AliITS(const char *name, const char *title):AliDetector(name,title){
     } // end for i
 
     SetMarkerColor(kRed);
+
 }
 //______________________________________________________________________
 AliITS::~AliITS(){
@@ -906,7 +912,7 @@ void AliITS::FillModules(Int_t evnt,Int_t bgrev,Int_t nmodules,
     Int_t lay,lad,det,index;
     AliITShit *itsHit=0;
     AliITSmodule *mod=0;
-    TTree *iTH = gAlice->TreeH();
+    TTree *iTH = TreeH();
     Int_t ntracks =(Int_t) iTH->GetEntries();
     Int_t t,h;
     for(t=0; t<ntracks; t++){
@@ -1733,3 +1739,4 @@ void AliITS::ResetRecPoints(){
     if (fRecPoints) fRecPoints->Clear();
     fNRecPoints = 0;
 }
+

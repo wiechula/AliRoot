@@ -9,27 +9,35 @@ void display (const char *filename="galice.root",Int_t nevent=0) {
    }
       
 // Connect the Root Galice file containing Geometry, Kine and Hits
-
+   AliRunLoader *rl;
    TFile *file = (TFile*)gROOT->GetListOfFiles()->FindObject(filename);
    if(file){
      cout<<"galice.root is already open \n";
    }
    else {
-     if(!file)file=TFile::Open(filename);
+     rl = AliRunLoader::Open();
    }
 
 // Get AliRun object from file or create it if not on file
+
+   rl->LoadgAlice();
+ 
+   gAlice = rl->GetAliRun();
    if (!gAlice) {
-      gAlice = (AliRun*)file->Get("gAlice");
-      if (gAlice) printf("AliRun object found on file\n");
-      if (!gAlice) gAlice = new AliRun("gAlice","Alice test program");
-   }
-   
+    cerr<<"AliTPCHits2Digits.C : AliRun object not found on file\n";
+    return;
+  }
+    
 // Create Event Display object
-   AliDisplay *edisplay = new AliDisplay(750);
 
 // Display the requested event
-   gAlice->GetEvent(nevent);
+   rl->GetEvent(nevent);
+   rl->LoadKinematics();
+   rl->LoadHeader();
+   rl->LoadHits();
+
+   AliDisplay *edisplay = new AliDisplay(750);
+   
    edisplay->ShowNextEvent(0);
 
 // Define the buttons to switch on/off the existing modules

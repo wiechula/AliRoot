@@ -33,7 +33,7 @@
 #include "AliPHOSHit.h"
 #include "AliRun.h"
 #include "AliConst.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 #include "AliPHOSGeometry.h"
 #include "AliPHOS.h"
 

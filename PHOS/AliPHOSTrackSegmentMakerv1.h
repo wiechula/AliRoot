@@ -28,7 +28,7 @@ class  AliPHOSTrackSegmentMakerv1 : public AliPHOSTrackSegmentMaker {
 public:
 
   AliPHOSTrackSegmentMakerv1() ;                     
-  AliPHOSTrackSegmentMakerv1(const char* headerFile, const char* name = "Default") ;                     
+  AliPHOSTrackSegmentMakerv1(const char* headerFile, const char* name = "Default");
   AliPHOSTrackSegmentMakerv1(const AliPHOSTrackSegmentMakerv1 & tsm) {
     // cpy ctor: no implementation yet
     // requested by the Coding Convention
@@ -67,7 +67,7 @@ private:
 
 private:  
 
-  TString fHeaderFileName ;          // name of the file which contains gAlice, Tree headers etc.
+  TString fFolderName ;          // name of the file which contains event data
   TString fRecPointsBranchTitle ; // name of the file, where RecPoints branchs are stored
   TString fTrackSegmentsBranchTitle ;        // name of the file, where TrackSegment branchs is stored
   Int_t fNTrackSegments ; // number of track segments found 

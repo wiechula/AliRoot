@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.16  2001/11/08 16:39:03  hristov
+Additional protection (M.Masera)
+
 Revision 1.15  2001/11/08 16:36:33  hristov
 Updated V2 stream of tracking (Yu.Belikov). The new long waited features are: 1) Possibility to pass the primary vertex position to the trackers (both for the TPC and the ITS) 2) Possibility to specify the number of tracking passes together with applying (or not applying) the vertex constraint (ITS only) 3) Possibility to make some use of partial PID provided by the TPC when doing tracking in the ITS (ITS only) 4) V0 reconstruction with a helix minimisation of the DCA. (new macros: AliV0FindVertices.C and AliV0Comparison.C) 4a) ( Consequence of the 4) )  All the efficiencies and resolutions are from now on calculated including *secondary*particles* too. (Don't be surprised by the drop in efficiency etc)
 
@@ -64,6 +67,8 @@ Splitted from AliTPCtracking
 #include <TFile.h>
 #include <TTree.h>
 #include <iostream.h>
+#include <AliRunLoader.h>
+#include <AliLoader.h>
 
 #include "AliTPCtracker.h"
 #include "AliTPCcluster.h"
@@ -71,35 +76,53 @@ Splitted from AliTPCtracking
 #include "AliTPCClustersRow.h"
 
 //_____________________________________________________________________________
-AliTPCtracker::AliTPCtracker(const AliTPCParam *par, Int_t eventn): 
-AliTracker(), fkNIS(par->GetNInnerSector()/2), fkNOS(par->GetNOuterSector()/2)
+AliTPCtracker::AliTPCtracker(const AliTPCParam *par,  const char* evfoldname, Int_t eventn):
+AliTracker(), fkNIS(par->GetNInnerSector()/2), fkNOS(par->GetNOuterSector()/2),
+fEvFolderName(evfoldname)
 {
   //---------------------------------------------------------------------
   // The main TPC tracker constructor
   //---------------------------------------------------------------------
+  cout<<"fkNIS = "<<fkNIS<<endl;
+  cout<<"fkNOS = "<<fkNOS<<endl;
+
   fInnerSec=new AliTPCSector[fkNIS];         
   fOuterSec=new AliTPCSector[fkNOS];
 
   Int_t i;
+  
   for (i=0; i<fkNIS; i++) fInnerSec[i].Setup(par,0);
   for (i=0; i<fkNOS; i++) fOuterSec[i].Setup(par,1);
 
   fN=0;  fSectors=0;
 
-  fClustersArray.Setup(par);
-  fClustersArray.SetClusterType("AliTPCcluster");
-
-  char   cname[100];
-  if (eventn==-1) {
-    sprintf(cname,"TreeC_TPC");
-  }
-  else {
-    sprintf(cname,"TreeC_TPC_%d",eventn);
-  }
-
-  fClustersArray.ConnectTree(cname);
 
   fEventN = eventn;
+  AliRunLoader* rl = AliRunLoader::GetRunLoader(fEvFolderName);
+  if (rl == 0x0)
+   {
+     Error("AliTPCtracker","Can not get RL from specified folder %s",fEvFolderName.Data());
+     return;
+   }
+  rl->GetEvent(fEventN);
+
+  AliLoader* tpcl = rl->GetLoader("TPCLoader");
+  if (tpcl == 0x0)
+   {
+     Error("AliTPCtracker","Can not get TPC Laoder from Run Loader");
+     return;
+   }
+  
+  if (tpcl->TreeR() == 0x0) tpcl->LoadRecPoints("read");
+  TTree* treeR = tpcl->TreeR();
+  if (treeR == 0x0)
+   {
+     cout<<"Error: Can not get TreeR\n";
+   }
+  fClustersArray.Setup(par);
+  fClustersArray.SetClusterType("AliTPCcluster");
+  fClustersArray.ConnectTree(treeR);
+
   fSeeds=0;
 }
 
@@ -214,7 +237,14 @@ void AliTPCtracker::LoadOuterSectors() {
   // This function fills outer TPC sectors with clusters.
   //-----------------------------------------------------------------
   UInt_t index;
-  Int_t j=Int_t(fClustersArray.GetTree()->GetEntries());
+  TTree* tree = fClustersArray.GetTree();
+  if (tree == 0x0)
+   {
+    Error("LoadOuterSectors","Can not get tree from fClustersArray");
+    return;
+   }
+  Int_t j=Int_t(tree->GetEntries());
+  cout<<"fClustersArray.GetTree()->GetEntries() = "<<j<<endl;
   for (Int_t i=0; i<j; i++) {
       AliSegmentID *s=fClustersArray.LoadEntry(i);
       Int_t sec,row;
@@ -333,14 +363,14 @@ Int_t AliTPCtracker::FollowProlongation(AliTPCseed& t, Int_t rf) {
 
     if (krow) {
       for (Int_t i=krow.Find(y-road); i<krow; i++) {
-	AliTPCcluster *c=(AliTPCcluster*)(krow[i]);
-	if (c->GetY() > y+road) break;
-	if (c->IsUsed()) continue;
-	if ((c->GetZ()-z)*(c->GetZ()-z) > 16.*(t.GetSigmaZ2()+sz2)) continue;
-	Double_t chi2=t.GetPredictedChi2(c);
-	if (chi2 > maxchi2) continue;
-	maxchi2=chi2;
-	cl=c;
+       AliTPCcluster *c=(AliTPCcluster*)(krow[i]);
+       if (c->GetY() > y+road) break;
+       if (c->IsUsed()) continue;
+       if ((c->GetZ()-z)*(c->GetZ()-z) > 16.*(t.GetSigmaZ2()+sz2)) continue;
+       Double_t chi2=t.GetPredictedChi2(c);
+       if (chi2 > maxchi2) continue;
+       maxchi2=chi2;
+       cl=c;
         index=krow.GetIndex(i);       
       }
     }
@@ -438,14 +468,14 @@ Int_t AliTPCtracker::FollowBackProlongation
        if (accepted>27)
        if (krow) {
           for (Int_t i=krow.Find(y-road); i<krow; i++) {
-	    AliTPCcluster *c=(AliTPCcluster*)(krow[i]);
-	    if (c->GetY() > y+road) break;
-	    if (c->IsUsed()) continue;
-	 if ((c->GetZ()-z)*(c->GetZ()-z)>16.*(seed.GetSigmaZ2()+sz2)) continue;
-	    Double_t chi2=seed.GetPredictedChi2(c);
-	    if (chi2 > maxchi2) continue;
-	    maxchi2=chi2;
-	    cl=c;
+           AliTPCcluster *c=(AliTPCcluster*)(krow[i]);
+           if (c->GetY() > y+road) break;
+           if (c->IsUsed()) continue;
+        if ((c->GetZ()-z)*(c->GetZ()-z)>16.*(seed.GetSigmaZ2()+sz2)) continue;
+           Double_t chi2=seed.GetPredictedChi2(c);
+           if (chi2 > maxchi2) continue;
+           maxchi2=chi2;
+           cl=c;
             index=krow.GetIndex(i);
           }
        }
@@ -469,6 +499,7 @@ void AliTPCtracker::MakeSeeds(Int_t i1, Int_t i2) {
   //-----------------------------------------------------------------
   // This function creates track seeds.
   //-----------------------------------------------------------------
+  cout<<" Making Seeds i1="<<i1<<"  i2="<<i2<<"\n";
   if (fSeeds==0) fSeeds=new TObjArray(15000);
 
   Double_t x[5], c[15];
@@ -487,28 +518,28 @@ void AliTPCtracker::MakeSeeds(Int_t i1, Int_t i2) {
     for (Int_t is=0; is < kr1; is++) {
       Double_t y1=kr1[is]->GetY(), z1=kr1[is]->GetZ();
       for (Int_t js=0; js < nl+nm+nu; js++) {
-	const AliTPCcluster *kcl;
+       const AliTPCcluster *kcl;
         Double_t x2,   y2,   z2;
         Double_t x3=GetX(), y3=GetY(), z3=GetZ();
 
-	if (js<nl) {
-	  const AliTPCRow& kr2=fOuterSec[(ns-1+fkNOS)%fkNOS][i2];
-	  kcl=kr2[js];
+       if (js<nl) {
+         const AliTPCRow& kr2=fOuterSec[(ns-1+fkNOS)%fkNOS][i2];
+         kcl=kr2[js];
           y2=kcl->GetY(); z2=kcl->GetZ();
           x2= xx2*cs+y2*sn;
           y2=-xx2*sn+y2*cs;
-	} else 
-	  if (js<nl+nm) {
-	    const AliTPCRow& kr2=fOuterSec[ns][i2];
-	    kcl=kr2[js-nl];
+       } else 
+         if (js<nl+nm) {
+           const AliTPCRow& kr2=fOuterSec[ns][i2];
+           kcl=kr2[js-nl];
             x2=xx2; y2=kcl->GetY(); z2=kcl->GetZ();
-	  } else {
-	    const AliTPCRow& kr2=fOuterSec[(ns+1)%fkNOS][i2];
-	    kcl=kr2[js-nl-nm];
+         } else {
+           const AliTPCRow& kr2=fOuterSec[(ns+1)%fkNOS][i2];
+           kcl=kr2[js-nl-nm];
             y2=kcl->GetY(); z2=kcl->GetZ();
             x2=xx2*cs-y2*sn;
             y2=xx2*sn+y2*cs;
-	  }
+         }
 
         Double_t zz=z1 - (z1-z3)/(x1-x3)*(x1-x2); 
         if (TMath::Abs(zz-z2)>5.) continue;
@@ -516,32 +547,32 @@ void AliTPCtracker::MakeSeeds(Int_t i1, Int_t i2) {
         Double_t d=(x2-x1)*(0.-y2)-(0.-x2)*(y2-y1);
         if (d==0.) {cerr<<"MakeSeeds warning: Straight seed !\n"; continue;}
 
-	x[0]=y1;
-	x[1]=z1;
-	x[4]=f1(x1,y1,x2,y2,x3,y3);
-	if (TMath::Abs(x[4]) >= 0.0066) continue;
-	x[2]=f2(x1,y1,x2,y2,x3,y3);
-	//if (TMath::Abs(x[4]*x1-x[2]) >= 0.99999) continue;
-	x[3]=f3(x1,y1,x2,y2,z1,z2);
-	if (TMath::Abs(x[3]) > 1.2) continue;
-	Double_t a=asin(x[2]);
-	Double_t zv=z1 - x[3]/x[4]*(a+asin(x[4]*x1-x[2]));
-	if (TMath::Abs(zv-z3)>10.) continue; 
+       x[0]=y1;
+       x[1]=z1;
+       x[4]=f1(x1,y1,x2,y2,x3,y3);
+       if (TMath::Abs(x[4]) >= 0.0066) continue;
+       x[2]=f2(x1,y1,x2,y2,x3,y3);
+       //if (TMath::Abs(x[4]*x1-x[2]) >= 0.99999) continue;
+       x[3]=f3(x1,y1,x2,y2,z1,z2);
+       if (TMath::Abs(x[3]) > 1.2) continue;
+       Double_t a=asin(x[2]);
+       Double_t zv=z1 - x[3]/x[4]*(a+asin(x[4]*x1-x[2]));
+       if (TMath::Abs(zv-z3)>10.) continue; 
 
         Double_t sy1=kr1[is]->GetSigmaY2(), sz1=kr1[is]->GetSigmaZ2();
         Double_t sy2=kcl->GetSigmaY2(),     sz2=kcl->GetSigmaZ2();
-	Double_t sy3=400*3./12., sy=0.1, sz=0.1;
+       Double_t sy3=400*3./12., sy=0.1, sz=0.1;
 
-	Double_t f40=(f1(x1,y1+sy,x2,y2,x3,y3)-x[4])/sy;
-	Double_t f42=(f1(x1,y1,x2,y2+sy,x3,y3)-x[4])/sy;
-	Double_t f43=(f1(x1,y1,x2,y2,x3,y3+sy)-x[4])/sy;
-	Double_t f20=(f2(x1,y1+sy,x2,y2,x3,y3)-x[2])/sy;
-	Double_t f22=(f2(x1,y1,x2,y2+sy,x3,y3)-x[2])/sy;
-	Double_t f23=(f2(x1,y1,x2,y2,x3,y3+sy)-x[2])/sy;
-	Double_t f30=(f3(x1,y1+sy,x2,y2,z1,z2)-x[3])/sy;
-	Double_t f31=(f3(x1,y1,x2,y2,z1+sz,z2)-x[3])/sz;
-	Double_t f32=(f3(x1,y1,x2,y2+sy,z1,z2)-x[3])/sy;
-	Double_t f34=(f3(x1,y1,x2,y2,z1,z2+sz)-x[3])/sz;
+       Double_t f40=(f1(x1,y1+sy,x2,y2,x3,y3)-x[4])/sy;
+       Double_t f42=(f1(x1,y1,x2,y2+sy,x3,y3)-x[4])/sy;
+       Double_t f43=(f1(x1,y1,x2,y2,x3,y3+sy)-x[4])/sy;
+       Double_t f20=(f2(x1,y1+sy,x2,y2,x3,y3)-x[2])/sy;
+       Double_t f22=(f2(x1,y1,x2,y2+sy,x3,y3)-x[2])/sy;
+       Double_t f23=(f2(x1,y1,x2,y2,x3,y3+sy)-x[2])/sy;
+       Double_t f30=(f3(x1,y1+sy,x2,y2,z1,z2)-x[3])/sy;
+       Double_t f31=(f3(x1,y1,x2,y2,z1+sz,z2)-x[3])/sz;
+       Double_t f32=(f3(x1,y1,x2,y2+sy,z1,z2)-x[3])/sy;
+       Double_t f34=(f3(x1,y1,x2,y2,z1,z2+sz)-x[3])/sz;
 
         c[0]=sy1;
         c[1]=0.;       c[2]=sz1;
@@ -553,13 +584,17 @@ void AliTPCtracker::MakeSeeds(Int_t i1, Int_t i2) {
         c[14]=f40*sy1*f40+f42*sy2*f42+f43*sy3*f43;
 
         UInt_t index=kr1.GetIndex(is);
-	AliTPCseed *track=new AliTPCseed(index, x, c, x1, ns*alpha+shift);
+       AliTPCseed *track=new AliTPCseed(index, x, c, x1, ns*alpha+shift);
         Float_t l=fOuterSec->GetPadPitchWidth();
         track->SetSampledEdx(kr1[is]->GetQ()/l,0);
 
         Int_t rc=FollowProlongation(*track, i2);
         if (rc==0 || track->GetNumberOfClusters()<(i1-i2)/2) delete track;
-        else fSeeds->AddLast(track); 
+        else 
+         {
+           fSeeds->AddLast(track); 
+           cout<<"Adding seed   "<<fSeeds->GetEntries()<<"\r";
+         }
       }
     }
   }
@@ -606,30 +641,54 @@ Int_t AliTPCtracker::ReadSeeds(const TFile *inp) {
 }
 
 //_____________________________________________________________________________
-Int_t AliTPCtracker::Clusters2Tracks(const TFile *inp, TFile *out) {
+Int_t AliTPCtracker::Clusters2Tracks() {
   //-----------------------------------------------------------------
   // This is a track finder.
   //-----------------------------------------------------------------
-  TDirectory *savedir=gDirectory; 
+  Int_t retval = 0;
 
-  if (inp) {
-     TFile *in=(TFile*)inp;
-     if (!in->IsOpen()) {
-        cerr<<"AliTPCtracker::Clusters2Tracks(): input file is not open !\n";
-        return 1;
-     }
-  }
+  AliRunLoader* rl = AliRunLoader::GetRunLoader(fEvFolderName);
+  if (rl == 0x0)
+   {
+     Error("Clusters2Tracks","Can not get RL from specified folder %s",fEvFolderName.Data());
+     return 1;
+   }
+  
+  retval = rl->GetEvent(fEventN);
+  if (retval)
+   {
+     Error("Clusters2Tracks","Error while getting event %d",fEventN);
+     return 1;
+   }
+  
+  AliLoader* tpcl = rl->GetLoader("TPCLoader");
+  if (tpcl == 0x0)
+   {
+     Error("Clusters2Tracks","Can not get TPC Laoder from Run Loader");
+     return 1;
+   }
+ 
+  if ( tpcl->TreeR() == 0x0)
+  
+  retval = tpcl->LoadRecPoints("READ");
+  if (retval)
+    {
+      Error("Clusters2Tracks","Error while loading Reconstructed Points");
+      return 1;
+    }
 
-  if (!out->IsOpen()) {
-     cerr<<"AliTPCtracker::Clusters2Tracks(): output file is not open !\n";
-     return 2;
-  }
+  if (tpcl->TreeT() == 0x0) tpcl->MakeTree("T");
+  
 
-  out->cd();
-
-  char   tname[100];
-  sprintf(tname,"TreeT_TPC_%d",fEventN);
-  TTree tracktree(tname,"Tree with TPC tracks");
+  TTree &tracktree = *(tpcl->TreeT());
+  
+  TBranch* br= tracktree.GetBranch("tracks");
+  if (br)
+   {
+     Error("Clusters2Tracks","Branch \"tracks\" already exists in TreeT for TPC");
+     return 1;
+   }
+  
   AliTPCtrack *iotrack=0;
   tracktree.Branch("tracks","AliTPCtrack",&iotrack,32000,0);
 
@@ -647,6 +706,7 @@ Int_t AliTPCtracker::Clusters2Tracks(const TFile *inp, TFile *out) {
 
   //tracking in outer sectors
   Int_t nseed=fSeeds->GetEntriesFast();
+  cout<<"nseed="<<nseed<<endl;
   Int_t i;
   for (i=0; i<nseed; i++) {
     AliTPCseed *pt=(AliTPCseed*)fSeeds->UncheckedAt(i), &t=*pt;
@@ -690,11 +750,9 @@ Int_t AliTPCtracker::Clusters2Tracks(const TFile *inp, TFile *out) {
   UnloadInnerSectors();
   UnloadOuterSectors();
 
-  tracktree.Write();
-
+  tpcl->WriteTracks("OVERWRITE");
+  
   cerr<<"Number of found tracks : "<<found<<endl;
-
-  savedir->cd();
 
   return 0;
 }
@@ -780,7 +838,7 @@ Int_t AliTPCtracker::PropagateBack(const TFile *inp, TFile *out) {
      s.SetLabel(nc-1); //set number of the cluster to start with
 
      if (FollowBackProlongation(s,t)) {
-	UseClusters(&s);
+       UseClusters(&s);
         continue;
      }
      delete fSeeds->RemoveAt(i);
@@ -806,16 +864,16 @@ Int_t AliTPCtracker::PropagateBack(const TFile *inp, TFile *out) {
 
      if (s.Rotate(alpha)) {
         if (FollowBackProlongation(s,t)) {
-	   if (s.GetNumberOfClusters() >= Int_t(0.4*nrows)) {
-	      s.CookdEdx();
+          if (s.GetNumberOfClusters() >= Int_t(0.4*nrows)) {
+             s.CookdEdx();
               s.SetLabel(t.GetLabel());
-	      UseClusters(&s,nc);
+              UseClusters(&s,nc);
               otrack=ps;
               backTree.Fill();
-	      cerr<<found++<<'\r';
+              cerr<<found++<<'\r';
               continue;
-	   }
-	}
+          }
+       }
      }
      delete fSeeds->RemoveAt(i);
   }  
@@ -916,8 +974,8 @@ void AliTPCtracker::AliTPCSector::Setup(const AliTPCParam *par, Int_t f) {
      fAlphaShift=par->GetInnerAngleShift();
      fPadPitchWidth=par->GetInnerPadPitchWidth();
      fPadPitchLength=par->GetInnerPadPitchLength();
-
      fN=par->GetNRowLow();
+//     cout<<"par->GetNRowLow() = "<<par->GetNRowLow()<<"  fN = "<<fN<<endl;
      fRow=new AliTPCRow[fN];
      for (Int_t i=0; i<fN; i++) fRow[i].SetX(par->GetPadRowRadiiLow(i));
   } else {
@@ -929,7 +987,8 @@ void AliTPCtracker::AliTPCSector::Setup(const AliTPCParam *par, Int_t f) {
      fN=par->GetNRowUp();
      fRow=new AliTPCRow[fN];
      for (Int_t i=0; i<fN; i++) fRow[i].SetX(par->GetPadRowRadiiUp(i));
-  } 
+  }
+  
 }
 
 //_________________________________________________________________________

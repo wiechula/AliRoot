@@ -1,4 +1,4 @@
-SRCS          =   \
+SRCS          = AliRunLoader.cxx  \
 AliDetector.cxx	AliHeader.cxx	AliMagF.cxx \
 AliDigit.cxx	AliHit.cxx	AliPoints.cxx \
 AliDisplay.cxx	AliMC.cxx	AliRun.cxx AliGenerator.cxx \
@@ -13,7 +13,7 @@ AliMCQA.cxx AliPDG.cxx AliDebugVolume.cxx \
 AliGenEventHeader.cxx AliStack.cxx AliConfig.cxx \
 AliRunDigitizer.cxx AliDigitizer.cxx AliStream.cxx \
 AliMergeCombi.cxx AliMagFMaps.cxx AliFieldMap.cxx \
-AliGausCorr.cxx
+AliGausCorr.cxx AliLoader.cxx
 
 HDRS:= $(SRCS:.cxx=.h) 
 

@@ -23,6 +23,9 @@
 
 /*
 $Log$
+Revision 1.3  2001/11/14 14:50:33  jchudoba
+Pass custom name and title to the TTask base class
+
 Revision 1.2  2001/10/04 15:56:34  jchudoba
 TTask inheritance
 
@@ -52,7 +55,7 @@ AliDigitizer::AliDigitizer(const Text_t* name, const Text_t* title)
 }
 
 AliDigitizer::AliDigitizer(AliRunDigitizer *manager, 
-			   const Text_t* name, const Text_t* title)
+                           const Text_t* name, const Text_t* title)
   :TTask(name,title)
 {
 //

@@ -12,6 +12,7 @@
 #include "AliHit.h" 
 #include "AliDigit.h" 
 
+#include "AliTPCLoader.h"
 
 class TMatrix;
 class AliTPCFastMatrix;  //MI change
@@ -57,6 +58,9 @@ protected:
 public:
   AliTPC();
   AliTPC(const char *name, const char *title);
+  
+  virtual AliLoader* MakeLoader(const char* topfoldername);
+  
   virtual      ~AliTPC();
   virtual void  AddHit(Int_t a1, Int_t *a2, Float_t *a3);
   Int_t         DistancetoPrimitive(Int_t px, Int_t py);
@@ -77,8 +81,8 @@ public:
   virtual void  Hits2DigitsSector(Int_t isec);  //MI change
   virtual void  Init();
   virtual Int_t IsVersion() const =0;
-  virtual void  Digits2Clusters(TFile *of, Int_t eventnumber=0);
-  virtual void  Clusters2Tracks(TFile *of);
+  virtual void  Digits2Clusters(Int_t eventnumber=0);
+  virtual void  Clusters2Tracks();
 
   Int_t         GetNsectors()       {return fNsectors;}
   virtual void  MakeBranch(Option_t *opt=" ", const char *file=0 );
@@ -87,7 +91,7 @@ public:
   virtual void  SetSecAU(Int_t sec);
   virtual void  SetSecLows(Int_t s1,Int_t s2,Int_t s3,Int_t s4,Int_t s5, Int_t s6);
   virtual void  SetSecUps (Int_t s1,Int_t s2,Int_t s3,Int_t s4,Int_t s5, Int_t s6,
-			   Int_t s7,Int_t s8,Int_t s9,Int_t s10, Int_t s11, Int_t s12);
+	  Int_t s7,Int_t s8,Int_t s9,Int_t s10, Int_t s11, Int_t s12);
   virtual void  SetSens(Int_t sens);
 
 

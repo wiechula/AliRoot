@@ -9,7 +9,7 @@
 class TFile;
 class AliStack;
 class AliHeader;
-
+class AliRunLoader;
 
 class AliGenReaderTreeK : public AliGenReader
 {
@@ -22,17 +22,21 @@ class AliGenReaderTreeK : public AliGenReader
     // Read
     virtual Int_t NextEvent();
     virtual TParticle*  NextParticle();
+    virtual void RewindEvent();
     AliGenReaderTreeK & operator=(const AliGenReaderTreeK & rhs);
     
  protected:
     Int_t             fNcurrent;          // points to the next entry
     Int_t             fNparticle;         // Next particle in list
     Int_t             fNp;                // number of particles
-    TFile            *fFile;              //! pointer to file
+//    TFile            *fFile;              //! pointer to file
+    AliRunLoader     *fInRunLoader;       //!Run Loader of the input event
     TFile            *fBaseFile;          //! pointer to base file
     AliStack         *fStack;             //! Particle stack
-    AliHeader        *fHeader;            //! Pointer to event header
-    TTree            *fTreeE;             //! Pointer to header tree
+//    AliHeader        *fHeader;            //! Pointer to event header
+//    TTree            *fTreeE;             //! Pointer to header tree
+
+    static const TString fgkEventFolderName;//!name of folder where event to read is mounted
     ClassDef(AliGenReaderTreeK,1) // Read particles from TreeK
 };
 #endif

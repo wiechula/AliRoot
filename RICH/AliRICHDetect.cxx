@@ -15,6 +15,9 @@
 
 /*
   $Log$
+  Revision 1.16  2001/10/23 13:03:35  hristov
+  The access to several data members was changed from public to protected. The digitisation was adapted to the multi-event case (J.Chudoba)
+
   Revision 1.15  2001/10/21 18:31:23  hristov
   Several pointers were set to zero in the default constructors to avoid memory management problems
 
@@ -221,7 +224,7 @@ void AliRICHDetect::Detect(Int_t nev)
   SpotOmegaPhi->SetXTitle("phi");
   SpotOmegaPhi->SetYTitle("omega");
 
-  Int_t ntracks = (Int_t)gAlice->TreeH()->GetEntries();
+  Int_t ntracks = (Int_t)pRICH->TreeH()->GetEntries();
   //Int_t ntrks = gAlice->GetNtrack();
   
   Float_t trackglob[3];
@@ -233,7 +236,7 @@ void AliRICHDetect::Detect(Int_t nev)
 	
   for (track=0; track<ntracks;track++) {
     gAlice->ResetHits();
-    gAlice->TreeH()->GetEvent(track);
+    pRICH->TreeH()->GetEvent(track);
     TClonesArray *pHits  = pRICH->Hits();
     if (pHits == 0) return;
     Int_t nhits = pHits->GetEntriesFast();

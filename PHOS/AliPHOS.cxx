@@ -41,7 +41,8 @@ class TFile;
 #include "AliRun.h"
 #include "AliMagF.h"
 #include "AliPHOSGeometry.h"
-#include "AliPHOSQAChecker.h" 
+#include "AliPHOSQAChecker.h"
+ #include "AliPHOSLoader.h"
 
 ClassImp(AliPHOS)
 //____________________________________________________________________________
@@ -374,16 +375,25 @@ void AliPHOS::SetTreeAddress()
 
   // TBranch *branch;
   //  AliDetector::SetTreeAddress();
+  cout<<"#########################################"<<endl;
 
   TBranch *branch;
   char branchname[20];
   sprintf(branchname,"%s",GetName());
   
   // Branch address for hit tree
-  TTree *treeH = gAlice->TreeH();
+  TTree *treeH = TreeH();
   if (treeH && fHits) {
     branch = treeH->GetBranch(branchname);
-    if (branch) branch->SetAddress(&fHits);
+    if (branch) 
+     { 
+       cout<<GetName()<<"::SetTreeAddress Setting"<<endl;
+       branch->SetAddress(&fHits);
+     }
+    else
+     {
+       cout<<GetName()<<"::SetTreeAddress Failed"<<endl;
+     }
   }
 }
 
@@ -398,8 +408,20 @@ void AliPHOS::WriteQA()
   // Create Alarms branches
   Int_t bufferSize = 32000 ;    
   Int_t splitlevel = 0 ; 
-  TFolder * alarmsF = (TFolder*)gROOT->FindObjectAny("Folders/Run/Conditions/QA/PHOS") ; 
-  TString branchName(alarmsF->GetName());  
+
+  TFolder* topfold = GetLoader()->GetTopFolder(); //get top aliroot folder; skowron
+  TString phosqafn(AliConfig::Instance()->GetQAFolderName()+"/"); //get name of QAaut folder relative to top event; skowron
+  phosqafn+=GetName(); //hard wired string!!! add the detector name to the pathname; skowron 
+  TFolder * alarmsF = (TFolder*)topfold->FindObjectAny(phosqafn); //get the folder
+// 4 lines above substitute the one below  
+//  TFolder * alarmsF = (TFolder*)gROOT->FindObjectAny("Folders/Run/Conditions/QA/PHOS") ; 
+  
+  if (alarmsF == 0x0)
+   {
+     Error("WriteQA","Can not find folder with qa alarms");
+     return;
+   }
+  TString branchName(alarmsF->GetName());
   TBranch * alarmsBranch = fTreeQA->Branch(branchName,"TFolder", &alarmsF, bufferSize, splitlevel);
   TString branchTitle = branchName + " QA alarms" ; 
   alarmsBranch->SetTitle(branchTitle);
@@ -408,3 +430,11 @@ void AliPHOS::WriteQA()
   //fTreeQA->Fill() ; 
 }
 
+AliLoader* AliPHOS::MakeLoader(const char* topfoldername)
+{
+//different behaviour than standard (singleton getter)
+// --> to be discussed and made eventually coherent
+ cout<<"AliPHOS::MakeLoader";
+ fLoader = new AliPHOSLoader(GetName(),topfoldername);
+ return fLoader;
+}

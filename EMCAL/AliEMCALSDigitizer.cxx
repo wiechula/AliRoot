@@ -64,7 +64,7 @@
 #include "AliEMCALSDigitizer.h"
 #include "AliEMCALGeometry.h"
 #include "AliEMCALv1.h"
-#include "AliEMCALGetter.h"
+#include "AliEMCALLoader.h"
 
 ClassImp(AliEMCALSDigitizer)
 
@@ -114,10 +114,12 @@ void AliEMCALSDigitizer::Init(){
   //============================================================= YS
   //  The initialisation is now done by the getter
 
-if( strcmp(GetTitle(), "") == 0 )
+  if( strcmp(GetTitle(), "") == 0 )
     SetTitle("galice.root") ;
   
-  AliEMCALGetter * gime = AliEMCALGetter::GetInstance(GetTitle(), GetName(), "update") ;     
+  AliEMCALGetter * gime = AliEMCALGetter::GetInstance(GetTitle(), GetName(), "update");
+  
+
   if ( gime == 0 ) {
     cerr << "ERROR: AliEMCALSDigitizer::Init -> Could not obtain the Getter object !" << endl ; 
     return ;
@@ -164,15 +166,15 @@ void AliEMCALSDigitizer::Exec(Option_t *option) {
     
      while ( (branch = (static_cast<TBranch*>(next()))) && (!emcalfound || !sdigitizerfound) ) {
       if ( (strcmp(branch->GetName(), "EMCAL")==0) && (strcmp(branch->GetTitle(), GetName())==0) ) 
-	emcalfound = kTRUE ;
+        emcalfound = kTRUE ;
       
       else if ( (strcmp(branch->GetName(), "AliEMCALSDigitizer")==0) && (strcmp(branch->GetTitle(), sdname)==0) ) 
-	sdigitizerfound = kTRUE ; 
+        sdigitizerfound = kTRUE ; 
     }
     
     if ( emcalfound || sdigitizerfound ) {
       cerr << "WARNING: AliEMCALSDigitizer::Exec -> SDigits and/or SDigitizer branch with name " << GetName() 
-	   << " already exits" << endl ;
+           << " already exits" << endl ;
       return ; 
     }   
   }  
@@ -201,41 +203,41 @@ void AliEMCALSDigitizer::Exec(Option_t *option) {
      
       Int_t i;
       for ( i = 0 ; i < fHits->GetEntries() ; i++ ) { // loop over all hits (hit = deposited energy/layer/entering particle)
-	AliEMCALHit * hit = dynamic_cast<AliEMCALHit*>(fHits->At(i)) ;
+        AliEMCALHit * hit = dynamic_cast<AliEMCALHit*>(fHits->At(i)) ;
         AliEMCALDigit * curSDigit = 0 ;
         AliEMCALDigit * sdigit = 0 ;
         Bool_t newsdigit = kTRUE; 
 
-	
+        
 
-	// Assign primary number only if deposited energy is significant
-	  
-	if( (!hit->IsInPreShower() && hit->GetEnergy() > fTowerPrimThreshold) || 
-	    (hit->IsInPreShower() && hit->GetEnergy() > fPreShowerPrimThreshold)) {
-	  curSDigit =  new AliEMCALDigit( hit->GetPrimary(),
-					  hit->GetIparent(),Layer2TowerID(hit->GetId(),hit->IsInPreShower()), 
-					  Digitize(hit->GetEnergy()), 
-					  hit->GetTime()) ;
-	} else {
-	  curSDigit =  new AliEMCALDigit( -1               , 
-					  -1               ,
-					  Layer2TowerID(hit->GetId(),hit->IsInPreShower()), 
-					  Digitize(hit->GetEnergy()), 
-					  hit->GetTime() ) ;	
-	}
-	Int_t check = 0 ;
-	for(check= 0; check < nSdigits ; check++) {
+        // Assign primary number only if deposited energy is significant
+          
+        if( (!hit->IsInPreShower() && hit->GetEnergy() > fTowerPrimThreshold) || 
+            (hit->IsInPreShower() && hit->GetEnergy() > fPreShowerPrimThreshold)) {
+          curSDigit =  new AliEMCALDigit( hit->GetPrimary(),
+                                          hit->GetIparent(),Layer2TowerID(hit->GetId(),hit->IsInPreShower()), 
+                                          Digitize(hit->GetEnergy()), 
+                                          hit->GetTime()) ;
+        } else {
+          curSDigit =  new AliEMCALDigit( -1               , 
+                                          -1               ,
+                                          Layer2TowerID(hit->GetId(),hit->IsInPreShower()), 
+                                          Digitize(hit->GetEnergy()), 
+                                          hit->GetTime() ) ;        
+        }
+        Int_t check = 0 ;
+        for(check= 0; check < nSdigits ; check++) {
           sdigit = (AliEMCALDigit *)sdigits->At(check);
           if( sdigit->GetId() == curSDigit->GetId()) { // Are we in the same tower or the same preshower ?              
-	      *sdigit = *sdigit + *curSDigit;
+              *sdigit = *sdigit + *curSDigit;
    
-	      newsdigit = kFALSE;
-	  }
-	}
-	if (newsdigit) { 
-	  new((*sdigits)[nSdigits])  AliEMCALDigit(*curSDigit);
-	  nSdigits++ ;  
-	}
+              newsdigit = kFALSE;
+          }
+        }
+        if (newsdigit) { 
+          new((*sdigits)[nSdigits])  AliEMCALDigit(*curSDigit);
+          nSdigits++ ;  
+        }
       }  // loop over all hits (hit = deposited energy/layer/entering particle)
       //    } // loop over tracks
       
@@ -256,8 +258,8 @@ void AliEMCALSDigitizer::Exec(Option_t *option) {
      for ( index = 0; index < nSdigits ; index++) {
        sdigit = dynamic_cast<AliEMCALDigit *>(sdigits->At(index) ) ;
        if (sdigit->IsInPreShower() ){ 
-	 firstPreShowerIndex = index ;
-	 break ;
+         firstPreShowerIndex = index ;
+         break ;
        }
      }
      
@@ -271,22 +273,22 @@ void AliEMCALSDigitizer::Exec(Option_t *option) {
       Bool_t towerFound = kFALSE ;
       Int_t jndex ; 
       for (jndex = 0; jndex < firstPreShowerIndex; jndex++) {
-	tower  = dynamic_cast<AliEMCALDigit *>(sdigits->At(jndex) ); 
-	if ( (preshower->GetId() - (geom->GetNZ() * geom->GetNPhi()) ) == tower->GetId() ) {	  
-	  Float_t towerEnergy  = static_cast<Float_t>(tower->GetAmp()) ; 
-	  Float_t preshoEnergy = static_cast<Float_t>(preshower->GetAmp()) ; 
-	  towerEnergy +=preshoEnergy ; 
-	  *tower = *tower + *preshower    ; // and add preshower multiplied by layer ratio to tower
-	  tower->SetAmp(static_cast<Int_t>(TMath::Ceil(towerEnergy))) ; 
-	  towerFound = kTRUE ;
-	}
+        tower  = dynamic_cast<AliEMCALDigit *>(sdigits->At(jndex) ); 
+        if ( (preshower->GetId() - (geom->GetNZ() * geom->GetNPhi()) ) == tower->GetId() ) {          
+          Float_t towerEnergy  = static_cast<Float_t>(tower->GetAmp()) ; 
+          Float_t preshoEnergy = static_cast<Float_t>(preshower->GetAmp()) ; 
+          towerEnergy +=preshoEnergy ; 
+          *tower = *tower + *preshower    ; // and add preshower multiplied by layer ratio to tower
+          tower->SetAmp(static_cast<Int_t>(TMath::Ceil(towerEnergy))) ; 
+          towerFound = kTRUE ;
+        }
       }
       if ( !towerFound ) { 
 
-	new((*sdigits)[lastIndex])  AliEMCALDigit(*preshower);
-	AliEMCALDigit * temp = dynamic_cast<AliEMCALDigit *>(sdigits->At(lastIndex)) ;
-	temp->SetId(temp->GetId() - (geom->GetNZ() * geom->GetNPhi()) ) ;
-	lastIndex++ ; 
+        new((*sdigits)[lastIndex])  AliEMCALDigit(*preshower);
+        AliEMCALDigit * temp = dynamic_cast<AliEMCALDigit *>(sdigits->At(lastIndex)) ;
+        temp->SetId(temp->GetId() - (geom->GetNZ() * geom->GetNPhi()) ) ;
+        lastIndex++ ; 
       }
     }
     
@@ -298,17 +300,17 @@ void AliEMCALSDigitizer::Exec(Option_t *option) {
     }
     
     for (i = 0 ; i < sdigits->GetEntriesFast() ; i++) { 
-	 if (((dynamic_cast<AliEMCALDigit *>(sdigits->At(i)))->GetNprimary()) > NPrimarymax)
-	   NPrimarymax = ((dynamic_cast<AliEMCALDigit *>(sdigits->At(i)))->GetNprimary()) ;
+         if (((dynamic_cast<AliEMCALDigit *>(sdigits->At(i)))->GetNprimary()) > NPrimarymax)
+           NPrimarymax = ((dynamic_cast<AliEMCALDigit *>(sdigits->At(i)))->GetNprimary()) ;
        }
        if(gAlice->TreeS() == 0)
-	gAlice->MakeTree("S") ;      
+        gAlice->MakeTree("S") ;      
       
       //Make (if necessary) branches    
       char * file =0;
       if(gSystem->Getenv("CONFIG_SPLIT_FILE")){ //generating file name
-	file = new char[strlen(gAlice->GetBaseFile())+20] ;
-	sprintf(file,"%s/EMCAL.SDigits.root",gAlice->GetBaseFile()) ;
+        file = new char[strlen(gAlice->GetBaseFile())+20] ;
+        sprintf(file,"%s/EMCAL.SDigits.root",gAlice->GetBaseFile()) ;
       }
       
       TDirectory *cwd = gDirectory;
@@ -319,30 +321,30 @@ void AliEMCALSDigitizer::Exec(Option_t *option) {
       sdigitsBranch->SetTitle(sdname);
       
       if (file) {
-	sdigitsBranch->SetFile(file);
-	TIter next( sdigitsBranch->GetListOfBranches());
-	TBranch * subbr;
-	while ((subbr=(TBranch*)next())) {
-	  subbr->SetFile(file);
-	}   
-	cwd->cd();
+        sdigitsBranch->SetFile(file);
+        TIter next( sdigitsBranch->GetListOfBranches());
+        TBranch * subbr;
+        while ((subbr=(TBranch*)next())) {
+          subbr->SetFile(file);
+        }   
+        cwd->cd();
       } 
       
       //second - SDigitizer
       Int_t splitlevel = 0 ;
       AliEMCALSDigitizer * sd = this ;
       TBranch * sdigitizerBranch = gAlice->TreeS()->Branch("AliEMCALSDigitizer","AliEMCALSDigitizer",
-							   &sd,bufferSize,splitlevel); 
+                                                           &sd,bufferSize,splitlevel); 
       sdigitizerBranch->SetTitle(sdname);
       if (file) {
-	sdigitizerBranch->SetFile(file);
-	TIter next( sdigitizerBranch->GetListOfBranches());
-	TBranch * subbr ;
-	while ((subbr=(TBranch*)next())) {
-	  subbr->SetFile(file);
-	}   
-	cwd->cd();
-	delete file;
+        sdigitizerBranch->SetFile(file);
+        TIter next( sdigitizerBranch->GetListOfBranches());
+        TBranch * subbr ;
+        while ((subbr=(TBranch*)next())) {
+          subbr->SetFile(file);
+        }   
+        cwd->cd();
+        delete file;
       }
       
       sdigitsBranch->Fill() ;
@@ -350,7 +352,7 @@ void AliEMCALSDigitizer::Exec(Option_t *option) {
       gAlice->TreeS()->Write(0,TObject::kOverwrite) ;
       
       if(strstr(option,"deb"))
-	PrintSDigits(option) ;
+        PrintSDigits(option) ;
       
   }
   
@@ -358,7 +360,7 @@ void AliEMCALSDigitizer::Exec(Option_t *option) {
     gBenchmark->Stop("EMCALSDigitizer");
     cout << "AliEMCALSDigitizer:" << endl ;
     cout << "   took " << gBenchmark->GetCpuTime("EMCALSDigitizer") << " seconds for SDigitizing " 
-	 <<  gBenchmark->GetCpuTime("EMCALSDigitizer")/fNevents << " seconds per event " << endl ;
+         <<  gBenchmark->GetCpuTime("EMCALSDigitizer")/fNevents << " seconds per event " << endl ;
     cout << endl ;
   }
   
@@ -433,14 +435,14 @@ void AliEMCALSDigitizer::PrintSDigits(Option_t * option){
     Int_t index ;
     for (index = 0 ; index < sdigits->GetEntries() ; index++) {
       digit = (AliEMCALDigit * )  sdigits->At(index) ;
-      cout << setw(6)  <<  digit->GetId() << "   "  << 	setw(10)  <<  digit->GetAmp() <<   "    "  << digit->GetTime()
-	   << setw(6)  <<  digit->GetIndexInList() << "    "   
-	   << setw(5)  <<  digit->GetNprimary() <<"    ";
+      cout << setw(6)  <<  digit->GetId() << "   "  <<         setw(10)  <<  digit->GetAmp() <<   "    "  << digit->GetTime()
+           << setw(6)  <<  digit->GetIndexInList() << "    "   
+           << setw(5)  <<  digit->GetNprimary() <<"    ";
       
       Int_t iprimary;
       for (iprimary=0; iprimary<digit->GetNprimary(); iprimary++)
-	cout << " "  <<  digit->GetPrimary(iprimary+1) << "  ";
-      cout << endl;  	 
+        cout << " "  <<  digit->GetPrimary(iprimary+1) << "  ";
+      cout << endl;           
     }
     cout <<endl;
   }
@@ -462,7 +464,7 @@ Int_t AliEMCALSDigitizer::Layer2TowerID(Int_t ihit, Bool_t preshower){
     return it;
   }else{
     cerr << " AliEMCALSDigitizer::Layer2TowerID() -- there is an error "<< endl << "Eta number = "
-	 << ieta << "Phi number = " << iphi << endl ;
+         << ieta << "Phi number = " << iphi << endl ;
     return it;
   } // end if iphi>0 && ieta>0
 }

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.23  2001/09/19 18:41:45  alla
+Asimmetric START geometry
+
 Revision 1.22  2001/07/27 13:03:12  hristov
 Default Branch split level set to 99
 
@@ -309,7 +312,7 @@ void AliSTART::Hit2digit(Int_t evnum)
    
     sprintf(nameTH,"TreeH%d",evnum);
     printf("%s\n",nameTH);
-    TTree *th = gAlice->TreeH();
+    TTree *th = TreeH();
     Int_t ntracks    = (Int_t) th->GetEntries();
     if (ntracks<=0) return;
     // Start loop on tracks in the hits containers

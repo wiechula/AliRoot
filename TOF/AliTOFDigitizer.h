@@ -13,7 +13,9 @@
 #include "TTask.h"
 #include "TString.h"
 
+class AliRunLoader;
 class AliTOFDigitizer ;
+
 
 class AliTOFDigitizer: public TTask {
 
@@ -48,7 +50,8 @@ private:
   Bool_t  fIsInitialized ;         // kTRUE if Digitizer is initialized
   TClonesArray* fDigits ;          // list of Digits
   TClonesArray* fHits ;            // list of Hits
-
+  
+  AliRunLoader* fRunLoader;        //! Run Loader
 
   ClassDef(AliTOFDigitizer,1)  // Task Class for making Digits in TOF
 

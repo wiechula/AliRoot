@@ -15,6 +15,8 @@ class TClonesArray;
 class TBrowser;
 class TArrayI;
 class TFile;
+class AliLoader;
+
 
 class AliModule : public TNamed , public TAttLine, public TAttMarker,
                   public AliRndm {
@@ -49,24 +51,25 @@ public:
 			   Float_t z, Float_t dens, Float_t radl,
 			   Float_t absl, Float_t *buf=0, Int_t nwbuf=0) const;
   virtual void AliGetMaterial(Int_t imat, char* name, Float_t &a, 
-				Float_t &z, Float_t &dens, Float_t &radl,
-				Float_t &absl);
+                              Float_t &z, Float_t &dens, Float_t &radl,
+                              Float_t &absl);
   virtual void AliMixture(Int_t imat, const char *name, Float_t *a,
-			  Float_t *z, Float_t dens, Int_t nlmat,
-			  Float_t *wmat) const;
+                          Float_t *z, Float_t dens, Int_t nlmat,
+                          Float_t *wmat) const;
   virtual void AliMedium(Int_t numed, const char *name, Int_t nmat,
-			 Int_t isvol, Int_t ifield, Float_t fieldm,
-			 Float_t tmaxfd, Float_t stemax, Float_t deemax,
-			 Float_t epsil, Float_t stmin, Float_t *ubuf=0,
-			 Int_t nbuf=0) const;
+                          Int_t isvol, Int_t ifield, Float_t fieldm,
+                          Float_t tmaxfd, Float_t stemax, Float_t deemax,
+                          Float_t epsil, Float_t stmin, Float_t *ubuf=0,
+                          Int_t nbuf=0) const;
   virtual void AliMatrix(Int_t &nmat, Float_t theta1, Float_t phi1,
-			 Float_t theta2, Float_t phi2, Float_t theta3,
-			 Float_t phi3) const;
+                          Float_t theta2, Float_t phi2, Float_t theta3,
+                          Float_t phi3) const;
   
   // Virtual methods
   virtual void  BuildGeometry() {};
   virtual Int_t IsVersion() const =0;
-
+  
+  
   // Other methods
   virtual void        AddDigit(Int_t*, Int_t*){
   Error("AddDigit","Digits cannot be added to module %s\n",fName.Data());}
@@ -93,7 +96,14 @@ public:
   //virtual void        Hits2Digits() {}
   virtual void        Init() {}
   virtual void        LoadPoints(Int_t ) {}
+
   virtual void        MakeBranch(Option_t *, const char *file=0 ) {}
+  virtual void        MakeTree(Option_t *) {}//skowron 
+
+  virtual AliLoader*  MakeLoader(const char* topfoldername);//skowron   
+  AliLoader* GetLoader() const {return fLoader;} //skowron
+  void SetLoader(AliLoader* loader){fLoader = loader;}
+  
   virtual void        Paint(Option_t *) {}
   virtual void        ResetDigits() {}
   virtual void        ResetSDigits() {}
@@ -113,7 +123,7 @@ public:
   virtual void ReadEuclidMedia(const char *filnam);
   AliModule& operator=(const AliModule &mod);
   void Copy(AliModule &mod) const;
- 
+  
 protected:      
   // Data members
   
@@ -130,6 +140,9 @@ protected:
   TList        *fNodes;       //List of geometry nodes
   Int_t         fDebug;       //Debug flag
   Bool_t        fEnable;      //StepManager enabling flag
+
+  AliLoader*  fLoader;//! pointer to getter for this   skowron
+
   ClassDef(AliModule,2)  //Base class for ALICE Modules
 };
 #endif

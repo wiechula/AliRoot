@@ -70,7 +70,6 @@ class AliPHOSRecPoint : public AliRecPoint {
     assert(0==1) ;
     return *this ; 
   }
-
 protected:
   
   Int_t fPHOSMod ;      // PHOS Module number in which the RecPoint is found

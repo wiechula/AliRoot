@@ -15,6 +15,22 @@
 
 /*
 $Log$
+Revision 1.8  2002/04/26 10:42:35  morsch
+Case kNoDecayHeavy added. (N. Carrer)
+
+Revision 1.7  2002/04/17 10:32:32  morsch
+Coding Rule violations corrected.
+
+Revision 1.6  2002/03/26 14:19:36  morsch
+Saver calculation of rapdity.
+
+Revision 1.5  2002/03/12 17:02:20  morsch
+Change in calculation of rapidity, include case in which numerically e == pz.
+
+Revision 1.4  2001/11/27 13:13:07  morsch
+Maximum lifetime for long-lived particles to be put on the stack is parameter.
+It can be set via SetMaximumLifetime(..).
+
 Revision 1.3  2001/10/16 08:48:56  morsch
 Common vertex related code moved to base class AliGenerator.
 
@@ -25,6 +41,12 @@ Revision 1.1  2001/07/13 10:56:00  morsch
 AliGenMC base class for AliGenParam and AliGenPythia commonalities.
 
 */
+
+// Base class for generators using external MC generators.
+// For example AliGenPythia using Pythia.
+// Provides basic functionality: setting of kinematic cuts on 
+// decay products and particle selection.
+// andreas.morsch@cern.ch
 
 #include "AliGenMC.h"
 #include "AliPDG.h"
@@ -95,34 +117,36 @@ void AliGenMC::Init()
 	fChildSelect[0]=kPiPlus;
 	fChildSelect[1]=kKPlus;
 	break;
+    case kOmega:	
     case kAll:
     case kNoDecay:
+    case kNoDecayHeavy:
 	break;
     }
 }
 
 
-Bool_t AliGenMC::ParentSelected(Int_t ip)
+Bool_t AliGenMC::ParentSelected(Int_t ip) const
 {
 // True if particle is in list of parent particles to be selected
     for (Int_t i=0; i<8; i++)
     {
-	if (fParentSelect[i]==ip) return kTRUE;
+	if (fParentSelect.At(i) == ip) return kTRUE;
     }
     return kFALSE;
 }
 
-Bool_t AliGenMC::ChildSelected(Int_t ip)
+Bool_t AliGenMC::ChildSelected(Int_t ip) const
 {
 // True if particle is in list of decay products to be selected
     for (Int_t i=0; i<5; i++)
     {
-	if (fChildSelect[i]==ip) return kTRUE;
+	if (fChildSelect.At(i) == ip) return kTRUE;
     }
     return kFALSE;
 }
 
-Bool_t AliGenMC::KinematicSelection(TParticle *particle, Int_t flag)
+Bool_t AliGenMC::KinematicSelection(TParticle *particle, Int_t flag) const
 {
 // Perform kinematic selection
     Float_t px    = particle->Px();
@@ -132,14 +156,29 @@ Bool_t AliGenMC::KinematicSelection(TParticle *particle, Int_t flag)
     Float_t pt    = particle->Pt();
     Float_t p     = particle->P();
     Float_t theta = particle->Theta();
-    Float_t phi   = Float_t(TMath::ATan2(Double_t(py),Double_t(px)));
-    Float_t y;
+    Float_t mass  = particle->GetMass();
+    Float_t mt2   = pt * pt + mass * mass;
     
-    if ( (e-pz)<=0 || (e+pz)<=0 ) {
-	return kFALSE;
+    Float_t phi   = Float_t(TMath::ATan2(Double_t(py),Double_t(px)));
+    Double_t y, y0;
+
+    if (TMath::Abs(pz) <  e) {
+	y = 0.5*TMath::Log((e+pz)/(e-pz));
     } else {
-      y = 0.5*TMath::Log((e+pz)/(e-pz));
+	y = 1.e10;
     }
+    
+    if (mt2) {
+	y0 = 0.5*TMath::Log((e+TMath::Abs(pz))*(e+TMath::Abs(pz))/mt2);
+    } else {
+	if (TMath::Abs(y) < 1.e10) {
+	    y0 = y;
+	} else {
+	    y0 = 1.e10;
+	}
+    }
+      
+    y = (pz < 0) ? -y0 : y0;
     
     if (flag == 0) {
 //
@@ -214,7 +253,7 @@ Bool_t AliGenMC::KinematicSelection(TParticle *particle, Int_t flag)
     return kTRUE;
 }
 
-Int_t AliGenMC::CheckPDGCode(Int_t pdgcode)
+Int_t AliGenMC::CheckPDGCode(Int_t pdgcode) const
 {
 //
 //  If the particle is in a diffractive state, then take action accordingly

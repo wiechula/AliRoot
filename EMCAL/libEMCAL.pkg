@@ -9,7 +9,7 @@ AliEMCALHit.cxx \
 AliEMCALDigit.cxx \
 AliEMCALSDigitizer.cxx \
 AliEMCALDigitizer.cxx \
-AliEMCALGetter.cxx \
+AliEMCALLoader.cxx \
 AliEMCALJetFinder.cxx \
 AliEMCALJet.cxx \
 AliEMCALFast.cxx \
