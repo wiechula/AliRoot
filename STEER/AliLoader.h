@@ -129,11 +129,11 @@ class AliLoader: public TNamed
     virtual Int_t PostReconstructioner(TTask* task);
     virtual Int_t PostTracker(TTask* task);
     
-    virtual void  CleanHits()     {Clean(*fHitsContainerName);}//cleans hits from folder
-    virtual void  CleanSDigits()  {Clean(*fSDigitsContainerName);}
-    virtual void  CleanDigits()   {Clean(*fDigitsContainerName);}
-    virtual void  CleanRecPoints(){Clean(*fRecPointsContainerName);}
-    virtual void  CleanTracks()   {Clean(*fTracksContainerName);}
+    virtual void  CleanHits()     {Clean(fHitsContainerName);}//cleans hits from folder
+    virtual void  CleanSDigits()  {Clean(fSDigitsContainerName);}
+    virtual void  CleanDigits()   {Clean(fDigitsContainerName);}
+    virtual void  CleanRecPoints(){Clean(fRecPointsContainerName);}
+    virtual void  CleanTracks()   {Clean(fTracksContainerName);}
     
     virtual void  CleanSDigitizer();
     virtual void  CleanDigitizer();
@@ -145,6 +145,10 @@ class AliLoader: public TNamed
     
     const TString& GetDetectorName() const{return fDetectorName;}
     AliRunLoader*  GetRunLoader();//gets the run-getter from event folder
+    
+    void          SetDigitsFileNameSuffix(const TString& suffix);//adds the suffix before ".root", 
+                                                          //e.g. TPC.Digits.root -> TPC.DigitsMerged.root
+                                                          //made on Jiri Chudoba demand
    protected:
 
     /*********************************************/
@@ -176,13 +180,14 @@ class AliLoader: public TNamed
     virtual Int_t PostDigitizer();//gets Digitizer from file and adds it to Run Digitizer
     virtual Int_t PostReconstructioner();//gets Reconstructioner from file and adds it to Run Reconstructioner
     virtual Int_t PostTracker();//gets tracker from file and adds it to Run Tracker
-
+    
     void Clean(const TString& name);
     
     TString       GetUnixDir();
     TObject*      GetDetectorData(const char* name){return GetDetectorDataFolder()->FindObject(name);}
     TObject**     GetDetectorDataRef(TObject* obj);
-
+    
+    Bool_t        CheckReload(const TFile* file, const TString& basefilename);//checks if we have to reload given file
     /**********************************************/
     /************    PROTECTED      ***************/
     /*********        D A T A          ************/

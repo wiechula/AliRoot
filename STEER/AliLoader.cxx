@@ -587,57 +587,90 @@ Int_t AliLoader::SetEvent()
    AliRunLoader* rg = GetRunLoader();
    if (rg == 0x0)
     {
-      Error("GetEvent","Can not get RunGettr");
+      Error("SetEvent","Can not get RunGettr");
       return 1;
     }
    Int_t evno = rg->GetEventNumber();
-
+   
    if(fHitsFile)
     {
+      if (CheckReload(fHitsFile,fHitsFileName))
+       {
+         Option_t* opt = fHitsFile->GetOption();
+         UnloadHits();
+         OpenHitsFile(opt);
+       }
       fHitsDir = ChangeDir(fHitsFile,evno);
       if (fHitsDir == 0x0)
         {
-          Error("GetEvent","Can not chage directory to file %s",fHitsFile->GetName());
+          Error("SetEvent","Can not chage directory to file %s",fHitsFile->GetName());
           return 1;
         }
     }
 
    if(fSDigitsFile)
     {
+      if (CheckReload(fSDigitsFile,fSDigitsFileName))
+       {
+         Option_t* opt = fSDigitsFile->GetOption();
+         UnloadSDigits();
+         OpenSDigitsFile(opt);
+       }
+
       fSDigitsDir = ChangeDir(fSDigitsFile,evno);
       if (fSDigitsDir == 0x0)
         {
-          Error("GetEvent","Can not chage directory to file %s",fSDigitsFile->GetName());
+          Error("SetEvent","Can not chage directory to file %s",fSDigitsFile->GetName());
           return 1;
         }
     }
    
    if(fDigitsFile)
     {
+      if (CheckReload(fDigitsFile,fDigitsFileName))
+       {
+         Option_t* opt = fDigitsFile->GetOption();
+         UnloadDigits();
+         OpenDigitsFile(opt);
+       }
+    
       fDigitsDir = ChangeDir(fDigitsFile,evno);
       if (fDigitsDir == 0x0)
         {
-          Error("GetEvent","Can not chage directory to file %s",fDigitsFile->GetName());
+          Error("SetEvent","Can not chage directory to file %s",fDigitsFile->GetName());
           return 1;
         }
     }
    
    if(fRecPointsFile)
     {
+      if (CheckReload(fRecPointsFile,fRecPointsFileName))
+       {
+         Option_t* opt = fRecPointsFile->GetOption();
+         UnloadRecPoints();
+         OpenRecPointsFile(opt);
+       }
+    
       fRecPointsDir = ChangeDir(fRecPointsFile,evno);
       if (fRecPointsDir == 0x0)
         {
-          Error("GetEvent","Can not chage directory to file %s",fRecPointsFile->GetName());
+          Error("SetEvent","Can not chage directory to file %s",fRecPointsFile->GetName());
           return 1;
         }
     }
 
    if(fTracksFile)
     {
+      if (CheckReload(fTracksFile,fTracksFileName))
+       {
+         Option_t* opt = fTracksFile->GetOption();
+         UnloadTracks();
+         OpenTracksFile(opt);
+       }
       fTracksDir = ChangeDir(fTracksFile,evno);
       if (fTracksDir == 0x0)
         {
-          Error("GetEvent","Can not chage directory to file %s",fTracksFile->GetName());
+          Error("SetEvent","Can not chage directory to file %s",fTracksFile->GetName());
           return 1;
         }
     }
@@ -2027,4 +2060,25 @@ const TString AliLoader::SetFileOffset(const TString& fname)
 
 /*****************************************************************************/ 
 
+void AliLoader::SetDigitsFileNameSuffix(const TString& suffix)
+{
+  //adds the suffix before ".root", 
+  //e.g. TPC.Digits.root -> TPC.DigitsMerged.root
+  //made on Jiri Chudoba demand
+  cout<<"AliLoader::SetDigitsFileNameSuffix(\""<<suffix<<"\")\n";
+  cout<<"Digits File Name before: "<<fDigitsFileName<<endl;
+  TString dotroot(".root");
+  const TString& suffixdotroot = suffix + dotroot;
+  fDigitsFileName = fDigitsFileName.ReplaceAll(dotroot,suffixdotroot);
+  cout<<"                 after: "<<fDigitsFileName<<endl;
+}
 
+
+Bool_t AliLoader::CheckReload(const TFile* file, const TString& basefilename)
+{
+//checks if we have to reload given file
+ if (file == 0x0) return kFALSE;
+ TString tmp = SetFileOffset(basefilename);
+ if (tmp.CompareTo(file->GetName())) return kTRUE;  //file must be reloaded
+ return  kFALSE;
+}

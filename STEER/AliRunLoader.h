@@ -124,7 +124,13 @@ class AliRunLoader: public TNamed
     Int_t       GetFileOffset() const;
     void        SetNumberOfEventsPerFile(Int_t nevpf){fNEventsPerFile = nevpf;}
     
+    void        SetDigitsFileNameSuffix(const TString& suffix);//adds the suffix before ".root", 
+                                                               //e.g. TPC.Digits.root -> TPC.DigitsMerged.root
+                                                               //made on Jiri Chudoba demand
+
     const TObjArray* GetArrayOfLoaders() const {return fLoaders;}
+    
+    
   protected:
     TObjArray     *fLoaders;          //  List of Detectors
     TFolder       *fEventFolder;      //!top folder for this run

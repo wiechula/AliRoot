@@ -144,6 +144,26 @@ Int_t AliRunLoader::GetEvent(Int_t evno)
 //Gets event number evno
 //Reloads all data properly
   if (fCurrentEvent == evno) return 0;
+  
+  if (evno < 0)
+   {
+     Error("GetEvent","Can not give the event with negative number");
+     return 4;
+   }
+
+  if (evno >= GetNumberOfEvents())
+   {
+     Error("GetEvent","There is no event with number %d",evno);
+     return 3;
+   }
+  
+  cout<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
+  cout<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
+  cout<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
+  cout<<"          GETTING EVENT  "<<evno<<"             \n";
+  cout<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
+  cout<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
+  cout<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
   fCurrentEvent = evno;
 
   Int_t retval;
@@ -221,9 +241,23 @@ Int_t AliRunLoader::SetEvent()
  //if kinematocs was loaded Cleans folder data
  //change 
 
+  TString tmp;
+  
+  
   if (TreeK()) CleanKinematics();
   if (fKineFile)
-   {  
+   { 
+     tmp = SetFileOffset(fKineFileName);
+     if (tmp.CompareTo(fKineFile->GetName()) != 0)
+      { 
+        cout<<"Reloading Kine: ev number "<<fCurrentEvent
+            <<"old filename: "<<fKineFile->GetName()
+            <<"new filename: "<<tmp<<endl;
+        Option_t* opt = fKineFile->GetOption();
+        UnloadKinematics();
+        OpenKineFile(opt);
+      }
+
      fKineDir = AliLoader::ChangeDir(fKineFile,fCurrentEvent);
      if (fKineDir == 0x0)
       {
@@ -235,6 +269,14 @@ Int_t AliRunLoader::SetEvent()
   if (TreeTR()) CleanTrackRefs();
   if (fTrackRefsFile)
    {  
+     tmp = SetFileOffset(fTrackRefsFileName);
+     if (tmp.CompareTo(fTrackRefsFile->GetName()) != 0)
+      { 
+        Option_t* opt = fTrackRefsFile->GetOption();
+        UnloadTrackRefs();
+        OpenTrackRefsFile(opt);
+      }
+
      fTrackRefsDir = AliLoader::ChangeDir(fTrackRefsFile,fCurrentEvent);
      if (fTrackRefsDir == 0x0)
       {
@@ -557,13 +599,13 @@ Int_t AliRunLoader::OpenDataFile(const TString& filename,TFile*& file,TDirectory
   {
     if (file->IsOpen() == kFALSE)
      {//pointer is not null but file is not opened
-       Warning("OpenKineFile","Pointer to file is not null, but file is not opened");
+       Warning("OpenDataFile","Pointer to file is not null, but file is not opened");//risky any way
        delete file;
        file = 0x0; //proceed with opening procedure
      }
     else
      { 
-       Warning("LoadKinematics","Kinematics file already opened");
+       Warning("OpenDataFile","File  %s already opened",filename.Data());
        return 0;
      }
   }
@@ -1082,7 +1124,6 @@ void AliRunLoader::CleanDetectors()
   AliLoader *Loader;
   while((Loader = (AliLoader*)next())) 
    {
-     cout<<Loader->GetName();
      Loader->CleanFolders();
    }
 }
@@ -1150,26 +1191,26 @@ Int_t AliRunLoader::LoadSDigits(Option_t* detectors,Option_t* opt)
 {
 //LoadHits in selected detectors i.e. detectors="ITS TPC TRD" or "all"
 
-  TObjArray* Loaders;
+  TObjArray* loaders;
   TObjArray arr;
 
   char* oAll = strstr(detectors,"all");
   if (oAll)
    {
      cout<<"All"<<endl;
-     Loaders = fLoaders;
+     loaders = fLoaders;
    }
   else
    {
      GetListOfDetectors(detectors,arr);//this method looks for all Loaders corresponding to names (many) specified in detectors option
-     Loaders = &arr;//get the pointer array
+     loaders = &arr;//get the pointer array
    }   
 
-  TIter next(Loaders);
-  AliLoader *Loader;
-  while((Loader = (AliLoader*)next())) 
+  TIter next(loaders);
+  AliLoader *loader;
+  while((loader = (AliLoader*)next())) 
    {
-    Loader->LoadSDigits(opt);
+    loader->LoadSDigits(opt);
    }
   return 0;
 } 
@@ -1504,7 +1545,7 @@ Int_t AliRunLoader::OpenTrackRefsFile(Option_t* opt)
 
 Int_t AliRunLoader::GetFileOffset() const
 {
-  return fCurrentEvent%fNEventsPerFile;
+  return Int_t(fCurrentEvent/fNEventsPerFile);
 }
 
 /*****************************************************************************/ 
@@ -1522,4 +1563,22 @@ const TString AliRunLoader::SetFileOffset(const TString& fname)
   return out;
 }
 
+/*****************************************************************************/ 
+
+void AliRunLoader::SetDigitsFileNameSuffix(const TString& suffix)
+{
+//adds the suffix before ".root", 
+//e.g. TPC.Digits.root -> TPC.DigitsMerged.root
+//made on Jiri Chudoba demand
+
+  TIter next(fLoaders);
+  AliLoader *Loader;
+  while((Loader = (AliLoader*)next())) 
+   {
+     Loader->SetDigitsFileNameSuffix(suffix);
+   }
+}
+
+/*****************************************************************************/ 
+/*****************************************************************************/ 
 /*****************************************************************************/ 
