@@ -51,9 +51,10 @@ endif
 # COMMENTED OUT FOR TEST PURPOSES
 
 ALIROOTMODULES:= STEER \
-	 TGeant3 PHOS TRD TPC ZDC MUON PMD FMD TOF ITS \
-         CASTOR RICH START STRUCT EVGEN RALICE ALIFAST \
-	 THijing CONTAINERS MEVSIM TMEVSIM THbtp HBTP EMCAL HBTAN
+                 TGeant3 PHOS TRD TPC ZDC MUON PMD FMD TOF ITS \
+                 CASTOR RICH START STRUCT EVGEN RALICE ALIFAST \
+                 THijing CONTAINERS MEVSIM TMEVSIM THbtp HBTP HBTAN \
+#                 EMCAL
 
 CERNMODULES:= PDF PYTHIA PYTHIA6 GEANT321 MINICERN HIJING
 
@@ -72,14 +73,14 @@ MODDIRS := MODULES
 #      The module directory will be added by each module
 #
 
-CXXFLAGS += -I$(ALICE_ROOT)/include
 CXXFLAGS += $(patsubst %,-I%,$(ROOTSYS)/include)
+CXXFLAGS += -I$(ALICE_ROOT)/include
 
-CINTFLAGS += -I$(ALICE_ROOT)/include
 CINTFLAGS += $(patsubst %,-I%,$(ROOTSYS)/include)
+CINTFLAGS += -I$(ALICE_ROOT)/include
 
-DEPINC  += -I$(ALICE_ROOT)/include
 DEPINC += $(patsubst %,-I%,$(ROOTSYS)/include)
+DEPINC  += -I$(ALICE_ROOT)/include
 #############################################################
 
 
