@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.10  2002/03/13 07:55:04  jchudoba
+Correction of the errourness last commit.
+
+Revision 1.8  2001/03/16 15:32:06  morsch
+Corrections of overlap with beam shield and dipole (A. de Falco)
+
 Revision 1.7  2001/03/14 17:22:15  pcrochet
 Geometry of the trigger chambers : a vertical gap of has been introduced around x=0 according fig.3.27 of the TDR (P.Dupieux)
 

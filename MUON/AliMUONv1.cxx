@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.32  2002/05/02 12:51:10  morsch
+For G4: gMC->VolId(...) replaced by gAlice->GetModule(...).
+
+Revision 1.31  2002/03/13 07:55:04  jchudoba
+Correction of the errourness last commit.
+
+Revision 1.29  2001/06/21 14:54:37  morsch
+Put volumes of station 3 into DIPO if present. (A. de Falco)
+
 Revision 1.28  2001/05/16 14:57:17  alibrary
 New files for folders and Stack
 
@@ -674,7 +683,7 @@ void AliMUONv1::CreateGeometry()
      Float_t zoffs5 = 0;
      Float_t zoffs6 = 0;
 
-     if (gMC->VolId("DDIP")) {
+     if (gAlice->GetModule("DIPO")) {
        slats5Mother="DDIP";
        slats6Mother="DDIP";
 

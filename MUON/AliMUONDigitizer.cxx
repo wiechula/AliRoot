@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.8.2.1  2002/05/31 09:37:57  hristov
+First set of changes done by Piotr
+
+Revision 1.10  2002/03/13 07:55:04  jchudoba
+Correction of the errourness last commit.
+
 Revision 1.8  2002/02/13 09:03:24  jchudoba
 Remove some deletes from dtor, those objects are deleted earlier in Exec() method (where they are created)
 

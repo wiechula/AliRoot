@@ -15,6 +15,13 @@
 
 /*
 $Log$
+
+Revision 1.8.2.1  2002/05/31 09:37:57  hristov
+First set of changes done by Piotr
+
+Revision 1.9  2002/03/13 07:04:11  jchudoba
+Connect only MUON branches when reading the event to speed up digitisation.
+
 Revision 1.8  2002/02/22 12:14:21  morsch
 Validate pad hit before digitization.
 
@@ -246,10 +253,12 @@ void AliMUONMerger::Digitise()
 	
 	
 	Int_t ntracks = (Int_t) treeH->GetEntries();
+	treeH->SetBranchStatus("*",0); // switch off all branches
+        treeH->SetBranchStatus("MUON*",1); // switch on only MUON
 
 	for (fTrack = 0; fTrack < ntracks; fTrack++) {
 	    gAlice->ResetHits();
-	    treeH->GetEvent(fTrack);
+	    treeH->GetEntry(fTrack,0);
 //
 //   Loop over hits
 	    for(AliMUONHit* mHit = (AliMUONHit*)pMUON->FirstHit(-1); 

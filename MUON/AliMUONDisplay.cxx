@@ -15,6 +15,13 @@
 
 /*
 $Log$
+
+Revision 1.17.4.1  2002/05/31 09:37:57  hristov
+First set of changes done by Piotr
+
+Revision 1.19  2002/03/13 07:55:04  jchudoba
+Correction of the errourness last commit.
+
 Revision 1.17  2001/09/03 14:54:55  gosset
 Corrections for suppressing "segmentation violation" errors
 when using buttons "Chamber +", "Chamber -", "Cathode <>"
