@@ -5,4 +5,4 @@ HDRS:= $(SRCS:.cxx=.h)
 
 DHDR=TOFLinkDef.h
 
-EINCLUDE:=$(ALICE)/geant3/geant321/TGeant3
+EINCLUDE:=$(ALICE)/geant3/TGeant3
