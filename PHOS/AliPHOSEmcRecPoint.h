@@ -26,9 +26,9 @@ class AliPHOSEmcRecPoint : public AliPHOSRecPoint  {
 
 public:
 
-  AliPHOSEmcRecPoint() ;                    
+  AliPHOSEmcRecPoint(){} ;                    
   AliPHOSEmcRecPoint(Float_t W0, Float_t LocMaxCut) ;
-  //  virtual ~AliPHOSEmcRecPoint() ; 
+  virtual ~AliPHOSEmcRecPoint() ; 
   void        AddDigit(AliDigitNew & digit, Float_t Energy) ;  // add a digit to the digits list  
   Int_t       Compare(TObject * obj) ;                      // method for sorting  
   
