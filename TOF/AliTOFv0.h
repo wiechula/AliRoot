@@ -6,7 +6,7 @@
 /* $Id$ */
 
 ///////////////////////////////////////////////////////
-//  Manager and hits classes for set:TOF  version 0  //
+//  Manager and hits classes for set:TOF  version 1  //
 ///////////////////////////////////////////////////////
  
 #include "AliTOF.h"
@@ -16,18 +16,16 @@
 class AliTOFv0 : public AliTOF {
 
 private:
-  Int_t fIdFTOA;
-  Int_t fIdFTOB;
-  Int_t fIdFTOC;
-  Int_t fIdFLTA;
-  Int_t fIdFLTB;
-  Int_t fIdFLTC;
+  Int_t fIdFTO2; // First sensitive volume identifier
+  Int_t fIdFTO3; // Second sensitive volume identifier
+  Int_t fIdFLT1; // Third sensitive volume identifier
+  Int_t fIdFLT2; // Fourth sensitive volume identifier
+  Int_t fIdFLT3; // Fifth sensitive volume identifier
  
 public:
   AliTOFv0();
   AliTOFv0(const char *name, const char *title);
   virtual       ~AliTOFv0() {}
-  virtual void   BuildGeometry();
   virtual void   CreateGeometry();
   virtual void   CreateMaterials();
   virtual void   Init();
