@@ -2,6 +2,9 @@
 * $Id$
 *
 * $Log$
+* Revision 1.2  2002/10/14 14:57:10  hristov
+* Merging the VirtualMC branch to the main development branch (HEAD)
+*
 * Revision 1.1.2.1  2002/07/11 17:15:24  alibrary
 * Adding MICROCERN
 *
