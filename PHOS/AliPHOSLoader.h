@@ -282,6 +282,6 @@ inline const AliPHOSRecParticle* AliPHOSLoader::RecParticle(Int_t index)
 }
 /******************************************************************************/
 inline TObjArray *  AliPHOSLoader::Alarms()
-{ return (TObjArray*)(GetQAFolder()->FindObject(*fDetectorName));}
+{ return (TObjArray*)(GetQAFolder()->FindObject(fDetectorName));}
 
 #endif // AliPHOSGETTER_H

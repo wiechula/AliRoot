@@ -117,7 +117,7 @@ void AliPHOSLoader::CleanFolders()
 const AliPHOS * AliPHOSLoader::PHOS() 
 {
   // returns the PHOS object 
-  AliPHOS * phos = dynamic_cast<AliPHOS*>(GetModulesFolder()->FindObject(*fDetectorName));
+  AliPHOS * phos = dynamic_cast<AliPHOS*>(GetModulesFolder()->FindObject(fDetectorName));
   if ( phos == 0x0) 
     if (fDebug)
       cout << "WARNING: AliPHOSLoader::PHOS -> PHOS module not found in Folders" << endl ; 
@@ -259,7 +259,7 @@ Int_t AliPHOSLoader::ReadHits()
     return 1;
   }
   
-  TBranch * hitsbranch = treeh->GetBranch(*fDetectorName);
+  TBranch * hitsbranch = treeh->GetBranch(fDetectorName);
   if (hitsbranch == 0) 
    {
     Error("ReadTreeH"," Cannot find branch PHOS"); 
@@ -326,7 +326,7 @@ Int_t AliPHOSLoader::ReadSDigits()
      return 0;
    }
   
-  TBranch * branch = treeS->GetBranch(*fDetectorName);
+  TBranch * branch = treeS->GetBranch(fDetectorName);
   if (branch == 0) 
    {//easy, maybe just a new tree
     Error("ReadSDigits"," Cannot find branch PHOS"); 
@@ -366,10 +366,10 @@ Int_t AliPHOSLoader::ReadDigits()
      return 0;
    }
 
-  TBranch * branch = treeD->GetBranch(*fDetectorName);
+  TBranch * branch = treeD->GetBranch(fDetectorName);
   if (branch == 0) 
    {//easy, maybe just a new tree
-    Error("ReadDigits"," Cannot find branch ",fDetectorName->Data()); 
+    Error("ReadDigits"," Cannot find branch ",fDetectorName.Data()); 
     return 0;
    }
   
@@ -502,10 +502,10 @@ Int_t AliPHOSLoader::ReadTracks()
      return 0;
    }
   
-  TBranch * branch = treeT->GetBranch(*fDetectorName);
+  TBranch * branch = treeT->GetBranch(fDetectorName);
   if (branch == 0) 
    {//easy, maybe just a new tree
-    Error("ReadTracks"," Cannot find branch ",fDetectorName->Data()); 
+    Error("ReadTracks"," Cannot find branch ",fDetectorName.Data()); 
     return 0;
   }
 
