@@ -18,12 +18,12 @@ class AliITSLoader: public AliLoader
 
     virtual Int_t  GetEvent();//changes to root directory
     virtual void   CleanFolders();
-    const TString& GetRawClustersContainerName() const{ return *fRawClustersContainerName;}
-    virtual void   CleanRawClusters() {Clean(*fRawClustersContainerName);}
+    const TString& GetRawClustersContainerName() const{ return fRawClustersContainerName;}
+    virtual void   CleanRawClusters() {Clean(fRawClustersContainerName);}
     Int_t          LoadRawClusters(Option_t* opt="");
     virtual void   MakeTree(Option_t* opt);
     virtual void   SetCompressionLevel(Int_t cl);
-    void           SetRawClustersFileName(TString& fname){*fRawClustersFileName = fname;}
+    void           SetRawClustersFileName(TString& fname){fRawClustersFileName = fname;}
     virtual Int_t  SetEvent();
     TTree*         TreeC(); // returns a pointer to the tree of  RawClusters
     void           UnloadRawClusters(){CleanRawClusters(); CloseRawClustersFile();}
@@ -39,8 +39,8 @@ class AliITSLoader: public AliLoader
     Int_t          PostRawClusters();
 
     // DATA
-    TString* fRawClustersContainerName; //name of container (TREE) for raw clusters -  TreeC
-    TString* fRawClustersFileName; //name of file with raw clusters
+    TString fRawClustersContainerName; //name of container (TREE) for raw clusters -  TreeC
+    TString fRawClustersFileName; //name of file with raw clusters
     TFile* fRawClustersFile; //pointer to file with raw clusters
     TDirectory* fRawClustersDir; //! pointer to Dir with current event raw data clusters
     static const TString fgkDefaultRawClustersContainerName;

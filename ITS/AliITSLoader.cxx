@@ -9,16 +9,16 @@ const TString AliITSLoader::fgkDefaultRawClustersContainerName = "TreeC";
 ClassImp(AliITSLoader)
 
 AliITSLoader::AliITSLoader() {
-  fRawClustersContainerName = 0x0;
-  fRawClustersFileName = 0x0;
+  fRawClustersContainerName = "";
+  fRawClustersFileName = "";
   fRawClustersFile = 0x0;
   fRawClustersDir = 0x0;
 }
 /*****************************************************************************/ 
 AliITSLoader::AliITSLoader(const Char_t *name,const Char_t *topfoldername)
   :AliLoader(name,topfoldername) {
-  fRawClustersContainerName = new TString(fgkDefaultRawClustersContainerName);
-  fRawClustersFileName = new TString(*fDetectorName + ".RawCl.root");
+  fRawClustersContainerName = fgkDefaultRawClustersContainerName;
+  fRawClustersFileName = fDetectorName + ".RawCl.root";
   fRawClustersFile = 0x0;
   fRawClustersDir = 0x0;
   cout<<"AliITSLoader::AliITSLoader: name = "<<name<<"; topfolder = "<<topfoldername<<endl;
@@ -27,8 +27,8 @@ AliITSLoader::AliITSLoader(const Char_t *name,const Char_t *topfoldername)
 
 AliITSLoader::AliITSLoader(const Char_t *name,TFolder *topfolder)
   :AliLoader(name,topfolder) {
-  fRawClustersContainerName = new TString(fgkDefaultRawClustersContainerName);
-  fRawClustersFileName = new TString(*fDetectorName + ".RawCl.root");
+  fRawClustersContainerName = fgkDefaultRawClustersContainerName;
+  fRawClustersFileName = fDetectorName + ".RawCl.root";
   fRawClustersFile = 0x0;
   fRawClustersDir = 0x0;
 }
@@ -40,8 +40,7 @@ AliITSLoader::~AliITSLoader() {
     delete fRawClustersFile;
     fRawClustersFile = 0;
   }
-  if(fRawClustersFileName) delete fRawClustersFileName;
-  if(fRawClustersContainerName) delete fRawClustersContainerName;
+
 } 
 
 /*****************************************************************************/ 
@@ -125,7 +124,7 @@ void AliITSLoader::MakeRawClustersContainer() {
 
   //this virtual method creates the tree for hits in the file
   cout<<"AliITSLoader::MakeRawClustersContainer: Making raw clusters container\n";
-  TTree* treeC = new TTree(*fRawClustersContainerName,"RawClusters Container"); //make a tree
+  TTree* treeC = new TTree(fRawClustersContainerName,"RawClusters Container"); //make a tree
   if (treeC == 0x0) {
     Error("MakeRawClustersContainer","Can not create RawClustersContainer for %s",GetName());
     return;
@@ -142,7 +141,7 @@ Int_t AliITSLoader::OpenRawClustersFile(Option_t* opt) {
   //If dir does not exists try to create it
   //opt is passed to TFile::Open
 
-  return OpenDataFile(*fRawClustersFileName,fRawClustersFile,fRawClustersDir,opt);
+  return OpenDataFile(fRawClustersFileName,fRawClustersFile,fRawClustersDir,opt);
 }
 /*****************************************************************************/ 
 Int_t AliITSLoader::PostRawClusters() {
@@ -159,7 +158,7 @@ Int_t AliITSLoader::PostRawClusters() {
     TObject* obj = GetDetectorDataFolder()->FindObject(GetRawClustersContainerName());
     if (obj){
       Warning("PostRawClusters","Object named %s already exitsts in %s data folder. Removing it",
-              GetRawClustersContainerName().Data(), fDetectorName->Data());
+              GetRawClustersContainerName().Data(), fDetectorName.Data());
       GetDetectorDataFolder()->Remove(obj);
     }
      
@@ -194,7 +193,7 @@ Int_t AliITSLoader::SetEvent() {
   if(fRawClustersFile) {
     fRawClustersDir = ChangeDir(fRawClustersFile,evno);
     if (fRawClustersDir == 0x0) {
-      Error("SetEvent","Can not chage directory to file %s",fRawClustersFile->GetName());
+      Error("SetEvent","Can not change directory to file %s",fRawClustersFile->GetName());
       return 1;
     }
   }
@@ -212,7 +211,7 @@ Int_t AliITSLoader::WriteRawClusters(Option_t *opt) {
   //try to get sdigits from folder  
   TTree *treec = TreeC();
   if(treec == 0x0) {//did not get, nothing to write
-    Warning("WriteRawClusters","RawClusters object named %s not found in folder %s.\nNothing to write. Returning", fRawClustersContainerName->Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
+    Warning("WriteRawClusters","RawClusters object named %s not found in folder %s.\nNothing to write. Returning", fRawClustersContainerName.Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
     return 0;
   }
   
@@ -234,7 +233,7 @@ Int_t AliITSLoader::WriteRawClusters(Option_t *opt) {
   fRawClustersDir->cd(); //set the proper directory active
 
   //see if RawClusters container already exists in this (root) directory
-  TObject* tree = fRawClustersDir->Get(*fRawClustersContainerName);
+  TObject* tree = fRawClustersDir->Get(fRawClustersContainerName);
   if (tree) { //if they exist, see if option OVERWRITE is used
     const char *oOverWrite = strstr(opt,"OVERWRITE");
       if(!oOverWrite) { //if it is not used -  give an error message and return an error code
