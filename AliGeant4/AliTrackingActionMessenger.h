@@ -1,8 +1,12 @@
 // $Id$
 // Category: event
 //
+// Author: I. Hrivnacova
+//
+// Class AliTrackingActionMessenger
+// --------------------------------
 // Messenger class that defines commands for AliTrackingAction.
-
+ 
 #ifndef ALI_TRACKING_ACTION_MESSENGER_H
 #define ALI_TRACKING_ACTION_MESSENGER_H 
 
@@ -39,6 +43,8 @@ class AliTrackingActionMessenger: public G4UImessenger
     AliTrackingAction*     fTrackingAction;    //associated class 
     G4UIdirectory*         fTrackingDirectory; //command directory
     G4UIcmdWithAnInteger*  fVerboseCmd;        //command: verbose
+    G4UIcmdWithAnInteger*  fNewVerboseCmd;     //command: newVerbose
+    G4UIcmdWithAnInteger*  fNewVerboseTrackCmd;//command: newVerboseTrack
 };
 
 #endif //ALI_TRACKING_ACTION_MESSENGER_H

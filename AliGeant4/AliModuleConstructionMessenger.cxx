@@ -1,6 +1,10 @@
 // $Id$
 // Category: geometry
 //
+// Author: I. Hrivnacova
+//
+// Class AliModuleConstructionMessenger
+// ------------------------------------
 // See the class description in the header file.
 
 #include "AliModuleConstructionMessenger.h"
@@ -10,13 +14,16 @@
 #include "AliColourStore.h"
 #endif
 
+#include "TG4GeometryServices.h"
+
 #include <G4UIdirectory.hh>
 #include <G4UIcmdWithABool.hh>
 #include <G4UIcmdWithAString.hh>
 #include <G4UIcmdWithoutParameter.hh>
 
+//_____________________________________________________________________________
 AliModuleConstructionMessenger::AliModuleConstructionMessenger(
-   AliModuleConstruction* moduleConstruction, G4String moduleName)
+   AliModuleConstruction* moduleConstruction, const G4String& moduleName)
  : fModuleConstruction(moduleConstruction)
 {
 //
@@ -128,10 +135,12 @@ AliModuleConstructionMessenger::AliModuleConstructionMessenger(
 #endif //ALICE_VISUALIZE
 }
 
+//_____________________________________________________________________________
 AliModuleConstructionMessenger::AliModuleConstructionMessenger() {
 //
 }
 
+//_____________________________________________________________________________
 AliModuleConstructionMessenger::AliModuleConstructionMessenger(
                                 const AliModuleConstructionMessenger& right)
 {
@@ -140,6 +149,7 @@ AliModuleConstructionMessenger::AliModuleConstructionMessenger(
     "AliModuleConstructionMessenger is protected from copying.");
 }
 
+//_____________________________________________________________________________
 AliModuleConstructionMessenger::~AliModuleConstructionMessenger()
 {
 //
@@ -162,6 +172,7 @@ AliModuleConstructionMessenger::~AliModuleConstructionMessenger()
 
 // operators
 
+//_____________________________________________________________________________
 AliModuleConstructionMessenger& 
 AliModuleConstructionMessenger::operator=(
                                 const AliModuleConstructionMessenger& right)
@@ -177,6 +188,7 @@ AliModuleConstructionMessenger::operator=(
           
 // public methods
   
+//_____________________________________________________________________________
 void AliModuleConstructionMessenger::SetNewValue(G4UIcommand* command,
                                                  G4String newValues)
 {
@@ -200,7 +212,8 @@ void AliModuleConstructionMessenger::SetNewValue(G4UIcommand* command,
   }
 #ifdef ALICE_VISUALIZE
   if (command == fSetCurrentLVCmd) {
-    fCurrentVolume = fModuleConstruction->FindLogicalVolume(newValues);
+    fCurrentVolume 
+      = TG4GeometryServices::Instance()->FindLogicalVolume(newValues);
   }    
   else if (command == fSetDetVisibilityCmd) {
     fModuleConstruction

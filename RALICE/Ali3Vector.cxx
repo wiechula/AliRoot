@@ -13,12 +13,7 @@
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
 
-/*
-$Log$
-Revision 1.2  1999/09/29 09:24:28  fca
-Introduction of the Copyright and cvs Log
-
-*/
+// $Id$
 
 ///////////////////////////////////////////////////////////////////////////
 // Class Ali3Vector
@@ -78,7 +73,7 @@ Introduction of the Copyright and cvs Log
 // c=a*5;
 //
 //--- Author: Nick van Eijndhoven 30-mar-1999 UU-SAP Utrecht
-//- Modified: NvE 25-oct-1999 UU-SAP Utrecht
+//- Modified: NvE $Date$ UU-SAP Utrecht
 ///////////////////////////////////////////////////////////////////////////
 
 #include "Ali3Vector.h"
@@ -299,8 +294,11 @@ void Ali3Vector::GetErrors(Double_t* e,TString f)
  if (f == "sph") frame=2;
  if (f == "cyl") frame=3;
 
+ Double_t pi=acos(-1.);
+
  Double_t dr2,dtheta2,dphi2,rho,drho2;
  Double_t v[3]; 
+ Double_t rxy2; // Shorthand for (x*x+y*y)
 
  switch (frame)
  {
@@ -312,6 +310,8 @@ void Ali3Vector::GetErrors(Double_t* e,TString f)
 
   case 2: // Spherical coordinates
    GetVector(v,"car");
+   rxy2=pow(v[0],2)+pow(v[1],2);
+   if (sqrt(rxy2)<(fV*1e-10)) rxy2=0;
    if (fV) 
    {
     dr2=(pow((v[0]*fDx),2)+pow((v[1]*fDy),2)+pow((v[2]*fDz),2))/(fV*fV);
@@ -320,19 +320,22 @@ void Ali3Vector::GetErrors(Double_t* e,TString f)
    {
     dr2=0;
    }
-   if (v[2]-fV)
+   if (fV)
    {
-    dtheta2=(v[2]*v[2]/(pow(fV,4)-pow(v[2],2)*pow(fV,2)))*dr2
-            +pow(fDz,2)/(pow(fV,2)-pow(v[2],2));
+    dtheta2=rxy2*pow(fDz,2)/pow(fV,4);
+    if (v[2] && rxy2)
+    {
+     dtheta2+=rxy2*pow(v[2],2)*(pow((v[0]*fDx),2)+pow((v[1]*fDy),2)) /
+              pow(((pow(v[2],2)*rxy2)+pow(rxy2,2)),2);
+    }
    }
    else
    {
-//    dr2=fDz*fDz;
     dtheta2=0;
    }
-   if (v[0] || v[1])
+   if (rxy2)
    {
-    dphi2=(pow((v[1]*fDx),2)+pow((v[0]*fDy),2))/(pow(v[0],2)+pow(v[1],2));
+    dphi2=(pow((v[1]*fDx),2)+pow((v[0]*fDy),2))/(pow(rxy2,2));
    }
    else
    {
@@ -340,12 +343,15 @@ void Ali3Vector::GetErrors(Double_t* e,TString f)
    }
    e[0]=sqrt(dr2);
    e[1]=sqrt(dtheta2);
+   if (e[1]>pi) e[1]=pi;
    e[2]=sqrt(dphi2);
+   if (e[2]>(2.*pi)) e[2]=2.*pi;
    break;
 
   case 3: // Cylindrical coordinates
    GetVector(v,"car");
-   rho=fV*sin(fTheta);
+   rho=fabs(fV*sin(fTheta));
+   if (rho<(fV*1e-10)) rho=0;
    if (rho) 
    {
     drho2=(pow((v[0]*fDx),2)+pow((v[1]*fDy),2))/(rho*rho);
@@ -354,9 +360,9 @@ void Ali3Vector::GetErrors(Double_t* e,TString f)
    {
     drho2=0;
    }
-   if (v[0] || v[1])
+   if (rho)
    {
-    dphi2=(pow((v[1]*fDx),2)+pow((v[0]*fDy),2))/(pow(v[0],2)+pow(v[1],2));
+    dphi2=(pow((v[1]*fDx),2)+pow((v[0]*fDy),2))/(pow(rho,4));
    }
    else
    {
@@ -364,6 +370,7 @@ void Ali3Vector::GetErrors(Double_t* e,TString f)
    }
    e[0]=sqrt(drho2);
    e[1]=sqrt(dphi2);
+   if (e[1]>(2.*pi)) e[1]=2.*pi;
    e[2]=fDz;
    break;
 
@@ -436,11 +443,13 @@ Double_t Ali3Vector::GetPseudoRapidity()
 // Provide the pseudo-rapidity w.r.t. the z-axis.
 // In other words : eta=-log(tan(theta/2))
 // The error on the scalar result (pseudo-rap.) is updated accordingly
+ Double_t pi=acos(-1.);
  Double_t v[3];
  GetVector(v,"sph");
  Double_t thetahalf=v[1]/2.;
- Double_t arg=tan(thetahalf);
- Double_t eta=0;
+ Double_t arg=0;
+ if (v[1]<pi) arg=tan(thetahalf);
+ Double_t eta=9999;
  if (arg>0) eta=-log(arg);
  Double_t e[3];
  GetErrors(e,"sph");
@@ -723,5 +732,62 @@ Ali3Vector& Ali3Vector::operator/=(Double_t s)
   
   return *this;
  }
+}
+///////////////////////////////////////////////////////////////////////////
+Ali3Vector Ali3Vector::GetVecTrans()
+{
+// Provide the transverse vector w.r.t. z-axis.
+// Error propagation is performed automatically
+ Double_t pi=acos(-1.);
+ Double_t a[3],ea[3];
+
+ GetVector(a,"sph");
+ GetErrors(ea,"sph");
+
+ Double_t vt,dvt2;
+ vt=a[0]*sin(a[1]);
+ dvt2=pow((sin(a[1])*ea[0]),2)+pow((a[0]*cos(a[1])*ea[1]),2);
+
+ a[0]=fabs(vt);
+ a[1]=pi/2.;
+
+ ea[0]=sqrt(dvt2);
+ ea[1]=0;
+
+ Ali3Vector v;
+ v.SetVector(a,"sph");
+ v.SetErrors(ea,"sph");
+  
+ return v;
+}
+///////////////////////////////////////////////////////////////////////////
+Ali3Vector Ali3Vector::GetVecLong()
+{
+// Provide the longitudinal vector w.r.t. z-axis.
+// Error propagation is performed automatically
+ Double_t pi=acos(-1.);
+ Double_t a[3],ea[3];
+
+ GetVector(a,"sph");
+ GetErrors(ea,"sph");
+
+ Double_t vl,dvl2;
+ vl=a[0]*cos(a[1]);
+ dvl2=pow((cos(a[1])*ea[0]),2)+pow((a[0]*sin(a[1])*ea[1]),2);
+
+ a[0]=fabs(vl);
+ a[1]=0;
+ if (vl<0) a[1]=pi;
+ a[2]=0;
+
+ ea[0]=sqrt(dvl2);
+ ea[1]=0;
+ ea[2]=0;
+
+ Ali3Vector v;
+ v.SetVector(a,"sph");
+ v.SetErrors(ea,"sph");
+  
+ return v;
 }
 ///////////////////////////////////////////////////////////////////////////

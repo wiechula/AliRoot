@@ -1,6 +1,11 @@
 // $Id$
 // Category: visualization
 //
+// Author: I. Hrivnacova, A. Gheata
+//
+// Class TG4VisManager
+// -------------------
+// See the class description in the header file.
 // According to visualization/management/include/MyVisManager.*
 // John Allison 24th January 1998.
 // I. Hrivnacova 12.5.98
@@ -94,24 +99,28 @@
 #include <G4VRML2File.hh>
 #endif
 
+//_____________________________________________________________________________
 TG4VisManager::TG4VisManager(G4int verboseLevel) {
 //  
   fVerbose = verboseLevel; 
   fColourFlag = true;
 }
 
+//_____________________________________________________________________________
 TG4VisManager::TG4VisManager(const TG4VisManager& right) {
 // 
   TG4Globals::Exception(
     "Attempt to copy TG4VisManager singleton.");
 }
 
+//_____________________________________________________________________________
 TG4VisManager::~TG4VisManager() {
 //
 }  
 
 // operators
 
+//_____________________________________________________________________________
 TG4VisManager& TG4VisManager::operator=(const TG4VisManager& right) 
 {
   // check assignement to self
@@ -125,6 +134,7 @@ TG4VisManager& TG4VisManager::operator=(const TG4VisManager& right)
           
 // private methods
 
+//_____________________________________________________________________________
 void TG4VisManager::RegisterGraphicsSystems() 
 {
 // Registers the graphics systems.
@@ -195,6 +205,7 @@ void TG4VisManager::RegisterGraphicsSystems()
 //---------------------------------------------------------------
 
 
+//_____________________________________________________________________________
 G4RWTPtrOrderedVector<G4LogicalVolume> TG4VisManager::GetLVList(G4String name)
 {
 // Get function returning the list of logical volumes
@@ -208,9 +219,9 @@ G4RWTPtrOrderedVector<G4LogicalVolume> TG4VisManager::GetLVList(G4String name)
  G4LogicalVolume* pLV = 0; 
  if (pLVStore)
  {
-   for (G4int i=0; i<pLVStore->entries(); i++)
+   for (G4int i=0; i<pLVStore->size(); i++)
    {
-     pLV = pLVStore->at(i);  
+     pLV = (*pLVStore)[i];  
      if (CaseInsensitiveEqual(name,pLV->GetName())) 
      {
        if (!lvList.contains(pLV)) lvList.append(pLV);
@@ -222,9 +233,9 @@ G4RWTPtrOrderedVector<G4LogicalVolume> TG4VisManager::GetLVList(G4String name)
  G4VPhysicalVolume* pPV = 0;
  if (pPVStore) 
  {
-   for (G4int i=0; i<pPVStore->entries(); i++)
+   for (G4int i=0; i<pPVStore->size(); i++)
    {
-     pPV = pPVStore->at(i); 
+     pPV = (*pPVStore)[i]; 
      if (CaseInsensitiveEqual(name,pPV->GetName())) 
      {
        pLV = pPV->GetLogicalVolume();
@@ -236,6 +247,7 @@ G4RWTPtrOrderedVector<G4LogicalVolume> TG4VisManager::GetLVList(G4String name)
 }
 
 
+//_____________________________________________________________________________
 G4RWTPtrOrderedVector<G4VPhysicalVolume> TG4VisManager::GetPVList(G4String name)
 {
 // Get function returning the physical volume pointer for NAME
@@ -249,9 +261,9 @@ G4RWTPtrOrderedVector<G4VPhysicalVolume> TG4VisManager::GetPVList(G4String name)
     return pvList;
   }
   G4VPhysicalVolume* pPV = 0;
-  for (G4int i=0; i<pPVStore->entries(); i++)
+  for (G4int i=0; i<pPVStore->size(); i++)
   {
-    pPV = pPVStore->at(i);
+    pPV = (*pPVStore)[i];
     if (CaseInsensitiveEqual(name,pPV->GetName()))
     {
       if (!pvList.contains(pPV)) pvList.append(pPV);
@@ -261,6 +273,7 @@ G4RWTPtrOrderedVector<G4VPhysicalVolume> TG4VisManager::GetPVList(G4String name)
 }
 
 
+//_____________________________________________________________________________
 G4bool TG4VisManager::CaseInsensitiveEqual(const G4String string1,
 					   const G4String string2)
 {
@@ -284,6 +297,7 @@ G4bool TG4VisManager::CaseInsensitiveEqual(const G4String string1,
 }
  
 
+//_____________________________________________________________________________
 void TG4VisManager::SetAtt4Daughters(G4LogicalVolume* const lv, 
 				     const TG4G3Attribute att, const G4int val)
 {
@@ -311,6 +325,7 @@ void TG4VisManager::SetAtt4Daughters(G4LogicalVolume* const lv,
 }
 
 
+//_____________________________________________________________________________
 G4bool TG4VisManager::IsSharedVisAttributes(const G4LogicalVolume* pLV)
 {
 // Function seeking if the volume's visible attributes are shared with
@@ -321,9 +336,9 @@ G4bool TG4VisManager::IsSharedVisAttributes(const G4LogicalVolume* pLV)
   G4LogicalVolume* pLVCurrent = 0;
   const G4VisAttributes* pVisAtt = pLV->GetVisAttributes();
   if (!pVisAtt) return false;
-  for (G4int i=0; i<pLVStore->entries(); i++)
+  for (G4int i=0; i<pLVStore->size(); i++)
   {
-    pLVCurrent = pLVStore->at(i);
+    pLVCurrent = (*pLVStore)[i];
     if (pLVCurrent != pLV)
     {
       if (pLVCurrent->GetVisAttributes() == pVisAtt) 
@@ -336,6 +351,7 @@ G4bool TG4VisManager::IsSharedVisAttributes(const G4LogicalVolume* pLV)
 }
 
 
+//_____________________________________________________________________________
 void TG4VisManager::SetG4Attribute(G4LogicalVolume* const lv,
 				   const TG4G3Attribute att, const G4int val)
 {
@@ -543,6 +559,8 @@ void TG4VisManager::SetG4Attribute(G4LogicalVolume* const lv,
 // functions for drawing
 //-----------------------------------------------------------------
 
+
+//_____________________________________________________________________________
 void TG4VisManager::DrawOneSpec(const char* name)
 {
 // Function called when one double-clicks on a volume name
@@ -553,6 +571,7 @@ void TG4VisManager::DrawOneSpec(const char* name)
 }
 
 
+//_____________________________________________________________________________
 void TG4VisManager::SetColors()
 {
 // Function for setting default volume colours
@@ -566,9 +585,9 @@ void TG4VisManager::SetColors()
     return;
   }
   // parse the LV tree and set colours according to material density
-  for (G4int i=0; i<pLVStore->entries(); i++)
+  for (G4int i=0; i<pLVStore->size(); i++)
   {
-    pLV = pLVStore->at(i);
+    pLV = (*pLVStore)[i];
 //    G4cout << "VOLUME : " << pLV->GetName() << G4endl;
     const G4Material* pMaterial = pLV->GetMaterial();
     const G4State kState = pMaterial->GetState();
@@ -632,6 +651,7 @@ void TG4VisManager::SetColors()
 } 
   
 
+//_____________________________________________________________________________
 void TG4VisManager::Gsatt(const char* name, const char* att, Int_t val)
 {
 // Geant3 description :
@@ -704,9 +724,9 @@ void TG4VisManager::Gsatt(const char* name, const char* att, Int_t val)
  if (doForAll)
  {
      G4LogicalVolumeStore* pLVStore = G4LogicalVolumeStore::GetInstance();
-     for (G4int i=0; i<pLVStore->entries(); i++)
+     for (G4int i=0; i<pLVStore->size(); i++)
      {
-         lv = pLVStore->at(i);
+         lv = (*pLVStore)[i];
 	 SetG4Attribute(lv,attribute,ival);
      }
      return;
@@ -749,6 +769,7 @@ void TG4VisManager::Gsatt(const char* name, const char* att, Int_t val)
 } 
 
 
+//_____________________________________________________________________________
 void TG4VisManager::Gdraw(const char *name,Float_t theta, Float_t phi, Float_t psi,
 		    Float_t u0,Float_t v0,Float_t ul,Float_t vl)
 { 

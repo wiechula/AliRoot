@@ -15,6 +15,30 @@
 
 /*
 $Log$
+Revision 1.43  2001/07/28 12:02:54  hristov
+Branch split level set to 99
+
+Revision 1.42  2001/07/28 11:38:52  hristov
+Loop variable declared once
+
+Revision 1.41  2001/07/28 10:53:50  hristov
+Digitisation done according to the general scheme (M.Ivanov)
+
+Revision 1.40  2001/07/27 13:03:14  hristov
+Default Branch split level set to 99
+
+Revision 1.39  2001/07/26 09:09:34  kowal2
+Hits2Reco method added
+
+Revision 1.38  2001/07/20 14:32:43  kowal2
+Processing of many events possible now
+
+Revision 1.37  2001/06/12 07:17:18  kowal2
+Hits2SDigits method implemented (summable digits)
+
+Revision 1.36  2001/05/16 14:57:25  alibrary
+New files for folders and Stack
+
 Revision 1.35  2001/05/08 16:02:22  kowal2
 Updated material specifications
 
@@ -131,7 +155,9 @@ Introduction of the Copyright and cvs Log
 #include <TObjectTable.h>
 #include "TParticle.h"
 #include "AliTPC.h"
-#include <TFile.h>       
+#include <TFile.h>  
+#include <TROOT.h>
+#include <TSystem.h>     
 #include "AliRun.h"
 #include <iostream.h>
 #include <stdlib.h>
@@ -180,7 +206,7 @@ AliTPC::AliTPC()
   //MI changes
   fDigitsArray = 0;
   fClustersArray = 0;
-  fTPCParam=0;
+  fDefaults = 0;
   fTrackHits = 0;  
   fHitType = 2;  
   fTPCParam = 0; 
@@ -201,6 +227,7 @@ AliTPC::AliTPC(const char *name, const char *title)
   //MI change  
   fDigitsArray = 0;
   fClustersArray= 0;
+  fDefaults = 0;
   //
   fTrackHits = new AliTPCTrackHits;  //MI - 13.09.2000
   fTrackHits->SetHitPrecision(0.002);
@@ -222,8 +249,9 @@ AliTPC::AliTPC(const char *name, const char *title)
   //  Set TPC parameters
   //
 
-  if (!strcmp(title,"Default")) {  
-     fTPCParam = new AliTPCParamSR;
+
+  if (!strcmp(title,"Default")) {       
+    fTPCParam = new AliTPCParamSR;
   } else {
     cerr<<"AliTPC warning: in Config.C you must set non-default parameters\n";
     fTPCParam=0;
@@ -773,18 +801,18 @@ void AliTPC::CreateMaterials()
 }
 
 
-void AliTPC::Digits2Clusters(TFile *of)
+void AliTPC::Digits2Clusters(TFile *of, Int_t eventnumber)
 {
   //-----------------------------------------------------------------
   // This is a simple cluster finder.
   //-----------------------------------------------------------------
-  AliTPCclusterer::Digits2Clusters(fTPCParam,of);
+  AliTPCclusterer::Digits2Clusters(fTPCParam,of,eventnumber);
 }
 
 extern Double_t SigmaY2(Double_t, Double_t, Double_t);
 extern Double_t SigmaZ2(Double_t, Double_t);
 //_____________________________________________________________________________
-void AliTPC::Hits2Clusters(TFile *of)
+void AliTPC::Hits2Clusters(TFile *of, Int_t eventn)
 {
   //--------------------------------------------------------
   // TPC simple cluster generator from hits
@@ -823,10 +851,7 @@ void AliTPC::Hits2Clusters(TFile *of)
      return;
   }
 
-   if(fTPCParam == 0){
-     printf("AliTPCParam MUST be created firstly\n");
-     return;
-   }
+  //if(fDefaults == 0) SetDefaults();
 
   Float_t sigmaRphi,sigmaZ,clRphi,clZ;
   //
@@ -847,6 +872,10 @@ void AliTPC::Hits2Clusters(TFile *of)
 
   //Switch to the output file
   of->cd();
+
+  char   cname[100];
+
+  sprintf(cname,"TreeC_TPC_%d",eventn);
 
   fTPCParam->Write(fTPCParam->GetTitle());
   AliTPCClustersArray carray;
@@ -977,6 +1006,7 @@ void AliTPC::Hits2Clusters(TFile *of)
 
   cerr<<"Number of made clusters : "<<nclusters<<"                        \n";
 
+  carray.GetTree()->SetName(cname);
   carray.GetTree()->Write();
 
   savedir->cd(); //switch back to the input file
@@ -1139,82 +1169,274 @@ void AliTPC::Hits2ExactClustersSector(Int_t isec)
   xxxx->Delete();
  
 }
-//___________________________________________
-void AliTPC::SDigits2Digits()
+
+
+
+//__
+void AliTPC::SDigits2Digits2(Int_t eventnumber)  
 {
+  //create digits from summable digits
+
+  char  sname[100];
+  char  dname[100];
+  sprintf(sname,"TreeS_%s_%d",fTPCParam->GetTitle(),eventnumber);
+  sprintf(dname,"TreeD_%s_%d",fTPCParam->GetTitle(),eventnumber);
+
+  //conect tree with sSDigits
+  TTree *t = (TTree *)gDirectory->Get(sname); 
+  AliSimDigits digarr, *dummy=&digarr;
+  t->GetBranch("Segment")->SetAddress(&dummy);
+  Stat_t nentries = t->GetEntries();
+
+  //make tree with digits   
+  AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
+  arr->SetClass("AliSimDigits");
+  arr->Setup(fTPCParam);
+  arr->MakeTree(fDigitsFile);
+  
+  AliTPCParam * par =fTPCParam;
+  //Loop over segments of the TPC
+  for (Int_t n=0; n<nentries; n++) {
+    t->GetEvent(n);
+    Int_t sec, row;
+    if (!par->AdjustSectorRow(digarr.GetID(),sec,row)) {
+      cerr<<"AliTPC warning: invalid segment ID ! "<<digarr.GetID()<<endl;
+      continue;
+    }
+    AliSimDigits * digrow =(AliSimDigits*) arr->CreateRow(sec,row);
+    Int_t nrows = digrow->GetNRows();
+    Int_t ncols = digrow->GetNCols();
+
+    digrow->ExpandBuffer();
+    digarr.ExpandBuffer();
+    digrow->ExpandTrackBuffer();
+    digarr.ExpandTrackBuffer();
+
+    for (row=0;row<nrows; row++)
+      for (Int_t col=0;col<ncols; col++){
+	Float_t  q  = digarr.GetDigitFast(row,col);
+	q/=16;  //konversion faktor
+	//add noise
+	q = gRandom->Gaus(q,fTPCParam->GetNoise()*fTPCParam->GetNoiseNormFac()); 
+	if(q > fTPCParam->GetADCSat()) q = fTPCParam->GetADCSat();
+	if (q>3){
+	  digrow->SetDigitFast((Short_t)q,row,col);  
+	  for (Int_t tr=0;tr<3;tr++)	
+	    ((AliSimDigits*)digrow)->SetTrackIDFast(digarr.GetTrackIDFast(row,col,tr),row,col,tr);
+	}
+      }
+      
+
+ 
+    
+    arr->StoreRow(sec,row);
+    //    printf("*** Sector, row, compressed digits %d %d %d ***\n",sec,row,ndig); 
+    arr->ClearRow(sec,row);  
+
+   
+  }
+
+
+  cerr<<"Digitizing TPC...\n";   
+
+  //Hits2Digits(eventnumber);
+   
+    
+  //write results
+
+  //  char treeName[100];
+
+  //  sprintf(treeName,"TreeD_%s_%d",fTPCParam->GetTitle(),eventnumber);
+  
+  arr->GetTree()->SetName(dname);  
+  arr->GetTree()->Write();  
+  delete arr;
+}
+
+
+/*_________________________________________
+void AliTPC::SDigits2Digits(Int_t eventnumber)
+{
+
+
+  cerr<<"Digitizing TPC...\n";
+
+  Hits2Digits(eventnumber);
+   
+    
+  //write results
+
+  //  char treeName[100];
+
+  //  sprintf(treeName,"TreeD_%s_%d",fTPCParam->GetTitle(),eventnumber);
+  
+  //  GetDigitsArray()->GetTree()->Write(treeName);  
+}
+*/
+//__________________________________________________________________
+void AliTPC::SetDefaults(){
+
+   
+   cerr<<"Setting default parameters...\n";
+
+  // Set response functions
+
   AliTPCParamSR *param=(AliTPCParamSR*)gDirectory->Get("75x40_100x60");
   AliTPCPRF2D    * prfinner   = new AliTPCPRF2D;
   AliTPCPRF2D    * prfouter   = new AliTPCPRF2D;
   AliTPCRF1D     * rf    = new AliTPCRF1D(kTRUE);
-
-  TDirectory *cwd = gDirectory;
   rf->SetGauss(param->GetZSigma(),param->GetZWidth(),1.);
   rf->SetOffset(3*param->GetZSigma());
   rf->Update();
+  
+  TDirectory *savedir=gDirectory;
   TFile *f=TFile::Open("$ALICE_ROOT/TPC/AliTPCprf2d.root");
   if (!f->IsOpen()) { 
-     cerr<<"Can't open $ALICE_ROOT/TPC/AliTPCprf2d.root !\n";
+    cerr<<"Can't open $ALICE_ROOT/TPC/AliTPCprf2d.root !\n" ;
      exit(3);
   }
   prfinner->Read("prf_07504_Gati_056068_d02");
   prfouter->Read("prf_10006_Gati_047051_d03");
   f->Close();
-  cwd->cd();
-  
+  savedir->cd();
+
   param->SetInnerPRF(prfinner);
   param->SetOuterPRF(prfouter); 
   param->SetTimeRF(rf);
 
+  // set fTPCParam
+
   SetParam(param);
+
+
+  fDefaults = 1;
+
+}
+//__________________________________________________________________  
+void AliTPC::Hits2Digits(Int_t eventnumber)  
+{ 
+ //----------------------------------------------------
+ // Loop over all sectors for a single event
+ //----------------------------------------------------
+
+
+  if(fDefaults == 0) SetDefaults();  // check if the parameters are set
+
+  //setup TPCDigitsArray 
+
+  if(GetDigitsArray()) delete GetDigitsArray();
+
+  AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
+  arr->SetClass("AliSimDigits");
+  arr->Setup(fTPCParam);
+  arr->MakeTree(fDigitsFile);
+  SetDigitsArray(arr);
+
+  fDigitsSwitch=0; // standard digits
 
   cerr<<"Digitizing TPC...\n";
 
-  //setup TPCDigitsArray 
-  AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
-  arr->SetClass("AliSimDigits");
-  arr->Setup(param);
-  SetParam(param);
- 
-  arr->MakeTree(fDigitsFile);
+ for(Int_t isec=0;isec<fTPCParam->GetNSector();isec++) Hits2DigitsSector(isec);
 
-  SetDigitsArray(arr);
-
-  Hits2Digits();
-   
-  // Hits2DigitsSector(1);         
-  // Hits2DigitsSector(2);             
-  // Hits2DigitsSector(3);             
-  // Hits2DigitsSector(1+18);             
-  // Hits2DigitsSector(2+18);             
-  // Hits2DigitsSector(3+18);             
-
-  // Hits2DigitsSector(36+1);             
-  // Hits2DigitsSector(36+2);             
-  // Hits2DigitsSector(36+3);             
-  // Hits2DigitsSector(36+1+18);             
-  // Hits2DigitsSector(36+2+18);             
-  // Hits2DigitsSector(36+3+18); 
-     
-  //write results
+  // write results
 
   char treeName[100];
-  sprintf(treeName,"TreeD_%s",param->GetTitle());
-  GetDigitsArray()->GetTree()->Write(treeName,TObject::kOverwrite);
+
+  sprintf(treeName,"TreeD_%s_%d",fTPCParam->GetTitle(),eventnumber);
+  
+  GetDigitsArray()->GetTree()->SetName(treeName);  
+  GetDigitsArray()->GetTree()->Write();  
+
+
 }
 
-//__________________________________________________________________  
-void AliTPC::Hits2Digits()  
+
+
+//__________________________________________________________________
+void AliTPC::Hits2SDigits2(Int_t eventnumber)  
 { 
+
+  //-----------------------------------------------------------
+  //   summable digits - 16 bit "ADC", no noise, no saturation
+  //-----------------------------------------------------------
+
  //----------------------------------------------------
- // Loop over all sectors
+ // Loop over all sectors for a single event
  //----------------------------------------------------
 
-  if(fTPCParam == 0){
-    printf("AliTPCParam MUST be created firstly\n");
-    return;
-  } 
+
+  if(fDefaults == 0) SetDefaults();
+
+  //setup TPCDigitsArray 
+
+  if(GetDigitsArray()) delete GetDigitsArray();
+
+  AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
+  arr->SetClass("AliSimDigits");
+  arr->Setup(fTPCParam);
+  arr->MakeTree(fDigitsFile);
+  SetDigitsArray(arr);
+
+  cerr<<"Digitizing TPC...\n"; 
+
+  fDigitsSwitch=1; // summable digits
 
  for(Int_t isec=0;isec<fTPCParam->GetNSector();isec++) Hits2DigitsSector(isec);
+
+
+  // write results
+
+  char treeName[100];
+
+  sprintf(treeName,"TreeS_%s_%d",fTPCParam->GetTitle(),eventnumber);
+  
+  GetDigitsArray()->GetTree()->SetName(treeName); 
+  GetDigitsArray()->GetTree()->Write(); 
+
+}
+
+
+
+//__________________________________________________________________
+void AliTPC::Hits2SDigits()  
+{ 
+
+  //-----------------------------------------------------------
+  //   summable digits - 16 bit "ADC", no noise, no saturation
+  //-----------------------------------------------------------
+
+ //----------------------------------------------------
+ // Loop over all sectors for a single event
+ //----------------------------------------------------
+  //MI change - for pp run
+  Int_t eventnumber = gAlice->GetEvNumber();
+
+  if(fDefaults == 0) SetDefaults();
+
+  //setup TPCDigitsArray 
+
+  if(GetDigitsArray()) delete GetDigitsArray();
+
+  AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
+  arr->SetClass("AliSimDigits");
+  arr->Setup(fTPCParam);
+  arr->MakeTree(fDigitsFile);
+  SetDigitsArray(arr);
+
+  cerr<<"Digitizing TPC...\n"; 
+
+  //  fDigitsSwitch=1; // summable digits  -for the moment direct
+
+ for(Int_t isec=0;isec<fTPCParam->GetNSector();isec++) Hits2DigitsSector(isec);
+
+
+  // write results
+  char treeName[100];
+
+  sprintf(treeName,"TreeD_%s_%d",fTPCParam->GetTitle(),eventnumber);
+  
+  GetDigitsArray()->GetTree()->SetName(treeName); 
+  GetDigitsArray()->GetTree()->Write(); 
 
 }
 
@@ -1234,6 +1456,10 @@ void AliTPC::Hits2DigitsSector(Int_t isec)
   //  Get the access to the track hits
   //-------------------------------------------------------
 
+  // check if the parameters are set - important if one calls this method
+  // directly, not from the Hits2Digits
+
+  if(fDefaults == 0) SetDefaults();
 
   TTree *tH = gAlice->TreeH(); // pointer to the hits tree
   Stat_t ntracks = tH->GetEntries();
@@ -1267,7 +1493,7 @@ void AliTPC::Hits2DigitsSector(Int_t isec)
 
       for (i=0;i<nrows;i++){
 
-		AliDigits * dig = fDigitsArray->CreateRow(isec,i); 
+	AliDigits * dig = fDigitsArray->CreateRow(isec,i); 
 
 	DigitizeRow(i,isec,row);
 
@@ -1276,7 +1502,7 @@ void AliTPC::Hits2DigitsSector(Int_t isec)
 		Int_t ndig = dig->GetDigitSize(); 
         
  
-	//printf("*** Sector, row, compressed digits %d %d %d ***\n",isec,i,ndig);
+       //printf("*** Sector, row, compressed digits %d %d %d ***\n",isec,i,ndig);
 	
         fDigitsArray->ClearRow(isec,i);  
 
@@ -1363,12 +1589,21 @@ void AliTPC::DigitizeRow(Int_t irow,Int_t isec,TObjArray **rows)
 
       Int_t gi =it*nofPads+ip; // global index
 
-      q = gRandom->Gaus(q,fTPCParam->GetNoise()*fTPCParam->GetNoiseNormFac()); 
+      if(fDigitsSwitch == 0){
 
-      q = (Int_t)q;
+        q = gRandom->Gaus(q,fTPCParam->GetNoise()*fTPCParam->GetNoiseNormFac()); 
 
-      if(q <=zerosup) continue; // do not fill zeros
-      if(q > fTPCParam->GetADCSat()) q = fTPCParam->GetADCSat();  // saturation
+        q = (Int_t)q;
+
+        if(q <=zerosup) continue; // do not fill zeros
+        if(q > fTPCParam->GetADCSat()) q = fTPCParam->GetADCSat();  // saturation
+
+      }
+
+      else {
+       q *= 16.;
+       q = (Int_t)q;
+      }
 
       //
       //  "real" signal or electronic noise (list = -1)?
@@ -2030,7 +2265,7 @@ void AliTPC::MakeBranch2(Option_t *option,const char *file)
   //
   if (fTrackHits   && gAlice->TreeH() && cH) {    
     AliObjectBranch * branch = new AliObjectBranch(branchname,"AliTPCTrackHits",&fTrackHits, 
-						   gAlice->TreeH(),fBufferSize,1);
+						   gAlice->TreeH(),fBufferSize,99);
     gAlice->TreeH()->GetListOfBranches()->Add(branch);
     if (GetDebug()>1) 
       printf("* AliDetector::MakeBranch * Making Branch %s for trackhits\n",branchname);
@@ -2461,7 +2696,48 @@ void AliTPC::FindTrackHitsIntersection(TClonesArray * arr)
         	
   } // end of loop over hits
   xxxx->Delete();
- 
+
+}
+//_______________________________________________________________________________
+void AliTPC::Digits2Reco(Int_t firstevent,Int_t lastevent)
+{
+  // produces rec points from digits and writes them on the root file
+  // AliTPCclusters.root
+
+  TDirectory *cwd = gDirectory;
+
+
+  AliTPCParam *dig=(AliTPCParam *)gDirectory->Get("75x40_100x60");
+  SetParam(dig);
+  cout<<"AliTPC::Digits2Reco: TPC parameteres have been set"<<endl; 
+  TFile *out;
+  if(!gSystem->Getenv("CONFIG_FILE")){
+    out=TFile::Open("AliTPCclusters.root","recreate");
+  }
+  else {
+    const char *tmp1;
+    const char *tmp2;
+    char tmp3[80];
+    tmp1=gSystem->Getenv("CONFIG_FILE_PREFIX");
+    tmp2=gSystem->Getenv("CONFIG_OUTDIR");
+    sprintf(tmp3,"%s%s/AliTPCclusters.root",tmp1,tmp2);
+    out=TFile::Open(tmp3,"recreate");
+  }
+
+  TStopwatch timer;
+  cout<<"AliTPC::Digits2Reco - determination of rec points begins"<<endl;
+  timer.Start();
+  cwd->cd();
+  for(Int_t iev=firstevent;iev<lastevent+1;iev++){
+
+    printf("Processing event %d\n",iev);
+    Digits2Clusters(out,iev);
+  }
+  cout<<"AliTPC::Digits2Reco - determination of rec points ended"<<endl;
+  timer.Stop();
+  timer.Print();
+  out->Close();
+  cwd->cd(); 
 
 
 }

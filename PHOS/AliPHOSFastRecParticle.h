@@ -41,7 +41,7 @@ class AliPHOSFastRecParticle : public TParticle {
     return fIndexInList ; 
   } 
   Int_t GetPrimary(){return fPrimary;}
-  Int_t GetType() { 
+  const Int_t GetType() const { 
     // returns the type of the particle
     return fType ; 
   } 
@@ -60,8 +60,9 @@ class AliPHOSFastRecParticle : public TParticle {
     fIndexInList = val ; 
   } 
 
-  enum EParticleType { kUNDEFINED=-1, kNEUTRALEM,  kNEUTRALHA,  kGAMMA , kGAMMAHA , 
-		       kABSURDEM,  kABSURDHA ,  kELECTRON, kCHARGEDHA } ; 
+  enum EParticleType { kUNDEFINED=-1, 
+		       kNEUTRALEMFAST, kNEUTRALHAFAST,  kNEUTRALEMSLOW, kNEUTRALHASLOW, 
+		       kCHARGEDEMFAST, kCHARGEDHAFAST,  kCHARGEDEMSLOW, kCHARGEDHASLOW } ; 
 
   typedef TClonesArray  FastRecParticlesList ; 
 

@@ -15,6 +15,15 @@
 
 /*
  $Log$
+ Revision 1.7  2001/09/07 14:43:15  hristov
+ Destructor reverted after a temporary fix
+
+ Revision 1.6  2001/09/07 08:44:43  hristov
+ Deletion commented out because AliITSDetType was not the owner
+
+ Revision 1.5  2001/05/31 06:58:38  fca
+ Patch problem with destructor
+
  Revision 1.4  2001/05/01 14:47:45  nilsen
  Fixed destructor so that it destroyes the pointers fSegmentation, fResponse,
  fSimulation, and fReconst if they have been allocated. The two TStrings
@@ -29,6 +38,7 @@
 
 ClassImp(AliITSDetType)	 
 
+//______________________________________________________________________
 AliITSDetType::AliITSDetType(){
     // constructor
 

@@ -13,6 +13,7 @@
 // --- ROOT system ---
 
 class TFile;
+class TFolder;
 
 // --- AliRoot header files ---
 #include "AliPHOS.h"
@@ -21,10 +22,7 @@ class AliPHOSv0 : public AliPHOS {
 
  public:
 
-  AliPHOSv0() {
-    //ctor
-    fGeom=0;
-  }
+  AliPHOSv0() {}
   AliPHOSv0(const char *name, const char *title="") ;
   AliPHOSv0(const AliPHOSv0 & phos) {
     // cpy ctor: no implementation yet
@@ -40,22 +38,18 @@ class AliPHOSv0 : public AliPHOS {
     abort() ; 
   }
   virtual void   BuildGeometry(void) ;             // creates the geometry for the ROOT display
-  void           BuildGeometryforPHOS(void) ;      // creates the PHOS geometry for the ROOT display
-  void           BuildGeometryforPPSD(void) ;      // creates the PPSD geometry for the ROOT display
+  void           BuildGeometryforEMC(void) ;      // creates the PHOS geometry for the ROOT display
+  //  void           BuildGeometryforPPSD(void) ;      // creates the PPSD geometry for the ROOT display
   void           BuildGeometryforCPV(void) ;       // creates the CPV  geometry for the ROOT display
   virtual void   CreateGeometry(void) ;            // creates the geometry for GEANT
-  void           CreateGeometryforPHOS(void) ;     // creates the PHOS geometry for GEANT
-  void           CreateGeometryforPPSD(void) ;     // creates the PPSD geometry for GEANT
+  void           CreateGeometryforEMC(void) ;     // creates the PHOS geometry for GEANT
+  //  void           CreateGeometryforPPSD(void) ;     // creates the PPSD geometry for GEANT
   void           CreateGeometryforCPV(void) ;      // creates the CPV  geometry for GEANT
   void           CreateGeometryforSupport(void) ;  // creates the Support geometry for GEANT
   virtual Float_t ZMin() const;                    // overall dimension of the module (min)
   virtual Float_t ZMax() const;                    // overall dimension of the module (max)
 
-  virtual AliPHOSGeometry * GetGeometry() {
-    // gets the pointer to the AliPHOSGeometry unique instance  
-    return fGeom ; 
-  }  
-  virtual void   Init(void) ;                                       // does nothing
+  virtual void   Init(void) ;                      // does nothing
   virtual Int_t  IsVersion(void) const { 
     // Gives the version number 
     return 0 ; 
@@ -73,8 +67,7 @@ class AliPHOSv0 : public AliPHOS {
   
  protected:
   
-  AliPHOSGeometry * fGeom ;                       // Geometry definition
-  
+
   ClassDef(AliPHOSv0,1)  // Implementation of PHOS manager class for layout EMC+PPSD
     
     };

@@ -20,10 +20,8 @@
 //              energy
 //              3 identifiers for the primary particle(s) at the origine of the digit
 //  The digits are made in FinishEvent() by summing all the hits in a single PHOS crystal or PPSD gas cell
-//  It would be nice to replace the 3 identifiers by an array, but, because digits are kept in a TClonesQArray,
-//   it is not possible to stream such an array... (beyond my understqnding!)
 //
-//*-- Author: Laurent Aphecetche & Yves Schutz (SUBATECH)
+//*-- Author: Laurent Aphecetche & Yves Schutz (SUBATECH) & Dmitri Peressounko (RRC KI & SUBATECH)
 
 
 // --- ROOT system ---
@@ -50,12 +48,13 @@ ClassImp(AliPHOSDigit)
 }
 
 //____________________________________________________________________________
-AliPHOSDigit::AliPHOSDigit(Int_t primary, Int_t id, Int_t DigEnergy, Int_t index) 
+AliPHOSDigit::AliPHOSDigit(Int_t primary, Int_t id, Int_t digEnergy, Float_t time, Int_t index) 
 {  
   // ctor with all data 
 
   fNMaxPrimary = 5 ; 
-  fAmp         = DigEnergy ;
+  fAmp         = digEnergy ;
+  fTime        = time ;
   fId          = id ;
   fIndexInList = index ; 
   if( primary != -1){
@@ -82,6 +81,7 @@ AliPHOSDigit::AliPHOSDigit(const AliPHOSDigit & digit)
   for ( i = 0; i < fNMaxPrimary ; i++)
     fPrimary[i]  = digit.fPrimary[i] ;
   fAmp         = digit.fAmp ;
+  fTime        = digit.fTime ;
   fId          = digit.fId;
   fIndexInList = digit.fIndexInList ; 
   fNprimary    = digit.fNprimary ;
@@ -130,8 +130,14 @@ Int_t AliPHOSDigit::GetPrimary(Int_t index) const
   
 }
 //____________________________________________________________________________
-void AliPHOSDigit::ShiftPrimary(Int_t shift){
-  //shifts primary nimber to BIG offset, to separate primary in different TreeK
+void AliPHOSDigit::Print(Option_t *option) const
+{
+  printf("PHOS digit: Amp=%d, Id=%d\n",fAmp,fId);
+}
+//____________________________________________________________________________
+void AliPHOSDigit::ShiftPrimary(Int_t shift)
+{
+  //shifts primary number to BIG offset, to separate primary in different TreeK
   Int_t index  ;
   for(index = 0; index <fNprimary; index ++ ){
     fPrimary[index] = fPrimary[index]+ shift * 10000000   ;
@@ -155,6 +161,8 @@ AliPHOSDigit& AliPHOSDigit::operator+(AliPHOSDigit const & digit)
   // if amplitude is larger than 
   
   fAmp += digit.fAmp ;
+  if(fTime > digit.fTime)
+    fTime = digit.fTime ;
   
   Int_t max1 = fNprimary ; 
   
@@ -184,7 +192,7 @@ ostream& operator << ( ostream& out , const AliPHOSDigit & digit)
 {
   // Prints the data of the digit
   
-  out << "ID " << digit.fId << " Energy = " << digit.fAmp << endl ; 
+  out << "ID " << digit.fId << " Energy = " << digit.fAmp << " Time = " << digit.fTime << endl ; 
   Int_t i ;
   for(i=0;i<digit.fNprimary;i++)
     out << "Primary " << i+1 << " = " << digit.fPrimary[i] << endl ;

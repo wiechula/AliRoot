@@ -13,26 +13,17 @@
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
 
-/*
-$Log$
-Revision 1.15  2001/05/01 22:37:44  nilsen
-Added a dummy argument to FindRawClusters. Argument used for SSD version.
 
-Revision 1.14  2001/03/05 14:48:46  nilsen
-Fixed a reoccuring bug. Array sizes must be declare const.
-
-*/
-
-#include <iostream.h>
 #include "AliITSClusterFinderSPD.h"
-#include "AliITSMapA1.h"
 #include "AliITS.h"
+#include "AliITSgeom.h"
 #include "AliITSdigit.h"
 #include "AliITSRawCluster.h"
 #include "AliITSRecPoint.h"
 #include "AliITSsegmentation.h"
 #include "AliITSresponse.h"
 #include "AliRun.h"
+
 
 
 
@@ -46,11 +37,9 @@ AliITSClusterFinderSPD::AliITSClusterFinderSPD
     fSegmentation=seg;
     fDigits=digits;
     fClusters=recp;
-    fNclusters= 0;
-    fMap=new AliITSMapA1(fSegmentation,fDigits);
+    fNclusters= fClusters->GetEntriesFast();
     SetDx();
     SetDz();
-    SetNCells();
 }
 
 //_____________________________________________________________________________
@@ -61,342 +50,389 @@ AliITSClusterFinderSPD::AliITSClusterFinderSPD()
   fDigits=0;
   fClusters=0;
   fNclusters=0;
-  fMap=0;
   SetDx();
   SetDz();
-  SetNCells();
   
 }
 
-//_____________________________________________________________________________
-AliITSClusterFinderSPD::~AliITSClusterFinderSPD()
-{
-  // destructor
-  if (fMap) delete fMap;
-
-
-}
-//_____________________________________________________________________________
-
-void AliITSClusterFinderSPD::Find1DClusters()
-{
-  // Find one dimensional clusters, i.e.
-  // in r*phi(x) direction for each colunm in z direction
-  
-  AliITS *iTS=(AliITS*)gAlice->GetModule("ITS");
-  
-  // retrieve the parameters 
-  Int_t fNofPixels = fSegmentation->Npz(); 
-  Int_t fMaxNofSamples = fSegmentation->Npx();
-  
-  // read in digits -> do not apply threshold 
-  // signal in fired pixels is always 1
-
-  fMap->FillMap();
-  
-  Int_t nofFoundClusters = 0;
-  
-  Int_t k,it,m;
-  for(k=0;k<fNofPixels;k++) {
-    
-    Int_t mmax = 10;  // a size of the window for the cluster finding
-    
-    for(it=0;it<fMaxNofSamples;it++) {
-      
-      Int_t lclx = 0;
-      Int_t xstart = 0;
-      Int_t xstop = 0;
-      Int_t id = 0;
-      Int_t ilcl =0;
-      
-      for(m=0;m<mmax;m++) {  // find the cluster inside the window
-	id = it+m;
-	if(id >= fMaxNofSamples) break;    // ! no possible for the fadc 
-	
-	if(fMap->TestHit(k,id) == kUnused) {   // start of the cluster
-	  lclx += 1;
-	  if(lclx == 1) xstart = id;
-	  
-	}
-	
-	if(lclx > 0 && fMap->TestHit(k,id) == kEmpty) {  
-	  // end of cluster if a gap exists
-	  xstop = id-1;
-	  ilcl = 1;
-	  break;
-	}            
-	
-      }   //  end of m-loop
-      
-      if(lclx == 0 && ilcl == 0) it = id; // no cluster in the window,
-      // continue the "it" loop
-      
-      if(id >= fMaxNofSamples && lclx == 0) break; // the x row finished
-      
-      if(id < fMaxNofSamples && ilcl == 0 && lclx > 0) {  
-	                           // cluster end is outside of the window,
-	mmax += 5;                 // increase mmax and repeat the cluster
-	                           // finding
-	it -= 1;
-      }
-      
-      if(id >= fMaxNofSamples && lclx > 0) {  // the x row finished but
-	xstop = fMaxNofSamples - 1;           // the end cluster exists
-	ilcl = 1;
-      } 
-      
-      // ---  Calculate z and x coordinates for one dimensional clusters
-      
-      if(ilcl == 1) {         // new cluster exists
-	it = id;
-	mmax = 10;
-	    nofFoundClusters++;
-	    Float_t clusterCharge = 0.;
-            Float_t zpitch = fSegmentation->Dpz(k+1); 
-	    Float_t clusterZ, dummyX; 
-            Int_t dummy=0;
-            fSegmentation->GetPadCxz(dummy,k,dummyX,clusterZ);
-            Float_t zstart = clusterZ - 0.5*zpitch;
-            Float_t zstop = clusterZ + 0.5*zpitch;
-	    Float_t clusterX = 0.;
-            Int_t xstartfull = xstart;
-            Int_t xstopfull = xstop;
-	    Int_t clusterSizeX = lclx;
-	    Int_t clusterSizeZ = 1;
-	    
-            Int_t its;
-	    for(its=xstart; its<=xstop; its++) {
-              Int_t firedpixel=0;
-              if (fMap->GetHitIndex(k,its)>=0) firedpixel=1; 
-	      clusterCharge += firedpixel;
-              clusterX +=its + 0.5;
-	    }
-            Float_t fRphiPitch = fSegmentation->Dpx(dummy);
-	    clusterX /= (clusterSizeX/fRphiPitch); // center of gravity for x 
-	    
-	    // Write the points (coordinates and some cluster information) to the
-	    // AliITSRawClusterSPD object
-	    
-	    AliITSRawClusterSPD clust(clusterZ,clusterX,clusterCharge,clusterSizeZ,clusterSizeX,xstart,xstop,xstartfull,xstopfull,zstart,zstop,k);
-
-	    iTS->AddCluster(0,&clust);
-
-      }    // new cluster (ilcl=1)
-    } // X direction loop (it)
-  } // Z direction loop (k)
-
-  //fMap->ClearMap();
+//__________________________________________________________________________
+AliITSClusterFinderSPD::AliITSClusterFinderSPD(const
+AliITSClusterFinderSPD &source){
+  //     Copy Constructor 
+  if(&source == this) return;
+  this->fClusters = source.fClusters ;
+  this->fNclusters = source.fNclusters ;
+  this->fDz = source.fDz ;
+  this->fDx = source.fDx ;
   return;
-  
+}
+
+//_________________________________________________________________________
+AliITSClusterFinderSPD& 
+  AliITSClusterFinderSPD::operator=(const AliITSClusterFinderSPD &source) {
+  //    Assignment operator
+  if(&source == this) return *this;
+  this->fClusters = source.fClusters ;
+  this->fNclusters = source.fNclusters ;
+  this->fDz = source.fDz ;
+  this->fDx = source.fDx ;
+  return *this;
 }
 
 //_____________________________________________________________________________
-void  AliITSClusterFinderSPD::GroupClusters()
-{
-  // Find two dimensional clusters, i.e. group one dimensional clusters
-  // into two dimensional ones (go both in x and z directions).
-  
-  // get number of clusters for this module
-  Int_t nofClusters = fClusters->GetEntriesFast();
-  nofClusters -= fNclusters;
+void AliITSClusterFinderSPD::FindRawClusters(Int_t module){
+   
+    // input of Cluster Finder  
+    Int_t digitcount=0;
+    Int_t numberd=100000;
+    Int_t   *digx       = new Int_t[numberd];
+    Int_t   *digz       = new Int_t[numberd];
+    Int_t   *digtr1     = new Int_t[numberd];
+    Int_t   *digtr2     = new Int_t[numberd];
+    Int_t   *digtr3     = new Int_t[numberd];
+    Int_t   *digtr4     = new Int_t[numberd];
+    
+    //  output of Cluster Finder    
+    Int_t numberc=10000;
+    Float_t *xcenterl   = new Float_t[numberc];
+    Float_t *zcenterl   = new Float_t[numberc];
+    Float_t *errxcenter = new Float_t[numberc];
+    Float_t *errzcenter = new Float_t[numberc];
+    Int_t   *tr1clus    = new Int_t[numberc];
+    Int_t   *tr2clus    = new Int_t[numberc];
+    Int_t   *tr3clus    = new Int_t[numberc];
 
-  AliITSRawClusterSPD *clusterI;
-  AliITSRawClusterSPD *clusterJ;
-  
-  Int_t *label=new Int_t[nofClusters];  
-  Int_t i,j;
-  for(i=0; i<nofClusters; i++) label[i] = 0;
-  for(i=0; i<nofClusters; i++) {
-    if(label[i] != 0) continue;
-    for(j=i+1; j<nofClusters; j++) { 
-      if(label[j] != 0) continue;
-      clusterI = (AliITSRawClusterSPD*) fClusters->At(i);
-      clusterJ = (AliITSRawClusterSPD*) fClusters->At(j);
-      Bool_t pair = clusterI->Brother(clusterJ,fDz,fDx);
-      if(pair) {     
-	
-	//    if((clusterI->XStop() == clusterJ->XStart()-1)||(clusterI->XStart()==clusterJ->XStop()+1)) cout<<"!! Diagonal cluster"<<endl;
+    Int_t nclus;
 
-	/*
-	      cout << "clusters " << i << "," << j << " before grouping" << endl;
-	      clusterI->PrintInfo();
-	      clusterJ->PrintInfo();
-	*/
+    digitcount=0;
+    Int_t ndigits = fDigits->GetEntriesFast();  
+    if (!ndigits) return;
 
-	clusterI->Add(clusterJ);
-	//	cout << "remove cluster " << j << endl;
-	label[j] = 1;
-	fClusters->RemoveAt(j);
 
-	/*
-	  cout << "cluster  " << i << " after grouping" << endl;
-	  clusterI->PrintInfo();
-	*/
+    AliITSdigit *dig;
+    AliITSdigitSPD *dig1;
+    Int_t ndig;
+    for(ndig=0; ndig<ndigits; ndig++) {
+         dig= (AliITSdigit*)fDigits->UncheckedAt(ndig);
+     
+         digx[digitcount] = dig->fCoord2+1;  //starts at 1
+         digz[digitcount] = dig->fCoord1+1;  //starts at 1
 
-      }  // pair
-    } // J clusters  
-    label[i] = 1;
-  } // I clusters
-  fClusters->Compress();
+         dig1= (AliITSdigitSPD*)fDigits->UncheckedAt(ndig);
 
-  /*
-    Int_t totalNofClusters = fClusters->GetEntriesFast();
-    cout << " Nomber of clusters at the group end ="<< totalNofClusters<<endl;
-  */
+         digtr1[digitcount] = dig1->fTracks[0];
+         digtr2[digitcount] = dig1->fTracks[1];
+         digtr3[digitcount] = dig1->fTracks[2];
+         digtr4[digitcount] = dig1->fSignal;
 
-  delete [] label;
+         digitcount++;
+    }
 
-  return;
-  
-  
-}
-//_____________________________________________________________________________
 
-void AliITSClusterFinderSPD::TracksInCluster()
-{
-  
-  // Find tracks creating one cluster
-
-  // get number of clusters for this module
-  Int_t nofClusters = fClusters->GetEntriesFast();
-  nofClusters -= fNclusters;
-
-  Int_t i, ix, iz, jx, jz, xstart, xstop, zstart, zstop, nclx, nclz;
-  const Int_t trmax = 100;
-  Int_t cltracks[trmax], itr, tracki, ii, is, js, ie, ntr, tr0, tr1, tr2;
-
-  for(i=0; i<nofClusters; i++) { 
-    ii = 0;
-    memset(cltracks,-1,sizeof(int)*trmax);
-    tr0=tr1=tr2=-1;
-
-    AliITSRawClusterSPD *clusterI = (AliITSRawClusterSPD*) fClusters->At(i);
-
-    nclx = clusterI->NclX();
-    nclz = clusterI->NclZ();
-    xstart = clusterI->XStartf();
-    xstop = clusterI->XStopf();
-    zstart = clusterI->Zend()-nclz+1;
-    zstop = clusterI->Zend();
-    Int_t ind; 
-
-     for(iz=0; iz<nclz; iz++) { 
-         jz = zstart + iz;
-       for(ix=0; ix<nclx; ix++) { 
-	 jx = xstart + ix;
-	 ind = fMap->GetHitIndex(jz,jx);
-	 if(ind < 0) {
-          continue;
-         }
-	 if(ind == 0 && iz >= 0 && ix > 0) {
-          continue;
-         }
-	 if(ind == 0 && iz > 0 && ix >= 0) {
-          continue;
-         }
-	 if(ind == 0 && iz == 0 && ix == 0 && i > 0) {
-          continue;
-         }
-
-        AliITSdigitSPD *dig = (AliITSdigitSPD*)fMap->GetHit(jz,jx);
-
-	/*
-         signal=dig->fSignal;
-         track0=dig->fTracks[0];
-         track1=dig->fTracks[1];
-         track2=dig->fTracks[2];
-	*/
-
-          for(itr=0; itr<3; itr++) { 
-	    tracki = dig->fTracks[itr];
-            if(tracki >= 0) {
-	      ii += 1;
-	      if(ii > 90) { 
-	      }
-	      if(ii < 99) cltracks[ii-1] = tracki;
-            }
-	  }
-       } // ix pixel
-     }  // iz pixel
+    ClusterFinder(digitcount,digx,digz,digtr1,digtr2,digtr3,digtr4,
+              nclus,xcenterl,zcenterl,errxcenter,errzcenter,
+              tr1clus, tr2clus, tr3clus);
  
-     for(is=0; is<trmax; is++) { 
-         if(cltracks[is]<0) continue;
-       for(js=is+1; js<trmax; js++) { 
-         if(cltracks[js]<0) continue;
-         if(cltracks[js]==cltracks[is]) cltracks[js]=-5;
-       }
+    DigitToPoint(nclus,xcenterl,zcenterl,errxcenter,errzcenter,
+              tr1clus, tr2clus, tr3clus);
+
+
+    delete[] digx       ;
+    delete[] digz       ;
+    delete[] digtr1     ;
+    delete[] digtr2     ;
+    delete[] digtr3     ;
+    delete[] digtr4     ;
+    delete[] xcenterl   ;
+    delete[] zcenterl   ;
+    delete[] errxcenter ;
+    delete[] errzcenter ;
+    delete[] tr1clus    ;
+    delete[] tr2clus    ;
+    delete[] tr3clus    ;
+
+}
+//-----------------------------------------------------------------
+void AliITSClusterFinderSPD::ClusterFinder(Int_t ndigits,
+                    Int_t digx[],Int_t digz[],
+                    Int_t digtr1[],Int_t digtr2[],Int_t digtr3[],Int_t digtr4[],
+                    Int_t &nclus, Float_t xcenter[],Float_t zcenter[],
+				    Float_t errxcenter[],Float_t errzcenter[],
+                    Int_t tr1clus[], Int_t tr2clus[], Int_t tr3clus[]) {
+//
+// Search for clusters of fired pixels (digits). Two digits are linked
+// inside a cluster if they are countiguous both in row or column
+// direction.  Diagonal digits are not linked.
+// xcenter, ycenter, zcenter are the coordinates of the center
+// of each found cluster, calculated from the averaging the corresponding
+// coordinate of the center of the linked digits. The coordinates are
+// given in the local reference sistem. 
+// errxcenter, errycenter, errzcenter are the errors associated to
+// the corresponding average.
+//
+//
+
+  Int_t if1, min, max, nd;
+  Int_t x1, z1, t1, t2, t3, t4;
+  Int_t ndx, ndz, ndxmin, ndxmax, ndzmin, ndzmax;
+  Float_t dx, dz; 
+  Int_t i,k,ipos=0;
+  Float_t xdum, zdum;      
+  Int_t kmax, sigmax;
+  Float_t deltax, deltaz;
+  Float_t ndig;
+
+  Int_t numberd=10000;
+  Int_t *ifpad = new Int_t[numberd];
+  Int_t *xpad  = new Int_t[numberd];
+  Int_t *zpad  = new Int_t[numberd];
+  Int_t *tr1pad  = new Int_t[numberd];
+  Int_t *tr2pad  = new Int_t[numberd];
+  Int_t *tr3pad  = new Int_t[numberd];
+  Int_t *tr4pad  = new Int_t[numberd];
+  Int_t *iclus   = new Int_t[numberd];
+
+  nclus=1;
+  for (i=0; i < ndigits ; i++){
+    ifpad[i] = -1;
+    iclus[i] = 0;
+  }
+
+  ifpad[0]=0;
+  for (i=0; i < ndigits-1 ; i++) {
+    if ( ifpad[i] == -1 ) { 
+	   	nclus++;
+		ipos++;
+     	ifpad[i]=nclus-1;
+    }
+    for (Int_t j=i+1 ; j < ndigits ; j++)  {  
+      if (ifpad[j]== -1 ) {
+   	     dx = TMath::Abs(digx[i]-digx[j]);
+   	     dz = TMath::Abs(digz[i]-digz[j]);
+
+// 	     if ( ( dx+dz )==1 )  //clusters are not diagonal
+   	     if ( ( dx+dz )==1 || (dx==1 && dz==1) ) { //diagonal clusters allowed
+   		    ipos++;
+		    ifpad[j]=ifpad[i];
+
+   		    x1=digx[j];
+   		    z1=digz[j];
+   		    digx[j]=digx[ipos];
+   		    digz[j]=digz[ipos];
+   		    digx[ipos]=x1;
+   		    digz[ipos]=z1;
+
+   		    t1=digtr1[j];
+   		    t2=digtr2[j];
+   		    t3=digtr3[j];
+   		    t4=digtr4[j];
+   		    digtr1[j]=digtr1[ipos];
+   		    digtr2[j]=digtr2[ipos];
+   		    digtr3[j]=digtr3[ipos];
+   		    digtr4[j]=digtr4[ipos];
+   		    digtr1[ipos]=t1;
+   		    digtr2[ipos]=t2;
+   		    digtr3[ipos]=t3;
+   		    digtr4[ipos]=t4;
+
+   		    if1=ifpad[j];
+   		    ifpad[j]=ifpad[ipos];
+   		    ifpad[ipos]=if1;
+	     }
+      }
+    }
+  }//end loop on digits   
+
+  if ( ifpad[ndigits-1] == -1 ) {
+	  nclus++;
+	  ifpad[ndigits-1]=nclus-1;
+  }
+
+  for (i=0 ; i < ndigits ; i++) iclus[ifpad[i]]++;
+
+  min=0;
+  max=0;
+  // loop on found clusters 
+  for (i=0 ; i < nclus ; i++)  
+  {
+     min = max;
+     max += iclus[i];
+     deltax = fSegmentation->Dpx(0);
+     if (iclus[i]!=1) 
+     {
+        //cluster with more than one digit
+        nd=iclus[i];
+        ndig=(Float_t) nd;
+	    Int_t count=0;
+        for (k=min;k<min+nd;k++)
+        {
+	       xpad[count] = digx[k];	   
+	       zpad[count] = digz[k];
+
+	       tr1pad[count] = digtr1[k];	   
+	       tr2pad[count] = digtr2[k];	   
+	       tr3pad[count] = digtr3[k];	   
+	       tr4pad[count] = digtr4[k];	   
+
+	       count++; 
+        }
+        ndxmin = xpad[TMath::LocMin(nd,xpad)];
+        ndxmax = xpad[TMath::LocMax(nd,xpad)];
+        ndzmin = zpad[TMath::LocMin(nd,zpad)];
+        ndzmax = zpad[TMath::LocMax(nd,zpad)];
+        ndx = ndxmax - ndxmin+1;
+        ndz = ndzmax - ndzmin+1;
+
+
+        // calculate x and z coordinates of the center of the cluster
+        fSegmentation->GetPadCxz(digx[min],digz[min]-1,xdum, zdum);
+
+	    if (ndx == 1) {	    
+	         xcenter[i] = xdum;
+	    }    
+	    else{ 
+             xcenter[i] = 0.;
+	         for (k=0;k<nd;k++) {
+                fSegmentation->GetPadCxz(xpad[k],zpad[k]-1,xdum,zdum);
+	            xcenter[i] += (xdum / nd);
+	         }	               
+	    }
+
+	    if (ndz == 1) {
+	         zcenter[i] = zdum;
+	    }   
+	    else {
+	         zcenter[i] = 0.;
+	         for (k=0;k<nd;k++) {	      
+               fSegmentation->GetPadCxz(xpad[k],zpad[k]-1,xdum,zdum);
+	           zcenter[i] += (zdum / nd);
+	         }
+	    }
+
+        // error on points in x and z directions
+
+        if (ndx == 1) {
+             errxcenter[i] = deltax / TMath::Sqrt(12.);
+        }
+        else {
+             errxcenter[i] = 0.;	 		
+             for (k=0;k<nd;k++){ 
+               fSegmentation->GetPadCxz(xpad[k],zpad[k]-1,xdum,zdum);
+               errxcenter[i] += ((xdum-xcenter[i])*(xdum-xcenter[i]))/(nd*(nd-1)); 
+             }   
+	         errxcenter[i] = TMath::Sqrt(errxcenter[i]);
+        }
+	
+	    if (ndz == 1) {
+            deltaz = fSegmentation->Dpz(digz[min]);	              
+	        errzcenter[i] = deltaz / TMath::Sqrt(12.);
+        }
+	    else {
+	        errzcenter[i] = 0.;
+	        for (k=0;k<nd;k++){ 
+               fSegmentation->GetPadCxz(xpad[k],zpad[k]-1,xdum,zdum);
+	           errzcenter[i] += ((zdum-zcenter[i])*(zdum-zcenter[i]))/(nd*(nd-1));
+	        }
+	        errzcenter[i] = TMath::Sqrt(errzcenter[i]);
+	    }    
+        // take three track numbers for the cluster
+        // choose the track numbers of the digit with higher signal 
+        kmax = 0;
+        sigmax = 0;
+        for (k=0;k<nd;k++){
+          if(tr4pad[k] > sigmax){
+            sigmax = tr4pad[k];
+            kmax   = k;
+          }
+        }
+        if(sigmax != 0) {
+            tr1clus[i]= tr1pad[kmax];
+            tr2clus[i]= tr2pad[kmax];
+            tr3clus[i]= tr3pad[kmax];
+         }
+         else {
+            tr1clus[i]= -2;
+            tr2clus[i]= -2;
+            tr3clus[i]= -2;
+        }
+     }
+     else  {
+      
+        // cluster with single digit
+        ndig= 1.;
+	    ndx = 1;
+        ndz = 1;
+        fSegmentation->GetPadCxz(digx[min],digz[min]-1,xdum,zdum);
+        xcenter[i] = xdum;
+        zcenter[i] = zdum;
+        tr1clus[i]=digtr1[min];
+        tr2clus[i]=digtr2[min];
+        tr3clus[i]=digtr3[min];
+	    deltaz = fSegmentation->Dpz(digz[min]);
+	    errxcenter[i] = deltax / TMath::Sqrt(12.);
+  	    errzcenter[i] = deltaz / TMath::Sqrt(12.);
      }
 
-     ntr = 0;
-     for(ie=0; ie<trmax; ie++) { 
-       if(cltracks[ie] >= 0) {
-        ntr=ntr+1;
-        if(ntr==1) tr0=cltracks[ie];
-        if(ntr==2) tr1=cltracks[ie];
-        if(ntr==3) tr2=cltracks[ie];
-       }
+     // store the cluster information to the AliITSRawCLusterSPD object
+     AliITS *iTS=(AliITS*)gAlice->GetModule("ITS");
+
+     //put the cluster center in local reference frame of the detector
+     // and in microns
+     xcenter[i] = xcenter[i] - fSegmentation->Dx()/2.; 
+     zcenter[i] = zcenter[i] - fSegmentation->Dz()/2.;
+
+
+     AliITSRawClusterSPD *clust = new AliITSRawClusterSPD(zcenter[i],xcenter[i],ndig,ndz,ndx,0.,0.,0.,0.,0.,0.,0.);
+     iTS->AddCluster(0,clust);
+     delete clust;
+  }//end loop on clusters   
+  delete[] ifpad;
+  delete[] xpad ;
+  delete[] zpad ;
+  delete[] iclus;
+  delete[] tr1pad;
+  delete[] tr2pad;
+  delete[] tr3pad;
+  delete[] tr4pad;
+}
+//______________________________________________________
+void AliITSClusterFinderSPD::DigitToPoint(Int_t nclus,
+                   Float_t *xcenter,   Float_t *zcenter,
+		   Float_t *errxcenter,Float_t *errzcenter, 
+		   Int_t *tr1clus, Int_t *tr2clus, Int_t *tr3clus){
+ //
+ // A point is associated to each cluster of SPD digits. The points
+ // and their associated errors are stored in the file galiceSP.root.
+ //
+ //
+ 
+     Float_t l[3],xg,zg;
+     const Float_t kconv = 1.0e-4; // micron -> cm
+
+     // get rec points
+     AliITS *iTS=(AliITS*)gAlice->GetModule("ITS");
+
+     for (Int_t i=0; i<nclus; i++)
+     {
+        l[0] = kconv*xcenter[i];
+        l[1] = kconv*fSegmentation->Dy()/2.;
+        l[2] = kconv*zcenter[i];
+
+        xg = l[0]; 
+        zg = l[2]; 
+
+	    Float_t sigma2x = (kconv*errxcenter[i]) * (kconv*errxcenter[i]);
+	    Float_t sigma2z = (kconv*errzcenter[i]) * (kconv*errzcenter[i]);
+        AliITSRecPoint rnew;
+        rnew.SetX(xg);
+        rnew.SetZ(zg);
+        rnew.SetQ(1.);
+        rnew.SetdEdX(0.);
+        rnew.SetSigmaX2(sigma2x);
+        rnew.SetSigmaZ2(sigma2z);
+        rnew.fTracks[0]=tr1clus[i];
+        rnew.fTracks[1]=tr2clus[i];
+        rnew.fTracks[2]=tr3clus[i];
+        iTS->AddRecPoint(rnew); 
      }
-     // if delta ray only
-     if(ntr == 0) ntr = 1;
-
-     clusterI->SetNTracks(ntr);
-     clusterI->SetTracks(tr0,tr1,tr2);
-
-  } // I cluster
-
 }
-//_____________________________________________________________________________
-
-void AliITSClusterFinderSPD::GetRecPoints()
-{
-  // get rec points
-  AliITS *iTS=(AliITS*)gAlice->GetModule("ITS");
-  
-  // get number of clusters for this module
-  Int_t nofClusters = fClusters->GetEntriesFast();
-  nofClusters -= fNclusters;
-  const Float_t kconv = 1.0e-4;
-  const Float_t kRMSx = 12.0*kconv; // microns -> cm ITS TDR Table 1.3
-  const Float_t kRMSz = 70.0*kconv; // microns -> cm ITS TDR Table 1.3
-
-  Float_t spdLength = fSegmentation->Dz();
-  Float_t spdWidth = fSegmentation->Dx();
-
-  Int_t i;
-  Int_t track0, track1, track2;
-
-  for(i=0; i<nofClusters; i++) { 
-
-    AliITSRawClusterSPD *clusterI = (AliITSRawClusterSPD*) fClusters->At(i);
-    clusterI->GetTracks(track0, track1, track2); 
-    AliITSRecPoint rnew;
-
-    rnew.SetX((clusterI->X() - spdWidth/2)*kconv);
-    rnew.SetZ((clusterI->Z() - spdLength/2)*kconv);
-    rnew.SetQ(1.);
-    rnew.SetdEdX(0.);
-    rnew.SetSigmaX2(kRMSx*kRMSx);
-    rnew.SetSigmaZ2(kRMSz*kRMSz);
-    rnew.fTracks[0]=track0;
-    rnew.fTracks[1]=track1;
-    rnew.fTracks[2]=track2;
-    iTS->AddRecPoint(rnew);
-  } // I clusters
-
-  fMap->ClearMap();
-  
-}
-//_____________________________________________________________________________
-
-void AliITSClusterFinderSPD::FindRawClusters(Int_t mod)
-{
-  // find raw clusters
-  Find1DClusters();
-  GroupClusters();
-  TracksInCluster();
-  GetRecPoints();
-
-}
-
-
-

@@ -1,8 +1,12 @@
 // $Id$
 // Category: run
 //
+// Author: I. Hrivnacova
+//
+// Class TG4Messenger
+// ------------------
 // Messenger class that defines commands for 
-// geometry, physics and step managers
+// geometry, physics and step managers.
 
 #ifndef TG4_MESSENGER_H
 #define TG4_MESSENGER_H 
@@ -16,6 +20,7 @@ class TG4StepManager;
 
 class G4UIcmdWithoutParameter;
 class G4UIcmdWithABool;
+class G4UIcmdWithAString;
 
 class TG4Messenger: public G4UImessenger
 {
@@ -45,12 +50,23 @@ class TG4Messenger: public G4UImessenger
     TG4StepManager*           fStepManager;     //step manager
     
     G4UIcmdWithABool*  fSetEMCmd;             //setEM command   
-    G4UIcmdWithABool*  fSetOpticalCmd;        //setOptical command   
+    G4UIcmdWithABool*  fSetMuonCmd;           //setMuon command   
     G4UIcmdWithABool*  fSetHadronCmd;         //setHadron command   
+    G4UIcmdWithABool*  fSetOpticalCmd;        //setOptical command   
     G4UIcmdWithABool*  fSetSpecialCutsCmd;    //setSpecialCuts command   
     G4UIcmdWithABool*  fSetSpecialControlsCmd;//setSpecialControls command   
     G4UIcmdWithoutParameter*  fProcessActivationCmd; //.
                                               //setProcessActivation command    
+    G4UIcmdWithoutParameter*  fPrintProcessMCMapCmd; //.
+                                              //printProcessMCMap command
+    G4UIcmdWithoutParameter*  fPrintProcessControlMapCmd; //.
+                                              //printProcessControlsMap command
+    G4UIcmdWithAString*       fPrintVolumeLimitsCmd; //.
+                                              //printVolumeLimits command
+    G4UIcmdWithoutParameter*  fPrintGeneralCutsCmd; //.
+                                              //printGeneralCuts command
+    G4UIcmdWithoutParameter*  fPrintGeneralControlsCmd; //.
+                                              //printGeneralControls command
 };
 
 #endif //TG4_MESSENGER_H

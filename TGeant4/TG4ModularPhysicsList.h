@@ -1,6 +1,10 @@
 // $Id$
 // Category: physics
 //
+// Author: I. Hrivnacova
+//
+// Class TG4ModularPhysicsList
+// ---------------------------
 // The modular physics list.
 // Creates all standard particles.
 // The physics processes have to be created
@@ -15,10 +19,6 @@
 #include <G4VModularPhysicsList.hh>
 #include <globals.hh>
 
-class TG4ExtDecayer;
-
-class G4VProcess;
-
 class TG4ModularPhysicsList: public G4VModularPhysicsList
 {
   public:
@@ -31,6 +31,7 @@ class TG4ModularPhysicsList: public G4VModularPhysicsList
     virtual void SetCuts();
     void SetProcessActivation();
     void PrintAllProcesses() const;
+    void DumpAllProcesses() const;
     
   protected:
     TG4ModularPhysicsList(const TG4ModularPhysicsList& right);
@@ -42,19 +43,13 @@ class TG4ModularPhysicsList: public G4VModularPhysicsList
     virtual void ConstructParticle();
     virtual void ConstructProcess();
 
-         // construct all particles in each category
-    void ConstructAllBosons();
-    void ConstructAllLeptons();
-    void ConstructAllMesons();
-    void ConstructAllBaryons();
-    void ConstructAllIons();
-    void ConstructAllShortLiveds();
-    
-        // construct general processes
-    void ConstructGeneral();	
-
   private:
-    TG4ExtDecayer*  fExtDecayer;
+    // methods
+    void SetProcessActivation(G4ProcessManager* processManager,
+                              G4int processId, G4bool activation);
+
+    // static data members
+    static const G4double  fgkDefaultCutValue; //default cut value
 };
 
 #endif //TG4_MODULAR_PHYSICS_LIST_H

@@ -1,6 +1,10 @@
 // $Id$
 // Category: physics
 //
+// Author: I. Hrivnacova
+//
+// Class TG4PhysicsConstructorSpecialControls
+// ------------------------------------------
 // See the class description in the header file.
 
 #include "TG4PhysicsConstructorSpecialControls.h"
@@ -12,6 +16,7 @@
 #include <G4ProcessManager.hh>
 #include <G4VProcess.hh>
 
+//_____________________________________________________________________________
 TG4PhysicsConstructorSpecialControls::TG4PhysicsConstructorSpecialControls(
                                      const G4String& name)
   : G4VPhysicsConstructor(name)
@@ -20,12 +25,14 @@ TG4PhysicsConstructorSpecialControls::TG4PhysicsConstructorSpecialControls(
   SetVerboseLevel(1);
 }
 
+//_____________________________________________________________________________
 TG4PhysicsConstructorSpecialControls::~TG4PhysicsConstructorSpecialControls() {
 //
 }
 
 // protected methods
 
+//_____________________________________________________________________________
 void TG4PhysicsConstructorSpecialControls::ConstructParticle()
 {
 // The particles are constructed in the 
@@ -33,6 +40,7 @@ void TG4PhysicsConstructorSpecialControls::ConstructParticle()
 // ---
 }
 
+//_____________________________________________________________________________
 void TG4PhysicsConstructorSpecialControls::ConstructProcess()
 {
 // Adds TG4SpecialControls "process" that activates
@@ -42,9 +50,7 @@ void TG4PhysicsConstructorSpecialControls::ConstructProcess()
   TG4G3PhysicsManager* g3PhysicsManager 
     = TG4G3PhysicsManager::Instance();
 
-  if (g3PhysicsManager->IsSpecialControls())
-  {
-    G4cout << "IsSpecialControls started" << G4endl;
+  if (g3PhysicsManager->IsSpecialControls()) {
     TG4boolVector* isControlVector 
       = g3PhysicsManager->GetIsControlVector(); 
 
@@ -73,13 +79,12 @@ void TG4PhysicsConstructorSpecialControls::ConstructProcess()
     }
 
     if (verboseLevel>0) {
-      G4cout << "TG4PhysicsConstructorSpecialControls::ConstructProcess: " << G4endl;
-      G4cout << "   Special controls process is defined for: " << G4endl
-             << "   ";
+      G4cout << "### Special Controls constructed. " << G4endl;
+      G4cout << "    Special controls process is defined for: " << G4endl
+             << "    ";
       for (G4int i=0; i<kNofParticlesWSP; i++) {
-        G4String name;
-        g3PhysicsManager->GetG3ParticleWSPName(i, name);
-        if ((*isControlVector)[i]) G4cout << name << " ";
+        if ((*isControlVector)[i]) 
+	  G4cout << g3PhysicsManager->GetG3ParticleWSPName(i) << " ";
       }  
       G4cout << G4endl;
     }  

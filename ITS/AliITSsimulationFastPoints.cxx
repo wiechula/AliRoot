@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.8  2001/07/27 08:06:49  hristov
+Use global gRandom generator (M.Ivanov)
+
+Revision 1.7  2001/05/11 09:15:21  barbera
+Corrected to make fast point creation working with PPR geometry
+
 Revision 1.6  2000/10/29 18:30:14  barbera
 Z resolution of pixel changed according with the default lenght of 425 microns
 
@@ -144,11 +150,14 @@ void AliITSsimulationFastPoints::CreateFastRecPoints(AliITSmodule *mod, Int_t mo
 	   sigmade = SigmaDe(hitlay);
 	   thrde = ThrDe(hitlay);
 	   // Randomize position and deposited energy
-           Int_t k=3*(Int_t)((hitlay-1)/2);
+//           Int_t k=3*(Int_t)((hitlay-1)/2);
 
-	   deltaXl = (float)(random[k].Gaus(0,sigmarphi));
-	   deltaZl = (float)(random[k+1].Gaus(0,sigmaz));
-	   deltaDe = (float)(random[k+2].Gaus(0,sigmade));
+           //	   deltaXl = (float)(random[k].Gaus(0,sigmarphi));
+           //	   deltaZl = (float)(random[k+1].Gaus(0,sigmaz));
+           //	   deltaDe = (float)(random[k+2].Gaus(0,sigmade));
+	   deltaXl = random->Gaus(0,sigmarphi);
+	   deltaZl = random->Gaus(0,sigmaz);
+	   deltaDe = random->Gaus(0,sigmade);
            // Apply energy threshold and trasform back to global reference 
            // system
 

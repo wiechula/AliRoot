@@ -1,6 +1,10 @@
 // $Id$
 // Category: geometry
 //
+// Author: I. Hrivnacova
+//
+// Class AliDetConstruction
+// ------------------------
 // See the class description in the header file.
 
 #include "AliDetConstruction.h"
@@ -10,6 +14,7 @@
 #include "AliRun.h"
 #include "AliModule.h"
 
+//_____________________________________________________________________________
 AliDetConstruction::AliDetConstruction()
   : fTopVolumeName("ALIC")
 {
@@ -23,7 +28,7 @@ AliDetConstruction::AliDetConstruction()
   AddDetSwitch(detSwitch); 
   detSwitch = new AliDetSwitch("DIPO",   3, 2, 2, kStructure, false);
   AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("FRAME",  2, 1, 1, kStructure, false);
+  detSwitch = new AliDetSwitch("FRAME",  3, 2, 2, kStructure, false);
   AddDetSwitch(detSwitch); 
   detSwitch = new AliDetSwitch("HALL",   1, 0, 0, kStructure);
   AddDetSwitch(detSwitch); 
@@ -35,9 +40,9 @@ AliDetConstruction::AliDetConstruction()
   AddDetSwitch(detSwitch); 
   detSwitch = new AliDetSwitch("CASTOR", 2, 1, 1);
   AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("FMD",    2, 0, 0);
+  detSwitch = new AliDetSwitch("FMD",    2, 1, 0);
   AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("ITS",   10, 7, 7);
+  detSwitch = new AliDetSwitch("ITS",    7, 5, 5);
   AddDetSwitch(detSwitch); 
   detSwitch = new AliDetSwitch("MUON",   2, 1, 1);
   AddDetSwitch(detSwitch); 
@@ -55,22 +60,25 @@ AliDetConstruction::AliDetConstruction()
   AddDetSwitch(detSwitch); 
   detSwitch = new AliDetSwitch("TRD",    2, 1, 1, kDetector, false);
   AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("ZDC",    2, 1, 1, kDetector, false);
+  detSwitch = new AliDetSwitch("ZDC",    2, 1, 2, kDetector, false);
   AddDetSwitch(detSwitch);  
 }
 
+//_____________________________________________________________________________
 AliDetConstruction::AliDetConstruction(const AliDetConstruction& right)
   : AliModulesComposition(right)
 {
   // AliModuleComposition is protected from copying
 }  
 
+//_____________________________________________________________________________
 AliDetConstruction::~AliDetConstruction() {
 //
 }
 
 // operators
 
+//_____________________________________________________________________________
 AliDetConstruction& 
 AliDetConstruction::operator=(const AliDetConstruction& right)
 {
@@ -86,6 +94,7 @@ AliDetConstruction::operator=(const AliDetConstruction& right)
           
 // private methods
 
+//_____________________________________________________________________________
 void AliDetConstruction::BuildDetectors()
 {
 // Create module constructions for AliModules 
@@ -129,6 +138,7 @@ void AliDetConstruction::BuildDetectors()
   SetProcessConfigToModules(false); 	
 }
 
+//_____________________________________________________________________________
 void AliDetConstruction::CreateDetectors()
 {
 // Creates AliModules and their module constructions 
@@ -139,7 +149,7 @@ void AliDetConstruction::CreateDetectors()
   AddSingleModuleConstruction("BODY", 0, kStructure);
 
   // add modules constructions
-  for (G4int id=0; id<fDetSwitchVector.entries(); id++)
+  for (G4int id=0; id<fDetSwitchVector.size(); id++)
   {
     G4String detName = fDetSwitchVector[id]->GetDetName();
     G4int version = fDetSwitchVector[id]->GetSwitchedVersion();
@@ -154,6 +164,7 @@ void AliDetConstruction::CreateDetectors()
   }    
 }
 
+//_____________________________________________________________________________
 void AliDetConstruction::CheckDetDependencies()
 {
 // Checks modules dependencies.
@@ -171,9 +182,9 @@ void AliDetConstruction::CheckDetDependencies()
   
   // check dependencies  
   if (verTOF > -1) {
-    // TOF requires FRAMEv1 
-    if (verFRAME != 1) {
-      GetDetSwitch("FRAME")->SwitchOn(1);
+    // TOF requires FRAMEv1 - obsolete? 
+    if (verFRAME != 2) {
+      GetDetSwitch("FRAME")->SwitchOn(2);
       G4String text = "AliDetConstruction::CheckDetDependencies: \n";
       text = text + "    Switched TOF requires FRAME v1.\n"; 
       text = text + "    The det switch for FRAME has been changed."; 
@@ -223,6 +234,7 @@ void AliDetConstruction::CheckDetDependencies()
 
 // public methods
 
+//_____________________________________________________________________________
 G4VPhysicalVolume* AliDetConstruction::Construct()
 {
 // Constructs geometry.

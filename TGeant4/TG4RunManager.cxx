@@ -1,13 +1,19 @@
 // $Id$
 // Category: run
 //
+// Author: I. Hrivnacova
+//
+// Class TG4RunManager
+// -------------------
 // See the class description in the header file.
 
 #include "TG4RunManager.h"
-#include "TG4RunMessenger.h"
 #include "TG4VRunConfiguration.h"
 #include "TG4Globals.h"
 #include "TG4GeometryManager.h"
+#include "TG4GeometryServices.h"
+#include "TG4SDManager.h"
+#include "TG4SDServices.h"
 #include "TG4PhysicsManager.h"
 #include "TG4G3PhysicsManager.h"
 
@@ -23,32 +29,33 @@
 #include <G4UIGAG.hh>
 #endif
 
-#include <TRint.h>
 #include <TROOT.h> 
+#include <TRint.h>
 #include <TCint.h> 
 
 TG4RunManager* TG4RunManager::fgInstance = 0;
 
+//_____________________________________________________________________________
 TG4RunManager::TG4RunManager(TG4VRunConfiguration* runConfiguration, 
                              int argc, char** argv)		  
-  : fRunConfiguration(runConfiguration),
+  : fMessenger(this),
+    fRunConfiguration(runConfiguration),
     fGeantUISession(0),
     fRootUISession(0),
     fRootUIOwner(false),
     fARGC(argc),
-    fARGV(argv)
-  
+    fARGV(argv)  
 {
 // 
   if (fgInstance) {
     TG4Globals::Exception(
       "TG4RunManager: attempt to create two instances of singleton.");
-  };
+  }
       
   if (!fRunConfiguration) {
     TG4Globals::Exception(
       "TG4RunManager: attempt to create instance without runConfiguration.");
-  };
+  }
       
   fgInstance = this;
   
@@ -65,13 +72,12 @@ TG4RunManager::TG4RunManager(TG4VRunConfiguration* runConfiguration,
 
   // create root UI
   CreateRootUI();
-
-  // messenger
-  fMessenger = new TG4RunMessenger(this);
 }
 
+//_____________________________________________________________________________
 TG4RunManager::TG4RunManager(TG4VRunConfiguration* runConfiguration)
-  : fRunConfiguration(runConfiguration),
+  : fMessenger(this),
+    fRunConfiguration(runConfiguration),
     fGeantUISession(0),
     fRootUISession(0),
     fRootUIOwner(false),
@@ -83,12 +89,12 @@ TG4RunManager::TG4RunManager(TG4VRunConfiguration* runConfiguration)
   if (fgInstance) {
     TG4Globals::Exception(
       "TG4RunManager: attempt to create two instances of singleton.");
-  };
+  }
       
   if (!fRunConfiguration) {
     TG4Globals::Exception(
       "TG4RunManager: attempt to create instance without runConfiguration.");
-  };
+  }
       
   fgInstance = this;
   
@@ -112,32 +118,34 @@ TG4RunManager::TG4RunManager(TG4VRunConfiguration* runConfiguration)
 
   // create root UI
   CreateRootUI();
-
-  // messenger
-  fMessenger = new TG4RunMessenger(this);
 }
 
-TG4RunManager::TG4RunManager() {
+//_____________________________________________________________________________
+TG4RunManager::TG4RunManager()
+  : fMessenger(this) {
 //
 }
 
-TG4RunManager::TG4RunManager(const TG4RunManager& right) {
+//_____________________________________________________________________________
+TG4RunManager::TG4RunManager(const TG4RunManager& right) 
+  : fMessenger(this) {
 // 
   TG4Globals::Exception(
     "Attempt to copy TG4RunManager singleton.");
 }
 
+//_____________________________________________________________________________
 TG4RunManager::~TG4RunManager() {
 //  
   delete fRunConfiguration;
   delete fRunManager;
   delete fGeantUISession;
   if (fRootUIOwner) delete fRootUISession;
-  delete fMessenger;
 }
 
 // operators
 
+//_____________________________________________________________________________
 TG4RunManager& TG4RunManager::operator=(const TG4RunManager& right)
 {
   // check assignement to self
@@ -151,6 +159,7 @@ TG4RunManager& TG4RunManager::operator=(const TG4RunManager& right)
 
 // private methods
 
+//_____________________________________________________________________________
 void TG4RunManager::CreateGeantUI()
 {
 // Creates interactive Geant4.
@@ -163,8 +172,12 @@ void TG4RunManager::CreateGeantUI()
     if (fARGC == 1) {
 #ifdef G4UI_USE_GAG
       fGeantUISession = new G4UIGAG();
-#else      
+#else
+ #ifdef G4UI_USE_TCSH
+      fGeantUISession = new G4UIterminal(new G4UItcsh);      
+ #else
       fGeantUISession = new G4UIterminal(); 
+ #endif    
 #endif      
     }  
     else if (strcmp (fARGV[1], "dumb") == 0) {
@@ -196,6 +209,7 @@ void TG4RunManager::CreateGeantUI()
   }
 }
 
+//_____________________________________________________________________________
 void TG4RunManager::CreateRootUI()
 {
 // Creates interactive Root.
@@ -213,6 +227,7 @@ void TG4RunManager::CreateRootUI()
 
 // public methods
 
+//_____________________________________________________________________________
 void TG4RunManager::Initialize()
 {
 // Initializes G4.
@@ -220,17 +235,39 @@ void TG4RunManager::Initialize()
 
   // create physics constructor
   // (this operation has to precede the "Init" phase)
-  TG4PhysicsManager* physicsManager = TG4PhysicsManager::Instance();
-  physicsManager->CreatePhysicsConstructors();
+  TG4PhysicsManager::Instance()->CreatePhysicsConstructors();
 
   // initialize Geant4 
   fRunManager->Initialize();
   
-  // activate/inactivate physics processes
-  // (this operation is not allowed in "Init" phase)
-  physicsManager->SetProcessActivation();
+  // initialize SD manager
+  TG4SDManager::Instance()->Initialize();
 }
 
+//_____________________________________________________________________________
+void TG4RunManager::LateInitialize()
+{
+// Finishes initialization of G4 after the AliRoot initialization
+// is finished. 
+// ---
+
+  // set user limits
+  TG4GeometryManager::Instance()
+    ->SetUserLimits(*TG4G3PhysicsManager::Instance()->GetCutVector(),
+                    *TG4G3PhysicsManager::Instance()->GetControlVector());
+
+  // final clear of G3toG4 objects
+  TG4GeometryManager::Instance()->ClearG3TablesFinal();
+      
+  // activate/inactivate physics processes
+  TG4PhysicsManager::Instance()->SetProcessActivation();
+
+  // print statistics
+  TG4GeometryServices::Instance()->PrintStatistics(true, false);  
+  TG4SDServices::Instance()->PrintStatistics(false, true);  
+}
+
+//_____________________________________________________________________________
 void TG4RunManager::ProcessEvent()
 {
 // Not yet implemented.
@@ -239,6 +276,7 @@ void TG4RunManager::ProcessEvent()
   TG4Globals::Warning("TG4RunManager::ProcessEvent(): is not yet implemented.");
 }
     
+//_____________________________________________________________________________
 void TG4RunManager::ProcessRun(G4int nofEvents)
 {
 // Processes Geant4 run.
@@ -247,6 +285,7 @@ void TG4RunManager::ProcessRun(G4int nofEvents)
   fRunManager->BeamOn(nofEvents); 
 }
     
+//_____________________________________________________________________________
 void TG4RunManager::StartGeantUI()
 { 
 // Starts interactive/batch Geant4.
@@ -266,6 +305,7 @@ void TG4RunManager::StartGeantUI()
   }
 }
 
+//_____________________________________________________________________________
 void TG4RunManager::StartRootUI()
 {
 // Starts interactive Root.
@@ -279,6 +319,7 @@ void TG4RunManager::StartRootUI()
   }
 }
  
+//_____________________________________________________________________________
 void TG4RunManager::ProcessGeantMacro(G4String macroName)
 {
 // Processes Geant4 macro.
@@ -288,6 +329,7 @@ void TG4RunManager::ProcessGeantMacro(G4String macroName)
   ProcessGeantCommand(command);
 }
  
+//_____________________________________________________________________________
 void TG4RunManager::ProcessRootMacro(G4String macroName)
 {
 // Processes Root macro.
@@ -304,6 +346,7 @@ void TG4RunManager::ProcessRootMacro(G4String macroName)
   gInterpreter->ProcessLine(macroFunction);
 }
  
+//_____________________________________________________________________________
 void TG4RunManager::ProcessGeantCommand(G4String command)
 {
 // Processes Geant4 command.
@@ -313,6 +356,7 @@ void TG4RunManager::ProcessGeantCommand(G4String command)
   pUI->ApplyCommand(command);
 }
 
+//_____________________________________________________________________________
 void TG4RunManager::ProcessRootCommand(G4String command)
 {
 // Processes Root command.
@@ -321,6 +365,7 @@ void TG4RunManager::ProcessRootCommand(G4String command)
   gInterpreter->ProcessLine(command);
 }
 
+//_____________________________________________________________________________
 void TG4RunManager::UseG3Defaults() 
 {
 // Controls G3 defaults usage.
@@ -331,6 +376,7 @@ void TG4RunManager::UseG3Defaults()
   TG4G3PhysicsManager::Instance()->SetG3DefaultControls();
 }
 
+//_____________________________________________________________________________
 Int_t TG4RunManager::CurrentEvent() const
 {
 // Returns the number of the current event.

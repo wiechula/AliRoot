@@ -3,7 +3,7 @@
 /* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
  * See cxx source for full Copyright notice                               */
 
-/* $Id$ */
+// $Id$
 
 #include <iostream.h>
 #include <math.h>
@@ -56,6 +56,8 @@ class AliCalorimeter : public TObject
   void AddVetoSignal(Float_t* r,TString f,Float_t s=0); // Associate (extrapolated) signal
   AliSignal* GetVetoSignal(Int_t j);               // Access to veto signal number j
   Int_t GetNvetos();                               // Provide the number of veto signals
+  void SetName(TString name);                      // Set the name of the calorimeter system
+  TString GetName();                               // Provide the name of the calorimeter system
  
  protected:
   Int_t fNrows;                              // The number of rows
@@ -76,6 +78,7 @@ class AliCalorimeter : public TObject
   TMatrix* fAttributes;                      // Matrix with module attributes (dead+10*edge)
   TMatrix* fGains;                           // Matrix with module gains
   AliPosition ***fPositions;                 //! Matrix of module position pointers for internal use
+  TString fName;                             // Name of the calorimeter system
  
  ClassDef(AliCalorimeter,1) // Description of a modular calorimeter system.
 };

@@ -1,15 +1,21 @@
 // $Id$
 // Category: event
 //
+// Author: I.Hrivnacova
+//
+// Class TG4SteppingAction
+// -----------------------
 // See the class description in the header file.
 
 #include "TG4SteppingAction.h"
 #include "TG4VSensitiveDetector.h"
+#include "TG4SDServices.h"
 #include "TG4Globals.h"
 
 #include <G4Track.hh>
 #include <G4SteppingManager.hh>
 
+//_____________________________________________________________________________
 TG4SteppingAction::TG4SteppingAction() 
   : fMaxNofSteps(kMaxNofSteps),
     fStandardVerboseLevel(0),
@@ -19,17 +25,20 @@ TG4SteppingAction::TG4SteppingAction()
 //
 }
 
+//_____________________________________________________________________________
 TG4SteppingAction::TG4SteppingAction(const TG4SteppingAction& right) {
 //
   TG4Globals::Exception("TG4SteppingAction is protected from copying.");
 }
 
+//_____________________________________________________________________________
 TG4SteppingAction::~TG4SteppingAction() {
 //
 }
 
 // operators
 
+//_____________________________________________________________________________
 TG4SteppingAction& 
 TG4SteppingAction::operator=(const TG4SteppingAction &right)
 {
@@ -43,6 +52,7 @@ TG4SteppingAction::operator=(const TG4SteppingAction &right)
 
 // protected methods
 
+//_____________________________________________________________________________
 void TG4SteppingAction::PrintTrackInfo(const G4Track* track) const
 {
 // Prints the track info
@@ -96,11 +106,12 @@ void TG4SteppingAction::PrintTrackInfo(const G4Track* track) const
 
 // public methods
 
+//_____________________________________________________________________________
 void TG4SteppingAction::UserSteppingAction(const G4Step* step)
 {
 // Called by G4 kernel at the end of each step.
 // ---
-
+ 
   G4Track* track = step->GetTrack();  
 
   // reset parameters at beginning of tracking
@@ -150,20 +161,21 @@ void TG4SteppingAction::UserSteppingAction(const G4Step* step)
       step->GetTrack()->GetTrackStatus() == fAlive &&
       step->GetTrack()->GetNextVolume() != 0) {
 
-    G4VSensitiveDetector* sd
-      = step->GetPostStepPoint()->GetPhysicalVolume()
+#ifdef TGEANT4_DEBUG
+    TG4VSensitiveDetector* tsd
+      = TG4SDServices::Instance()
+           ->GetSensitiveDetector(
+	        step->GetPostStepPoint()->GetPhysicalVolume()
+		    ->GetLogicalVolume()->GetSensitiveDetector());
+
+    if (tsd) = tsd->ProcessHitsOnBoundary((G4Step*)step);
+#else
+    TG4VSensitiveDetector* tsd
+      = (TG4VSensitiveDetector*) step->GetPostStepPoint()->GetPhysicalVolume()
           ->GetLogicalVolume()->GetSensitiveDetector();
 
-    if (sd) {
-      TG4VSensitiveDetector* tsd = dynamic_cast<TG4VSensitiveDetector*>(sd);
-      if (tsd) 
-        tsd->ProcessHitsOnBoundary((G4Step*)step);
-      else {
-        G4String text = "TG4SteppingAction:::UserSteppingAction: \n";
-        text = text + "   Unknown sensitive detector type"; 
-        TG4Globals::Exception(text);
-      }   	
-    } 
+    if (tsd) tsd->ProcessHitsOnBoundary((G4Step*)step);
+#endif     
   }  
 }
 

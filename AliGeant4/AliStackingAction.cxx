@@ -1,10 +1,13 @@
 // $Id$
 // Category: event
 //
+// Author: I. Hrivnacova
+//
+// Class AliStackingAction
+// -----------------------
 // See the class description in the header file.
 
 #include "AliStackingAction.h"
-#include "AliStackingActionMessenger.h"
 #include "AliTrackingAction.h"
 #include "AliGlobals.h"
 
@@ -19,30 +22,34 @@
 #include <G4AntiNeutrinoMu.hh>
 #include <G4AntiNeutrinoTau.hh>
 
+//_____________________________________________________________________________
 AliStackingAction::AliStackingAction()
   : fStage(0), 
     fVerboseLevel(0),
     fSavePrimaries(true),
-    fTrackingAction(0) 
+    fTrackingAction(0),
+    fMessenger(this) 
 {
 // 
   fPrimaryStack = new G4TrackStack();
-  fMessenger = new AliStackingActionMessenger(this);
 }
 
-AliStackingAction::AliStackingAction(const AliStackingAction& right) {
+//_____________________________________________________________________________
+AliStackingAction::AliStackingAction(const AliStackingAction& right) 
+  : fMessenger(this) {
 //
   AliGlobals::Exception("AliStackingAction is protected from copying.");
 }
 
+//_____________________________________________________________________________
 AliStackingAction::~AliStackingAction() {
 // 
   delete fPrimaryStack;
-  delete fMessenger; 
 }
 
 // operators
 
+//_____________________________________________________________________________
 AliStackingAction& 
 AliStackingAction::operator=(const AliStackingAction &right)
 {
@@ -56,6 +63,7 @@ AliStackingAction::operator=(const AliStackingAction &right)
 
 // public methods
 
+//_____________________________________________________________________________
 G4ClassificationOfNewTrack 
 AliStackingAction::ClassifyNewTrack(const G4Track* track)
 {
@@ -88,7 +96,7 @@ AliStackingAction::ClassifyNewTrack(const G4Track* track)
 
         return fKill;	 
      }	
-     
+
      G4int parentID = track->GetParentID();
      if (parentID ==0) { 
         return fUrgent; 
@@ -100,6 +108,7 @@ AliStackingAction::ClassifyNewTrack(const G4Track* track)
   return classification;
 }
 
+//_____________________________________________________________________________
 void AliStackingAction::NewStage()
 {
 // Called by G4 kernel at the new stage of stacking.
@@ -128,23 +137,20 @@ void AliStackingAction::NewStage()
   }
 }
     
-void AliStackingAction::ClearPrimaryStack()
-{
-// Clears the primary stack.
-// ---
-
-  stackManager->ClearPostponeStack();
-}
-
+//_____________________________________________________________________________
 void AliStackingAction::PrepareNewEvent()
 {
 // Called by G4 kernel at the beginning of event.
 // ---
 
   fStage = 0;
-  ClearPrimaryStack();
+  //stackManager->ClearPostponeStack();
+  stackManager->ResetPostponeStack();
   fTrackingAction = AliTrackingAction::Instance();
-  fSavePrimaries = fTrackingAction->GetSavePrimaries();
+  if (fTrackingAction)
+    fSavePrimaries = fTrackingAction->GetSavePrimaries();
+  else   
+    fSavePrimaries = false;
 }
 
 

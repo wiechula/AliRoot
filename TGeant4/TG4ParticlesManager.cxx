@@ -1,6 +1,10 @@
 // $Id$
 // Category: physics
 //
+// Author: I. Hrivnacova
+//
+// Class TG4ParticlesManager
+// -------------------------
 // See the class description in the header file.
 
 #include "TG4ParticlesManager.h"
@@ -16,6 +20,7 @@
 
 TG4ParticlesManager* TG4ParticlesManager::fgInstance = 0;
 
+//_____________________________________________________________________________
 TG4ParticlesManager::TG4ParticlesManager()
 { 
 //
@@ -27,12 +32,14 @@ TG4ParticlesManager::TG4ParticlesManager()
   fgInstance = this;  
 }
 
+//_____________________________________________________________________________
 TG4ParticlesManager::TG4ParticlesManager(const TG4ParticlesManager& right) {
 // 
   TG4Globals::Exception(
     "Attempt to copy TG4ParticlesManager singleton.");
 }
 
+//_____________________________________________________________________________
 TG4ParticlesManager::~TG4ParticlesManager() {
 //
 }
@@ -53,6 +60,8 @@ TG4ParticlesManager::operator=(const TG4ParticlesManager& right)
           
 // private methods
 
+
+//_____________________________________________________________________________
 G4int TG4ParticlesManager::GetPDGEncoding(G4ParticleDefinition* particle)
 {
 // Returns the PDG code of particle;
@@ -93,6 +102,8 @@ G4int TG4ParticlesManager::GetPDGEncoding(G4ParticleDefinition* particle)
   return pdgEncoding;  
 }  
      
+
+//_____________________________________________________________________________
 G4int TG4ParticlesManager::GetPDGEncoding(G4String particleName)
 {
 // Returns the PDG code of particle sepcified by name.
@@ -112,6 +123,8 @@ G4int TG4ParticlesManager::GetPDGEncoding(G4String particleName)
   return GetPDGEncoding(particle);
 }  
   
+
+//_____________________________________________________________________________
 void  TG4ParticlesManager::MapParticles()
 {
   // map G4 particle names to TDatabasePDG names
@@ -133,7 +146,7 @@ void  TG4ParticlesManager::MapParticles()
   fParticlePDGMap.Add("He3", GetPDGEncoding("He3") );
   fParticlePDGMap.Add("opticalphoton", GetPDGEncoding("opticalphoton"));
   // fParticlePDGMap.Add("???","FeedbackPhoton");
-  fParticleNameMap.Add("geantino", GetPDGEncoding("geantino"));
+  fParticlePDGMap.Add("geantino", GetPDGEncoding("geantino"));
 
   // add verbose
   G4cout << "Particle maps have been filled." << G4endl;
@@ -162,14 +175,16 @@ G4int TG4ParticlesManager::GetPDGEncodingFast(G4ParticleDefinition* particle)
   return pdgEncoding;  
 }  
      
-     
+
+//_____________________________________________________________________________
 TParticle* TG4ParticlesManager::GetParticle(const TClonesArray* particles, 
-                                          G4int index) const
+                                            G4int index) const
 {
 // Retrives particle with given index from TClonesArray 
 // and checks type.
 // ---
 
+#ifdef TGEANT4_DEBUG
   TObject* particleTObject = particles->UncheckedAt(index);      
   TParticle* particle
     = dynamic_cast<TParticle*>(particleTObject);
@@ -178,11 +193,13 @@ TParticle* TG4ParticlesManager::GetParticle(const TClonesArray* particles,
   if (!particle) 
     TG4Globals::Exception(
       "TG4ParticlesManager::GetParticle: Unknown particle type");
-  
-  return particle;  
+#else
+  return (TParticle*)particles->UncheckedAt(index);      
+#endif  
 }     
 
 
+//_____________________________________________________________________________
 G4ParticleDefinition* TG4ParticlesManager::GetParticleDefinition(
                                const TParticle* particle) const
 {
@@ -214,6 +231,8 @@ G4ParticleDefinition* TG4ParticlesManager::GetParticleDefinition(
   return particleDefinition;
 }
 
+
+//_____________________________________________________________________________
 G4DynamicParticle* TG4ParticlesManager::CreateDynamicParticle(
                                    const TParticle* particle) const
 { 
@@ -234,6 +253,8 @@ G4DynamicParticle* TG4ParticlesManager::CreateDynamicParticle(
   return dynamicParticle;
 }
 
+
+//_____________________________________________________________________________
 G4ThreeVector TG4ParticlesManager::GetParticlePosition(
                                    const TParticle* particle) const 
 {
@@ -248,6 +269,7 @@ G4ThreeVector TG4ParticlesManager::GetParticlePosition(
 }  		     
 			
 			
+//_____________________________________________________________________________
 G4ThreeVector TG4ParticlesManager::GetParticleMomentum(
                                    const TParticle* particle) const
 {

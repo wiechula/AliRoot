@@ -7,6 +7,9 @@
 
 //_________________________________________________________________________
 //  Task Class for making SDigits in PHOS      
+// Class performs digitization of Summable digits (in the PHOS case this is just
+// sum of contributions of all primary particles into given cell). 
+// In addition it performs mixing of summable digits from different events.
 //                  
 //*-- Author: Dmitri Peressounko(SUBATECH & KI)
 
@@ -18,74 +21,100 @@ class TArrayI ;
 // --- Standard library ---
 
 // --- AliRoot header files ---
+#include "AliDigitizer.h"
 class AliPHOSSDigitizer ;
-
+class AliRunDigitizer ;
 
 class AliPHOSDigitizer: public TTask {
 
 public:
   AliPHOSDigitizer() ;          // ctor
-  AliPHOSDigitizer(const char *headerFile,const char * sDigitsBranchTitle = 0) ; 
+  AliPHOSDigitizer(const char *headerFile, const char * name = "Default") ; 
+  AliPHOSDigitizer(AliRunDigitizer * ard) ;
+  AliPHOSDigitizer(const AliPHOSDigitizer & dtizer) 
+                  {( (AliPHOSDigitizer &)dtizer ).Copy(*this) ;} 
   virtual ~AliPHOSDigitizer() ;       
 
-  void    Digitize(Option_t *option);            // Make Digits from SDigits stored in fSDigits
-  void    Exec(Option_t *option);                // Supervising method
+  void    Digitize(const Int_t event) ;            // Make Digits from SDigits 
+  void    Exec(Option_t *option);                  // Supervising method
 
-  Float_t GetCPVNoise()     const { return fCPVNoise ;}
-  Float_t GetCPVThreshold() const { return fCPVDigitThreshold ;}
-  Float_t GetEMCThreshold() const { return fEMCDigitThreshold;}
-  Float_t GetPedestal()     const { return fPedestal; }
-  Float_t GetPinNoise()     const { return fPinNoise;}
-  Float_t GetPPSDNoise()    const { return fPPSDNoise ;}
-  Float_t GetPPSDThreshold()const { return fPPSDDigitThreshold ;}
-  Float_t GetSlope()        const { return fSlope; }
-  char *  GetDigitsBranch ()const { return (char*)fDigitsTitle.Data() ;}
-  char *  GetSDigitsBranch()const { return (char*)((TObjString*)fSDigitsTitles->At(0))->GetString().Data() ;}
-  TClonesArray * GetHeadersFiles(){ return fHeaderFiles ;}
-  TArrayI*    GetCurrentEvents()  { return fIevent ;}
-
-  void    MixWith(char* HeaderFile, char* SDigitsTitle =0) ; // Add another one file to mix
-  virtual void    Print(Option_t* option)const ;
-  void    Reset() ;   //restarts starts event processing from 0 event(s)
+  //CPV parameters
+  const Float_t GetCPVNoise()     const { return fCPVNoise ;}
+  const Float_t GetCPVThreshold() const { return fCPVDigitThreshold ;}
+  const Float_t GetCPVchannel()   const { return fADCchanelCpv; }
+  const Float_t GetCPVpedestal()  const { return fADCpedestalCpv; }
 
   void    SetCPVNoise(Float_t CPVNoise)          {fCPVNoise = CPVNoise;}
   void    SetCPVThreshold(Float_t CPVThreshold)  {fCPVDigitThreshold= CPVThreshold;}
-  void    SetEMCThreshold(Float_t EMCThreshold)  {fEMCDigitThreshold = EMCThreshold;}
-  void    SetPinNoise(Float_t PinNoise )         {fPinNoise = PinNoise;}
-  void    SetPPSDNoise(Float_t PPSDNoise)        {fPPSDNoise = PPSDNoise;}
-  void    SetPPSDThreshold(Float_t PPSDThreshold){fPPSDDigitThreshold = PPSDThreshold;}
+  void    SetNCPVchannels(Int_t n)     { fNADCcpv = n; }
+  void    SetCPVchannel(Float_t width) { fADCchanelCpv = width; }
+  void    SetCPVpedestal(Float_t ped)  { fADCpedestalCpv = ped; }
 
-  void    SetDigitsBranch (const char* file) ;
+
+  //EMC parameters
+  const Float_t GetEMCThreshold() const { return fEMCDigitThreshold;}
+  const Float_t GetEMCchannel()   const { return fADCchanelEmc; }
+  const Float_t GetEMCpedestal()  const { return fADCpedestalEmc; }  
+  const Float_t GetPinNoise()     const { return fPinNoise;}
+  const Float_t GetTimeResolution() const { return fTimeResolution ; }
+
+  void   SetEMCThreshold(Float_t EMCThreshold)  {fEMCDigitThreshold = EMCThreshold;}
+  void   SetPinNoise(Float_t PinNoise )         {fPinNoise = PinNoise;}
+  void   SetNEMCchannels(Int_t n)      { fNADCemc = n; }
+  void   SetEMCchannel(Float_t width)  { fADCchanelEmc = width; }
+  void   SetEMCpedestal(Float_t ped)   { fADCpedestalEmc = ped ; }  
+
+  //General
+  const Int_t   GetDigitsInRun()  const { return fDigitsInRun ;}  
+
+  void    MixWith(const char* HeaderFile) ; // Add another one file to mix
+  void    Print(Option_t* option)const ;
+  void    Reset() ;   //restarts starts event processing from 0 event(s)
+
   void    SetSDigitsBranch(const char* file) ;
 
+  AliPHOSDigitizer & operator = (const AliPHOSDigitizer & rvalue)  {
+    // assignement operator requested by coding convention but not needed
+    abort() ;
+    return *this ; 
+  }
+
 private:
-  Bool_t  Combinator() ;                         // makes all desirable combination sig+Bg
-  void    Init();                   
-  Bool_t  ReadSDigits() ;            // Read sdigits for particular events
-  void    WriteDigits() ;            // Writes Digits for particular event
+
+  Bool_t  Init() ; 
   void    PrintDigits(Option_t * option) ;
+  void    WriteDigits(Int_t evt) ;            // Writes Digits for particular event
+  Float_t TimeOfNoise(void) ;                 // Calculate time signal generated by noise
+  //Calculate the time of crossing of the threshold by front edge
+  Float_t FrontEdgeTime(TClonesArray * ticks) ; 
+  //Calculate digitized signal with gived ADC parameters
+  Int_t   DigitizeEnergy(Float_t energy, Int_t absId) ;
 
 private:
-  TClonesArray * fSDigitsTitles ;   // Titles of sdigits branches 
-  TClonesArray * fHeaderFiles ;     // Names of files with headers to merge 
-  TString        fDigitsTitle ;     // Title of the Digits Branch  
-  TClonesArray * fSDigits ;         // ! Lists of SDigits 
-  TClonesArray * fDigits ;          // ! Final list of digits
-  AliPHOSSDigitizer * fSDigitizer ; // ! SDigitizer to extarct some sdigitizing parameters
-  Int_t   fNinputs ;                // Number of input files
-  Bool_t  fInitialized ;            // 
-  TArrayI * fIevent ;               // events to read at the next ReadSDigits() call
-  TArrayI * fIeventMax ;            // Maximal number of events in each input file
 
-  Float_t fPedestal ;                // Calibration parameters 
-  Float_t fSlope ;                   // read from SDigitizer
+  AliRunDigitizer * fARD ;          //! Pointer to the Digitization Manager class
+
+  Int_t   fEmcCrystals ;            // Number of EMC crystalls in the given geometry
 
   Float_t fPinNoise ;               // Electronics noise in EMC
   Float_t fEMCDigitThreshold  ;     // Threshold for storing digits in EMC
+
   Float_t fCPVNoise ;               // Noise in CPV
   Float_t fCPVDigitThreshold  ;     // Threshold for storing digits in CPV
-  Float_t fPPSDNoise ;              // Noise in PPSD
-  Float_t fPPSDDigitThreshold ;     // Threshold for storing digits in PPSD
+
+  Int_t fDigitsInRun ;              //! Total number of digits in one run
+
+  Float_t fTimeResolution ;         // Time resolution of FEE electronics
+  Float_t fTimeThreshold ;          // Threshold to start timing for given crystall
+  Float_t fTimeSignalLength ;       // Length of the timing signal 
+
+  Float_t fADCchanelEmc ;           // width of one ADC channel in GeV
+  Float_t fADCpedestalEmc ;         //
+  Int_t   fNADCemc ;                // number of channels in EMC ADC
+
+  Float_t fADCchanelCpv ;           // width of one ADC channel in CPV 'popugais'
+  Float_t fADCpedestalCpv ;         // 
+  Int_t   fNADCcpv ;                // number of channels in CPV ADC
 
 
   ClassDef(AliPHOSDigitizer,1)  // description 

@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.14  2001/08/30 09:52:12  hristov
+The operator[] is replaced by At() or AddAt() in case of TObjArray.
+
+Revision 1.13  2001/07/20 10:03:14  morsch
+Changes needed to work with Root 3.01 (substitute lhs [] operator). (Jiri Chudoba)
+
+Revision 1.12  2001/05/16 14:57:17  alibrary
+New files for folders and Stack
+
 Revision 1.11  2001/01/26 21:25:48  morsch
 Empty default constructors and.
 
@@ -71,6 +80,10 @@ ClassImp(AliMUONSegmentationSlat)
 AliMUONSegmentationSlat::AliMUONSegmentationSlat() 
 {
 // Default constructor
+  fChamber = 0;
+  fNDiv = 0;
+  fSlats = 0;
+  fCurrentSlat = 0;
 }
 
 AliMUONSegmentationSlat::AliMUONSegmentationSlat(Int_t nsec) 
@@ -492,7 +505,7 @@ void AliMUONSegmentationSlat::Init(Int_t chamber)
     fNpx=0;
 // for each slat in the quadrant (+,+)    
     for (islat=0; islat<fNSlats; islat++) {
-	(*fSlats)[islat] = CreateSlatModule();
+        fSlats->AddAt(CreateSlatModule(),islat);
 
 	AliMUONSegmentationSlatModule *slat =  Slat(islat);
 	// Configure Slat
@@ -548,7 +561,8 @@ void  AliMUONSegmentationSlat::SetSlatXPositions(Float_t *xpos)
 }
 
 AliMUONSegmentationSlatModule*  AliMUONSegmentationSlat::Slat(Int_t index) const
-{ return ((AliMUONSegmentationSlatModule*) (*fSlats)[index]);}
+  //PH { return ((AliMUONSegmentationSlatModule*) (*fSlats)[index]);}
+{ return ((AliMUONSegmentationSlatModule*) fSlats->At(index));}
 
 
 AliMUONSegmentationSlatModule* AliMUONSegmentationSlat::

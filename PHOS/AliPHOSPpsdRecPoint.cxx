@@ -36,6 +36,7 @@
 #include "AliPHOSPpsdRecPoint.h"
 #include "AliPHOSCpvRecPoint.h"
 #include "AliRun.h"
+#include "AliPHOSGetter.h"
 
 ClassImp(AliPHOSPpsdRecPoint)
 
@@ -45,7 +46,6 @@ AliPHOSPpsdRecPoint::AliPHOSPpsdRecPoint(void)
   // ctor
 
   fMulDigit = 0 ;  
-  fGeom = AliPHOSGeometry::GetInstance() ;  
   fLocPos.SetX(1000000.)  ;      //Local position should be evaluated
 }
 
@@ -169,7 +169,9 @@ Int_t AliPHOSPpsdRecPoint::Compare(const TObject * obj) const
 }
 
 //____________________________________________________________________________
-void AliPHOSPpsdRecPoint::EvalAll(Float_t logWeight,TClonesArray * digits ){
+void AliPHOSPpsdRecPoint::EvalAll(Float_t logWeight,TClonesArray * digits )
+{
+  // calculates all the characteristics of the RecPoint
   AliPHOSRecPoint::EvalAll(logWeight,digits) ;
   EvalLocalPosition(logWeight,digits) ;
   EvalUp(digits) ;
@@ -178,14 +180,15 @@ void AliPHOSPpsdRecPoint::EvalAll(Float_t logWeight,TClonesArray * digits ){
 //____________________________________________________________________________
 void AliPHOSPpsdRecPoint::EvalLocalPosition(Float_t logWeight,TClonesArray * digits )
 {
-  // Calculates the local position in the PHOS-PPSD-module corrdinates
+  // Calculates the local position in the PHOS-PPSD-module coordinates
   
   Int_t relid[4] ;
 
   Float_t x = 0. ;
   Float_t z = 0. ;
 
-  AliPHOSGeometry * phosgeom = (AliPHOSGeometry *) fGeom ;
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  AliPHOSGeometry * phosgeom =  (AliPHOSGeometry*)gime->PHOSGeometry();
   
   AliPHOSDigit * digit ;
   Int_t iDigit;
@@ -217,7 +220,8 @@ void AliPHOSPpsdRecPoint::EvalUp(TClonesArray * digits)
 
   Int_t relid[4] ;
   
-  AliPHOSGeometry * phosgeom = (AliPHOSGeometry *) fGeom ;
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  AliPHOSGeometry * phosgeom =  (AliPHOSGeometry*)gime->PHOSGeometry();
   
   
   AliPHOSDigit *digit = (AliPHOSDigit *) digits->At(fDigitsList[0]) ; 

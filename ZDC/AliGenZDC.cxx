@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.8  2001/04/20 10:10:25  coppedis
+Minor changes
+
 Revision 1.7  2001/03/15 16:13:28  coppedis
 Code review
 

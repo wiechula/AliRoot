@@ -1,6 +1,10 @@
 // $Id$
 // Category: event
 //
+// Author: I. Hrivnacova
+//
+// Class AliEventAction
+// ---------------------
 // See the class description in the header file.
 
 #include <G4Timer.hh>
@@ -8,10 +12,10 @@
    // times system function this include must be the first
 
 #include "AliEventAction.h"
-#include "AliEventActionMessenger.h"
 #include "AliTrackingAction.h"
 #include "AliGlobals.h"
 #include "AliRun.h"
+#include "AliHeader.h"
 
 #include <G4Event.hh>
 #include <G4TrajectoryContainer.hh>
@@ -19,28 +23,32 @@
 #include <G4VVisManager.hh>
 #include <G4UImanager.hh>
 
+//_____________________________________________________________________________
 AliEventAction::AliEventAction()
-  : fVerboseLevel(1), 
+  : fMessenger(this),
+    fVerboseLevel(1), 
     fDrawFlag("CHARGED")
 {
 //
-  fMessenger = new AliEventActionMessenger(this);
   fTimer = new G4Timer();
 }
 
-AliEventAction::AliEventAction(const AliEventAction& right) {
+//_____________________________________________________________________________
+AliEventAction::AliEventAction(const AliEventAction& right)
+  : fMessenger(this) {
 //
   AliGlobals::Exception("AliEventAction is protected from copying.");
 }
 
+//_____________________________________________________________________________
 AliEventAction::~AliEventAction() {
 //
-  delete fMessenger;
   delete fTimer;
 }
 
 // operators
 
+//_____________________________________________________________________________
 AliEventAction& AliEventAction::operator=(const AliEventAction &right)
 {
   // check assignement to self
@@ -53,6 +61,7 @@ AliEventAction& AliEventAction::operator=(const AliEventAction &right)
 
 // private methods
 
+//_____________________________________________________________________________
 void AliEventAction::DisplayEvent(const G4Event* event) const
 {
 // Draws trajectories.
@@ -97,6 +106,7 @@ void AliEventAction::DisplayEvent(const G4Event* event) const
 
 // public methods
 
+//_____________________________________________________________________________
 void AliEventAction::BeginOfEventAction(const G4Event* event)
 {
 // Called by G4 kernel at the beginning of event.
@@ -105,7 +115,8 @@ void AliEventAction::BeginOfEventAction(const G4Event* event)
   G4int eventID = event->GetEventID();
 
   // reset the tracks counters
-  AliTrackingAction::Instance()->PrepareNewEvent();   
+  if(AliTrackingAction::Instance()) 
+    AliTrackingAction::Instance()->PrepareNewEvent();   
 
   if (fVerboseLevel>0)
     G4cout << ">>> Event " << event->GetEventID() << G4endl;
@@ -113,6 +124,7 @@ void AliEventAction::BeginOfEventAction(const G4Event* event)
   fTimer->Start();
 }
 
+//_____________________________________________________________________________
 void AliEventAction::EndOfEventAction(const G4Event* event)
 {
 // Called by G4 kernel at the end of event.
@@ -120,21 +132,28 @@ void AliEventAction::EndOfEventAction(const G4Event* event)
 
   // finish the last primary track of the current event
   AliTrackingAction* trackingAction = AliTrackingAction::Instance();
-  trackingAction->FinishPrimaryTrack();   
+  if (trackingAction) trackingAction->FinishPrimaryTrack();   
 
   // verbose output 
   if (fVerboseLevel>0) {
+    G4cout << G4endl;
+    G4cout << ">>> End of Event " << event->GetEventID() << G4endl;
+  }
+
+  if (fVerboseLevel>1) {
     //G4int nofPrimaryTracks = trackingAction->GetNofPrimaryTracks();
     G4int nofPrimaryTracks = gAlice->GetHeader()->GetNprimary();
     G4int nofSavedTracks = gAlice->GetNtrack();
-    G4int nofAllTracks = trackingAction->GetNofTracks();
-    
+   
     G4cout  << "    " << nofPrimaryTracks << 
                " primary tracks processed." << G4endl;
     G4cout  << "    " << nofSavedTracks << 
                " tracks saved." << G4endl;
-    G4cout  << "    " << nofAllTracks << 
-               " all tracks processed." << G4endl;
+    if (trackingAction) {
+       G4int nofAllTracks = trackingAction->GetNofTracks();
+       G4cout  << "    " << nofAllTracks << 
+                  " all tracks processed." << G4endl;
+    }	  
   }	       
 
   // display event
@@ -143,7 +162,7 @@ void AliEventAction::EndOfEventAction(const G4Event* event)
   // aliroot finish event
   gAlice->FinishEvent();    
 
-  if (fVerboseLevel>0) {
+  if (fVerboseLevel>1) {
     // print time
     fTimer->Stop();
     G4cout << "Time of this event: " << *fTimer << G4endl;

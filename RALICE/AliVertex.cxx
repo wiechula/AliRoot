@@ -13,15 +13,7 @@
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
 
-/*
-$Log$
-Revision 1.4  1999/11/03 14:23:18  fca
-New version of RALICE introduced
-
-Revision 1.3  1999/09/29 09:24:28  fca
-Introduction of the Copyright and cvs Log
-
-*/
+// $Id$
 
 ///////////////////////////////////////////////////////////////////////////
 // Class AliVertex
@@ -30,13 +22,39 @@ Introduction of the Copyright and cvs Log
 //
 // Note : Also (secondary) vertices can be added to a vertex.
 //
+// To provide maximal flexibility to the user, two modes of vertex storage
+// are provided by means of the memberfunction SetVertexCopy().
+// The same holds for the storage of jets via SetJetCopy().
+//
+// a) SetVertexCopy(0) (which is the default).
+//    Only the pointers of the 'added' vertices are stored.
+//    This mode is typically used by making vertex studies based on a fixed list
+//    of vertices which stays under user control or is contained for instance
+//    in an AliEvent.  
+//    In this way the AliVertex just represents a 'logical structure' for the
+//    physics analysis which can be embedded in e.g. an AliEvent or AliVertex.
+//
+//    Note :
+//    Modifications made to the original vertices also affect the AliVertex objects
+//    which are stored.
+// 
+// b) SetVertexCopy(1).
+//    Of every 'added' vertex a private copy will be made of which the pointer
+//    will be stored.
+//    In this way the AliVertex represents an entity on its own and modifications
+//    made to the original vertices do not affect the AliVertex objects which are
+//    stored. 
+//    This mode will allow 'adding' many different AliVertex objects by
+//    creating only one AliVertex instance in the main programme and using the
+//    AliVertex::Reset, AliVertex::AddTrack and parameter setting memberfunctions.
+//
 // Coding example to make 3 vertices v1, v2 and v3.
 // ------------------------------------------------
 // v1 contains the tracks 1,2,3 and 4
-// v2 contains the tracks 5,6 and 7
+// v2 contains many different tracks
 // v3 contains the jets 1 and 2
 //
-//        AliTrack t1,t2,t3,t4,t5,t6,t7;
+//        AliTrack t1,t2,t3,t4;
 //         ...
 //         ... // code to fill the track data
 //         ...
@@ -46,28 +64,37 @@ Introduction of the Copyright and cvs Log
 //         ... // code to fill the jet data
 //         ...
 //
-//        AliVertex v1(5);
+//        AliVertex v1;
+//        v1.SetVertexCopy(1);
 //
-//        v1.Add(t1);
-//        v1.Add(t2);
-//        v1.Add(t3);
-//        v1.Add(t4);
+//        v1.AddTrack(t1);
+//        v1.AddTrack(t2);
+//        v1.AddTrack(t3);
+//        v1.AddTrack(t4);
 //
 //        Float_t r1[3]={2.4,0.1,-8.5};
 //        v1.SetPosition(r1,"car");
 //
-//        AliVertex v2(2);
-//        v2.Add(t5);
-//        v2.Add(t6);
-//        v2.Add(t7);
+//        AliVertex v2;
+//        v2.SetTrackCopy(1);
+//
+//        AliTrack* tx=new AliTrack();
+//        for (Int_t i=0; i<10; i++)
+//        {
+//         ...
+//         ... // code to fill the track data
+//         ...
+//         v2.AddTrack(tx);
+//         tx->Reset(); 
+//        }
 //
 //        Float_t r2[3]={1.6,-3.2,5.7};
 //        v2.SetPosition(r2,"car");
 //
 //        AliVertex v3;
 //
-//        v3.Add(j1);
-//        v3.Add(j2);
+//        v3.AddJet(j1);
+//        v3.AddJet(j2);
 //
 //        Float_t r3[3]={6.2,4.8,1.3};
 //        v3.SetPosition(r3,"car");
@@ -87,8 +114,8 @@ Introduction of the Copyright and cvs Log
 //
 // Specify the vertices v2 and v3 as secondary vertices of v1
 //
-//        v1.Add(v2);
-//        v1.Add(v3);
+//        v1.AddVertex(v2);
+//        v1.AddVertex(v3);
 //
 //        v1.List();
 //
@@ -102,16 +129,16 @@ Introduction of the Copyright and cvs Log
 //
 //        v1.Reset();
 //        v1.SetNvmax(25); // Increase initial no. of sec. vertices
-//        v1.Add(t3);
-//        v1.Add(t7);
-//        v1.Add(j2);
+//        v1.AddTrack(t3);
+//        v1.AddTrack(t4);
+//        v1.AddJet(j2);
 //        Float_t pos[3]={7,9,4};
 //        v1.SetPosition(pos,"car");
 //
 // Note : All quantities are in GeV, GeV/c or GeV/c**2
 //
 //--- Author: Nick van Eijndhoven 04-apr-1998 UU-SAP Utrecht
-//- Modified: NvE 08-apr-1999 UU-SAP Utrecht to inherit from AliJet
+//- Modified: NvE $Date$ UU-SAP Utrecht
 ///////////////////////////////////////////////////////////////////////////
 
 #include "AliVertex.h"
@@ -127,9 +154,14 @@ AliVertex::AliVertex()
  fNvmax=0;
  fVertices=0;
  fConnects=0;
+ fVertexCopy=0;
+ fNjmax=0;
+ fJets=0;
+ fJetCopy=0;
  Reset();
  SetNtinit();
  SetNvmax();
+ SetNjmax();
 }
 ///////////////////////////////////////////////////////////////////////////
 AliVertex::AliVertex(Int_t n)
@@ -139,6 +171,10 @@ AliVertex::AliVertex(Int_t n)
  fNvmax=0;
  fVertices=0;
  fConnects=0;
+ fVertexCopy=0;
+ fNjmax=0;
+ fJets=0;
+ fJetCopy=0;
  Reset();
  if (n > 0)
  {
@@ -153,18 +189,29 @@ AliVertex::AliVertex(Int_t n)
   SetNtinit();
  }
  SetNvmax();
+ SetNjmax();
 }
 ///////////////////////////////////////////////////////////////////////////
 AliVertex::~AliVertex()
 {
 // Default destructor
- if (fVertices) delete fVertices;
- fVertices=0;
+ if (fVertices)
+ {
+  if (fVertexCopy) fVertices->Delete();
+  delete fVertices;
+  fVertices=0;
+ }
  if (fConnects)
  {
   fConnects->Delete();
   delete fConnects;
   fConnects=0;
+ }
+ if (fJets)
+ {
+  if (fJetCopy) fJets->Delete();
+  delete fJets;
+  fJets=0;
  }
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -179,17 +226,82 @@ void AliVertex::SetNvmax(Int_t n)
  {
   fNvmax=1;
  }
- if (fVertices) delete fVertices;
- fVertices=new TObjArray(fNvmax);
+ if (fVertices)
+ {
+  if (fVertexCopy) fVertices->Delete();
+  delete fVertices;
+  fVertices=0;
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+void AliVertex::SetNjmax(Int_t n)
+{
+// Set the initial maximum number of jets
+ if (n > 0)
+ {
+  fNjmax=n;
+ }
+ else
+ {
+  fNjmax=1;
+ }
+ if (fJets)
+ {
+  if (fJetCopy) fJets->Delete();
+  delete fJets;
+  fJets=0;
+ }
 }
 ///////////////////////////////////////////////////////////////////////////
 void AliVertex::Reset()
 {
-// Reset all variables to 0
+// Reset all variables to 0 and reset all stored vertex and jet lists.
 // The max. number of tracks is set to the initial value again
 // The max. number of vertices is set to the default value again
+// The max. number of jets is set to the default value again
 
  AliJet::Reset();
+
+ Double_t a[3]={0,0,0};
+ SetPosition(a,"sph");
+ SetPositionErrors(a,"car");
+
+ fNvtx=0;
+ if (fNvmax>0) SetNvmax(fNvmax);
+ if (fConnects)
+ {
+  fConnects->Delete();
+  delete fConnects;
+  fConnects=0;
+ }
+
+ fNjets=0;
+ if (fNjmax>0) SetNjmax(fNjmax);
+}
+///////////////////////////////////////////////////////////////////////////
+void AliVertex::ResetVertices()
+{
+// Reset the stored vertex list and delete all connecting tracks which
+// were generated automatically via connect=1 in AddVertex().
+// The max. number of vertices is set to the default value again.
+// All physics quantities are updated according to the removal of the
+// connecting tracks.
+ AliTrack* t;
+ if (fConnects)
+ {
+  for (Int_t i=0; i<=fConnects->GetLast(); i++)
+  {
+   t=(AliTrack*)fConnects->At(i);
+   AliTrack* test=(AliTrack*)fTracks->Remove(t);
+   if (test)
+   {
+    fNtrk--;
+    (Ali4Vector&)(*this)-=(Ali4Vector&)(*t);
+    fQ-=t->GetCharge();
+   }
+  }
+  fTracks->Compress();
+ }
 
  fNvtx=0;
  if (fNvmax>0) SetNvmax(fNvmax);
@@ -201,18 +313,50 @@ void AliVertex::Reset()
  }
 }
 ///////////////////////////////////////////////////////////////////////////
-void AliVertex::Add(AliJet& j)
+void AliVertex::AddJet(AliJet& j,Int_t tracks)
 {
-// Add the tracks of a jet to the vertex
- AliTrack* tj;
- for (Int_t i=1; i<=j.GetNtracks(); i++)
+// Add a jet (and its tracks) to the vertex
+// In case the maximum number of jets has been reached,
+// the array space will be extended automatically
+//
+// Note : By default the tracks of the jet are added to the current (primary)
+//        vertex.
+//        The automatic addition of the tracks of the jet can be suppressed
+//        by specifying tracks=0. In this case only the AliJet object will
+//        be stored according to the mode specified by SetJetCopy().
+//        The latter will enable jet studies based on a fixed list of tracks
+//        as contained e.g. in an AliVertex or AliEvent. 
+ if (!fJets) fJets=new TObjArray(fNjmax);
+ if (fNjets == fNjmax) // Check if maximum jet number is reached
  {
-  tj=j.GetTrack(i);
-  AliJet::Add(tj);
+  fNjmax++;
+  fJets->Expand(fNjmax);
+ }
+
+ // Add the jet to the list 
+ fNjets++;
+ if (fJetCopy)
+ {
+  fJets->Add(j.Clone());
+ }
+ else
+ {
+  fJets->Add(&j);
+ }
+
+ // Add the tracks of the jet to this vertex
+ if (tracks)
+ {
+  AliTrack* tj;
+  for (Int_t i=1; i<=j.GetNtracks(); i++)
+  {
+   tj=j.GetTrack(i);
+   AddTrack(tj);
+  }
  }
 }
 ///////////////////////////////////////////////////////////////////////////
-void AliVertex::Add(AliVertex& v,Int_t connect)
+void AliVertex::AddVertex(AliVertex& v,Int_t connect)
 {
 // Add a (secondary) vertex to the current vertex.
 // In case the maximum number of (secondary) vertices has been reached,
@@ -228,6 +372,7 @@ void AliVertex::Add(AliVertex& v,Int_t connect)
 //        has to introduce the connecting track lateron by hand
 //        explicitly in order to match the kinematics and charge.
 //
+ if (!fVertices) fVertices=new TObjArray(fNvmax);
  if (fNvtx == fNvmax) // Check if maximum vertex number is reached
  {
   fNvmax++;
@@ -236,7 +381,14 @@ void AliVertex::Add(AliVertex& v,Int_t connect)
 
  // Add the linked (secondary) vertex to the list 
  fNvtx++;
- fVertices->Add(&v);
+ if (fVertexCopy)
+ {
+  fVertices->Add(v.Clone());
+ }
+ else
+ {
+  fVertices->Add(&v);
+ }
 
  // Create connecting track and update 4-momentum and charge for current vertex
  if (connect)
@@ -248,14 +400,14 @@ void AliVertex::Add(AliVertex& v,Int_t connect)
   Double_t v2=v.GetInvariant();
   Double_t dv2=v.Ali4Vector::GetResultError();
 
-  AliTrack* t=new AliTrack;
+  AliTrack* t=new AliTrack();
   t->SetBeginPoint(r1);
   t->SetEndPoint(r2);
   t->SetCharge(q);
   t->Set3Momentum(p);
   t->SetInvariant(v2,dv2);
 
-  AliJet::Add(t);
+  AddTrack(t);
 
   if (!fConnects) fConnects=new TObjArray(fNvmax);
   fConnects->Add(t);
@@ -265,9 +417,10 @@ void AliVertex::Add(AliVertex& v,Int_t connect)
 void AliVertex::Info(TString f)
 {
 // Provide vertex information within the coordinate frame f
- cout << " *AliVertex::Info* Invmass : " << GetInvmass()
+ cout << " *AliVertex::Info* Id : " << fUserId << " Invmass : " << GetInvmass()
       << " Charge : " << GetCharge() << " Momentum : " << GetMomentum()
-      << " Ntracks : " << GetNtracks() << " Nvertices : " << fNvtx << endl;
+      << " Ntracks : " << GetNtracks() << " Nvertices : " << fNvtx 
+      << " Njets : " << fNjets << endl;
  cout << " ";
  Ali4Vector::Info(f);
  cout << "  Position";
@@ -391,6 +544,166 @@ Int_t AliVertex::GetNvertices()
 AliVertex* AliVertex::GetVertex(Int_t i)
 {
 // Return the i-th (secondary) vertex of the current vertex
- return (AliVertex*)fVertices->At(i-1);
+ if (!fVertices)
+ {
+  cout << " *AliVertex*::GetVertex* No (secondary) vertices present." << endl;
+  return 0;
+ }
+ else
+ {
+  if (i<=0 || i>fNvtx)
+  {
+   cout << " *AliVertex*::GetVertex* Invalid argument i : " << i
+        << " Nvtx = " << fNvtx << endl;
+   return 0;
+  }
+  else
+  {
+   return (AliVertex*)fVertices->At(i-1);
+  }
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+AliVertex* AliVertex::GetIdVertex(Int_t id)
+{
+// Return the (sec.) vertex with user identifier "id"
+ AliVertex* vx=0;
+ AliVertex* v=0;
+ if (!fVertices)
+ {
+  cout << " *AliVertex*::GetIdVertex* No (secondary) vertices present." << endl;
+  return 0;
+ }
+ else
+ {
+  for (Int_t i=0; i<fNvtx; i++)
+  {
+   vx=(AliVertex*)fVertices->At(i);
+   if (id == vx->GetId()) v=vx;
+  }
+  return v;
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+void AliVertex::SetVertexCopy(Int_t j)
+{
+// (De)activate the creation of private copies of the added vertices.
+// j=0 ==> No private copies are made; pointers of original vertices are stored.
+// j=1 ==> Private copies of the vertices are made and these pointers are stored.
+//
+// Note : Once the storage contains pointer(s) to AliVertex objects one cannot
+//        change the VertexCopy mode anymore.
+//        To change the VertexCopy mode for an existing AliVertex containing
+//        vertices one first has to invoke Reset().
+ if (!fVertices)
+ {
+  if (j==0 || j==1)
+  {
+   fVertexCopy=j;
+  }
+  else
+  {
+   cout << "*AliVertex::SetVertexCopy* Invalid argument : " << j << endl;
+  }
+ }
+ else
+ {
+  cout << "*AliVertex::SetVertexCopy* Storage already contained vertices."
+       << "  ==> VertexCopy mode not changed." << endl; 
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+Int_t AliVertex::GetVertexCopy()
+{
+// Provide value of the VertexCopy mode.
+// 0 ==> No private copies are made; pointers of original vertices are stored.
+// 1 ==> Private copies of the vertices are made and these pointers are stored.
+ return fVertexCopy;
+}
+///////////////////////////////////////////////////////////////////////////
+Int_t AliVertex::GetNjets()
+{
+// Return the current number of jets
+ return fNjets;
+}
+///////////////////////////////////////////////////////////////////////////
+AliJet* AliVertex::GetJet(Int_t i)
+{
+// Return the i-th jet of the current vertex
+ if (!fJets)
+ {
+  cout << " *AliVertex*::GetJet* No jets present." << endl;
+  return 0;
+ }
+ else
+ {
+  if (i<=0 || i>fNjets)
+  {
+   cout << " *AliVertex*::GetJet* Invalid argument i : " << i
+        << " Njets = " << fNjets << endl;
+   return 0;
+  }
+  else
+  {
+   return (AliJet*)fJets->At(i-1);
+  }
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+AliJet* AliVertex::GetIdJet(Int_t id)
+{
+// Return the jet with user identifier "id"
+ AliJet* jx=0;
+ AliJet* j=0;
+ if (!fJets)
+ {
+  cout << " *AliVertex*::GetIdJet* No jets present." << endl;
+  return 0;
+ }
+ else
+ {
+  for (Int_t i=0; i<fNjets; i++)
+  {
+   jx=(AliJet*)fJets->At(i);
+   if (id == jx->GetId()) j=jx;
+  }
+  return j;
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+void AliVertex::SetJetCopy(Int_t j)
+{
+// (De)activate the creation of private copies of the added jets.
+// j=0 ==> No private copies are made; pointers of original jets are stored.
+// j=1 ==> Private copies of the jets are made and these pointers are stored.
+//
+// Note : Once the storage contains pointer(s) to AliJet objects one cannot
+//        change the JetCopy mode anymore.
+//        To change the JetCopy mode for an existing AliVertex containing
+//        jets one first has to invoke Reset().
+ if (!fJets)
+ {
+  if (j==0 || j==1)
+  {
+   fJetCopy=j;
+  }
+  else
+  {
+   cout << "*AliVertex::SetJetCopy* Invalid argument : " << j << endl;
+  }
+ }
+ else
+ {
+  cout << "*AliVertex::SetJetCopy* Storage already contained jets."
+       << "  ==> JetCopy mode not changed." << endl; 
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+Int_t AliVertex::GetJetCopy()
+{
+// Provide value of the JetCopy mode.
+// 0 ==> No private copies are made; pointers of original jets are stored.
+// 1 ==> Private copies of the jets are made and these pointers are stored.
+ return fJetCopy;
 }
 ///////////////////////////////////////////////////////////////////////////

@@ -15,16 +15,14 @@
 
 #include <TGFrame.h>
 
+class TG4ListTreeFrame;
 class TG4VolumesFrames;
 class TG4MaterialsFrames;
+class TG4ListTreeFrame;
 class TObject;
-class TGListTreeItem;
-class TGPicture;
-class TGListTree;
 class TGTab;
 class TGMenuBar;
 class TGPopupMenu;
-class TGCanvas;
 
 
 class TG4MainFrame : public TGMainFrame {
@@ -33,13 +31,11 @@ public:
     
     TG4MainFrame(const TGWindow *p, UInt_t w, UInt_t h);
     ~TG4MainFrame();
- 
-    TGListTreeItem*
-        AddItem(TObject* obj, TGListTreeItem* parent,const char* name,
-                const TGPicture* open, const TGPicture* closed);
 		
      TG4VolumesFrames* GetVolumesFrames() const;
      TG4MaterialsFrames* GetMaterialsFrames() const;
+     TG4ListTreeFrame* GetListTreeFrame() const;
+
      void CloseWindow();		    			    
      Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t parm2);
 //---------------------------------------------------------------------------
@@ -63,13 +59,11 @@ private:
     TGLayoutHints*      fMenuBarLayout;    // main bar layout 
     
     TGTab*      fTab;           // tab widget
-    TGCanvas*   fCanvasWindow;  // Canvas window for the list tree
     
-    TGListTree*     fVolumesListTree;     // volumes list tree 
-    
-    TG4VolumesFrames*   fvolumesFrames;  // service class for adding vols subframes 
-    TG4MaterialsFrames*   fmaterialsFrames;  // service class for adding mats subframes 
-			
+    TG4VolumesFrames*   fvolumesFrames;   // service class for adding vols subframes 
+    TG4MaterialsFrames* fmaterialsFrames; // service class for adding mats subframes 
+    TG4ListTreeFrame*   flistTreeFrame;	  // service class for volumes list tree		
+
     ClassDef(TG4MainFrame,0)  // the main frame for the TG4 Browser  
   };
   

@@ -1,6 +1,10 @@
 // $Id$
 // Category: event
 //
+// Author: I. Hrivnacova
+//
+// Class AliSteppingActionMessenger
+// --------------------------------
 // See the class description in the header file.
 
 #include "AliSteppingActionMessenger.h"
@@ -9,6 +13,7 @@
 
 #include <G4UIcmdWithAnInteger.hh>
 
+//_____________________________________________________________________________
 AliSteppingActionMessenger::AliSteppingActionMessenger(
                               AliSteppingAction* trackingAction)
   :fSteppingAction(trackingAction)
@@ -30,10 +35,12 @@ AliSteppingActionMessenger::AliSteppingActionMessenger(
   fMaxNofStepsCmd->AvailableForStates(Idle);
 }
 
+//_____________________________________________________________________________
 AliSteppingActionMessenger::AliSteppingActionMessenger() {
 //
 }
 
+//_____________________________________________________________________________
 AliSteppingActionMessenger::AliSteppingActionMessenger(
                                  const AliSteppingActionMessenger& right) {
 //				 
@@ -41,6 +48,7 @@ AliSteppingActionMessenger::AliSteppingActionMessenger(
     "AliSteppingActionMessenger is protected from copying.");
 }
 
+//_____________________________________________________________________________
 AliSteppingActionMessenger::~AliSteppingActionMessenger() {
 //
   delete fLoopVerboseCmd;
@@ -49,6 +57,7 @@ AliSteppingActionMessenger::~AliSteppingActionMessenger() {
 
 // operators
 
+//_____________________________________________________________________________
 AliSteppingActionMessenger& 
 AliSteppingActionMessenger::operator=(const AliSteppingActionMessenger &right)
 {
@@ -63,6 +72,7 @@ AliSteppingActionMessenger::operator=(const AliSteppingActionMessenger &right)
 
 // public methods
 
+//_____________________________________________________________________________
 void AliSteppingActionMessenger::SetNewValue(G4UIcommand* command, 
        G4String newValue)
 { 

@@ -1,6 +1,10 @@
 // $Id$
 // Category: geometry
 //
+// Author: I. Hrivnacova
+//
+// Class AliModuleConstruction
+// ---------------------------
 // Abstract base class for modular construction of geometry,
 // providing methods for browsing geometry (list volumes trees, 
 // visualization).
@@ -8,10 +12,11 @@
 #ifndef ALI_MODULE_CONSTRUCTION_H
 #define ALI_MODULE_CONSTRUCTION_H
 
+#include "AliModuleConstructionMessenger.h"
+
 #include <globals.hh>
 
 class AliLVStructure;
-class AliModuleConstructionMessenger;
 class AliModule;
 
 class G4VPhysicalVolume;
@@ -23,7 +28,7 @@ class G4Colour;
 class AliModuleConstruction
 {
   public:
-    AliModuleConstruction(G4String moduleName);
+    AliModuleConstruction(const G4String& moduleName);
     AliModuleConstruction(const AliModuleConstruction& right);
     // --> protected
     // AliModuleConstruction();
@@ -36,25 +41,23 @@ class AliModuleConstruction
 
     // methods
     virtual void Construct() = 0;
-    void ListAllLVTree();
-    void ListAllLVTreeLong();
-    void ListLVTree(G4String lvName);
-    void ListLVTreeLong(G4String lvName);
-    G4LogicalVolume* FindLogicalVolume(G4String name, 
-                                       G4bool silent = false) const;
+    void ListAllLVTree() const;
+    void ListAllLVTreeLong() const;
+    void ListLVTree(const G4String& lvName) const;
+    void ListLVTreeLong(const G4String& lvName) const;
 
     // set methods
     void SetDetFrame(G4bool warn = true);
-    void SetDetFrame(G4String frameName, G4bool warn = true);
+    void SetDetFrame(const G4String& frameName, G4bool warn = true);
     void SetReadGeometry(G4bool readGeometry);
     void SetWriteGeometry(G4bool writeGeometry);
 #ifdef ALICE_VISUALIZE
-    void SetDetVisibility(G4bool visibility);
-    void SetLVTreeVisibility(G4LogicalVolume* lv, G4bool visibility);
-    void SetVolumeVisibility(G4LogicalVolume* lv, G4bool visibility);
-    void SetDetColour(G4String colName);
-    void SetLVTreeColour(G4LogicalVolume* lv, G4String colName);
-    void SetVolumeColour(G4LogicalVolume* lv, G4String colName);     
+    void SetDetVisibility(G4bool visibility) const;
+    void SetLVTreeVisibility(G4LogicalVolume* lv, G4bool visibility) const;
+    void SetVolumeVisibility(G4LogicalVolume* lv, G4bool visibility) const;
+    void SetDetColour(G4String colName) const;
+    void SetLVTreeColour(G4LogicalVolume* lv, const G4String& colName) const;
+    void SetVolumeColour(G4LogicalVolume* lv, const G4String& colName) const;     
 #endif
 
     // get methods
@@ -84,11 +87,11 @@ class AliModuleConstruction
 
   private:
     // methods
-    void RegisterLogicalVolume(G4LogicalVolume* lv, G4String path, 
-           AliLVStructure& lvStructure);
+    void RegisterLogicalVolume(G4LogicalVolume* lv, const G4String& path, 
+                               AliLVStructure& lvStructure) const;
 
     // data members
-    AliModuleConstructionMessenger*  fMessenger; //messenger     
+    AliModuleConstructionMessenger  fMessenger; //messenger     
 };
 
 // inline methods

@@ -1,6 +1,10 @@
 // $Id$
 // Category: run
 //
+// Author: I. Hrivnacova
+//
+// Class TG4RunMessenger
+// ---------------------
 // See the class description in the header file.
 
 #include "TG4RunMessenger.h"
@@ -12,6 +16,7 @@
 #include <G4UIcmdWithoutParameter.hh>
 #include <G4UIcmdWithAString.hh>
 
+//_____________________________________________________________________________
 TG4RunMessenger::TG4RunMessenger(TG4RunManager* runManager)
   : fRunManager(runManager)
 { 
@@ -40,15 +45,18 @@ TG4RunMessenger::TG4RunMessenger(TG4RunManager* runManager)
   fG3DefaultsCmd->AvailableForStates(PreInit);
 }
 
+//_____________________________________________________________________________
 TG4RunMessenger::TG4RunMessenger(){
 //
 } 
 
+//_____________________________________________________________________________
 TG4RunMessenger::TG4RunMessenger(const TG4RunMessenger& right) {
 // 
   TG4Globals::Exception("TG4RunMessenger is protected from copying.");
 }
 
+//_____________________________________________________________________________
 TG4RunMessenger::~TG4RunMessenger() {
 //
   delete fDirectory;
@@ -60,6 +68,7 @@ TG4RunMessenger::~TG4RunMessenger() {
 
 // operators
 
+//_____________________________________________________________________________
 TG4RunMessenger& TG4RunMessenger::operator=(const TG4RunMessenger& right)
 {
   // check assignement to self
@@ -72,6 +81,7 @@ TG4RunMessenger& TG4RunMessenger::operator=(const TG4RunMessenger& right)
           
 // public methods
 
+//_____________________________________________________________________________
 void TG4RunMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
 { 
 // Applies command to the associated object.

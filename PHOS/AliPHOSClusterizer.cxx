@@ -17,7 +17,7 @@
 
 //_________________________________________________________________________
 //  Base class for the clusterization algorithm (pure abstract)
-//
+//*--
 //*-- Author: Yves Schutz  SUBATECH 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -36,13 +36,13 @@
 ClassImp(AliPHOSClusterizer)
 
 //____________________________________________________________________________
-  AliPHOSClusterizer::AliPHOSClusterizer():TTask("AliPHOSClusterizer","")
+  AliPHOSClusterizer::AliPHOSClusterizer():TTask("","")
 {
   // ctor
 }
 //____________________________________________________________________________
-AliPHOSClusterizer::AliPHOSClusterizer(const char* HeaderFile,const char* DigitsFile = 0):
-TTask("AliPHOSClusterizer","")
+AliPHOSClusterizer::AliPHOSClusterizer(const char* headerFile, const char* name):
+TTask(name, headerFile)
 {
   // ctor
 }

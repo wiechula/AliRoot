@@ -32,6 +32,7 @@ class AliLegoGenerator;
 #include "AliMCProcess.h"
 class AliMCQA;
 class AliStack;
+class AliGenEventHeader;
 
 
 enum {kKeepBit=1, kDaughtersBit=2, kDoneBit=4};
@@ -71,6 +72,9 @@ public:
    Int_t          GetEvNumber() const {return fEvent;}
    Int_t          GetRunNumber() const {return fRun;}
    void           SetRunNumber(Int_t run) {fRun=run;}
+   void           SetEventNrInRun(Int_t event) {fEventNrInRun=event;}
+   Int_t          GetEventNrInRun() const {return fEventNrInRun;}
+   Int_t          GetEventsPerRun() const {return fEventsPerRun;}
    Int_t          GetDebug() const {return fDebug;}
    AliModule     *GetModule(const char *name) const;
    TList*         GetHitLists() const {return fHitLists ;}
@@ -86,6 +90,7 @@ public:
     {return fConfigFunction.Data();}
    TGeometry     *GetGeometry();
    AliHeader*     GetHeader() {return fHeader;}
+   virtual  void  SetGenEventHeader(AliGenEventHeader* header);
    virtual  void  GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
 			       Float_t &e, Float_t *vpos, Float_t *polar, 
 			       Float_t &tof);
@@ -118,7 +123,7 @@ public:
 			  Int_t nc2=60,Float_t c2min=0,Float_t c2max=360,Float_t rmin=0,
 			  Float_t rmax=430,Float_t zmax=10000, AliLegoGenerator* gener=NULL);
    virtual  Bool_t IsLegoRun() const {return (fLego!=0);}
-   virtual  void  RunReco(const char *detector=0);
+   virtual  void  RunReco(const char *detector=0, Int_t first = 0, Int_t last = 0);
    virtual  void  SetCurrentTrack(Int_t track);                           
    virtual  void  SetDebug(const Int_t level=0) {fDebug = level;}
    virtual  void  SetDisplay(AliDisplay *display) {fDisplay = display;}
@@ -163,6 +168,8 @@ protected:
 
   Int_t          fRun;               //! Current run number
   Int_t          fEvent;             //! Current event number (from 1)
+  Int_t          fEventNrInRun;      //! Current unique event number in run
+  Int_t          fEventsPerRun;      //  Number of events per run
   Int_t          fDebug;             //  Debug flag
   AliHeader     *fHeader;            //  Header information
   TTree         *fTreeD;             //! Pointer to Tree for Digits
@@ -193,13 +200,13 @@ protected:
   AliMCQA       *fMCQA;              //  Pointer to MC Quality assurance class
   TString        fTransParName;      //  Name of the transport parameters file
   TString        fBaseFileName;      //  Name of the base root file
-  AliStack*      fStack;             //  ! Particle Stack
+  AliStack*      fStack;             //! Particle Stack
 private:
 
    AliRun(const AliRun &right) 
      {}  
    AliRun& operator = (const AliRun &) {return *this;}
-   ClassDef(AliRun,4)      //Supervisor class for all Alice detectors
+   ClassDef(AliRun,5)      //Supervisor class for all Alice detectors
 };
  
 R__EXTERN  AliRun *gAlice;

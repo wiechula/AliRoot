@@ -27,23 +27,26 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
    }
 
 // Connect the Root Galice file containing Geometry, Kine and Hits
-   TString *str = new TString("galice.root");
-   TFile *file = (TFile*)gROOT->GetListOfFiles()->FindObject(str->Data());
-   if (!file) file = new TFile(str->Data(),"UPDATE");
+   //TString *str = new TString("galice.root");
+   //TFile *file = (TFile*)gROOT->GetListOfFiles()->FindObject(str->Data());
+   TFile *file = (TFile*)gROOT->GetListOfFiles()->FindObject("galice.root");
+   //if (!file) file = new TFile(str->Data(),"UPDATE");
+   if (!file) file = new TFile("galice.root");
+   file->ls();
 
 // Get AliRun object from file or create it if not on file
-   //   if (!gAlice) {
+   if (!gAlice) {
      gAlice = (AliRun*)file->Get("gAlice");
      if (gAlice) printf("AliRun object found on file\n");
      if (!gAlice) gAlice = new AliRun("gAlice","Alice test program");
-     //}
+   }
 
 
      // -------------- Create ntuples --------------------
 
-     //  ntuple structures:
+     //  ntuple structures:  
 
-
+   /*
           struct {
             Int_t lay;
             Int_t nxP;
@@ -57,6 +60,7 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
             Float_t dz;
             Float_t pmod;
           } ntuple_st;
+   */
 
           struct {
             Int_t lay;
@@ -70,9 +74,11 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
             Float_t qclP;
             Float_t qclN;
             Float_t qrec;
+	    Float_t qcut;
             Float_t dx;
             Float_t dz;
           } ntuple1_st;
+
 
           struct {
             Int_t nxP;
@@ -81,6 +87,7 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
             Float_t z;
           } ntuple2_st;
 
+	  /*
           ntuple = new TTree("ntuple","Demo ntuple");
           ntuple->Branch("lay",&ntuple_st.lay,"lay/I");
           ntuple->Branch("nxP",&ntuple_st.nxP,"nxP/I");
@@ -93,6 +100,7 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
           ntuple->Branch("dx",&ntuple_st.dx,"dx/F");
           ntuple->Branch("dz",&ntuple_st.dz,"dz/F");
           ntuple->Branch("pmod",&ntuple_st.pmod,"pmod/F");
+	  */
 
 	  ntuple1 = new TTree("ntuple1","Demo ntuple1");
 	  ntuple1->Branch("lay",&ntuple1_st.lay,"lay/I");
@@ -103,11 +111,13 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
 	  ntuple1->Branch("qclP",&ntuple1_st.qclP,"qclP/F");
           ntuple1->Branch("qclN",&ntuple1_st.qclN,"qclN/F");
           ntuple1->Branch("qrec",&ntuple1_st.qrec,"qrec/F");
+          ntuple1->Branch("qcut",&ntuple1_st.qcut,"qcut/F");
           ntuple1->Branch("dx",&ntuple1_st.dx,"dx/F");
           ntuple1->Branch("dz",&ntuple1_st.dz,"dz/F");
 	  ntuple1->Branch("noverlaps",&ntuple1_st.noverlaps,"noverlaps/I");
           ntuple1->Branch("noverprim",&ntuple1_st.noverprim,"noverprim/I");
           ntuple1->Branch("ntrover",&ntuple1_st.ntrover,"ntrover/I");
+
 
           ntuple2 = new TTree("ntuple2","Demo ntuple2");
           ntuple2->Branch("nxP",&ntuple2_st.nxP,"nxP/I");
@@ -134,93 +144,47 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
           TH2F *adcPadcN6all = new TH2F("adcPadcN6all","adcP/N correlation for lay6",100,0.,200.,100,0.,200.);
           TH2F *adcPadcN5cut = new TH2F("adcPadcN5cut","adcP/N correlation for lay5 and cut of P-N signas",100,0.,200.,100,0.,200.);
           TH2F *adcPadcN6cut = new TH2F("adcPadcN6cut","adcP/N correlation for lay6 and cut of P-N signals",100,0.,200.,100,0.,200.);
+	  //-----------------------------------------------------------
 
-
-   AliITS *ITS  = (AliITS*) gAlice->GetModule("ITS");
-   if (!ITS) { cout << "no ITS" << endl; return; }
-   
-   //AliITSgeom *aliitsgeo = ITS->GetITSgeom();
-   AliITSgeom *geom = ITS->GetITSgeom();
-
-
-   //Int_t cp[8]={0,0,0,0,0,0,0,0};
-
-   //cout << "SSD" << endl;
-
-   AliITSDetType *iDetType=ITS->DetType(2);
-   AliITSsegmentationSSD *seg2=(AliITSsegmentationSSD*)iDetType->GetSegmentationModel();
-   AliITSresponseSSD *res2 = (AliITSresponseSSD*)iDetType->GetResponseModel();
-   //res2->SetSigmaSpread(3.,2.);
-   AliITSsimulationSSD *sim2=new AliITSsimulationSSD(seg2,res2);
-   ITS->SetSimulationModel(2,sim2);
-
-   TClonesArray *dig2  = ITS->DigitsAddress(2);
-   TClonesArray *recp2  = ITS->ClustersAddress(2);
-   AliITSClusterFinderSSD *rec2=new AliITSClusterFinderSSD(seg2,dig2);
-   ITS->SetReconstructionModel(2,rec2);
-
-   // test
-   printf("SSD dimensions %f %f %f \n",seg2->Dx(),seg2->Dz(),seg2->Dy());
-   printf("SSD nstrips %d %d \n",seg2->Npz(),seg2->Npx());
-   Float_t ylim = seg2->Dy()/2 - 12;
-   
 //
-//   Loop over events
+//   Loop over events 
 //
-
-
-   Int_t Nh=0;
-   Int_t Nh1=0;
-   for (int nev=0; nev<= evNumber2; nev++) {
-     Int_t nparticles = 0;
-     nparticles = gAlice->GetEvent(nev);
+  for (int nev=0; nev<= evNumber2; nev++) {
+     Int_t nparticles = gAlice->GetEvent(nev);
      cout << "nev         " << nev <<endl;
-     cout << "nparticles  " << nparticles <<endl;
+     //cout << "nparticles  " << nparticles <<endl;
      if (nev < evNumber1) continue;
      if (nparticles <= 0) return;
-     
-     AliITShit *itsHit;
-     AliITSRecPoint *itsPnt = 0;
-     AliITSRawClusterSSD *itsClu = 0;
-     
-     // Get Hit, Cluster & Recpoints Tree Pointers
 
      TTree *TH = gAlice->TreeH();
-     Int_t nenthit=TH->GetEntries();
-     printf("Found %d entries in the Hit tree (must be one per track per event!)\n",nenthit);
+     Int_t ntracks = TH->GetEntries();
+     cout<<"all entries to GEANT(charged and neutral) "<<ntracks<<endl;
 
+// Get pointers to Alice detectors and Digits containers
+     AliITS *ITS  = (AliITS*)gAlice->GetModule("ITS");
+     TClonesArray *Particles = gAlice->Particles();
+
+   if (ITS) {
+
+     // fill modules with sorted by module hits
+     Int_t nmodules;
+     ITS->InitModules(-1,nmodules); 
+     ITS->FillModules(nev,evNumber2,nmodules," "," ");
+
+     //get pointer to modules array
+     TObjArray *ITSmodules = ITS->GetModules();
+     AliITShit *itsHit;
+
+     // get the Tree for clusters
      ITS->GetTreeC(nev);
      TTree *TC=ITS->TreeC();
-     Int_t nentclu=TC->GetEntries();
-     printf("Found %d entries in the Cluster tree (must be one per module per event!)\n",nentclu);
-
+     Int_t nent=TC->GetEntries();
+     printf("Found %d entries in the TreeC (full number of the modules)\n",nent);
      TTree *TR = gAlice->TreeR();
-     Int_t nentrec=TR->GetEntries();
-     printf("Found %d entries in the RecPoints tree\n",nentrec);
-
-     // Get Pointers to Clusters & Recpoints TClonesArrays
-
-     TClonesArray *ITSclu  = ITS->ClustersAddress(2); 
-     printf ("ITSclu %p \n",ITSclu);
-     TClonesArray *ITSrec  = ITS->RecPoints(); 
-     printf ("ITSrec %p \n",ITSrec);
-
-     // check recpoints
-
-     //Int_t nbytes = 0;
-     Int_t totpoints = 0;
-     Int_t totclust = 0;
-
-     // check hits
-     
-     Int_t nmodules=0;
+     Int_t lay, lad, det;
+     AliITSgeom *geom = ITS->GetITSgeom();
      Int_t mod;
-     
-     ITS->InitModules(-1,nmodules); 
-     ITS->FillModules(nev,0,nmodules,"","");
-     
-     TObjArray *fITSmodules = ITS->GetModules();
-     
+
      Int_t first0 = geom->GetStartDet(0);  // SPD
      Int_t last0 = geom->GetLastDet(0);    // SPD
      Int_t first1 = geom->GetStartDet(1);  // SDD
@@ -230,56 +194,73 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
 
      //  For the SPD: first0 = 0, last0 = 239     (240 modules);  
      //  for the SDD: first1 = 240, last1 = 499   (260 modules);  
-     //  for the SSD: first2 = 500, last2 = 2269  (1770 modules).  
+     //  for the SSD: first2 = 500, last2 = 2197  (1698 modules).  
 
      printf("det type %d first0, last0 %d %d \n",0,first0,last0);
      printf("det type %d first1, last1 %d %d \n",1,first1,last1);
      printf("det type %d first2, last2 %d %d \n",2,first2,last2);
 
-     // module loop for the SSD
+
+   AliITSDetType *iDetType=ITS->DetType(2);
+   AliITSsegmentationSSD *seg2=(AliITSsegmentationSSD*)iDetType->GetSegmentationModel();
+   //AliITSresponseSSD *res2 = (AliITSresponseSSD*)iDetType->GetResponseModel();
+
+   printf("SSD dimensions %f %f %f \n",seg2->Dx(),seg2->Dz(),seg2->Dy());
+   printf("SSD nstrips %d %d \n",seg2->Npz(),seg2->Npx());
+   Float_t ylim = seg2->Dy()/2 - 12;
+
+
+
+    for (Int_t idettype=0;idettype<3;idettype++) {
+
+       TClonesArray *ITSclu  = ITS->ClustersAddress(idettype);
+       TClonesArray *ITSrec  = ITS->RecPoints(); 
+       //printf ("ITSrec %p \n",ITSrec);
+       //printf ("ITSclu %p \n",ITSclu);
+
+          if (idettype != 2) continue;
+
+	  // Module loop
+
      for (mod=first2; mod<last2+1; mod++) {  // for the "ALL" option
-       //for (mod=0; mod<last2-first2+1; mod++) { //for the "SSD" option
+       //for (mod=0; mod<last2-first2+1; mod++) { //for the "SSD" option       
 
-       TTree *TR = gAlice->TreeR();
-       Int_t nentrec=TR->GetEntries();
-       //printf("Found %d entries in the RecPoints tree\n",nentrec);
-      
-              //cout << "CLUSTERS: reset" << endl;
-       ITS->ResetClusters();
-       //cout << "CLUSTERS: get" << endl;
-       TC->GetEvent(mod);
-       //cout << "RECPOINTS: reset" << endl;
-       ITS->ResetRecPoints();
-       //cout << "RECPOINTS: get" << endl;
-       //TR->GetEvent(mod+1);   // for the V3.04 AliRoot
-       TR->GetEvent(mod);       // for the V3.05 AliRoot
-
-       Int_t nrecp = ITSrec->GetEntries();
-       totpoints += nrecp;
-       //if (nrecp) printf("Found %d rec points for module %d\n",nrecp,mod);
-       if (!nrecp) continue;
-       Int_t nclusters = ITSclu->GetEntries();
-       totclust += nclusters;
-       //if (nclusters) printf("Found %d clusters for module %d\n",nrecc,mod);
-       
-       //AliITSmodule *Mod = (AliITSmodule *)fITSmodules->At(mod+first2);
+       //AliITSmodule *Mod = (AliITSmodule *)ITSmodules->At(mod+first2);
        // for the "SSD" option
 
-       AliITSmodule *Mod = (AliITSmodule *)fITSmodules->At(mod);
+       AliITSmodule *Mod = (AliITSmodule *)ITSmodules->At(mod);
        // for the "ALL" option
 
-       //       printf("Mod: %X\n",Mod);
-       Int_t nhits = Mod->GetNhits();
+	      geom->GetModuleId(mod,lay,lad,det);
+
+	      Int_t nhits = Mod->GetNhits();
+              //if(nhits) printf("module nhits %d %d\n",mod,nhits);
+	      if(!nhits) continue;
+
+              ITS->ResetClusters();
+              TC->GetEvent(mod);
+	      Int_t nclust = ITSclu->GetEntries();
+	      if (!nclust) continue;
+
+              ITS->ResetRecPoints();
+              TR->GetEvent(mod);
+              Int_t nrecp = ITSrec->GetEntries();
+              //if (nrecp) printf("Found %d rec points for module %d\n",nrecp,mod);
+              if (!nrecp) continue;
+
+
+
        Float_t epart = 0;
-       cout <<" module,nrecp,nclusters,nhits ="<<mod<<","<<nrecp<<","<<nclusters<<","<<nhits<< endl;
+       cout <<" module,nrecp,nclust,nhits ="<<mod<<","<<nrecp<<","<<nclust<<","<<nhits<< endl;
 
-       // ---------------- cluster/hit analysis ---------------------
+       // ---------------- cluster/recpoint/hit analysis ---------------------
 
 
-     Float_t pathInSSD = 300.;
+       Float_t pathInSSD = 300.;
 
        // ---- Recpoint loop
-       for (Int_t pnt=0;pnt<nrecp;pnt++) {
+      for (Int_t pnt=0;pnt<nrecp;pnt++) {
+
 	 itsPnt  = (AliITSRecPoint*)ITSrec->At(pnt);
 	 if(!itsPnt) continue;
 	 itsClu  = (AliITSRawClusterSSD*)ITSclu->At(pnt);
@@ -290,13 +271,11 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
 	 Int_t ntrover = itsClu->fNtracks;
 	 Float_t qclP = itsClu->fSignalP;     // in ADC
 	 Float_t qclN = itsClu->fSignalN;     // in ADC
-	 //Float_t dq = qclP - qclN;
-	 Float_t qcut = itsClu->fQErr;        // abs(dq)/signal,
-	                                      // where signal is
-	                                      // max of qclP,qclN        
+	 Float_t dq = TMath::Abs(qclP - qclN);    
  	 Float_t xrec = 10000*itsPnt->GetX();
 	 Float_t zrec = 10000*itsPnt->GetZ();
 	 Float_t qrec = itsPnt->GetQ();      // in ADC, maximum from fSignalP/N
+	 Float_t qcut = dq/qrec;
 	 //Float_t dedx = itsPnt->GetdEdX();   // in KeV (ADC * 2.16)
 	 Float_t dedx = itsPnt->fdEdX;   // in KeV (ADC * 2.16)
          Int_t ii = 0;
@@ -305,44 +284,46 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
 	 Int_t tr2 = itsPnt->GetLabel(ii);
          Int_t ii = 2;
 	 Int_t tr3 = itsPnt->GetLabel(ii);
+
 	 // fill ntuple2
-	     ntuple2_st.nxP = nxP;
-             ntuple2_st.nxN = nxN;
-	     ntuple2_st.x = xrec/1000;
-             ntuple2_st.z = zrec/1000;
+	 ntuple2_st.nxP = nxP;
+	 ntuple2_st.nxN = nxN;
+	 ntuple2_st.x = xrec/1000;
+	 ntuple2_st.z = zrec/1000;
+	 
+	 ntuple2->Fill();
+	 
+	 Int_t noverlaps = 0;
+	 Int_t noverprim = 0;
+	 Int_t flaghit = 0;
+	 Float_t xhit0 = 1e+7;
+	 Float_t yhit0 = 1e+7;
+	 Float_t zhit0 = 1e+7;
+	 Float_t dxprimbest = 1e+7;
+	 Float_t dzprimbest = 1e+7;
+	 
+	 // Hit loop
+       for (Int_t hit=0;hit<nhits;hit++) {
 
-             if(qcut < 0.18) ntuple2->Fill();
-
-
-	  Int_t noverlaps = 0;
-	  Int_t noverprim = 0;
- 	  Int_t flaghit = 0;
-          Float_t xhit0 = 1e+7;
-          Float_t yhit0 = 1e+7;
-          Float_t zhit0 = 1e+7;
-
-       // Hit loop
-        for (Int_t hit=0;hit<nhits;hit++) {
-
-	 itsHit   = (AliITShit*)Mod->GetHit(hit);
-
-	 Int_t flagtrack = 0;
-	 Int_t hitlayer = itsHit->GetLayer();
-	 Int_t hitladder= itsHit->GetLadder();
-	 Int_t hitdet= itsHit->GetDetector();
-
-	 Int_t track = itsHit->GetTrack();
-	 Int_t dray = 0;
-	 Int_t hitstat = itsHit->GetTrackStatus();
-
- 	  Float_t zhit = 10000*itsHit->GetZL();
-	  Float_t xhit = 10000*itsHit->GetXL();
-	  Float_t yhit = 10000*itsHit->GetYL();
-	  Float_t ehit = 1.0e+6*itsHit->GetIonization(); // hit energy, KeV 
-
+	   itsHit   = (AliITShit*)Mod->GetHit(hit);
+	   
+	   Int_t flagtrack = 0;
+	   Int_t hitlayer = itsHit->GetLayer();
+	   Int_t hitladder= itsHit->GetLadder();
+	   Int_t hitdet= itsHit->GetDetector();
+	   
+	   Int_t track = itsHit->GetTrack();
+	   Int_t dray = 0;
+	   Int_t hitstat = itsHit->GetTrackStatus();
+	   
+	   Float_t zhit = 10000*itsHit->GetZL();
+	   Float_t xhit = 10000*itsHit->GetXL();
+	   Float_t yhit = 10000*itsHit->GetYL();
+	   Float_t ehit = 1.0e+6*itsHit->GetIonization(); // hit energy, KeV 
+	   
 	   Int_t parent = itsHit->GetParticle()->GetFirstMother();
 	   Int_t partcode = itsHit->GetParticle()->GetPdgCode();
-
+	   
    //  partcode (pdgCode): 11 - e-, 13 - mu-, 22 - gamma, 111 - pi0, 211 - i+
    //  310 - K0s, 321 - K+, 2112 - n, 2212 - p, 3122 - lambda
 
@@ -350,146 +331,164 @@ void SSDrecpointTest (Int_t evNumber1=0,Int_t evNumber2=0)
 	                                              // vertex
 	   pmod *= 1.0e+3;
 
-	  if(hitstat == 66 && yhit < -ylim) {  // entering hit
+	  if(hitstat == 66 && yhit < -ylim) {
 	    xhit0 = xhit;
 	    yhit0 = yhit;
 	    zhit0 = zhit;
 	  }
 
 	  if(hitstat == 66) continue; // Take the not entering hits only 
-
+	  
 	  if(xhit0 > 9e+6 || zhit0 > 9e+6 || yhit0 > 9e+6) {
-	    //cout<<"default xhit0,zhit0,yhit0 ="<<xhit0<<","<<zhit0<<","<<yhit0<<endl;
 	    continue;
 	  }
-
-
-
+	  
 	  // Consider the hits only with the track number equaled to one
 	  // of the recpoint
 	  if((track == tr1) || (track == tr2) || (track == tr3)) flagtrack = 1;
+	  
+	  if(flagtrack == 1) {     // the hit corresponds to the recpoint
+	    
+	    flaghit = 1;
+	    
+	    //Float_t px = itsHit->GetPXL(); // the momenta at this GEANT point
+	    //Float_t py = itsHit->GetPYL();
+	    //Float_t pz = itsHit->GetPZL();
+	    
+	    Int_t hitprim = 0;
+	    
+	    if(partcode == 11 && pmod < 6) dray = 1; // delta ray is e-
+	    // at p < 6 MeV/c
+	    
+	    if((hitstat == 68 || hitstat == 33) && dray == 0)  noverlaps=noverlaps + 1;
+	    // overlapps for all hits but
+	    // not for delta ray which
+	    // also went out from the
+	    // detector and returned
+	    // again
+	    
+	    
+	    // x,z resolution colculation
+	    if((hitstat == 68 || hitstat == 33) && dray == 0) {
+	      Float_t xmed = (xhit + xhit0)/2;
+	      Float_t zmed = (zhit + zhit0)/2;
+	      Float_t xdif = xmed - xrec;
+	      Float_t zdif = zmed - zrec;
+	      
+	      if(parent < 0)  {
+		hitprim = 1; // hitprim=1 for the primery particles
+		noverprim += 1;
+	      }
+	      pathInSSD = TMath::Sqrt((xhit0-xhit)*(xhit0-xhit)+(yhit0-yhit)*(yhit0-yhit)+(zhit0-zhit)*(zhit0-zhit));
+	      
+	      // Find the best xdif and zdif from any ones for the primery
+	      // particles (to remove the wronge xdif and zdif if the hit
+	      // belongs to the other package containing the same P/N cluster
+	      
+	      if(hitprim > 0) {
+		if(TMath::Abs(dxprimbest)>TMath::Abs(xdif)) dxprimbest = xdif;          
+		if(TMath::Abs(dzprimbest)>TMath::Abs(zdif)) dzprimbest = zdif;         
+	      }
+	      
 
-         if(flagtrack == 1) {     // the hit corresponds to the recpoint
+	      /*
+	      // fill ntuple
+	      ntuple_st.lay = hitlayer;
+	      ntuple_st.nxP = nxP;
+	      ntuple_st.nxN = nxN;
+	      ntuple_st.hitprim = hitprim;
+	      ntuple_st.partcode = partcode;
+	      ntuple_st.ntrover = ntrover;
+	      ntuple_st.x = xrec/1000;
+	      ntuple_st.z = zrec/1000;
+	      ntuple_st.dx = xdif;
+	      ntuple_st.dz = zdif;
+	      ntuple_st.pmod = pmod;
+	      
+	      //if(qcut < 0.18) ntuple->Fill();
+	      ntuple->Fill();
+	      */
+	      
+	      //if(hitlayer == 5 && qcut < 0.18) {
+	      
+	      if(hitlayer == 5 ) {
+		Xres5->Fill(xdif);
+		Zres5->Fill(zdif);
+		Path5->Fill(pathInSSD);
+	      }
+	      //if(hitlayer == 6 && qcut < 0.18) {
+	      if(hitlayer == 6) {
+		Xres6->Fill(xdif);
+		Zres6->Fill(zdif);
+		Path6->Fill(pathInSSD);
+	      }
+	    } // hitstat 68/33
+	  } else {       // non correspondent hit
+	    xhit0 = 1e+7;
+	    zhit0 = 1e+7;
+	  } // end of hit-recpoint correspondence
+       } // hit loop       
+	 
+       if(flaghit == 1) {
+	   
+	   if(noverlaps == 0) noverlaps = 1; // cluster contains one or more
+	   // delta rays only
+   
 
-	   flaghit = 1;
+	   // fill ntuple1
+	   ntuple1_st.lay = hitlayer;
+	   ntuple1_st.lad = hitladder;
+	   ntuple1_st.det = hitdet;
+	   ntuple1_st.nxP = nxP;
+	   ntuple1_st.nxN = nxN;
+	   ntuple1_st.qclP = qclP*300/pathInSSD; 
+	   ntuple1_st.qclN = qclN*300/pathInSSD; 
+	   ntuple1_st.qrec = qrec*300/pathInSSD; 
+           ntuple1_st.qcut = qcut;
+	   ntuple1_st.dx = dxprimbest;
+	   ntuple1_st.dz = dzprimbest;
+	   noverlaps -= 1;
+	   noverprim -= 1;
+	   ntuple1_st.noverlaps = noverlaps;
+	   ntuple1_st.noverprim = noverprim;
+	   ntuple1_st.ntrover = ntrover;
+	   
+	   //if(qcut < 0.18) ntuple1->Fill();
+	   ntuple1->Fill();
 
-	   //Float_t px = itsHit->GetPXL(); // the momenta at this GEANT point
-	   //Float_t py = itsHit->GetPYL();
-	   //Float_t pz = itsHit->GetPZL();
-
-         Int_t hitprim = 0;
-
-	 if(partcode == 11 && pmod < 6) dray = 1; // delta ray is e-
-	                                          // at p < 6 MeV/c
-
-         if((hitstat == 68 || hitstat == 33) && dray == 0)  noverlaps=noverlaps + 1;
-                                                  // overlapps for all hits but
-	                                          // not for delta ray which
-	                                          // also went out from the
-	                                          // detector and returned
-	                                          // again
-
-
-	  // x,z resolution colculation
-          if((hitstat == 68 || hitsat == 33) && dray == 0) {
-  	     Float_t xmed = (xhit + xhit0)/2;
-	     Float_t zmed = (zhit + zhit0)/2;
-	     Float_t xdif = xmed - xrec;
-	     Float_t zdif = zmed - zrec;
-
-            if(parent < 0)  {
-	      hitprim = 1; // hitprim=1 for the primery particles
-	      noverprim += 1;
-	    }
-	     pathInSSD = TMath::Sqrt((xhit0-xhit)*(xhit0-xhit)+(yhit0-yhit)*(yhit0-yhit)+(zhit0-zhit)*(zhit0-zhit));
-
-	     // fill ntuple
-             ntuple_st.lay = hitlayer;
-	     ntuple_st.nxP = nxP;
-             ntuple_st.nxN = nxN;
-	     ntuple_st.hitprim = hitprim;
-             ntuple_st.partcode = partcode;
-             ntuple_st.ntrover = ntrover;
-	     ntuple_st.x = xrec/1000;
-             ntuple_st.z = zrec/1000;
-	     ntuple_st.dx = xdif;
-             ntuple_st.dz = zdif;
-             ntuple_st.pmod = pmod;
-
-             //if(qcut < 0.18) ntuple->Fill();
-             ntuple->Fill();
-
-	     //if(hitlayer == 5 && qcut < 0.18) {
-             
-	    if(hitlayer == 5 ) {
-             Xres5->Fill(xdif);
-             Zres5->Fill(zdif);
-             Path5->Fill(pathInSSD);
-	    }
-            //if(hitlayer == 6 && qcut < 0.18) {
-            if(hitlayer == 6) {
-             Xres6->Fill(xdif);
-             Zres6->Fill(zdif);
-             Path6->Fill(pathInSSD);
-            }
-	  } // hitstat 68/33
-	 } else {       // non correspondent hit
-	  xhit0 = 1e+7;
-	  zhit0 = 1e+7;
-	 } // end of hit-recpoint correspondence
-	} // hit loop       
-
-	if(flaghit == 1) {
-
-	  if(noverlaps == 0) noverlaps = 1; // cluster contains one or more
-	  // delta rays only
-
-	  // fill ntuple1
-	  ntuple1_st.lay = hitlayer;
-	  ntuple1_st.lad = hitladder;
-	  ntuple1_st.det = hitdet;
-	  ntuple1_st.nxP = nxP;
-	  ntuple1_st.nxN = nxN;
-	  ntuple1_st.qclP = qclP*300/pathInSSD; 
-	  ntuple1_st.qclN = qclN*300/pathInSSD; 
-	  ntuple1_st.qrec = qrec*300/pathInSSD; 
-	  ntuple1_st.dx = xdif;
-	  ntuple1_st.dz = zdif;
-	  noverlaps -= 1;
-	  noverprim -= 1;
-	  ntuple1_st.noverlaps = noverlaps;
-	  ntuple1_st.noverprim = noverprim;
-          ntuple1_st.ntrover = ntrover;
-
-	  //if(qcut < 0.18) ntuple1->Fill();
-	  ntuple1->Fill();
-
-          Float_t de = dedx*300./pathInSSD;
-          dEdX->Fill(de);
-	    if(hitlayer == 5 ) {
-             adcPadcN5all->Fill(qclP,qclN);
-            }
-	    if(hitlayer == 6 ) {
-             adcPadcN6all->Fill(qclP,qclN);
-            }
-	    if(hitlayer == 5 && qcut < 0.18) {
-             adcPadcN5cut->Fill(qclP,qclN);
-             NxP5->Fill(nxP);
-             NxN5->Fill(nxN);
-            }
-	    if(hitlayer == 6 && qcut < 0.18) {
-             adcPadcN6cut->Fill(qclP,qclN);
-             NxP6->Fill(nxP);
-             NxN6->Fill(nxN);
-            }
-	} // flaghit = 1
-       } //b.b. recpoint loop
-     } //b.b. module loop
-   } //b.b. evnt loop
-
+	   
+	   Float_t de = dedx*300./pathInSSD;
+	   dEdX->Fill(de);
+	   if(noverprim >=0) {
+	     if(hitlayer == 5 ) {
+	       adcPadcN5all->Fill(qclP,qclN);
+	     }
+	     if(hitlayer == 6 ) {
+	       adcPadcN6all->Fill(qclP,qclN);
+	     }
+	     if(hitlayer == 5 && qcut < 0.18) {
+	       //if(hitlayer == 5 && noverlaps == 0) {
+	       adcPadcN5cut->Fill(qclP,qclN);
+	       NxP5->Fill(nxP);
+	       NxN5->Fill(nxN);
+	     }
+	     if(hitlayer == 6 && qcut < 0.18) {
+	       //if(hitlayer == 6 && noverlaps == 0) {
+	       adcPadcN6cut->Fill(qclP,qclN);
+	       NxP6->Fill(nxP);
+	       NxN6->Fill(nxN);
+	     }
+	   }
+       } // flaghit = 1
+      } //b.b. recpoint loop
+     } // module loop
+    } // detector loop (iDetType)
+   } // if ITS
+  } //b.b. evnt loop
+   
    TFile fhistos("SSD_his.root","RECREATE");
 
-   ntuple->Write();
+   //ntuple->Write();
    ntuple1->Write();
    ntuple2->Write();
    NxP5->Write();

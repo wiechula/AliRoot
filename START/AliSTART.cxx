@@ -15,6 +15,18 @@
 
 /*
 $Log$
+Revision 1.22  2001/07/27 13:03:12  hristov
+Default Branch split level set to 99
+
+Revision 1.21  2001/06/27 16:06:59  hristov
+Rotation matrix in BuildGeometry has been changed to rotx999
+
+Revision 1.20.2.1  2001/06/27 10:51:15  alla
+Rotation matrix in BuildGeometry has benn changed to rotx999
+
+Revision 1.20  2001/05/16 14:57:21  alibrary
+New files for folders and Stack
+
 Revision 1.19  2001/04/04 12:10:18  alla
 changes according Coding Convension
 
@@ -178,17 +190,17 @@ void AliSTART::BuildGeometry()
   top=gAlice->GetGeometry()->GetNode("alice");
 
   // START define the different volumes
-  new TRotMatrix("rot999","rot999",  90,0,90,90,180,0);
+  new TRotMatrix("rotx999","rot999",  90,0,90,90,180,0);
 
   new TTUBE("S_0ST1","START  volume 1","void",5.,10.7,5.3);
   top->cd();
-  node = new TNode("0ST1","0ST01","S_0ST1",0,0,75.,"");
+  node = new TNode("0ST1","0ST01","S_0ST1",0,0,69.7,"");
   node->SetLineColor(kColorSTART);
   fNodes->Add(node);
 
   new TTUBE("S_0ST2","START volume 2","void",5.,10.7,5.3);
   top->cd();
-  node = new TNode("0ST2","0ST2","S_0ST2",0,0,-75,"rot999");
+  node = new TNode("0ST2","0ST2","S_0ST2",0,0,-350,"rotx999");
   node->SetLineColor(kColorSTART);
   fNodes->Add(node);
 }
@@ -274,7 +286,6 @@ void AliSTART::Hit2digit(Int_t evnum)
   AliSTARThit  *startHit;
 
   Int_t buffersize=256;
-  Int_t split=1;
 
   digits= new AliSTARTdigit();
   TBranch *bDig=0;
@@ -284,7 +295,7 @@ void AliSTART::Hit2digit(Int_t evnum)
  
     sprintf(nameTD,"TreeD%d",evnum);
     TTree *td = new TTree(nameTD,"START");
-    bDig = td->Branch("START","AliSTARTdigit",&digits,buffersize,split);
+    bDig = td->Branch("START","AliSTARTdigit",&digits,buffersize);
 
     besttimeright=9999.;
     besttimeleft=9999.;

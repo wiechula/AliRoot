@@ -12,6 +12,7 @@
 #pragma link C++ global gMC;
  
 #pragma link C++ enum VertexSmear_t;
+#pragma link C++ enum VertexSource_t;
 #pragma link C++ enum PDG_t;
 
 #pragma link C++ class  AliGenerator+;
@@ -48,6 +49,11 @@
 #pragma link C++ class  AliStack+;
 #pragma link C++ class  AliConfig+;
 #pragma link C++ class  AliGenEventHeader+;
+#pragma link C++ class  AliDigitizer+;
+#pragma link C++ class  AliRunDigitizer+;
+#pragma link C++ class  AliStream+;
+#pragma link C++ class  AliMergeCombi+;
+
 #endif
 
 

@@ -9,24 +9,30 @@ PACKAGE = PHOS
 
 # C++ sources
 
-SRCS          =  AliPHOS.cxx AliPHOSv0.cxx AliPHOSv1.cxx AliPHOSv2.cxx \
-                 AliPHOSv3.cxx AliPHOSv4.cxx \
+SRCS          =  AliPHOS.cxx AliPHOSv0.cxx AliPHOSv1.cxx \
+                 AliPHOSvFast.cxx AliPHOSvImpacts.cxx \
+                 AliPHOSImpact.cxx \
                  AliPHOSHit.cxx \
                  AliPHOSGeometry.cxx \
 		 AliPHOSEMCAGeometry.cxx \
 		 AliPHOSCPVGeometry.cxx AliPHOSCPVBaseGeometry.cxx \
-		 AliPHOSPPSDGeometry.cxx AliPHOSSupportGeometry.cxx \
+		 AliPHOSSupportGeometry.cxx \
 		 AliPHOSCPVDigit.cxx AliPHOSDigit.cxx  \
                  AliPHOSRecPoint.cxx AliPHOSEmcRecPoint.cxx \
-		 AliPHOSPpsdRecPoint.cxx AliPHOSCpvRecPoint.cxx \
+		 AliPHOSCpvRecPoint.cxx \
 		 AliPHOSClusterizer.cxx AliPHOSClusterizerv1.cxx  \
                  AliPHOSLink.cxx AliPHOSSDigitizer.cxx AliPHOSDigitizer.cxx\
 		 AliPHOSReconstructioner.cxx  AliPHOSTrackSegment.cxx \
                  AliPHOSTrackSegmentMaker.cxx AliPHOSTrackSegmentMakerv1.cxx \
                  AliPHOSRecParticle.cxx AliPHOSPID.cxx AliPHOSPIDv1.cxx \
                  AliPHOSAnalyze.cxx AliPHOSFastRecParticle.cxx \
-                 AliPHOSIndexToObject.cxx \
-                 AliDBPPR.cxx AliDBPPRS.cxx
+                 AliPHOSGetter.cxx AliPHOSTick.cxx \
+		 AliPHOSQAVirtualCheckable.cxx AliPHOSQAIntCheckable.cxx \
+                 AliPHOSQAFloatCheckable.cxx\
+                 AliPHOSQAObjectCheckable.cxx AliPHOSQAChecker.cxx AliPHOSQAMeanChecker.cxx AliPHOSQAAlarm.cxx \
+                 AliPHOSIhepAnalyze.cxx AliPHOSEvalRecPoint.cxx \
+                 AliPHOSRecManager.cxx AliPHOSRecCpvManager.cxx AliPHOSRecEmcManager.cxx \
+                 AliPHOSClusterizerv2.cxx
 
 # C++ Headers
 
@@ -74,6 +80,15 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 -include tgt_$(ALICE_TARGET)/Make-depend 
 
+test:	
+		@echo " ____________________________________________________________ "
+		@echo " "
+		@echo " Starting the test of the simulation/reconstruction software. Please don't take the warning messages into account. "
+		@echo " ____________________________________________________________ "
+		@aliroot -b -q testsim.C > out
+		@aliroot -b -q testsimglobal.C > out
+		@rm out
+		@rm testPHOS.root
 
 
 

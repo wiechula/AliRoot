@@ -1,6 +1,10 @@
 // $Id$
 // Category: global
 //
+// Author: I. Hrivnacova
+//
+// Class TG4G3Units
+// ----------------
 // See the class description in the header file.
 
 #include "TG4G3Units.h"
@@ -17,10 +21,12 @@ const G4double TG4G3Units::fgkMassDensity  = g/cm3;
 const G4double TG4G3Units::fgkAtomicWeight = g/mole;
 const G4double TG4G3Units::fgkField   = tesla;
 
+//_____________________________________________________________________________
 TG4G3Units::TG4G3Units() {
 //
 }
   
+//_____________________________________________________________________________
 TG4G3Units::~TG4G3Units() {
 //
 }

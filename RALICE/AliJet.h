@@ -3,7 +3,7 @@
 /* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
  * See cxx source for full Copyright notice                               */
 
-/* $Id$ */
+// $Id$
  
 #include <iostream.h>
 #include <math.h>
@@ -21,8 +21,8 @@ class AliJet : public TObject,public Ali4Vector
   AliJet(Int_t n);                   // Create a Jet to hold initially n Tracks
   ~AliJet();                         // Default destructor
   void Reset();                      // Reset all values
-  virtual void Add(AliTrack& t);     // Add a track to the jet
-  virtual void Add(AliTrack* t) { Add(*t); }
+  virtual void AddTrack(AliTrack& t);// Add a track to the jet
+  virtual void AddTrack(AliTrack* t) { AddTrack(*t); }
   void Info(TString f);              // Print jet information in coordinate frame f 
   void List(TString f="car");        // Print jet prim. track information for coord. frame f
   void ListAll(TString f="car");     // Print jet prim. and decay track information for coord. frame f
@@ -33,6 +33,17 @@ class AliJet : public TObject,public Ali4Vector
   Float_t GetCharge();               // Provide the total charge of the jet
   Int_t GetNtracks();                // Return the number of tracks in the jet
   AliTrack* GetTrack(Int_t i);       // Provide i-th track of the jet (1=first track)
+  AliTrack* GetIdTrack(Int_t id);    // Provide the track with user identifier "id"
+  Double_t GetPt();                  // Provide trans. momentum w.r.t. z-axis
+  Double_t GetPl();                  // Provide long. momentum w.r.t. z-axis
+  Double_t GetEt();                  // Provide trans. energy w.r.t. z-axis
+  Double_t GetEl();                  // Provide long. energy w.r.t. z-axis
+  Double_t GetMt();                  // Provide trans. mass w.r.t. z-axis
+  Double_t GetRapidity();            // Provide rapidity value w.r.t. z-axis
+  void SetTrackCopy(Int_t j);        // (De)activate creation of private copies in fTracks
+  Int_t GetTrackCopy();              // Provide TrackCopy flag value      
+  void SetId(Int_t id);              // Set the user defined identifier
+  Int_t GetId();                     // Provide the user defined identifier
 
  protected:
   void SetNtinit(Int_t n=2); // Set the initial max. number of tracks for this Jet
@@ -41,6 +52,8 @@ class AliJet : public TObject,public Ali4Vector
   Float_t fQ;                // The total charge of the jet 
   Int_t fNtrk;               // The number of tracks in the jet
   TObjArray* fTracks;        // Array to hold the pointers to the tracks of the jet
+  Int_t fTrackCopy;          // Flag to denote creation of private copies in fTracks
+  Int_t fUserId;             // The user defined identifier
  
  ClassDef(AliJet,1) // Creation and investigation of a jet of particle tracks.
 };

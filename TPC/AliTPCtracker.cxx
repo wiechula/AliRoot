@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.12  2001/07/20 14:32:44  kowal2
+Processing of many events possible now
+
+Revision 1.11  2001/05/23 08:50:10  hristov
+Weird inline removed
+
 Revision 1.10  2001/05/16 14:57:25  alibrary
 New files for folders and Stack
 
@@ -55,8 +61,17 @@ Splitted from AliTPCtracking
 #include "AliTPCParam.h"
 #include "AliTPCClustersRow.h"
 
-//_____________________________________________________________________________
+
 AliTPCtracker::AliTPCtracker(const AliTPCParam *par): 
+fkNIS(par->GetNInnerSector()/2), 
+fkNOS(par->GetNOuterSector()/2)
+{;
+//MI change only provisore - need change in the ITS code which depend on it
+}
+
+
+//_____________________________________________________________________________
+AliTPCtracker::AliTPCtracker(const AliTPCParam *par, Int_t eventn): 
 fkNIS(par->GetNInnerSector()/2), 
 fkNOS(par->GetNOuterSector()/2)
 {
@@ -74,8 +89,18 @@ fkNOS(par->GetNOuterSector()/2)
 
   fClustersArray.Setup(par);
   fClustersArray.SetClusterType("AliTPCcluster");
-  fClustersArray.ConnectTree("Segment Tree");
 
+  char   cname[100];
+  if (eventn==-1) {
+    sprintf(cname,"TreeC_TPC");
+  }
+  else {
+    sprintf(cname,"TreeC_TPC_%d",eventn);
+  }
+
+  fClustersArray.ConnectTree(cname);
+
+  fEventN = eventn;
   fSeeds=0;
 }
 
@@ -655,7 +680,16 @@ Int_t AliTPCtracker::Clusters2Tracks(const TFile *inp, TFile *out) {
   }  
   UnloadInnerSectors();
 
-  tracktree.Write();
+  char   tname[100];
+  if (fEventN==-1) {
+    sprintf(tname,"TreeT_TPC");
+  }
+  else {
+    sprintf(tname,"TreeT_TPC_%d",fEventN);
+  }
+
+
+  tracktree.Write(tname);
 
   cerr<<"Number of found tracks : "<<found<<endl;
 

@@ -1,58 +1,63 @@
 // $Id$
 // Category: event
 //
+// Author: I. Hrivnacova
+//
+// Class AliTrackingAction
+// -----------------------
 // See the class description in the header file.
 
 #include "AliTrackingAction.h"
-#include "AliTrackingActionMessenger.h"
 #include "AliTrackInformation.h"
 #include "AliRun.h"
 #include "AliGlobals.h"  
 #include "TG4StepManager.h"
 #include "TG4PhysicsManager.h"
+#include "TG4ParticlesManager.h"
 
 #include <G4Track.hh>
 #include <G4TrackVector.hh>
 #include <G4VUserTrackInformation.hh>
 #include <G4TrackingManager.hh>
 #include <G4SteppingManager.hh>
-
-/*
-#include <TTree.h>
-#include <TParticle.h>
-#include <TClonesArray.h>
-*/
+#include <G4UImanager.hh>
 
 // static data members
 AliTrackingAction* AliTrackingAction::fgInstance = 0;
 
+//_____________________________________________________________________________
 AliTrackingAction::AliTrackingAction()
   : fPrimaryTrackID(0),
     fVerboseLevel(2),
+    fNewVerboseLevel(0),
+    fNewVerboseTrackID(-1),
     fSavePrimaries(true),
-    fTrackCounter(0)
+    fTrackCounter(0),
+    fMessenger(this)
 {
 //
   if (fgInstance) { 
     AliGlobals::Exception("AliTrackingAction constructed twice."); 
   }
 
-  fMessenger = new AliTrackingActionMessenger(this);
   fgInstance = this;
 }
 
-AliTrackingAction::AliTrackingAction(const AliTrackingAction& right) {
+//_____________________________________________________________________________
+AliTrackingAction::AliTrackingAction(const AliTrackingAction& right) 
+  : fMessenger(this) {
 //
   AliGlobals::Exception("AliTrackingAction is protected from copying.");
 }
 
+//_____________________________________________________________________________
 AliTrackingAction::~AliTrackingAction() {
 //
-  delete fMessenger;
 }
 
 // operators
 
+//_____________________________________________________________________________
 AliTrackingAction& 
 AliTrackingAction::operator=(const AliTrackingAction &right)
 {
@@ -66,6 +71,7 @@ AliTrackingAction::operator=(const AliTrackingAction &right)
 
 // private methods
 
+//_____________________________________________________________________________
 AliTrackInformation* AliTrackingAction::GetTrackInformation(
                                            const G4Track* track,
                                            const G4String& method) const
@@ -73,6 +79,7 @@ AliTrackInformation* AliTrackingAction::GetTrackInformation(
 // Returns user track information.
 // ---
  
+#ifdef TGEANT4_DEBUG
   G4VUserTrackInformation* trackInfo = track->GetUserInformation();
   if (!trackInfo) return 0;  
 
@@ -85,10 +92,14 @@ AliTrackInformation* AliTrackingAction::GetTrackInformation(
   }
   
   return aliTrackInfo;
+#else  
+  return (AliTrackInformation*)track->GetUserInformation();
+#endif  
 }    
   
 // public methods
 
+//_____________________________________________________________________________
 void AliTrackingAction::PrepareNewEvent()
 {
 // Called by G4 kernel at the beginning of event.
@@ -101,6 +112,7 @@ void AliTrackingAction::PrepareNewEvent()
   stepManager->SetSteppingManager(fpTrackingManager->GetSteppingManager());
 }
 
+//_____________________________________________________________________________
 void AliTrackingAction::PreTrackingAction(const G4Track* aTrack)
 {
 // Called by G4 kernel before starting tracking.
@@ -139,16 +151,27 @@ void AliTrackingAction::PreTrackingAction(const G4Track* aTrack)
     // finish previous primary track
     FinishPrimaryTrack();
     fPrimaryTrackID = aTrack->GetTrackID();
+    
+    // begin this primary track
+    gAlice->BeginPrimary();
   }
   else { 
     // save secondary particles info 
     SaveTrack(aTrack);
   }
   
+  // verbose
+  if (trackID == fNewVerboseTrackID) {
+      G4String command = "/tracking/verbose ";
+      AliGlobals::AppendNumberToString(command, fNewVerboseLevel);
+      G4UImanager::GetUIpointer()->ApplyCommand(command);
+  }    
+
   // aliroot pre track actions
   gAlice->PreTrack();
 }
 
+//_____________________________________________________________________________
 void AliTrackingAction::PostTrackingAction(const G4Track* aTrack)
 {
 // Called by G4 kernel after finishing tracking.
@@ -190,6 +213,7 @@ void AliTrackingAction::PostTrackingAction(const G4Track* aTrack)
   gAlice->PostTrack();
 }
 
+//_____________________________________________________________________________
 void AliTrackingAction::FinishPrimaryTrack()
 {
 // Calls AliRun::PurifyKine and fills trees of hits
@@ -217,6 +241,7 @@ void AliTrackingAction::FinishPrimaryTrack()
   fPrimaryTrackID = 0;
 }  
 
+//_____________________________________________________________________________
 void AliTrackingAction::SaveTrack(const G4Track* track)
 {
 // Get all needed parameters from G4track and pass them
@@ -242,7 +267,9 @@ void AliTrackingAction::SaveTrack(const G4Track* track)
   //       << G4endl;
 
   // PDG code
-  G4int pdg = track->GetDefinition()->GetPDGEncoding();
+  G4int pdg 
+    = TG4ParticlesManager::Instance()
+      ->GetPDGEncodingFast(track->GetDefinition());
 
   // track kinematics  
   G4ThreeVector momentum = track->GetMomentum(); 
@@ -271,8 +298,7 @@ void AliTrackingAction::SaveTrack(const G4Track* track)
     mcProcess = kPPrimary;
   }
   else {  
-    TG4PhysicsManager* pPhysicsManager = TG4PhysicsManager::Instance();
-    mcProcess = pPhysicsManager->GetMCProcess(kpProcess);  
+    mcProcess = TG4PhysicsManager::Instance()->GetMCProcess(kpProcess);  
     // distinguish kPDeltaRay from kPEnergyLoss  
     if (mcProcess == kPEnergyLoss) mcProcess = kPDeltaRay;
   }  
@@ -284,3 +310,22 @@ void AliTrackingAction::SaveTrack(const G4Track* track)
                    
 }
 
+//_____________________________________________________________________________
+void AliTrackingAction::SetNewVerboseLevel(G4int level)
+{ 
+// Set the new verbose level that will be set when the track with 
+// specified track ID (fNewVerboseTrackID) starts tracking.
+// ---
+
+  fNewVerboseLevel = level;  
+}
+
+//_____________________________________________________________________________
+void AliTrackingAction::SetNewVerboseTrackID(G4int trackID)
+{ 
+// Set the trackID for which the new verbose level (fNewVerboseLevel)
+// will be applied.
+// ---
+
+  fNewVerboseTrackID = trackID; 
+}

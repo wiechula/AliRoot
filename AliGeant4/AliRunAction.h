@@ -1,10 +1,16 @@
 // $Id$
 // Category: run
 //
+// Author: I. Hrivnacova
+//
+// Class AliRunAction
+// ------------------
 // Class that defines actions at the beginning and the end of run.
 
 #ifndef ALI_RUN_ACTION_H
 #define ALI_RUN_ACTION_H
+
+#include "AliRunActionMessenger.h"
 
 #include <G4UserRunAction.hh>
 #include <globals.hh>
@@ -13,7 +19,7 @@ class G4Timer;
     // in order to avoid the odd dependency for the
     // times system function this declaration must be the first
 
-class AliRunActionMessenger;
+class AliSDConstruction;
 class G4Run;
 
 class AliRunAction : public G4UserRunAction
@@ -41,11 +47,14 @@ class AliRunAction : public G4UserRunAction
     AliRunAction& operator=(const AliRunAction& right);
 
   private:
+    // methods
+    AliSDConstruction* GetSDConstruction() const;
+
     // data members
-    AliRunActionMessenger*  fMessenger;    //messenger 
-    G4Timer*                fTimer;        //G4Timer
-    G4int                   fRunID;        //run ID
-    G4int                   fVerboseLevel; //verbose level
+    AliRunActionMessenger  fMessenger;    //messenger 
+    G4Timer*               fTimer;        //G4Timer
+    G4int                  fRunID;        //run ID
+    G4int                  fVerboseLevel; //verbose level
 };
 
 // inline methods

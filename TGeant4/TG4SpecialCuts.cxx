@@ -1,6 +1,10 @@
 // $Id$
 // Category: physics
 //
+// Author: I. Hrivnacova
+//
+// Class TG4SpecialCuts
+// --------------------
 // See the class description in the header file.
 
 #include "TG4SpecialCuts.h"
@@ -11,6 +15,7 @@
 
 #include <G4EnergyLossTables.hh>
 
+//_____________________________________________________________________________
 TG4SpecialCuts::TG4SpecialCuts(TG4G3ParticleWSP particle, 
                                TG4G3CutVector* cutVector,
                                const G4String& processName)
@@ -28,8 +33,8 @@ TG4SpecialCuts::TG4SpecialCuts(TG4G3ParticleWSP particle,
       fPtrMinEkineInLimits = &TG4Limits::GetMinEkineForElectron;
       break;
     case kChargedHadron:  
-      fPtrMinEkineInCutVector = &TG4G3CutVector::GetMinEkineForHadron;
-      fPtrMinEkineInLimits = &TG4Limits::GetMinEkineForHadron;
+      fPtrMinEkineInCutVector = &TG4G3CutVector::GetMinEkineForChargedHadron;
+      fPtrMinEkineInLimits = &TG4Limits::GetMinEkineForChargedHadron;
       break;
     case kNeutralHadron:  
       fPtrMinEkineInCutVector = &TG4G3CutVector::GetMinEkineForNeutralHadron;
@@ -49,22 +54,26 @@ TG4SpecialCuts::TG4SpecialCuts(TG4G3ParticleWSP particle,
   }
 }
 
+//_____________________________________________________________________________
 TG4SpecialCuts::TG4SpecialCuts() {
 //
 }
 
+//_____________________________________________________________________________
 TG4SpecialCuts::TG4SpecialCuts(const TG4SpecialCuts& right) {
 // 
   TG4Globals::Exception(
     "TG4SpecialCuts is protected from copying.");
 }
 
+//_____________________________________________________________________________
 TG4SpecialCuts::~TG4SpecialCuts() {
 //
 }
 
 // operators
 
+//_____________________________________________________________________________
 TG4SpecialCuts& TG4SpecialCuts::operator=(const TG4SpecialCuts& right)
 {
   // check assignement to self
@@ -78,6 +87,7 @@ TG4SpecialCuts& TG4SpecialCuts::operator=(const TG4SpecialCuts& right)
           
 // public methods
 
+//_____________________________________________________________________________
 G4double TG4SpecialCuts::PostStepGetPhysicalInteractionLength(
                            const G4Track& track, G4double previousStepSize,
 			   G4ForceCondition* condition)
@@ -110,31 +120,34 @@ G4double TG4SpecialCuts::PostStepGetPhysicalInteractionLength(
 
     // min remaining range
     G4ParticleDefinition* particle = track.GetDefinition();
-    G4double kinEnergy = track.GetKineticEnergy();
-    G4Material* material = track.GetMaterial();
-    G4double rangeNow 
-      = G4EnergyLossTables::GetRange(particle, kinEnergy, material);
-    temp = (rangeNow - limits->GetUserMinRange(track));
-    if (temp < 0.) return 0.;
-    if (proposedStep > temp) proposedStep = temp;
-
-    // min kinetic energy (from limits)
-    // the kin energy cut can be applied only in case
-    // G4EnergyLossTables are defined for the particle
-    if (G4EnergyLossTables::GetDEDXTable(particle)) {
-      TG4Limits* tg4Limits = dynamic_cast<TG4Limits*>(limits);
-      if (!tg4Limits) {
-        G4String text = "TG4SpecialCuts::PostStepGetPhysicalInteractionLength:\n";
-        text = text + "    Unknown limits type.";
-        TG4Globals::Exception(text);
-      }  
-      G4double minEkine 
-        = (tg4Limits->*fPtrMinEkineInLimits)(track);
-      G4double minR 
-        = G4EnergyLossTables::GetRange(particle, minEkine, material);
-      temp = rangeNow - minR;
+    if (particle->GetPDGCharge() != 0.) {
+      G4double kinEnergy = track.GetKineticEnergy();
+      G4Material* material = track.GetMaterial();
+      G4double rangeNow 
+        = G4EnergyLossTables::GetRange(particle, kinEnergy, material);
+      temp = (rangeNow - limits->GetUserMinRange(track));
       if (temp < 0.) return 0.;
-      if (proposedStep > temp) proposedStep = temp;  
+      if (proposedStep > temp) proposedStep = temp;
+
+      // min kinetic energy (from limits)
+      // the kin energy cut can be applied only in case
+      // G4EnergyLossTables are defined for the particle
+      if (G4EnergyLossTables::GetDEDXTable(particle)) {
+        TG4Limits* tg4Limits = dynamic_cast<TG4Limits*>(limits);
+        if (!tg4Limits) {
+          G4String text = "TG4SpecialCuts::PostStepGetPhysicalInteractionLength:\n";
+          text = text + "    Unknown limits type.";
+          TG4Globals::Exception(text);
+        }  
+       G4double minEkine 
+          = (tg4Limits->*fPtrMinEkineInLimits)(track);
+       G4EnergyLossTables::GetTables(particle);
+       G4double minR 
+          = G4EnergyLossTables::GetRange(particle, minEkine, material);
+        temp = rangeNow - minR;
+        if (temp < 0.) return 0.;
+        if (proposedStep > temp) proposedStep = temp;  
+      }
     }  
 
   }
@@ -160,6 +173,7 @@ G4double TG4SpecialCuts::PostStepGetPhysicalInteractionLength(
   return proposedStep;
 }
 
+//_____________________________________________________________________________
 G4VParticleChange* TG4SpecialCuts::PostStepDoIt(const G4Track& track, 
                                                 const G4Step& step)
 {

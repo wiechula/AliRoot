@@ -1,69 +1,74 @@
 // $Id$
 // Category: geometry
 //
+// Author: I. Hrivnacova
+//
+// Class AliModuleConstruction
+// ---------------------------
 // See the class description in the header file.
 
 #include "AliModuleConstruction.h"
-#include "AliModuleConstructionMessenger.h"
 #include "AliGlobals.h"
 #include "AliLVStructure.h"
 #include "AliModule.h"
-
 #ifdef ALICE_VISUALIZE
 #include "AliColourStore.h"
+#endif
 
-#include <G4Colour.hh>
-#include <G4VisAttributes.hh>
-#endif //ALICE_VISUALIZE
+#include "TG4GeometryServices.h"
+
 #include <G4LogicalVolumeStore.hh>
 #include <G4LogicalVolume.hh>
+#ifdef ALICE_VISUALIZE
+#include <G4Colour.hh>
+#include <G4VisAttributes.hh>
+#endif
 
-AliModuleConstruction::AliModuleConstruction(G4String moduleName) 
+//_____________________________________________________________________________
+AliModuleConstruction::AliModuleConstruction(const G4String& moduleName) 
   : fModuleName(moduleName), 
     fModuleFrameName(moduleName),
     fModuleFrameLV(0),
     fAliModule(0),
     fReadGeometry(false),
     fWriteGeometry(false),
-    fDataFilePath("")    
-{
+    fDataFilePath(""),    
+    fMessenger(this, moduleName) {
 //
-  moduleName.toLower();
-  fMessenger = new AliModuleConstructionMessenger(this, moduleName);
 }
 
+//_____________________________________________________________________________
 AliModuleConstruction::AliModuleConstruction(const AliModuleConstruction& right)
+  : fMessenger(this, right.fModuleName)
 {
 //
-  // allocation in assignement operator
-  fMessenger = 0;
-  
   // copy stuff
   *this = right;
 }
 
+//_____________________________________________________________________________
 AliModuleConstruction::AliModuleConstruction()
   : fModuleName(""), 
     fModuleFrameName(""),
     fModuleFrameLV(0),
-    fMessenger(0),
     fAliModule(0),
     fReadGeometry(false),
     fWriteGeometry(false),
-    fDataFilePath("")    
-{
+    fDataFilePath(""),    
+    fMessenger(this, "") {
 //
 }
 
+//_____________________________________________________________________________
 AliModuleConstruction::~AliModuleConstruction()
 {
 //
-  delete fMessenger;
   delete fAliModule;
 }
 
 // operators
 
+//_____________________________________________________________________________
 AliModuleConstruction& 
 AliModuleConstruction::operator=(const AliModuleConstruction& right)
 {    
@@ -77,16 +82,12 @@ AliModuleConstruction::operator=(const AliModuleConstruction& right)
   fReadGeometry = right.fReadGeometry;
   fWriteGeometry = right.fWriteGeometry;
   fDataFilePath = right.fDataFilePath;
-
-  // new messenger
-  if (fMessenger) delete fMessenger;
-  G4String moduleName = fModuleName;
-  moduleName.toLower();
-  fMessenger = new AliModuleConstructionMessenger(this, moduleName);
+  //fMessenger = right.fMessenger;
 
   return *this;
 }
 
+//_____________________________________________________________________________
 G4int 
 AliModuleConstruction::operator==(const AliModuleConstruction& right) const
 {
@@ -94,6 +95,7 @@ AliModuleConstruction::operator==(const AliModuleConstruction& right) const
   return 0;
 }
 
+//_____________________________________________________________________________
 G4int 
 AliModuleConstruction::operator!=(const AliModuleConstruction& right) const
 {
@@ -106,8 +108,10 @@ AliModuleConstruction::operator!=(const AliModuleConstruction& right) const
 
 // protected methods
 
-void AliModuleConstruction::RegisterLogicalVolume(G4LogicalVolume* lv,
-       G4String path, AliLVStructure& lvStructure)
+//_____________________________________________________________________________
+void AliModuleConstruction::RegisterLogicalVolume(
+                                    G4LogicalVolume* lv, const G4String& path,
+				    AliLVStructure& lvStructure) const
 {
 // Registers logical volume lv in the structure.
 // ---        
@@ -133,13 +137,15 @@ void AliModuleConstruction::RegisterLogicalVolume(G4LogicalVolume* lv,
 
 // public methods
 
+//_____________________________________________________________________________
 void AliModuleConstruction::SetDetFrame(G4bool warn)
 { 
 // The logical volume with name identical with
 // fModuleName is retrieved from G4LogicalVolumeStore.
 // ---
 
-  fModuleFrameLV = FindLogicalVolume(fModuleFrameName, true);
+  fModuleFrameLV 
+    = TG4GeometryServices::Instance()->FindLogicalVolume(fModuleFrameName, true);
   
   if (fModuleFrameLV == 0 && warn) {
     G4String text = "AliModuleConstruction: Detector frame for ";
@@ -148,7 +154,8 @@ void AliModuleConstruction::SetDetFrame(G4bool warn)
   }  
 }
 
-void AliModuleConstruction::SetDetFrame(G4String frameName, G4bool warn)
+//_____________________________________________________________________________
+void AliModuleConstruction::SetDetFrame(const G4String& frameName, G4bool warn)
 { 
 // The logical volume with frameName
 // is retrieved from G4LogicalVolumeStore.
@@ -158,7 +165,8 @@ void AliModuleConstruction::SetDetFrame(G4String frameName, G4bool warn)
   SetDetFrame(warn);
 }
 
-void AliModuleConstruction::ListAllLVTree()
+//_____________________________________________________________________________
+void AliModuleConstruction::ListAllLVTree() const
 {
 // Lists all logical volumes tree if the frame logical volume 
 // is defined.
@@ -173,7 +181,8 @@ void AliModuleConstruction::ListAllLVTree()
   }   
 }
 
-void AliModuleConstruction::ListAllLVTreeLong()
+//_____________________________________________________________________________
+void AliModuleConstruction::ListAllLVTreeLong() const
 {
 // Lists all logical volume tree if the frame logical volume 
 // is defined with numbers of daughters (physical volumes).
@@ -188,13 +197,16 @@ void AliModuleConstruction::ListAllLVTreeLong()
   }  
 }
 
-void AliModuleConstruction::ListLVTree(G4String lvName)
+//_____________________________________________________________________________
+void AliModuleConstruction::ListLVTree(const G4String& lvName) const
 {
 // Lists logical volumes tree (daughters) of the logical volume 
 // with specified lvName.
 // ---- 
 
-  G4LogicalVolume* lv = FindLogicalVolume(lvName);
+  G4LogicalVolume* lv 
+    = TG4GeometryServices::Instance()->FindLogicalVolume(lvName);
+
   if (lv)
   {
     G4String path = "";
@@ -204,13 +216,16 @@ void AliModuleConstruction::ListLVTree(G4String lvName)
   }
 }
 
-void AliModuleConstruction::ListLVTreeLong(G4String lvName)
+//_____________________________________________________________________________
+void AliModuleConstruction::ListLVTreeLong(const G4String& lvName) const
 {
 // Lists logical volumes tree (daughters) of the logical volume 
 // with specified lvName with numbers of daughters (physical volumes).
 // ---- 
 
-  G4LogicalVolume* lv = FindLogicalVolume(lvName);
+  G4LogicalVolume* lv 
+    = TG4GeometryServices::Instance()->FindLogicalVolume(lvName);
+
   if (lv) {
     G4String path = "";
     AliLVStructure lvStructure(path);
@@ -219,31 +234,10 @@ void AliModuleConstruction::ListLVTreeLong(G4String lvName)
   }
 }
 
-G4LogicalVolume* AliModuleConstruction::FindLogicalVolume(
-                                          G4String name, G4bool silent) const
-{
-// Finds logical volume with specified name in G4LogicalVolumeStore.
-// (To do: use this method only for retrieving detector frame;
-//  add method FindLogicalVolumeInDet - that will search only
-//  in the detector frame LVTree.)
-// ---
-
-  G4LogicalVolumeStore* pLVStore = G4LogicalVolumeStore::GetInstance();
-  
-  for (G4int i=0; i<pLVStore->entries(); i++) {
-    G4LogicalVolume* lv = pLVStore->at(i);
-    if (lv->GetName() == name) return lv;
-  }
-  
-  G4String text = "AliModuleConstruction: Logical volume "; 
-  text = text + name + " does not exist.";
-  if (!silent) AliGlobals::Warning(text);
-  return 0;	       	         
-}  
-
 #ifdef ALICE_VISUALIZE
 
-void AliModuleConstruction::SetDetVisibility(G4bool visibility)
+//_____________________________________________________________________________
+void AliModuleConstruction::SetDetVisibility(G4bool visibility) const
 {
 // Sets visibility to all detector logical volumes if
 // frame logical volume is defined.
@@ -259,8 +253,9 @@ void AliModuleConstruction::SetDetVisibility(G4bool visibility)
 }
 
 
+//_____________________________________________________________________________
 void AliModuleConstruction::SetLVTreeVisibility(G4LogicalVolume* lv, 
-                             G4bool visibility)
+                                                G4bool visibility) const
 { 
 // Sets visibility to the logical volumes tree (daughters) of 
 // the logical volume lv.
@@ -274,8 +269,9 @@ void AliModuleConstruction::SetLVTreeVisibility(G4LogicalVolume* lv,
   }
 }
 
+//_____________________________________________________________________________
 void AliModuleConstruction::SetVolumeVisibility(G4LogicalVolume* lv, 
-                             G4bool visibility)
+                                                G4bool visibility) const
 { 
 // Sets visibility to the specified logical volume.
 // ---
@@ -297,7 +293,8 @@ void AliModuleConstruction::SetVolumeVisibility(G4LogicalVolume* lv,
   }
 }
 
-void AliModuleConstruction::SetDetColour(G4String colName)
+//_____________________________________________________________________________
+void AliModuleConstruction::SetDetColour(G4String colName) const
 {
 // Sets colour to all detector logical volumes if
 // frame logical volume is defined.
@@ -312,8 +309,9 @@ void AliModuleConstruction::SetDetColour(G4String colName)
   }  
 }
 
+//_____________________________________________________________________________
 void AliModuleConstruction::SetLVTreeColour(G4LogicalVolume* lv, 
-                             G4String colName)
+                                            const G4String& colName) const
 { 
 // Sets colour to the logical volumes tree (daughters) of 
 // the logical volume lv.
@@ -328,8 +326,9 @@ void AliModuleConstruction::SetLVTreeColour(G4LogicalVolume* lv,
   }
 }
 
+//_____________________________________________________________________________
 void AliModuleConstruction::SetVolumeColour(G4LogicalVolume* lv,
-                             G4String colName)
+                                            const G4String& colName) const
 {
 // Sets colour to the specified logical volume.
 // ---

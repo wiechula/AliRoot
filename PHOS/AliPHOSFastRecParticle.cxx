@@ -152,11 +152,9 @@ void AliPHOSFastRecParticle::ExecuteEvent(Int_t event, Int_t px, Int_t py)
     delete clustertext ; 
     clustertext = 0 ; 
     gPad->Update() ; 
-   break ;
+    break ;
   }
-  
   }
-
 }
 
 //____________________________________________________________________________
@@ -166,23 +164,23 @@ TString AliPHOSFastRecParticle::Name()
   
   TString  name ; 
   switch (fType) {
-  case kGAMMA:
+  case kNEUTRALEMFAST:
     name = "PHOTON" ;
     break ; 
-   case kELECTRON:
+   case kCHARGEDEMFAST:
      name = "ELECTRON" ;
     break ; 
-   case kCHARGEDHA:
-    name = "CHARGED_HA" ;
+   case kCHARGEDHAFAST:
+    name = "CHARGED_HA_FAST" ;
     break ; 
-  case kNEUTRALHA:
-    name = "NEUTRAL_HA" ; 
+  case kNEUTRALHASLOW:
+    name = "NEUTRAL_HA_SLOW" ; 
     break ; 
-  case kNEUTRALEM:
-    name = "NEUTRAL_EM" ; 
+  case kNEUTRALEMSLOW:
+    name = "NEUTRAL_EM_SLOW" ; 
     break ; 
-  case kGAMMAHA:
-    name = "PHOTON_HA" ; 
+  case kNEUTRALHAFAST:
+    name = "NEUTRAL_HA_FAST" ; 
     break ; 
 
   }
@@ -213,7 +211,7 @@ void AliPHOSFastRecParticle::Paint(Option_t *)
 //____________________________________________________________________________
 void AliPHOSFastRecParticle::Print(const char * opt)
 {
-  // Print the typr, energy and momentum
+  // Print the type, energy and momentum of the reconstructed particle
   
   cout << "AliPHOSFastRecParticle > " << "type is  " << Name() << endl 
        << "                     " << "Energy = " << fE << endl 

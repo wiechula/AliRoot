@@ -1,4 +1,13 @@
+#ifndef __CINT__
+#include "AliITSgeom.h"
+#include "TParticle.h"
+  cerr<<"Reading tp good tracks...\n";
+  while (in>>gt[ngood].lab>>gt[ngood].code
+  >>gt[ngood].px >>gt[ngood].py>>gt[ngood].pz
+#endif
+
 struct GoodTrack {
+  Int_t fEventN;
   Int_t lab;
   Int_t code;
   Bool_t flag;
@@ -12,26 +21,43 @@ Int_t ITStracks(Int_t evNumber1=0,Int_t evNumber2=0,Int_t nclust=5) {
 
   cerr<<"Select tracks which have nclust rec points in ITS...\n";
 
-  GoodTrack gt[15000];
+  GoodTrack gt[30000];
   Int_t ngood=0;
   ifstream in("good_tracks_tpc");
+   ofstream out("itsgood_tracks");  
 
   cerr<<"Reading good tracks...\n";
-  while (in>>gt[ngood].lab>>gt[ngood].code
+  while (in>>gt[ngood].fEventN>>gt[ngood].lab>>gt[ngood].code
   >>gt[ngood].px >>gt[ngood].py>>gt[ngood].pz
   >>gt[ngood].x  >>gt[ngood].y >>gt[ngood].z
   >>gt[ngood].pxg  >>gt[ngood].pyg >>gt[ngood].pzg
   >>gt[ngood].ptg >>gt[ngood].flag) {
     ngood++;
     cerr<<ngood<<'\r';
-    if (ngood==15000) {
+    if (ngood==30000) {
       cerr<<"Too many good tracks !\n";
       break;
     }
   }
+  
   if (!in.eof()) cerr<<"Read error (good_tracks_tpc) !\n";
 
-
+  
+   TVector ntrackevtpc(evNumber2-evNumber1 +1);
+   Int_t nchange=-1;
+   Int_t nmev=-100;
+   
+   
+    Int_t i;
+    for( i =0; i<ngood ; i++){ 
+    if(gt[i].fEventN != nmev ){
+    nmev=gt[i].fEventN;
+    nchange++; 
+    }
+    if(nmev == gt[i].fEventN) ntrackevtpc(nchange)++;
+    }
+    
+ 
   if (gClassTable->GetID("AliRun") < 0) {
     gROOT->LoadMacro("loadlibs.C");
     loadlibs();
@@ -61,7 +87,26 @@ Int_t ITStracks(Int_t evNumber1=0,Int_t evNumber2=0,Int_t nclust=5) {
   Int_t numbpoints=0;
   AliITSRecPoint *recp=0;
   Int_t track=-3;
-
+   // Int_t modmin[]={0,80,240,324,500,1282};
+   // Int_t modmax[]={79,239,323,499,1281,2269};
+	 
+	
+	 Int_t modmin[6], modmax[6];
+	 Int_t Nladder[6], Ndetector[6];
+    AliITSgeom *g1 = ITS->GetITSgeom(); 
+ 	 
+    for(Int_t i=0; i<6; i++) {
+    Nladder[i]=g1->GetNladders(i+1);
+    Ndetector[i]=g1->GetNdetectors(i+1);
+	 //cout<<Nladder[i]<<"    "<<Ndetector[i]<<"\n";
+  }
+     for(Int_t i=0; i<6; i++) {
+    modmin[i]=g1->GetModuleIndex(i+1,1,1);
+    modmax[i]=g1->GetModuleIndex(i+1,Nladder[i],Ndetector[i]);    
+	 //cout<<modmin[i]<<"    "<<modmax[i]<<"\n";
+  } 
+  
+  	 
 
   for (int nev=evNumber1; nev<= evNumber2; nev++) {
     Int_t nparticles = gAlice->GetEvent(nev);
@@ -75,11 +120,11 @@ Int_t ITStracks(Int_t evNumber1=0,Int_t evNumber2=0,Int_t nclust=5) {
    // Int_t np=particles->GetEntriesFast();
    Int_t np=gAlice->GetNtrack(); //FCA correction      
     TMatrix goodITS(np,6);
-    Int_t modmin[]={0,80,240,324,500,1282};
-    Int_t modmax[]={79,239,323,499,1281,2269};
-    for(Int_t j=0; j<np; j++){
-       for(Int_t j1=0; j1<6; j1++) goodITS(j,j1)=0; 
-    }
+    //Int_t modmin[]={0,80,240,324,500,1282};
+    //Int_t modmax[]={79,239,323,499,1281,2269};
+   // for(Int_t j=0; j<np; j++){
+   //    for(Int_t j1=0; j1<6; j1++) goodITS(j,j1)=0; 
+   // }
        
        
     Int_t nent=gAlice->TreeR()->GetEntries();
@@ -107,23 +152,32 @@ Int_t ITStracks(Int_t evNumber1=0,Int_t evNumber2=0,Int_t nclust=5) {
       } //loop over modules   
     } //loop over layers
 
-    for(Int_t i=0; i<ngood; i++){
+    Int_t mingood=0, maxgood=0,jj=0;
+    if(nev==evNumber1) mingood=0;
+    else
+    {for(jj=evNumber1; jj<nev; jj++) mingood += ntrackevtpc(jj);}
+     for(jj=evNumber1; jj<=nev; jj++) maxgood+= ntrackevtpc(jj);
+    //cout<<" mingood maxgood = "<<mingood<<" "<<maxgood<<"\n";
+     for(i=mingood; i<maxgood; i++){
        if(gt[i].lab>np) {cout<<" Error on TPC good tracks label \n"; getchar();}    	   
        Int_t  ilab=gt[i].lab;
        Int_t totclust=0;
        for(Int_t j=0; j<6; j++) totclust+=goodITS(ilab,j);	   
-	   if(totclust>=nclust) {
+	   if(totclust>=nclust && nev==gt[i].fEventN) {
 	     gt[i].flag=1;
-	     printf("label nclusters %d %d\n",gt[i].lab,totclust);  //
+	   //  printf("label nclusters %d %d\n",gt[i].lab,totclust);  //
 	   }
     }
 	   
     Int_t itsngood=0;
-    ofstream out("itsgood_tracks");
+ 
     if (out) {
-      for (Int_t ngd=0; ngd<ngood; ngd++) {
+     // for (Int_t ngd=0; ngd<ngood; ngd++) {
+      for(Int_t ngd=mingood; ngd<maxgood; ngd++){
+      TParticle *p = (TParticle*)gAlice->Particle(TMath::Abs(gt[ngd].lab));  //aggiunto 27-9	
+		gt[ngd].x=p->Vx(); gt[ngd].y=p->Vy(); 	gt[ngd].z=p->Vz(); 		
 	     if(gt[ngd].flag) {
-	       out<<gt[ngd].lab<<' '<<gt[ngd].code<<' '
+	       out<<gt[ngd].fEventN<<' '<<gt[ngd].lab<<' '<<gt[ngd].code<<' '
 		    <<gt[ngd].px <<' '<<gt[ngd].py<<' '<<gt[ngd].pz<<' '
 		    <<gt[ngd].x  <<' '<<gt[ngd].y <<' '<<gt[ngd].z <<' '
 		    <<gt[ngd].pxg  <<' '<<gt[ngd].pyg <<' '<<gt[ngd].pzg <<' '
@@ -132,13 +186,15 @@ Int_t ITStracks(Int_t evNumber1=0,Int_t evNumber2=0,Int_t nclust=5) {
 	     }
       }
     } else cerr<<"Can not open file (itsgood_tracks) !\n";
-    out.close();
 
-    cerr<<"Number of good tracks in TPC: "<<ngood<<endl;
+
+    //cerr<<"Number of good tracks in TPC: "<<ngood<<endl;
+    cerr<<"Number of good tracks in TPC: "<<ntrackevtpc(nev)<<endl;
     cerr<<"Number of good tracks in ITS: "<<itsngood<<endl;
 
   }   // event loop 
-   
+  
+  out.close();   
   file->Close();   
 
   printf("after file close\n");

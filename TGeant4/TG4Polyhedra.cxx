@@ -1,22 +1,29 @@
 // $Id$
 // Category: geometry
-// by I. Hrivnacova, 12.10.2000 
 //
+// Author: I. Hrivnacova, 12.10.2000 
+//
+// Class TG4Polyhedra
+// ------------------
 // See the class description in the header file.
 
 #include "TG4Polyhedra.h"
 #include "TG4Globals.h"
 
+//_____________________________________________________________________________
 TG4Polyhedra::TG4Polyhedra(const G4Polyhedra& rhs) 
   : G4Polyhedra(rhs) {
 //
 }
 
+//_____________________________________________________________________________
 TG4Polyhedra::~TG4Polyhedra() {
 //
 }
 
 // private methods
+
+//_____________________________________________________________________________
 void TG4Polyhedra::CheckOrigin() 
 {
 // Checks if polycone was created in a "historical way"
@@ -33,6 +40,7 @@ void TG4Polyhedra::CheckOrigin()
 
 // public methods
 
+//_____________________________________________________________________________
 G4int TG4Polyhedra::GetNofZPlanes()
 {
 // Returns nof z planes.
@@ -44,6 +52,7 @@ G4int TG4Polyhedra::GetNofZPlanes()
 }  
 
 
+//_____________________________________________________________________________
 G4double* TG4Polyhedra::GetRmin()
 {
 // Returns array of rmin parameters of the planes.
@@ -54,6 +63,7 @@ G4double* TG4Polyhedra::GetRmin()
   return original_parameters->Rmin;
 }  
 
+//_____________________________________________________________________________
 G4double* TG4Polyhedra::GetRmax()
 {
 // Returns array of rmax parameters of the planes.
@@ -64,6 +74,7 @@ G4double* TG4Polyhedra::GetRmax()
   return original_parameters->Rmax;
 }  
 
+//_____________________________________________________________________________
 G4double* TG4Polyhedra::GetZ()
 {
 // Returns array of z parameters of the planes.

@@ -24,7 +24,7 @@
 //  PIN due to MIPS particle and electronic noise.
 // This is done in the StepManager 
 //                  
-//*-- Author:  Odd Harald Oddland & Gines Martinez (SUBATECH)
+//*-- Author:  Odd Harald Odland & Gines Martinez (SUBATECH)
 
 
 // --- ROOT system ---
@@ -50,26 +50,42 @@
 ClassImp(AliPHOSv3)
 
 //____________________________________________________________________________
+  AliPHOSv3::AliPHOSv3(void) : AliPHOSv1() 
+{
+  // default ctor: initialize daa members
+
+  fLightYieldMean         = 0. ;         
+  fIntrinsicPINEfficiency = 0. ; 
+  fLightYieldAttenuation  = 0. ;  
+  fRecalibrationFactor    = 0. ;    
+  fElectronsPerGeV        = 0. ;
+  fAPDGain                = 0. ;    
+  
+}
+
+//____________________________________________________________________________
   AliPHOSv3::AliPHOSv3(const char *name, const char *title):
 AliPHOSv1(name,title)
 {
   // ctor 
 
-  // Number of electrons created in the PIN due to light collected in the PbWo4 crystal is calculated using 
-  // following formula
-  // NumberOfElectrons = EnergyLost * LightYield * PINEfficiency * 
-  //                     exp (-LightYieldAttenuation * DistanceToPINdiodeFromTheHit) *
-  //                     RecalibrationFactor ;
-  // LightYield is obtained as a Poissonian distribution with a mean at 700000 photons per GeV fromValery Antonenko
-  // PINEfficiency is 0.1875 from Odd Harald Odland work
+  // The light yield is a poissonian distribution of the number of
+  // photons created in the PbWo4 crystal, calculated using following formula
+  // NumberOfPhotons = EnergyLost * LightYieldMean* APDEfficiency * 
+  //              exp (-LightYieldAttenuation * DistanceToPINdiodeFromTheHit);
+  // LightYieldMean is parameter calculated to be over 47000 photons per GeV  
+  // APDEfficiency is 0.02655
   // k_0 is 0.0045 from Valery Antonenko 
+  // The number of electrons created in the APD is 
+  // NumberOfElectrons = APDGain * LightYield
+  // The APD Gain is 300
 
-
-  fLightYieldMean = 700000. ;
-  fIntrinsicPINEfficiency = 0.1875 ;
-  fLightYieldAttenuation = 0.0045 ;
-  fRecalibrationFactor = 6.2 / fLightYieldMean ;
-  fElectronsPerGeV = 2.77e+8 ; 
+  fLightYieldMean = 47000;
+  fIntrinsicPINEfficiency = 0.02655 ; //APD= 0.1875/0.1271 * 0.018 (PIN)
+  fLightYieldAttenuation = 0.0045 ; 
+  fRecalibrationFactor = 13.418/ fLightYieldMean ;
+  fElectronsPerGeV = 2.77e+8 ;
+  fAPDGain= 300. ;
 }
 
 // //____________________________________________________________________________
@@ -84,13 +100,14 @@ AliPHOSv1(name,title)
 //   //                     exp (-LightYieldAttenuation * DistanceToPINdiodeFromTheHit) *
 //   //                     RecalibrationFactor ;
 //   // LightYield is obtained as a Poissonian distribution with a mean at 700000 photons per GeV fromValery Antonenko
-//   // PINEfficiency is 0.1875 from Odd Harald Odland work
+//   // PINEfficiency is 0.1875 
 //   // k_0 is 0.0045 from Valery Antonenko 
 
 //   fLightYieldMean = 700000.;
 //   fIntrinsicPINEfficiency = 0.1875 ;
 //   fLightYieldAttenuation = 0.0045 ;
 //   fRecalibrationFactor = 6.2 / fLightYieldMean ;
+//   fRecalibrationFactor = 5.67 /fLightYieldMean ;//25.04.2001 OHO
 //   fElectronsPerGeV = 2.77e+8 ;
 // }
 //____________________________________________________________________________
@@ -107,12 +124,17 @@ void AliPHOSv3::StepManager(void)
   Int_t          relid[4] ;        // (box, layer, row, column) indices
   Int_t          absid    ;        // absolute cell ID number
   Float_t        xyze[4]={0,0,0,0}  ; // position wrt MRS and energy deposited
-  TLorentzVector pos      ;        // Lorentz vector of the track current position
+
+  TLorentzVector pos      ;     // Lorentz vector of the track current position
   Int_t          copy     ;
+  Float_t        fLightYield ;   // Light Yield per GeV
 
   Int_t tracknumber =  gAlice->CurrentTrack() ; 
   Int_t primary     =  gAlice->GetPrimary( gAlice->CurrentTrack() ); 
-  TString name      =  fGeom->GetName() ; 
+  TString name      =  GetGeometry()->GetName() ; 
+  Float_t        lostenergy ;
+  Float_t        global[3] ;
+  Float_t        local[3] ;
 
 
   if ( name == "GPS2" || name == "MIXT" ) {            // ======> CPV is a GPS' PPSD
@@ -128,17 +150,17 @@ void AliPHOSv3::StepManager(void)
       if ( xyze[3] != 0) { // there is deposited energy 
        	gMC->CurrentVolOffID(5, relid[0]) ;  // get the PHOS Module number
 	if ( name == "MIXT" && strcmp(gMC->CurrentVolOffName(5),"PHO1") == 0 ){
-	  relid[0] += fGeom->GetNModules() - fGeom->GetNPPSDModules();
+	  relid[0] += GetGeometry()->GetNModules() - GetGeometry()->GetNPPSDModules();
 	}
        	gMC->CurrentVolOffID(3, relid[1]) ;  // get the Micromegas Module number 
-      // 1-> fGeom->GetNumberOfModulesPhi() * fGeom->GetNumberOfModulesZ() upper
-      //   > fGeom->GetNumberOfModulesPhi() * fGeom->GetNumberOfModulesZ() lower
+      // 1-> GetGeometry()->GetNumberOfModulesPhi() * GetGeometry()->GetNumberOfModulesZ() upper
+      //   > GetGeometry()->GetNumberOfModulesPhi() * GetGeometry()->GetNumberOfModulesZ() lower
        	gMC->CurrentVolOffID(1, relid[2]) ;  // get the row number of the cell
         gMC->CurrentVolID(relid[3]) ;        // get the column number 
 
 	// get the absolute Id number
 
-       	fGeom->RelToAbsNumbering(relid, absid) ; 
+       	GetGeometry()->RelToAbsNumbering(relid, absid) ; 
 
 	// add current hit to the hit list      
 	  AddHit(fIshunt, primary, tracknumber, absid, xyze);
@@ -199,11 +221,11 @@ void AliPHOSv3::StepManager(void)
 
       ndigits = cpvDigits->GetEntriesFast();
       for (idigit=0; idigit<ndigits-1; idigit++) {
-	AliPHOSCPVDigit  *cpvDigit1 = (AliPHOSCPVDigit*) cpvDigits->UncheckedAt(idigit);
+	AliPHOSCPVDigit  *cpvDigit1 = dynamic_cast<AliPHOSCPVDigit*>(cpvDigits->UncheckedAt(idigit));
 	Float_t x1 = cpvDigit1->GetXpad() ;
 	Float_t z1 = cpvDigit1->GetYpad() ;
 	for (Int_t jdigit=idigit+1; jdigit<ndigits; jdigit++) {
-	  AliPHOSCPVDigit  *cpvDigit2 = (AliPHOSCPVDigit*) cpvDigits->UncheckedAt(jdigit);
+	  AliPHOSCPVDigit  *cpvDigit2 = dynamic_cast<AliPHOSCPVDigit*>(cpvDigits->UncheckedAt(jdigit));
 	  Float_t x2 = cpvDigit2->GetXpad() ;
 	  Float_t z2 = cpvDigit2->GetYpad() ;
 	  if (x1==x2 && z1==z2) {
@@ -219,14 +241,14 @@ void AliPHOSv3::StepManager(void)
 
       ndigits = cpvDigits->GetEntriesFast();
       for (idigit=0; idigit<ndigits; idigit++) {
-	AliPHOSCPVDigit  *cpvDigit = (AliPHOSCPVDigit*) cpvDigits->UncheckedAt(idigit);
+	AliPHOSCPVDigit  *cpvDigit = dynamic_cast<AliPHOSCPVDigit*>(cpvDigits->UncheckedAt(idigit));
 	relid[0] = moduleNumber + 1 ;                             // CPV (or PHOS) module number
 	relid[1] =-1 ;                                            // means CPV
 	relid[2] = cpvDigit->GetXpad() ;                          // column number of a pad
 	relid[3] = cpvDigit->GetYpad() ;                          // row    number of a pad
 	
 	// get the absolute Id number
-	fGeom->RelToAbsNumbering(relid, absid) ; 
+	GetGeometry()->RelToAbsNumbering(relid, absid) ; 
 
 	// add current digit to the temporary hit list
 	xyze[0] = 0. ;
@@ -247,63 +269,111 @@ void AliPHOSv3::StepManager(void)
   } // end of IHEP configuration
   
 
-  if(gMC->CurrentVolID(copy) == gMC->VolId("PXTL") ) { //  We are inside a PBWO crystal
+if(gMC->CurrentVolID(copy)==gMC->VolId("PXTL")){// We are inside a PBWO4 crystal
     gMC->TrackPosition(pos) ;
     xyze[0] = pos[0] ;
     xyze[1] = pos[1] ;
     xyze[2] = pos[2] ;
+    global[0] = pos[0] ;
+    global[1] = pos[1] ;
+    global[2] = pos[2] ;
+    lostenergy = gMC->Edep(); 
     xyze[3] = gMC->Edep() ;
 
   
-    if ( (xyze[3] != 0)  ) {  // Track is inside the crystal and deposits some energy
+  if ( (xyze[3] != 0) ){//Track is inside the crystal and deposits some energy
 
       gMC->CurrentVolOffID(10, relid[0]) ; // get the PHOS module number ;
 
       if ( name == "MIXT" && strcmp(gMC->CurrentVolOffName(10),"PHO1") == 0 )
-	relid[0] += fGeom->GetNModules() - fGeom->GetNPPSDModules();      
+	relid[0] += GetGeometry()->GetNModules() - GetGeometry()->GetNPPSDModules();      
 
       relid[1] = 0   ;                    // means PBW04
-      gMC->CurrentVolOffID(4, relid[2]) ; // get the row number inside the module
-      gMC->CurrentVolOffID(3, relid[3]) ; // get the cell number inside the module
+   gMC->CurrentVolOffID(4, relid[2]) ; // get the row number inside the module
+   gMC->CurrentVolOffID(3, relid[3]) ; // get the cell number inside the module
       
       // get the absolute Id number
-      fGeom->RelToAbsNumbering(relid, absid) ; 
+
+   GetGeometry()->RelToAbsNumbering(relid, absid) ; 
+
+   gMC->Gmtod(global, local, 1) ;
+
+   //Calculates the light yield, the number of photns produced in the
+   //crystal 
+   fLightYield = gRandom->Poisson(
+				  fLightYieldMean * lostenergy *
+				  fIntrinsicPINEfficiency * 
+				  exp(-fLightYieldAttenuation *
+				      (local[1]+GetGeometry()->GetCrystalSize(1)/2.0 ))
+				  ) ;
+   //Calculates de energy deposited in the crystal  
+   xyze[3] = (fRecalibrationFactor/100.) * fAPDGain * fLightYield  ;
+  
+    
+   // cout<<"xyze[3]:    "<<xyze[3]<<   endl;
+   //cout<<"lostenergy: "<<lostenergy<<endl; 
+
+
+        
 
       // add current hit to the hit list
-	AddHit(fIshunt, primary,tracknumber, absid, xyze);
+ 
 
+   if (xyze[3] != 0.) AddHit(fIshunt, primary,tracknumber, absid, xyze);
+  
 
     } // there is deposited energy
   } // we are inside a PHOS Xtal
 
-  if(gMC->CurrentVolID(copy) == gMC->VolId("PPIN") ) // We are inside de PIN diode 
-    {
-      gMC->TrackPosition(pos) ;
-      xyze[0] = pos[0] ;
-      xyze[1] = pos[1] ;
-      xyze[2] = pos[2] ;
-      Float_t lostenergy = gMC->Edep() ;
-      xyze[3] = gMC->Edep() ;
+//  if(gMC->CurrentVolID(copy) == gMC->VolId("PPIN"))//We are inside the PIN diode 
+//     {
+//       cout<<" Inside PIN "<<endl;
+//       gMC->TrackPosition(pos) ;
+//       global[0] = pos[0] ;
+//       global[1] = pos[1] ;
+//       global[2] = pos[2] ;
+//       xyze[0] = pos[0] ;
+//       xyze[1] = pos[1] ;
+//       xyze[2] = pos[2] ;
+//       lostenergy = gMC->Edep() ;
+//       xyze[3] = gMC->Edep() ;
       
-      if ( xyze[3] != 0 ) {
-	gMC->CurrentVolOffID(11, relid[0]) ; // get the PHOS module number ;
-	relid[1] = 0   ;                    // means PW04 and PIN
-	gMC->CurrentVolOffID(5, relid[2]) ; // get the row number inside the module
-	gMC->CurrentVolOffID(4, relid[3]) ; // get the cell number inside the module
+//       if ( xyze[3] != 0 ) {
+// 	gMC->CurrentVolOffID(11, relid[0]) ; // get the PHOS module number ;
+// 	relid[1] = 0   ;                    // means PW04 and PIN
+// 	gMC->CurrentVolOffID(5, relid[2]) ; // get the row number inside the module
+// 	gMC->CurrentVolOffID(4, relid[3]) ; // get the cell number inside the module
 	
-	// get the absolute Id number
+// 	// get the absolute Id number
 	
-	Int_t absid ; 
-	fGeom->RelToAbsNumbering(relid,absid) ;
-	
-	// calculating number of electrons in the PIN diode asociated to this hit
-	  Float_t nElectrons = lostenergy * fElectronsPerGeV ;
-	  xyze[3] = nElectrons * fRecalibrationFactor ;
+// 	Int_t absid ; 
+// 	GetGeometry()->RelToAbsNumbering(relid,absid) ;
+// 	gMC->Gmtod(global, local, 1) ;
+
+// // calculating number of electrons in the PIN diode asociated to this hit
+
+// 	  //nElectrons = lostenergy * fElectronsPerGeV ;
+//        //  xyze[3] = nElectrons * fRecalibrationFactor ;
+//           apdgain = gRandom->Poisson(300.) ;
+//           // apdgain = 300.;
+//    //if(local[1]<-0.0045) xyze[3] = apdgain * nElectrons * fRecalibrationFactor/10000.;
+
+//     if(local[1]<-0.0045) xyze[3] = apdgain * lostenergy * fElectronsPerGeV* (fRecalibrationFactor/100.);
+
+//    //if((local[1]>-0.0045)&&(gMC->TrackPid()==-11)) xyze[3] = apdgain * nElectrons * fRecalibrationFactor/10000.;
+
+//      if((local[1]>-0.0045)&&(gMC->TrackPid()==-11)) xyze[3] = apdgain * lostenergy * fElectronsPerGeV * (fRecalibrationFactor/100.);
+
+//    //if(local[1]>-0.0045) xyze[3] = nElectrons * fRecalibrationFactor/10000.;
+
+//      if(local[1]>-0.0045) xyze[3] = lostenergy * fElectronsPerGeV * (fRecalibrationFactor/100.);
 	  
-	  // add current hit to the hit list
-	  AddHit(fIshunt, primary, tracknumber, absid, xyze);
-	  //printf("PIN volume is  %d, %d, %d, %d \n",relid[0],relid[1],relid[2],relid[3]);
-	  //printf("Lost energy in the PIN is %f \n",lostenergy) ;
-      } // there is deposited energy
-    } // we are inside a PHOS XtalPHOS PIN diode
+// 	  // add current hit to the hit list
+
+// 	  AddHit(fIshunt, primary, tracknumber, absid, xyze);
+
+// 	  //printf("PIN volume is  %d, %d, %d, %d \n",relid[0],relid[1],relid[2],relid[3]);
+// 	  printf("Lost energy in the PIN is %f \n",lostenergy) ;
+//       } // there is deposited energy
+//     } // we are inside a PHOS XtalPHOS PIN diode
 }

@@ -1,15 +1,20 @@
 // $Id$
 // Category: event
 //
-// Class that defines Alice stacking mechanism.
+// Author: I. Hrivnacova
+//
+// Class AliStackingAction
+// -----------------------
+// Class that defines AliRoot specific stacking mechanism.
 
 #ifndef ALI_STACKING_ACTION_H
 #define ALI_STACKING_ACTION_H
 
+#include "AliStackingActionMessenger.h"
+
 #include <G4UserStackingAction.hh>
 #include <globals.hh>
 
-class AliStackingActionMessenger;
 class AliTrackingAction;
 
 class G4Track;
@@ -26,7 +31,6 @@ class AliStackingAction : public G4UserStackingAction
     // methods
     G4ClassificationOfNewTrack ClassifyNewTrack(const G4Track* track);
     void NewStage();
-    void ClearPrimaryStack();
     void PrepareNewEvent();
 
     // set methods
@@ -48,7 +52,7 @@ class AliStackingAction : public G4UserStackingAction
     G4bool                       fSavePrimaries;  //control of saving primaries
     G4TrackStack*                fPrimaryStack;   //stack of primary tracks
     AliTrackingAction*           fTrackingAction; //AliTrackingAction
-    AliStackingActionMessenger*  fMessenger;      //messenger
+    AliStackingActionMessenger   fMessenger;      //messenger
 };
 
 

@@ -29,7 +29,7 @@ class  AliPHOSTrackSegmentMaker : public TTask {
 public:
 
   AliPHOSTrackSegmentMaker() ;                     
-  AliPHOSTrackSegmentMaker(char* headerFile, char* branchTitle) ;                     
+  AliPHOSTrackSegmentMaker(const char* headerFile, const char* name) ;                     
   
   virtual ~ AliPHOSTrackSegmentMaker(){
     // dtor 
@@ -38,18 +38,17 @@ public:
   virtual void    Exec(Option_t * option) = 0 ;
   virtual char*   GetRecPointsBranch ()const = 0 ;
   virtual char*   GetTrackSegmentsBranch ()const = 0 ;
+  virtual const Int_t GetTrackSegmentsInRun()  const = 0 ; 
 
   virtual void    Print(Option_t * option)const = 0;
   //  virtual void Set...   // method to choose recPoints: along z only, along x ...???
   //  virtual void SetChoosingAlgirithm() = 0 ;
   //  virtual void SetMaxEmcCpvDistance(Float_t r) = 0 ; 
-  virtual Bool_t ReadRecPoints() = 0 ; 
   virtual void SetRecPointsBranch(const char * title) = 0 ;
   virtual void SetTrackSegmentsBranch(const char * title) = 0 ;
-  virtual void WriteTrackSegments() = 0 ;
+  virtual const char * Version() const = 0 ;   
+  virtual void WriteTrackSegments(Int_t event) = 0 ;
   
- protected:
-
   ClassDef( AliPHOSTrackSegmentMaker,1)    // Algorithm class to make PHOS track segments (Base Class)
 
 };

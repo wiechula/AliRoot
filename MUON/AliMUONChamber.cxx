@@ -14,6 +14,15 @@
  **************************************************************************/
 /*
 $Log$
+Revision 1.11  2001/07/20 10:03:14  morsch
+Changes needed to work with Root 3.01 (substitute lhs [] operator). (Jiri Chudoba)
+
+Revision 1.10  2001/03/20 13:17:30  egangler
+fChargeCorrel moved from AliMUONChamber to AliMUONResponse as decided by
+January meeting.
+Setters and Getters are modified accordingly.
+This modification is transparent to the user code
+
 Revision 1.9  2001/01/26 21:35:54  morsch
 All pointers set to 0 in default constructor.
 
@@ -92,8 +101,8 @@ ClassImp(AliMUONChamber)
 {
 // Construtor with chamber id 
     fSegmentation = new TObjArray(2);
-    (*fSegmentation)[0] = 0;
-    (*fSegmentation)[1] = 0;    
+    fSegmentation->AddAt(0,0);
+    fSegmentation->AddAt(0,1);
     fResponse=0;
     fnsec=1;
     fReconstruction=0;
@@ -123,12 +132,16 @@ void AliMUONChamber::Init()
 // Initalisation ..
 //
 // ... for chamber segmentation
-    if ((*fSegmentation)[0]) 
-    ((AliSegmentation *) (*fSegmentation)[0])->Init(fId);
+  //PH    if ((*fSegmentation)[0]) 
+  //PH    ((AliSegmentation *) (*fSegmentation)[0])->Init(fId);
+    if (fSegmentation->At(0)) 
+    ((AliSegmentation *) fSegmentation->At(0))->Init(fId);
 
     if (fnsec==2) {
-	if ((*fSegmentation)[1])
-	((AliSegmentation *) (*fSegmentation)[1])->Init(fId);
+      //PH	if ((*fSegmentation)[1])
+      //PH	((AliSegmentation *) (*fSegmentation)[1])->Init(fId);
+	if (fSegmentation->At(1))
+	((AliSegmentation *) fSegmentation->At(1))->Init(fId);
     }
 }
 
@@ -136,12 +149,15 @@ Int_t   AliMUONChamber::SigGenCond(Float_t x, Float_t y, Float_t z)
 {
 // Ask segmentation if signal should be generated 
     if (fnsec==1) {
-	return ((AliSegmentation*) (*fSegmentation)[0])
+      //PH	return ((AliSegmentation*) (*fSegmentation)[0])
+	return ((AliSegmentation*) fSegmentation->At(0))
 	    ->SigGenCond(x, y, z) ;
     } else {
-	return (((AliSegmentation*) (*fSegmentation)[0])
+      //PH	return (((AliSegmentation*) (*fSegmentation)[0])
+	return (((AliSegmentation*) fSegmentation->At(0))
 		->SigGenCond(x, y, z)) ||
-	    (((AliSegmentation*) (*fSegmentation)[1])
+      //PH	    (((AliSegmentation*) (*fSegmentation)[1])
+	    (((AliSegmentation*) fSegmentation->At(1))
 	     ->SigGenCond(x, y, z)) ;
     }
 }
@@ -153,10 +169,13 @@ void    AliMUONChamber::SigGenInit(Float_t x, Float_t y, Float_t z)
 // Initialisation of segmentation for hit
 //  
     if (fnsec==1) {
-	((AliSegmentation*) (*fSegmentation)[0])->SigGenInit(x, y, z) ;
+      //PH	((AliSegmentation*) (*fSegmentation)[0])->SigGenInit(x, y, z) ;
+	((AliSegmentation*) fSegmentation->At(0))->SigGenInit(x, y, z) ;
     } else {
-	((AliSegmentation*) (*fSegmentation)[0])->SigGenInit(x, y, z) ;
-	((AliSegmentation*) (*fSegmentation)[1])->SigGenInit(x, y, z) ;
+      //PH	((AliSegmentation*) (*fSegmentation)[0])->SigGenInit(x, y, z) ;
+      //PH	((AliSegmentation*) (*fSegmentation)[1])->SigGenInit(x, y, z) ;
+	((AliSegmentation*) fSegmentation->At(0))->SigGenInit(x, y, z) ;
+	((AliSegmentation*) fSegmentation->At(1))->SigGenInit(x, y, z) ;
     }
 }
 
@@ -198,7 +217,8 @@ void AliMUONChamber::DisIntegration(Float_t eloss, Float_t tof,
 	qcheck=0;
 	Float_t qcath = qtot * (i==1? fCurrentCorrel : 1/fCurrentCorrel);
 	AliSegmentation * segmentation=
-	    (AliSegmentation *) (*fSegmentation)[i-1];
+      //PH	    (AliSegmentation *) (*fSegmentation)[i-1];
+	    (AliSegmentation *) fSegmentation->At(i-1);
 	for (segmentation->FirstPad(xhit, yhit, zhit, dx, dy); 
 	     segmentation->MorePads(); 
 	     segmentation->NextPad()) 

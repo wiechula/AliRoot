@@ -15,6 +15,27 @@
 
 /*
 $Log$
+Revision 1.14  2001/08/30 09:44:06  hristov
+VertexSource_t added to avoid the warnings
+
+Revision 1.13  2001/08/29 13:31:42  morsch
+Protection against (fTreeK == 0) in destructor.
+
+Revision 1.12  2001/07/27 13:03:13  hristov
+Default Branch split level set to 99
+
+Revision 1.11  2001/07/27 12:34:20  jchudoba
+remove the dummy argument in GetEvent method
+
+Revision 1.10  2001/07/20 10:13:54  morsch
+In Particle(Int_t) use GetEntriesFast to speed up the procedure.
+
+Revision 1.9  2001/07/03 08:10:57  hristov
+J.Chudoba's changes merged correctly with the HEAD
+
+Revision 1.6  2001/05/31 06:59:06  fca
+Clean setting and deleting of fParticleBuffer
+
 Revision 1.5  2001/05/30 12:18:46  hristov
 Loop variables declared once
 
@@ -66,11 +87,11 @@ AliStack::AliStack(Int_t size)
   fParticles      = new TClonesArray("TParticle",1000);
   fParticleMap    = new TObjArray(size);
   fParticleBuffer = 0;
-  fNtrack         =  0;
-  fNprimary      =  0;
+  fNtrack         = 0;
+  fNprimary       = 0;
   fCurrent        = -1;
   fCurrentPrimary = -1;
-  fTreeK          =  0;
+  fTreeK          = 0;
 }
 
 
@@ -85,11 +106,11 @@ AliStack::AliStack()
   fParticles      = new TClonesArray("TParticle",1000);
   fParticleMap    = new TObjArray(10000);
   fParticleBuffer = 0;
-  fNtrack         =  0;
+  fNtrack         = 0;
   fCurrent        = -1;
-  fNprimary      =  0;
+  fNprimary       = 0;
   fCurrentPrimary = -1;
-  fTreeK          =  0;
+  fTreeK          = 0;
 }
 
 
@@ -106,7 +127,7 @@ AliStack::~AliStack()
     delete fParticles;
   }
   delete fParticleMap;
-  delete fTreeK;
+  if (fTreeK) delete fTreeK;
 }
 
 //
@@ -150,9 +171,9 @@ void AliStack::SetTrack(Int_t done, Int_t parent, Int_t pdg, Float_t *pmom,
   Float_t e=TMath::Sqrt(mass*mass+pmom[0]*pmom[0]+
 			pmom[1]*pmom[1]+pmom[2]*pmom[2]);
   
-//  printf("Loading  mass %f ene %f No %d ip %d parent %d done %d pos %f %f %f mom %f %f %f kS %d m \n",
-//  mass,e,fNtrack,pdg,parent,done,vpos[0],vpos[1],vpos[2],pmom[0],pmom[1],pmom[2],kS);
-
+//    printf("Loading  mass %f ene %f No %d ip %d parent %d done %d pos %f %f %f mom %f %f %f kS %d m \n",
+//	   mass,e,fNtrack,pdg,parent,done,vpos[0],vpos[1],vpos[2],pmom[0],pmom[1],pmom[2],kS);
+  
   TClonesArray &particles = *fParticles;
   TParticle* particle
    = new(particles[fLoadPoint++]) 
@@ -171,8 +192,13 @@ void AliStack::SetTrack(Int_t done, Int_t parent, Int_t pdg, Float_t *pmom,
 
   if(parent>=0) {
     particle = (TParticle*) fParticleMap->At(parent);
-    particle->SetLastDaughter(fNtrack);
-    if(particle->GetFirstDaughter()<0) particle->SetFirstDaughter(fNtrack);
+    if (particle) {
+      particle->SetLastDaughter(fNtrack);
+      if(particle->GetFirstDaughter()<0) particle->SetFirstDaughter(fNtrack);
+    }
+    else {
+      printf("Error in AliStack::SetTrack: Parent %d does not exist\n",parent);
+    }
   } 
   else { 
     //
@@ -238,8 +264,13 @@ void AliStack::SetTrack(Int_t done, Int_t parent, Int_t pdg,
 
   if(parent>=0) {
     particle = (TParticle*) fParticleMap->At(parent);
-    particle->SetLastDaughter(fNtrack);
-    if(particle->GetFirstDaughter()<0) particle->SetFirstDaughter(fNtrack);
+    if (particle) {
+      particle->SetLastDaughter(fNtrack);
+      if(particle->GetFirstDaughter()<0) particle->SetFirstDaughter(fNtrack);
+    }
+    else {
+      printf("Error in AliStack::SetTrack: Parent %d does not exist\n",parent);
+    }
   } 
   else { 
     //
@@ -264,7 +295,7 @@ void AliStack::GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
   
 
   TParticle* track = GetNextParticle();
-//  cout << "GetNextTrack():" << fCurrent << fNprimary << endl;
+//    cout << "GetNextTrack():" << fCurrent << fNprimary << endl;
 
   if(track) {
     mtrack=fCurrent;
@@ -283,7 +314,7 @@ void AliStack::GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
     polar[2]=pol.Z();
     tof=track->T();
     track->SetBit(kDoneBit);
-    //cout << "Filled params" << endl;
+//      cout << "Filled params" << endl;
   }
   else 
     mtrack=-1;
@@ -451,7 +482,9 @@ void AliStack::FinishEvent()
       fParticleBuffer = (TParticle*) part;
       fParticleFileMap[i]= (Int_t) fTreeK->GetEntries();
       fTreeK->Fill();
-      (*fParticleMap)[i]=fParticleBuffer=0;      
+      //PH      (*fParticleMap)[i]=fParticleBuffer=0;      
+      fParticleBuffer=0;      
+      fParticleMap->AddAt(0,i);      
       
       // When all primaries were filled no particle!=0
       // should be left => to be removed later.
@@ -465,7 +498,7 @@ void AliStack::FinishEvent()
 	 // To be removed later and replaced with break.
       if(!allFilled) allFilled = kTRUE;
     } 
-  //cout << "Nof particles: " << fNtrack << endl;
+//    cout << "Nof particles: " << fNtrack << endl;
   //Reset();   
 } 
 
@@ -551,8 +584,9 @@ TParticle* AliStack::Particle(Int_t i)
   //
   // Return particle with specified ID
   
-  if(!(*fParticleMap)[i]) {
-    Int_t nentries = fParticles->GetEntries();
+  //PH  if(!(*fParticleMap)[i]) {
+  if(!fParticleMap->At(i)) {
+    Int_t nentries = fParticles->GetEntriesFast();
     // algorithmic way of getting entry index
     // (primary particles are filled after secondaries)
     Int_t entry;
@@ -573,7 +607,8 @@ TParticle* AliStack::Particle(Int_t i)
     new ((*fParticles)[nentries]) TParticle(*fParticleBuffer);
     fParticleMap->AddAt((*fParticles)[nentries],i);
   }
-  return (TParticle *) (*fParticleMap)[i];
+  //PH  return (TParticle *) (*fParticleMap)[i];
+  return (TParticle *) fParticleMap->At(i);
 }
 
 //_____________________________________________________________________________
@@ -602,7 +637,8 @@ void AliStack::DumpPart (Int_t i) const
   // Dumps particle i in the stack
   //
   
-  ((TParticle*) (*fParticleMap)[i])->Print();
+  //PH  ((TParticle*) (*fParticleMap)[i])->Print();
+  ((TParticle*) fParticleMap->At(i))->Print();
 }
 
 //_____________________________________________________________________________
@@ -736,12 +772,12 @@ void AliStack::MakeTree(Int_t event, const char *file)
   TBranch *branch=0;
   // Make Kinematics Tree
   char hname[30];
-  //    printf("\n MakeTree called %d", event);
+//    printf("\n MakeTree called %d", event);
   if (!fTreeK) {
     sprintf(hname,"TreeK%d",event);
     fTreeK = new TTree(hname,"Kinematics");
     //  Create a branch for particles
-    branch = fTreeK->Branch("Particles", "TParticle", &fParticleBuffer, 4000, 1);          
+    branch = fTreeK->Branch("Particles", "TParticle", &fParticleBuffer, 4000);          
     fTreeK->Write(0,TObject::kOverwrite);
   }
 }
@@ -773,10 +809,11 @@ void AliStack::FinishRun()
 }
 
 //_____________________________________________________________________________
-void AliStack::GetEvent(Int_t event)
+Bool_t AliStack::GetEvent(Int_t event)
 {
 //
 // Get new event from TreeK
+
     // Reset/Create the particle stack
     if (fTreeK) delete fTreeK;
     
@@ -785,14 +822,18 @@ void AliStack::GetEvent(Int_t event)
     sprintf(treeName,"TreeK%d",event);
     fTreeK = (TTree*)gDirectory->Get(treeName);
 
-    if (fTreeK) fTreeK->SetBranchAddress("Particles", &fParticleBuffer);
-
-  else    
+    if (fTreeK) 
+      fTreeK->SetBranchAddress("Particles", &fParticleBuffer);
+    else {
       Error("GetEvent","cannot find Kine Tree for event:%d\n",event);
-//
-//    printf("\n primaries %d", fNprimary);
-//    printf("\n tracks    %d", fNtrack);    
-//
+      return kFALSE;
+    }
+//      printf("\n primaries %d", fNprimary);
+//      printf("\n tracks    %d", fNtrack);    
+      
     Int_t size = (Int_t)fTreeK->GetEntries();
     ResetArrays(size);
+    return kTRUE;
 }
+
+//----------------------------------------------------------------------

@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.23  2001/09/20 15:54:22  vicinanz
+Updated Strip Structure (Double Stack)
+
+Revision 1.22  2001/08/28 08:45:59  vicinanz
+TTask and TFolder structures implemented
+
+Revision 1.21  2001/05/16 14:57:24  alibrary
+New files for folders and Stack
+ 
 Revision 1.20  2001/05/04 10:09:48  vicinanz
 Major upgrades to the strip structure
 
@@ -58,13 +67,13 @@ Introduction of the Copyright and cvs Log
 
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
-//  Time Of Flight: design of C.Williams                             
-//
+//  Time Of Flight: design of C.Williams                                     //
+//     									     //
 //  This class contains the functions for version 1 of the Time Of Flight    //
 //  detector.                                                                //
 //
 //  VERSION WITH 5 MODULES AND TILTED STRIPS 
-//  
+//
 //  HOLES FOR PHOS DETECTOR
 //
 //   Authors:
@@ -136,31 +145,7 @@ AliTOFv1::AliTOFv1(const char *name, const char *title)
 }
 
 //____________________________________________________________________________
-AliTOFv1::~AliTOFv1()
-{
-  // destructor
 
-  if ( fHits) {
-    fHits->Delete() ; 
-    delete fHits ;
-    fHits = 0 ; 
-  }
-/*
-  if ( fSDigits) {
-    fSDigits->Delete() ; 
-    delete fSDigits ;
-    fSDigits = 0 ; 
-  }
-*/
-  if ( fDigits) {
-    fDigits->Delete() ; 
-    delete fDigits ;
-    fDigits = 0 ; 
-  }
-  
-}
-
-//_____________________________________________________________________________
 void AliTOFv1::BuildGeometry()
 {
   //
@@ -331,11 +316,11 @@ void AliTOFv1::TOFpc(Float_t xtof, Float_t ytof, Float_t zlenC,
 // Large not sensitive volumes with Insensitive Freon
   par[0] = xFLT*0.5;
   par[1] = yFLT*0.5;
-
+ 
   if(fDebug) cout << ClassName()
   << ": ************************* TOF geometry **************************"
   <<endl;
- 
+   
   par[2] = (zFLTA *0.5);
   gMC->Gsvolu("FLTA", "BOX ", idtmed[512], par, 3); // Insensitive Freon
   gMC->Gspos ("FLTA", 0, "FTOA", 0., 0., 0., 0, "ONLY");
@@ -382,14 +367,14 @@ void AliTOFv1::TOFpc(Float_t xtof, Float_t ytof, Float_t zlenC,
   par[1] = yPad*0.5; 
   par[2] = stripWidth*0.5;
   
-// new description for strip volume
+// new description for strip volume -double stack strip-
 // -- all constants are expressed in cm
 // heigth of different layers
   const Float_t khhony = 1.      ;   // heigth of HONY  Layer
   const Float_t khpcby = 0.15    ;   // heigth of PCB   Layer
   const Float_t khmyly = 0.035   ;   // heigth of MYLAR Layer
   const Float_t khgraphy = 0.02  ;   // heigth of GRAPHITE Layer
-  const Float_t khglasseiy = 0.32;   // 2.2 Ext. Glass + 1. Semi Int. Glass (mm)
+  const Float_t khglasseiy = 0.17;   // 0.6 Ext. Glass + 1.1 i.e. (Int. Glass/2) (mm)
   const Float_t khsensmy = 0.11  ;   // heigth of Sensitive Freon Mixture
   const Float_t kwsensmz = 2*3.5 ;   // cm
   const Float_t klsensmx = 48*2.5;   // cm
@@ -397,7 +382,7 @@ void AliTOFv1::TOFpc(Float_t xtof, Float_t ytof, Float_t zlenC,
   const Float_t klpadx = 2.5;   // cm x dimension of the FPAD volume
   
   // heigth of the FSTR Volume (the strip volume)
-  const Float_t khstripy = 2*(khhony+khpcby+khmyly+khgraphy+khglasseiy)+khsensmy;
+  const Float_t khstripy = 2*khhony+3*khpcby+4*(khmyly+khgraphy+khglasseiy)+2*khsensmy;
   // width  of the FSTR Volume (the strip volume)
   const Float_t kwstripz = 10.;
   // length of the FSTR Volume (the strip volume)
@@ -407,6 +392,7 @@ void AliTOFv1::TOFpc(Float_t xtof, Float_t ytof, Float_t zlenC,
 // coordinates of the strip center in the strip reference frame; used for positioning
 // internal strip volumes
   Float_t posfp[3]={0.,0.,0.};   
+
   
   // FSTR volume definition and filling this volume with non sensitive Gas Mixture
   gMC->Gsvolu("FSTR","BOX",idtmed[512],parfp,3);
@@ -416,10 +402,11 @@ void AliTOFv1::TOFpc(Float_t xtof, Float_t ytof, Float_t zlenC,
 //  parfp[2] = -1;
   gMC->Gsvolu("FHON","BOX",idtmed[503],parfp,3);
   // positioning 2 HONY Layers on FSTR volume
+
   posfp[1]=-khstripy*0.5+parfp[1];
   gMC->Gspos("FHON",1,"FSTR",0., posfp[1],0.,0,"ONLY");
   gMC->Gspos("FHON",2,"FSTR",0.,-posfp[1],0.,0,"ONLY");
-  
+
   //-- PCB Layer definition 
   parfp[1] = khpcby*0.5;
   gMC->Gsvolu("FPCB","BOX",idtmed[504],parfp,3);
@@ -427,7 +414,11 @@ void AliTOFv1::TOFpc(Float_t xtof, Float_t ytof, Float_t zlenC,
   posfp[1]=-khstripy*0.5+khhony+parfp[1];
   gMC->Gspos("FPCB",1,"FSTR",0., posfp[1],0.,0,"ONLY");
   gMC->Gspos("FPCB",2,"FSTR",0.,-posfp[1],0.,0,"ONLY");
-  
+  // positioning the central PCB layer
+  gMC->Gspos("FPCB",3,"FSTR",0.,0.,0.,0,"ONLY");
+
+
+
   //-- MYLAR Layer definition
   parfp[1] = khmyly*0.5;
   gMC->Gsvolu("FMYL","BOX",idtmed[511],parfp,3);
@@ -435,6 +426,11 @@ void AliTOFv1::TOFpc(Float_t xtof, Float_t ytof, Float_t zlenC,
   posfp[1] = -khstripy*0.5+khhony+khpcby+parfp[1]; 
   gMC->Gspos("FMYL",1,"FSTR",0., posfp[1],0.,0,"ONLY");
   gMC->Gspos("FMYL",2,"FSTR",0.,-posfp[1],0.,0,"ONLY");
+  // adding further 2 MYLAR Layers on FSTR volume
+  posfp[1] = khpcby*0.5+parfp[1];
+  gMC->Gspos("FMYL",3,"FSTR",0., posfp[1],0.,0,"ONLY");
+  gMC->Gspos("FMYL",4,"FSTR",0.,-posfp[1],0.,0,"ONLY");
+
 
   //-- Graphite Layer definition
   parfp[1] = khgraphy*0.5;
@@ -443,6 +439,11 @@ void AliTOFv1::TOFpc(Float_t xtof, Float_t ytof, Float_t zlenC,
   posfp[1] = -khstripy*0.5+khhony+khpcby+khmyly+parfp[1];
   gMC->Gspos("FGRP",1,"FSTR",0., posfp[1],0.,0,"ONLY");
   gMC->Gspos("FGRP",2,"FSTR",0.,-posfp[1],0.,0,"ONLY");
+  // adding further 2 Graphite Layers on FSTR volume
+  posfp[1] = khpcby*0.5+khmyly+parfp[1];
+  gMC->Gspos("FGRP",3,"FSTR",0., posfp[1],0.,0,"ONLY");
+  gMC->Gspos("FGRP",4,"FSTR",0.,-posfp[1],0.,0,"ONLY");
+ 
 
   //-- Glass (EXT. +Semi INT.) Layer definition
   parfp[1] = khglasseiy*0.5;
@@ -451,14 +452,24 @@ void AliTOFv1::TOFpc(Float_t xtof, Float_t ytof, Float_t zlenC,
   posfp[1] = -khstripy*0.5+khhony+khpcby+khmyly+khgraphy+parfp[1];
   gMC->Gspos("FGLA",1,"FSTR",0., posfp[1],0.,0,"ONLY");
   gMC->Gspos("FGLA",2,"FSTR",0.,-posfp[1],0.,0,"ONLY");
+  // adding further 2 Glass Layers on FSTR volume
+  posfp[1] = khpcby*0.5+khmyly+khgraphy+parfp[1];
+  gMC->Gspos("FGLA",3,"FSTR",0., posfp[1],0.,0,"ONLY");
+  gMC->Gspos("FGLA",4,"FSTR",0.,-posfp[1],0.,0,"ONLY");
+
   
   //-- Sensitive Mixture Layer definition
   parfp[0] = klsensmx*0.5;
   parfp[1] = khsensmy*0.5;
-  parfp[2] = kwsensmz*0.5;  
+  parfp[2] = kwsensmz*0.5;
   gMC->Gsvolu("FSEN","BOX",idtmed[513],parfp,3);
-  // positioning the sensitive gas Layer on FSTR volume
-  gMC->Gspos("FSEN",0,"FSTR",0.,0.,0.,0,"ONLY");
+  gMC->Gsvolu("FNSE","BOX",idtmed[512],parfp,3);
+  // positioning 2 gas Layers on FSTR volume
+  // the upper is insensitive freon
+  // while the remaining is sensitive
+  posfp[1] = khpcby*0.5+khmyly+khgraphy+khglasseiy+parfp[1];
+  gMC->Gspos("FNSE",0,"FSTR", 0., posfp[1],0.,0,"ONLY");
+  gMC->Gspos("FSEN",0,"FSTR", 0.,-posfp[1],0.,0,"ONLY");
 
   // dividing FSEN along z in knz=2 and along x in knx=48
   gMC->Gsdvn("FSEZ","FSEN",knz,3);
@@ -713,7 +724,7 @@ fp */
 }
 
 //_____________________________________________________________________________
-void AliTOFv1::DrawModule()
+void AliTOFv1::DrawModule() const
 {
   //
   // Draw a shaded view of the Time Of Flight version 1
@@ -757,6 +768,195 @@ void AliTOFv1::DrawModule()
   gMC->DefaultRange();
   gMC->Gdraw("alic", 40, 30, 0, 12, 9.5, .02, .02);
   gMC->Gdhead(1111, "Time Of Flight");
+  gMC->Gdman(18, 4, "MAN");
+  gMC->Gdopt("hide","off");
+}
+//_____________________________________________________________________________
+void AliTOFv1::DrawDetectorModules()
+{
+//
+// Draw a shaded view of the TOF detector version 1
+//
+ 
+ AliMC* pMC = AliMC::GetMC();
+ 
+//Set ALIC mother transparent
+ pMC->Gsatt("ALIC","SEEN",0);
+
+//
+//Set volumes visible
+// 
+//=====> Level 1
+  // Level 1 for TOF volumes
+  gMC->Gsatt("B077","seen",0);
+ 
+ 
+//==========> Level 2
+  // Level 2
+  gMC->Gsatt("B076","seen",-1); // all B076 sub-levels skipped -
+  gMC->Gsatt("B071","seen",0);
+  gMC->Gsatt("B074","seen",0);
+  gMC->Gsatt("B075","seen",0);
+  gMC->Gsatt("B080","seen",0); // B080 does not has sub-level                
+
+
+  // Level 2 of B071
+  gMC->Gsatt("B063","seen",-1); // all B063 sub-levels skipped   -
+  gMC->Gsatt("B065","seen",-1); // all B065 sub-levels skipped   -
+  gMC->Gsatt("B067","seen",-1); // all B067 sub-levels skipped   -
+  gMC->Gsatt("B069","seen",-1); // all B069 sub-levels skipped   -
+  gMC->Gsatt("B056","seen",0);  // B056 does not has sub-levels  -
+  gMC->Gsatt("B059","seen",-1); // all B059 sub-levels skipped   -
+  gMC->Gsatt("B072","seen",-1); // all B072 sub-levels skipped   -
+  gMC->Gsatt("BTR1","seen",0);  // BTR1 do not have sub-levels   -
+  gMC->Gsatt("BTO1","seen",0);
+
+ 
+  // Level 2 of B074
+  gMC->Gsatt("BTR2","seen",0); // BTR2 does not has sub-levels -
+  gMC->Gsatt("BTO2","seen",0);
+
+  // Level 2 of B075
+  gMC->Gsatt("BTR3","seen",0); // BTR3 do not have sub-levels -
+  gMC->Gsatt("BTO3","seen",0);
+
+// ==================> Level 3
+  // Level 3 of B071 / Level 2 of BTO1
+  gMC->Gsatt("FTOC","seen",-2);
+  gMC->Gsatt("FTOB","seen",-2);
+  gMC->Gsatt("FTOA","seen",-2);
+ 
+  // Level 3 of B074 / Level 2 of BTO2
+  // -> cfr previous settings
+ 
+  // Level 3 of B075 / Level 2 of BTO3
+  // -> cfr previous settings
+
+  gMC->Gdopt("hide","on");
+  gMC->Gdopt("shad","on");
+  gMC->Gsatt("*", "fill", 5);
+  gMC->SetClipBox(".");
+  gMC->SetClipBox("*", 0, 1000, 0, 1000, 0, 1000);
+  gMC->DefaultRange();
+  gMC->Gdraw("alic", 45, 40, 0, 10, 10, .015, .015);
+  gMC->Gdhead(1111,"TOF detector V1");
+  gMC->Gdman(18, 4, "MAN");
+  gMC->Gdopt("hide","off");
+}                                 
+
+//_____________________________________________________________________________
+void AliTOFv1::DrawDetectorStrips()
+{
+//
+// Draw a shaded view of the TOF strips for version 1
+//
+ 
+ AliMC* pMC = AliMC::GetMC();
+ 
+//Set ALIC mother transparent
+ pMC->Gsatt("ALIC","SEEN",0);
+
+//
+//Set volumes visible 
+//=====> Level 1
+  // Level 1 for TOF volumes
+  gMC->Gsatt("B077","seen",0);
+  
+//==========> Level 2
+  // Level 2
+  gMC->Gsatt("B076","seen",-1); // all B076 sub-levels skipped -
+  gMC->Gsatt("B071","seen",0);
+  gMC->Gsatt("B074","seen",0);
+  gMC->Gsatt("B075","seen",0);
+  gMC->Gsatt("B080","seen",0); // B080 does not has sub-level
+
+  // Level 2 of B071
+  gMC->Gsatt("B063","seen",-1); // all B063 sub-levels skipped   -
+  gMC->Gsatt("B065","seen",-1); // all B065 sub-levels skipped   -
+  gMC->Gsatt("B067","seen",-1); // all B067 sub-levels skipped   -
+  gMC->Gsatt("B069","seen",-1); // all B069 sub-levels skipped   -
+  gMC->Gsatt("B056","seen",0);  // B056 does not has sub-levels  -
+  gMC->Gsatt("B059","seen",-1); // all B059 sub-levels skipped   -
+  gMC->Gsatt("B072","seen",-1); // all B072 sub-levels skipped   -
+  gMC->Gsatt("BTR1","seen",0);  // BTR1 do not have sub-levels   -
+  gMC->Gsatt("BTO1","seen",0);
+
+// ==================> Level 3
+  // Level 3 of B071 / Level 2 of BTO1
+  gMC->Gsatt("FTOC","seen",0);
+  gMC->Gsatt("FTOB","seen",0);
+  gMC->Gsatt("FTOA","seen",0);
+ 
+  // Level 3 of B074 / Level 2 of BTO2
+  // -> cfr previous settings
+ 
+  // Level 3 of B075 / Level 2 of BTO3
+  // -> cfr previous settings
+
+
+// ==========================> Level 4
+  // Level 4 of B071 / Level 3 of BTO1 / Level 2 of FTOC
+  gMC->Gsatt("FLTC","seen",0);
+  // Level 4 of B071 / Level 3 of BTO1 / Level 2 of FTOB
+  gMC->Gsatt("FLTB","seen",0);
+  // Level 4 of B071 / Level 3 of BTO1 / Level 2 of FTOA
+  gMC->Gsatt("FLTA","seen",0);
+ 
+  // Level 4 of B074 / Level 3 of BTO2 / Level 2 of FTOC
+  // -> cfr previous settings
+  // Level 4 of B074 / Level 3 of BTO2 / Level 2 of FTOB
+  // -> cfr previous settings
+ 
+  // Level 4 of B075 / Level 3 of BTO3 / Level 2 of FTOC
+  // -> cfr previous settings
+
+//======================================> Level 5
+  // Level 5 of B071 / Level 4 of BTO1 / Level 3 of FTOC / Level 2 of FLTC
+  gMC->Gsatt("FALC","seen",0); // no children for FALC
+  gMC->Gsatt("FSTR","seen",-2);
+  gMC->Gsatt("FPEC","seen",0); // no children for FPEC
+  gMC->Gsatt("FECC","seen",0); // no children for FECC
+  gMC->Gsatt("FWAC","seen",0); // no children for FWAC
+  gMC->Gsatt("FAIC","seen",0); // no children for FAIC
+
+  // Level 5 of B071 / Level 4 of BTO1 / Level 3 of FTOB / Level 2 of FLTB
+  gMC->Gsatt("FALB","seen",0); // no children for FALB
+//-->  gMC->Gsatt("FSTR","seen",-2);
+
+
+  // -> cfr previous settings
+  gMC->Gsatt("FPEB","seen",0); // no children for FPEB
+  gMC->Gsatt("FECB","seen",0); // no children for FECB
+  gMC->Gsatt("FWAB","seen",0); // no children for FWAB
+  gMC->Gsatt("FAIB","seen",0); // no children for FAIB
+ 
+  // Level 5 of B071 / Level 4 of BTO1 / Level 3 of FTOA / Level 2 of FLTA
+  gMC->Gsatt("FALA","seen",0); // no children for FALB
+//-->  gMC->Gsatt("FSTR","seen",-2);
+  // -> cfr previous settings
+  gMC->Gsatt("FPEA","seen",0); // no children for FPEA
+  gMC->Gsatt("FECA","seen",0); // no children for FECA
+  gMC->Gsatt("FWAA","seen",0); // no children for FWAA
+  gMC->Gsatt("FAIA","seen",0); // no children for FAIA
+
+  // Level 2 of B074
+  gMC->Gsatt("BTR2","seen",0); // BTR2 does not has sub-levels -
+  gMC->Gsatt("BTO2","seen",0);
+
+  // Level 2 of B075
+  gMC->Gsatt("BTR3","seen",0); // BTR3 do not have sub-levels -
+  gMC->Gsatt("BTO3","seen",0);
+
+// for others Level 5, cfr. previous settings
+
+  gMC->Gdopt("hide","on");
+  gMC->Gdopt("shad","on");
+  gMC->Gsatt("*", "fill", 5);
+  gMC->SetClipBox(".");
+  gMC->SetClipBox("*", 0, 1000, 0, 1000, 0, 1000);
+  gMC->DefaultRange();
+  gMC->Gdraw("alic", 45, 40, 0, 10, 10, .015, .015);
+  gMC->Gdhead(1111,"TOF Strips V1");
   gMC->Gdman(18, 4, "MAN");
   gMC->Gdopt("hide","off");
 }

@@ -12,13 +12,12 @@
 
 #include "TG4MainFrame.h"
 #include "TG4Editor.h"
+#include "TG4ListTreeFrame.h"
 #include "TG4VolumesFrames.h"
 #include "TG4MaterialsFrames.h"
 #include "TG4GuiVolume.h"
 #include "TG4Globals.h"
 
-#include <TGListTree.h>
-#include <TGCanvas.h>
 #include <TGTab.h>
 #include <TGMenu.h>
 #include <TApplication.h>
@@ -26,7 +25,6 @@
 #include <TGTextBuffer.h>
 
 #include <G4LogicalVolume.hh>
-
 
 ClassImp(TG4MainFrame)
 
@@ -60,38 +58,21 @@ TG4MainFrame::TG4MainFrame(const TGWindow* p, UInt_t w, UInt_t h)
 
    AddFrame(fMenuBar, fMenuBarLayout);
  
-//------>Volumes tab
-
+//------>Adding a tab
    fTab = new TGTab(this, 400, 400);
-   TGCompositeFrame* tf = fTab->AddTab("Volumes");
-
    TGLayoutHints* lTabLayout = new TGLayoutHints(kLHintsBottom | kLHintsExpandX |
                                           kLHintsExpandY, 2, 2, 5, 1);
    AddFrame(fTab, lTabLayout);
 
-//------>TGCanvas and a canvas container  
-   fCanvasWindow = new TGCanvas(tf, 400, 240);
- 
-//----->List    fVolumesListTree
-   fVolumesListTree= new TGListTree(fCanvasWindow->GetViewPort(), 10, 10, kHorizontalFrame,
-                        fgWhitePixel);
-   fVolumesListTree->Associate(this);
-   fCanvasWindow->SetContainer(fVolumesListTree);
+//------->Frame for ListTree of logical volumes
+   flistTreeFrame = new TG4ListTreeFrame( fTab, this);
 
- 
-   TGLayoutHints *lCanvasLayout = new TGLayoutHints(kLHintsExpandX | kLHintsExpandY);
-   tf->AddFrame(fCanvasWindow, lCanvasLayout);
- 
-//----------------------------------------------------------------------------- 
-
-//----->Volumes Properties
-   tf = fTab->AddTab("Volumes Properties");
-   fvolumesFrames = new TG4VolumesFrames( tf, this);
+//----->Frame for volumes properties
+   fvolumesFrames = new TG4VolumesFrames( fTab, this);
 
 
-//----->Materials Properties
-   tf = fTab->AddTab("Materials Properties");
-   fmaterialsFrames = new TG4MaterialsFrames( tf, this);
+//----->Frame for materials properties
+   fmaterialsFrames = new TG4MaterialsFrames( fTab, this);
 
 //----->Window name and final mapping
    SetWindowName("ALICE Geant4 Browser");
@@ -136,8 +117,7 @@ TG4MainFrame::~TG4MainFrame()
    delete fMenuBar;
    delete fTab;
 
-   delete fCanvasWindow;
-   delete fVolumesListTree;
+   delete flistTreeFrame;
    delete fvolumesFrames;   
    delete fmaterialsFrames;
 }
@@ -154,12 +134,10 @@ TG4MaterialsFrames* TG4MainFrame::GetMaterialsFrames() const
    return fmaterialsFrames;
 }
 
-TGListTreeItem*  TG4MainFrame::
-AddItem(TObject* obj, TGListTreeItem* parent, const char* name, 
-                       const TGPicture* open, const TGPicture* closed)
+TG4ListTreeFrame* TG4MainFrame::GetListTreeFrame() const
 {
-//----->Add item to the list tree
-    return fVolumesListTree->AddItem(parent, name, obj, open, closed);
+//---> For use in TG4GeometryGUI
+   return flistTreeFrame;
 }
 
 void TG4MainFrame::CloseWindow()
@@ -183,7 +161,7 @@ Bool_t TG4MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t parm2)
    TGTextBuffer* lMsgBAnnBf1 = new TGTextBuffer(100);
    TGTextBuffer* lMsgBAnnBf2 = new TGTextBuffer(100);
    lMsgBTtleBf->AddText(0, "MsgBox");
-   lMsgBAnnBf1->AddText(0, "Volumes drawing coming soon!");
+   lMsgBAnnBf1->AddText(0, "Volumes drawing almost completed !");
    lMsgBAnnBf2->AddText(0, "YOU'RE CLOSING THE MAIN WINDOW!");
 
 
@@ -195,13 +173,16 @@ Bool_t TG4MainFrame::ProcessMessage(Long_t msg, Long_t parm1, Long_t parm2)
    Int_t buttons;
 //===================================================================
 //----->Editor window text
-const char *editortxt =
-"This is a to-be AG4 Geometry Browser. \n"
-"The volumes drawing coming soon.\n" ;
-
-
+G4String editortxt =
+"\n**********************************************"
+"\n**********************************************"
+"\nWelcome to ALICE Geant4 Geometry Browser. \n"
+"Clicking with the right button on a volume icon\n" 
+"will produce the volume's image. "
+"\n\n**********************************************"
+"\n**********************************************";
 //=================================================================
-//----->Process messages to widgets
+//----->Process messages from widgets
     switch (GET_MSG(msg)) {
     
     case kC_TEXTENTRY:
@@ -276,12 +257,32 @@ const char *editortxt =
 		      break;
 		      
 		    case 200:
-		      fmaterialsFrames->DisplayMaterialCharacteristics();
+		      fmaterialsFrames->DisplayMaterialCharacteristics( 0 );
 		      break;
 		     
                     default:
                       break;
                };
+	       
+	   case kCM_BUTTON:
+	       switch(parm1) {
+	       
+	           case 301:
+		     cout << "\n User Limits Summary button pressed " << endl;    
+                     fvolumesFrames->DisplayUserLimits();
+	             break;
+		     
+		   case 302:
+		      cout << "\n Cuts button pressed " << endl;
+		      break;
+		      
+		   case 303:
+		      cout << "\n Controls button pressed " << endl;
+		      break;
+		      
+		   default:
+		      break;
+	       };
 	       
             default:
                break;
@@ -290,55 +291,9 @@ const char *editortxt =
 
 //----->case Handle volumes ListTree
     case kC_LISTTREE:
-	switch (GET_SUBMSG(msg)) {
-
-//----->Cases to Handle mouse click
-   //-->case 1 
-	case kCT_ITEMCLICK: 
-     // Button 1: Select volume
-            if (parm1 == kButton1){
-	    TGListTreeItem* item = fVolumesListTree->GetSelected();
-             if (item) {
-	     
-	     TG4GuiVolume* volume=((TG4GuiVolume*) item->GetUserData());   
-	     G4LogicalVolume* lvolume = volume->GetLogicalVolume();
-
-	      if  ( lvolume ) {
-	       G4cout << "The selected logical volume name is   " 
-	            << lvolume->GetName() << G4endl;
-		  };
-	      };
-	    }; 
-	      
-     // Button 3: Draw Volume
-            if (parm1 == kButton3){
-             TGListTreeItem* item = fVolumesListTree->GetSelected();
-              if (item) {
-	     
-	     TG4GuiVolume* volume=((TG4GuiVolume*) item->GetUserData());   
-	     G4LogicalVolume* lvolume = volume->GetLogicalVolume();
-
-	      if  ( lvolume ) {
-	       G4cout << "The selected logical volume name is   " 
-	            << lvolume->GetName() << G4endl;
-		  };
-	       };
-	    }; 
-		  
-	    break;
-   //-->case 2	    
-	case kCT_ITEMDBLCLICK:
-	    if (parm1 == kButton1) {
-		if (fVolumesListTree->GetSelected() != 0) {
-		    gClient->NeedRedraw(fVolumesListTree);
-		};
-	    };
-	    break;
-   //-->default for GET_SUBMSG	    
-	default:
-	    break;
-	}
+        flistTreeFrame->ProcessSubMessage( msg, parm1);    
 	break;
+
 //---->default for GET_MSG	
     default:
 	break;

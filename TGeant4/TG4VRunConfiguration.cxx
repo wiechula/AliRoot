@@ -1,23 +1,30 @@
 // $Id$
 // Category: run
 //
+// Author: I. Hrivnacova
+//
+// Class TG4VRunConfiguration
+// --------------------------
 // See the class description in the header file.
 
 #include "TG4VRunConfiguration.h"
+#include "TG4VSDConstruction.h"
+#include "TG4ModularPhysicsList.h"
 #include "TG4TrackingAction.h"
 #include "TG4SteppingAction.h"
 #include "TG4Globals.h"
 
 #include <G4VUserDetectorConstruction.hh>
-#include <G4VModularPhysicsList.hh>
 #include <G4VUserPrimaryGeneratorAction.hh>
 #include <G4UserRunAction.hh>
 #include <G4UserEventAction.hh>
 #include <G4UserStackingAction.hh>
 #include <G4RunManager.hh>
 
+//_____________________________________________________________________________
 TG4VRunConfiguration::TG4VRunConfiguration()
   : fDetectorConstruction(0),
+    fSDConstruction(0),
     fPhysicsList(0),
     fPrimaryGenerator(0),
     fRunAction(0),
@@ -29,18 +36,21 @@ TG4VRunConfiguration::TG4VRunConfiguration()
 //
 }
 
+//_____________________________________________________________________________
 TG4VRunConfiguration::TG4VRunConfiguration(const TG4VRunConfiguration& right)
 {
 //
   TG4Globals::Exception("TG4VRunConfiguration is protected from copying.");
 }
 
+//_____________________________________________________________________________
 TG4VRunConfiguration::~TG4VRunConfiguration(){
 //
 }
 
 // operators
 
+//_____________________________________________________________________________
 TG4VRunConfiguration& TG4VRunConfiguration::operator=(
                                 const TG4VRunConfiguration& right)
 {
@@ -54,6 +64,7 @@ TG4VRunConfiguration& TG4VRunConfiguration::operator=(
           
 // public methods
 
+//_____________________________________________________________________________
 void TG4VRunConfiguration::ConfigureRunManager(G4RunManager* runManager)
 {
 // Sets the user action classes to G4RunManager.
@@ -75,11 +86,21 @@ void TG4VRunConfiguration::ConfigureRunManager(G4RunManager* runManager)
   if (fStackingAction) runManager->SetUserAction(fStackingAction);
 }
 
-G4VModularPhysicsList* TG4VRunConfiguration::GetPhysicsList() const
+//_____________________________________________________________________________
+TG4ModularPhysicsList* TG4VRunConfiguration::GetPhysicsList() const
 {
 // Returns the modular physics list.
 // ---
   
   return fPhysicsList;
+}
+
+//_____________________________________________________________________________
+TG4VSDConstruction* TG4VRunConfiguration::GetSDConstruction() const
+{
+// Returns the sensitive detectors construction.
+// ---
+  
+  return fSDConstruction;
 }
 

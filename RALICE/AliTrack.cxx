@@ -13,12 +13,7 @@
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
 
-/*
-$Log$
-Revision 1.2  1999/09/29 09:24:28  fca
-Introduction of the Copyright and cvs Log
-
-*/
+// $Id$
 
 ///////////////////////////////////////////////////////////////////////////
 // Class AliTrack
@@ -91,7 +86,7 @@ Introduction of the Copyright and cvs Log
 // Note : All quantities are in GeV, GeV/c or GeV/c**2
 //
 //--- Author: Nick van Eijndhoven 10-jul-1997 UU-SAP Utrecht
-//- Modified: NvE 29-oct-1999 UU-SAP Utrecht
+//- Modified: NvE $Date$ UU-SAP Utrecht
 ///////////////////////////////////////////////////////////////////////////
 
 #include "AliTrack.h"
@@ -104,6 +99,9 @@ AliTrack::AliTrack()
 // All variables initialised to 0
  fDecays=0;
  fSignals=0;
+ fMasses=0;
+ fDmasses=0;
+ fPmasses=0;
  Reset();
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -126,10 +124,14 @@ AliTrack::~AliTrack()
 ///////////////////////////////////////////////////////////////////////////
 void AliTrack::Reset()
 {
-// Reset all variables to 0
+// Reset all variables to 0 and delete all auto-generated decay tracks.
  fQ=0;
+ fChi2=0;
+ fNdf=0;
+ fUserId=0;
  fNdec=0;
  fNsig=0;
+ fNmasses=0;
  Double_t a[4]={0,0,0,0};
  SetVector(a,"sph");
  if (fDecays)
@@ -147,6 +149,25 @@ void AliTrack::Reset()
  Double_t b[3]={0,0,0};
  fBegin.SetPosition(b,"sph");
  fEnd.SetPosition(b,"sph");
+ fImpactXY.SetPosition(b,"sph");
+ fImpactXZ.SetPosition(b,"sph");
+ fImpactYZ.SetPosition(b,"sph");
+ fClosest.SetPosition(b,"sph");
+ if (fMasses)
+ {
+  delete fMasses;
+  fMasses=0;
+ }
+ if (fDmasses)
+ {
+  delete fDmasses;
+  fDmasses=0;
+ }
+ if (fPmasses)
+ {
+  delete fPmasses;
+  fPmasses=0;
+ }
 }
 ///////////////////////////////////////////////////////////////////////////
 void AliTrack::Set3Momentum(Ali3Vector& p)
@@ -185,10 +206,16 @@ void AliTrack::Info(TString f)
 // Provide track information within the coordinate frame f
  Double_t m=GetMass();
  Double_t dm=GetResultError();
- cout << " *AliTrack::Info* Mass : " << m
+ cout << " *AliTrack::Info* Id : " << fUserId << " Mass : " << m
       << " error : " << dm << " Charge : " << fQ
-      << " Momentum : " << GetMomentum() << " Ntracks : " << fNdec
-      << " Nsignals : " << fNsig << endl;
+      << " Momentum : " << GetMomentum() << " Nmass hyp. : " << fNmasses
+      << " Ntracks : " << fNdec << " Nsignals : " << fNsig << endl;
+ for (Int_t i=0; i<fNmasses; i++)
+ {
+  cout << " Mass hypothesis " << (i+1) << " Mass : " << fMasses->At(i)
+       << " error : " << fDmasses->At(i) << " prob. : " << fPmasses->At(i)
+       << endl;
+ }
  Ali4Vector::Info(f); 
 } 
 ///////////////////////////////////////////////////////////////////////////
@@ -262,10 +289,8 @@ Double_t AliTrack::GetMomentum()
 // Provide the value of the track 3-momentum.
 // The error can be obtained by invoking GetResultError() after
 // invokation of GetMomentum().
-
-// Ali3Vector p=Get3Vector();
-// return sqrt(p.Dot(p));
  Double_t norm=fV.GetNorm();
+ fDresult=fV.GetResultError();
  return norm;
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -483,5 +508,405 @@ AliPosition AliTrack::GetEndPoint()
 {
 // Provide the position of the track end-point.
  return fEnd;
+}
+///////////////////////////////////////////////////////////////////////////
+void AliTrack::AddMassHypothesis(Double_t prob,Double_t m,Double_t dm)
+{
+// Add a mass hypothesis for this current track.
+// prob=probalility  m=mass value  dm=error on the mass value.
+// The default value for the mass error dm is 0.
+ if (!fMasses) fMasses=new TArrayD();
+ if (!fDmasses) fDmasses=new TArrayD();
+ if (!fPmasses) fPmasses=new TArrayD();
+
+ fNmasses++;
+ fMasses->Set(fNmasses);
+ fDmasses->Set(fNmasses);
+ fPmasses->Set(fNmasses);
+
+ fMasses->AddAt(m,fNmasses-1);
+ fDmasses->AddAt(dm,fNmasses-1);
+ fPmasses->AddAt(prob,fNmasses-1);
+}
+///////////////////////////////////////////////////////////////////////////
+Int_t AliTrack::GetNMassHypotheses()
+{
+// Provide the number of mass hypotheses for this track.
+ return fNmasses;
+}
+///////////////////////////////////////////////////////////////////////////
+Double_t AliTrack::GetMassHypothesis(Int_t j)
+{
+// Provide the mass of the jth hypothesis for this track.
+// Note : the first hypothesis is indicated by j=1.
+// Default : j=0 ==> Hypothesis with highest probability.
+// The error on the mass can be obtained by invoking GetResultError()
+// after invokation of GetMassHypothesis(j).
+
+ Double_t m=0,dm=0,prob=0;
+
+ // Check validity of index j
+ if (j<0 || j>fNmasses)
+ {
+  cout << " *AliTrack::GetMassHypothesis* Invalid index j : " << j
+       << " Number of mass hypotheses : " << fNmasses << endl;
+  fDresult=0;
+  return 0;
+ }
+
+ // Select mass hypothesis with highest probability
+ if (j==0) 
+ {
+  if (fNmasses) 
+  {
+   m=fMasses->At(0);
+   dm=fDmasses->At(0);
+   prob=fPmasses->At(0);
+   for (Int_t i=1; i<fNmasses; i++)
+   {
+    if (fPmasses->At(i)>prob)
+    {
+     m=fMasses->At(i);
+     dm=fDmasses->At(i);
+    }
+   }
+  }
+  fDresult=dm;
+  return m;  
+ }
+
+ // Provide data of requested mass hypothesis
+ m=fMasses->At(j-1);
+ fDresult=fDmasses->At(j-1);
+ return m;
+}
+///////////////////////////////////////////////////////////////////////////
+Double_t AliTrack::GetMassHypothesisProb(Int_t j)
+{
+// Provide the probability of the jth hypothesis for this track.
+// Note : the first hypothesis is indicated by j=1.
+// Default : j=0 ==> Hypothesis with highest probability.
+
+ Double_t prob=0;
+
+ // Check validity of index j
+ if (j<0 || j>fNmasses)
+ {
+  cout << " *AliTrack::GetMassHypothesisProb* Invalid index j : " << j
+       << " Number of mass hypotheses : " << fNmasses << endl;
+  return 0;
+ }
+
+ // Select mass hypothesis with highest probability
+ if (j==0) 
+ {
+  if (fNmasses) 
+  {
+   prob=fPmasses->At(0);
+   for (Int_t i=1; i<fNmasses; i++)
+   {
+    if (fPmasses->At(i)>prob) prob=fPmasses->At(i);
+   }
+  }
+  return prob;  
+ }
+
+ // Provide probability of requested mass hypothesis
+ prob=fPmasses->At(j-1);
+ return prob;
+}
+///////////////////////////////////////////////////////////////////////////
+void AliTrack::SetMass()
+{
+// Set the mass and error to the value of the hypothesis with highest prob.
+
+ Double_t m=0,dm=0,prob=0;
+
+ // Select mass hypothesis with highest probability
+ if (fNmasses) 
+ {
+  m=fMasses->At(0);
+  dm=fDmasses->At(0);
+  prob=fPmasses->At(0);
+  for (Int_t i=1; i<fNmasses; i++)
+  {
+   if (fPmasses->At(i)>prob)
+   {
+    m=fMasses->At(i);
+    dm=fDmasses->At(i);
+   }
+  }
+  SetMass(m,dm);
+ }
+ else
+ {
+  cout << " *AliTrack::SetMass()* No hypothesis present => No action." << endl;
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+void AliTrack::RemoveMassHypothesis(Int_t j)
+{
+// Remove the jth mass hypothesis for this track.
+// Note : the first hypothesis is indicated by j=1.
+
+ if (j<=0 || j>fNmasses) // Check validity of index j
+ {
+  cout << " *AliTrack::RemoveMassHypothesis* Invalid index j : " << j
+       << " Number of mass hypotheses : " << fNmasses << endl;
+ }
+ else
+ {
+  if (j != fNmasses)
+  {
+   fMasses->AddAt(fMasses->At(fNmasses-1),j-1);
+   fDmasses->AddAt(fDmasses->At(fNmasses-1),j-1);
+   fPmasses->AddAt(fPmasses->At(fNmasses-1),j-1);
+  }
+  fMasses->AddAt(0,fNmasses-1);
+  fDmasses->AddAt(0,fNmasses-1);
+  fPmasses->AddAt(0,fNmasses-1);
+  fNmasses--;
+  fMasses->Set(fNmasses);
+  fDmasses->Set(fNmasses);
+  fPmasses->Set(fNmasses);
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+Double_t AliTrack::GetPt()
+{
+// Provide trans. momentum value w.r.t. z-axis.
+// The error on the value can be obtained by GetResultError()
+// after invokation of GetPt().
+ Ali3Vector v;
+ v=GetVecTrans();
+ Double_t norm=v.GetNorm();
+ fDresult=v.GetResultError();
+
+ return norm;
+}
+///////////////////////////////////////////////////////////////////////////
+Double_t AliTrack::GetPl()
+{
+// Provide long. momentum value w.r.t. z-axis.
+// Note : the returned value can also be negative.
+// The error on the value can be obtained by GetResultError()
+// after invokation of GetPl().
+ Ali3Vector v;
+ v=GetVecLong();
+
+ Double_t pl=v.GetNorm();
+ fDresult=v.GetResultError();
+
+ Double_t a[3];
+ v.GetVector(a,"sph");
+ if (cos(a[1])<0) pl=-pl;
+
+ return pl;
+}
+///////////////////////////////////////////////////////////////////////////
+Double_t AliTrack::GetEt()
+{
+// Provide trans. energy value w.r.t. z-axis.
+// The error on the value can be obtained by GetResultError()
+// after invokation of GetEt().
+ Double_t et=GetScaTrans();
+
+ return et;
+}
+///////////////////////////////////////////////////////////////////////////
+Double_t AliTrack::GetEl()
+{
+// Provide long. energy value w.r.t. z-axis.
+// Note : the returned value can also be negative.
+// The error on the value can be obtained by GetResultError()
+// after invokation of GetEl().
+ Double_t el=GetScaLong();
+
+ return el;
+}
+///////////////////////////////////////////////////////////////////////////
+Double_t AliTrack::GetMt()
+{
+// Provide transverse mass value w.r.t. z-axis.
+// The error on the value can be obtained by GetResultError()
+// after invokation of GetMt().
+ Double_t pt=GetPt();
+ Double_t dpt=GetResultError();
+ Double_t m=GetMass();
+ Double_t dm=GetResultError();
+
+ Double_t mt=sqrt(pt*pt+m*m);
+ Double_t dmt2=0;
+ if (mt) dmt2=(pow((pt*dpt),2)+pow((m*dm),2))/(mt*mt);
+
+ fDresult=sqrt(dmt2);
+ return mt;
+}
+///////////////////////////////////////////////////////////////////////////
+Double_t AliTrack::GetMt(Int_t j)
+{
+// Provide transverse mass value w.r.t. z-axis and jth mass hypothesis.
+// Note : the first hypothesis is indicated by j=1.
+//        j=0 ==> Hypothesis with highest probability.
+// The error on the value can be obtained by GetResultError()
+// after invokation of GetMt(j).
+ Double_t pt=GetPt();
+ Double_t dpt=GetResultError();
+ Double_t m=GetMassHypothesis(j);
+ Double_t dm=GetResultError();
+
+ Double_t mt=sqrt(pt*pt+m*m);
+ Double_t dmt2=0;
+ if (mt) dmt2=(pow((pt*dpt),2)+pow((m*dm),2))/(mt*mt);
+
+ fDresult=sqrt(dmt2);
+ return mt;
+}
+///////////////////////////////////////////////////////////////////////////
+Double_t AliTrack::GetRapidity()
+{
+// Provide rapidity value w.r.t. z-axis.
+// The error on the value can be obtained by GetResultError()
+// after invokation of GetRapidity().
+// Note : Also GetPseudoRapidity() is available since this class is
+//        derived from Ali4Vector.
+ Double_t e=GetEnergy();
+ Double_t de=GetResultError();
+ Double_t pl=GetPl();
+ Double_t dpl=GetResultError();
+ Double_t sum=e+pl;
+ Double_t dif=e-pl;
+
+ Double_t y=9999,dy2=0;
+ if (sum && dif) y=0.5*log(sum/dif);
+
+ if (sum*dif) dy2=(1./(sum*dif))*(pow((pl*de),2)+pow((e*dpl),2));
+
+ fDresult=sqrt(dy2);
+ return y;
+}
+///////////////////////////////////////////////////////////////////////////
+void AliTrack::SetImpactPoint(AliPosition p,TString q)
+{
+// Store the position of the impact-point in the plane "q=0".
+// Here q denotes one of the axes X, Y or Z.
+// Note : The character to denote the axis may be entered in lower or
+//        in uppercase.
+ Int_t axis=0;
+ if (q=="x" || q=="X") axis=1;
+ if (q=="y" || q=="Y") axis=2;
+ if (q=="z" || q=="Z") axis=3;
+
+ switch (axis)
+ {
+  case 1: // Impact-point in the plane X=0
+   fImpactYZ=p;
+   break;
+
+  case 2: // Impact-point in the plane Y=0
+   fImpactXZ=p;
+   break;
+
+  case 3: // Impact-point in the plane Z=0
+   fImpactXY=p;
+   break;
+
+  default: // Unsupported axis
+   cout << "*AliTrack::SetImpactPoint* Unsupported axis : " << q << endl
+        << " Possible axes are 'X', 'Y' and 'Z'." << endl; 
+   break;
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+AliPosition AliTrack::GetImpactPoint(TString q)
+{
+// Provide the position of the impact-point in the plane "q=0".
+// Here q denotes one of the axes X, Y or Z.
+// Note : The character to denote the axis may be entered in lower or
+//        in uppercase.
+ AliPosition dummy;
+ Int_t axis=0;
+ if (q=="x" || q=="X") axis=1;
+ if (q=="y" || q=="Y") axis=2;
+ if (q=="z" || q=="Z") axis=3;
+
+ switch (axis)
+ {
+  case 1: // Impact-point in the plane X=0
+   return fImpactYZ;
+
+  case 2: // Impact-point in the plane Y=0
+   return fImpactXZ;
+
+  case 3: // Impact-point in the plane Z=0
+   return fImpactXY;
+
+  default: // Unsupported axis
+   cout << "*AliTrack::GetImpactPoint* Unsupported axis : " << q << endl
+        << " Possible axes are 'X', 'Y' and 'Z'." << endl; 
+   return dummy;
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+void AliTrack::SetId(Int_t id)
+{
+// Set a user defined identifier for this track.
+ fUserId=id;
+}
+///////////////////////////////////////////////////////////////////////////
+Int_t AliTrack::GetId()
+{
+// Provide the user defined identifier of this track.
+ return fUserId;
+}
+///////////////////////////////////////////////////////////////////////////
+void AliTrack::SetClosestPoint(AliPosition p)
+{
+// Set position p as the point of closest approach w.r.t. some reference
+ fClosest=p;
+}
+///////////////////////////////////////////////////////////////////////////
+AliPosition AliTrack::GetClosestPoint()
+{
+// Provide the point of closest approach w.r.t. some reference
+ return fClosest;
+}
+///////////////////////////////////////////////////////////////////////////
+void AliTrack::SetChi2(Float_t chi2)
+{
+// Set the chi-squared value of the track fit.
+ if (chi2<0)
+ {
+  cout << " *AliTrack::SetChi2* Invalid chi2 value : " << chi2 << endl;
+ }
+ else
+ {
+  fChi2=chi2;
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+void AliTrack::SetNdf(Int_t ndf)
+{
+// Set the number of degrees of freedom for the track fit.
+ if (ndf<0)
+ {
+  cout << " *AliTrack::SetNdf* Invalid ndf value : " << ndf << endl;
+ }
+ else
+ {
+  fNdf=ndf;
+ }
+}
+///////////////////////////////////////////////////////////////////////////
+Float_t AliTrack::GetChi2()
+{
+// Provide the chi-squared value of the track fit.
+ return fChi2;
+}
+///////////////////////////////////////////////////////////////////////////
+Int_t AliTrack::GetNdf()
+{
+// Provide the number of degrees of freedom for the track fit.
+ return fNdf;
 }
 ///////////////////////////////////////////////////////////////////////////

@@ -1,35 +1,45 @@
 // $Id$
 // Category: run
 //
+// Author: I. Hrivnacova
+//
+// Class AliRunConfiguration
+// -------------------------
 // See the class description in the header file.
 
 #include "AliRunConfiguration.h"
 #include "AliRunMessenger.h"
 #include "AliDetConstruction.h"
+#include "AliSDConstruction.h"
 #include "AliPrimaryGeneratorAction.h"
 #include "AliRunAction.h"
 #include "AliEventAction.h"
 #include "AliTrackingAction.h"
+#include "AliSteppingAction.h"
 #include "AliStackingAction.h"
 #include "AliFiles.h"
 
 #include "TG4ModularPhysicsList.h"
-#include "TG4SteppingAction.h"
 
-AliRunConfiguration::AliRunConfiguration(){
+//_____________________________________________________________________________
+AliRunConfiguration::AliRunConfiguration()
+  : TG4VRunConfiguration()
+{
 //
-  fRunMessenger = new AliRunMessenger();
-  fFiles = new AliFiles();
- 
   CreateUserConfiguration();
+
+  fRunMessenger = new AliRunMessenger();
+  fFiles = new AliFiles(); 
 }
 
+//_____________________________________________________________________________
 AliRunConfiguration::AliRunConfiguration(const AliRunConfiguration& right)
   : TG4VRunConfiguration(right)
 {
   // TG4VRunConfiguration is protected from copying
 }
 
+//_____________________________________________________________________________
 AliRunConfiguration::~AliRunConfiguration() {
 //
   delete fRunMessenger;
@@ -41,6 +51,7 @@ AliRunConfiguration::~AliRunConfiguration() {
 
 // operators
 
+//_____________________________________________________________________________
 AliRunConfiguration& 
 AliRunConfiguration::operator=(const AliRunConfiguration& right)
 {
@@ -56,6 +67,7 @@ AliRunConfiguration::operator=(const AliRunConfiguration& right)
           
 // protected methods
 
+//_____________________________________________________________________________
 void AliRunConfiguration::CreateUserConfiguration()
 {
 // Creates the mandatory Geant4 classes and 
@@ -64,6 +76,7 @@ void AliRunConfiguration::CreateUserConfiguration()
 
   // create mandatory Geant4 classes
   fDetectorConstruction = new AliDetConstruction();
+  fSDConstruction = new AliSDConstruction();
   fPhysicsList = new TG4ModularPhysicsList();
   fPrimaryGenerator = new AliPrimaryGeneratorAction();
 
@@ -71,12 +84,13 @@ void AliRunConfiguration::CreateUserConfiguration()
   fRunAction = new AliRunAction();
   fEventAction = new AliEventAction();
   fTrackingAction = new AliTrackingAction();
-  fSteppingAction = new TG4SteppingAction();
+  fSteppingAction = new AliSteppingAction();
   fStackingAction = new AliStackingAction();
 }
 
 // public methods
 
+//_____________________________________________________________________________
 void AliRunConfiguration::SetConfigName(const char* name)
 {
 // Sets the configuration macro name 
@@ -84,6 +98,7 @@ void AliRunConfiguration::SetConfigName(const char* name)
   fFiles->SetMacroName(name);
 }  
 
+//_____________________________________________________________________________
 void AliRunConfiguration::SetG3CallsName(const char* name)
 {
 // Sets the configuration macro name 

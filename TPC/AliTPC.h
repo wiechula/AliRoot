@@ -24,6 +24,7 @@ class AliTPCTrackHits; // M.I.
 
 class AliTPC : public AliDetector {
 protected:
+  Int_t          fDefaults;
   Int_t          fSens;             // ISENS
   Int_t          fSecAL;            // Upper sector selector
   Int_t          fSecAU;            // Lower sector selector
@@ -37,6 +38,7 @@ protected:
   AliTPCTrackHits *fTrackHits;      //!hits for given track M.I.
   Int_t  fHitType; // if fNewHit = 1 old data structure if 2 new hits
   //  3 both types  
+  Int_t fDigitsSwitch; // digits type, 0->normal, 1->summable
 
   //MK changes
 
@@ -54,15 +56,21 @@ public:
   virtual void  BuildGeometry();
   virtual void  CreateGeometry() {}
   virtual void  CreateMaterials();
-  virtual void  Hits2Clusters(TFile *of);
+  virtual void  Hits2Clusters(TFile *of, Int_t eventn=0);
   virtual void  Hits2ExactClustersSector(Int_t isec); // MI change calculate "exact" cluster position
-  virtual void  SDigits2Digits();
+  
+  virtual void  SDigits2Digits(){;} //MI change -cycling to production
+  virtual void  SDigits2Digits2(Int_t eventnumber=0);
 
-  virtual void  Hits2Digits();   //MI change
+  virtual void  Hits2SDigits(); // MI - cycling around
+  virtual void  Hits2SDigits2(Int_t eventnumber=0);
+
+  virtual void  Digits2Reco(Int_t firstevent=0,Int_t lastevent=0);
+  virtual void  Hits2Digits(Int_t eventnumber=0);   //MI change
   virtual void  Hits2DigitsSector(Int_t isec);  //MI change
   virtual void  Init();
   virtual Int_t IsVersion() const =0;
-  virtual void  Digits2Clusters(TFile *of);
+  virtual void  Digits2Clusters(TFile *of, Int_t eventnumber=0);
   virtual void  Clusters2Tracks(TFile *of);
 
   Int_t         GetNsectors()       {return fNsectors;}
@@ -110,10 +118,13 @@ public:
    //fill clones array with intersection of current point with the
    //middle of the row
    void SetHitType(Int_t type){fHitType =type;} //set type of hit container
+   void SetDigitsSwitch(Int_t sw){fDigitsSwitch = sw;}
+   void SetDefSwitch(Int_t def){fDefaults = def;}
 
 
 private:
   //
+  void SetDefaults();
   void DigitizeRow(Int_t irow,Int_t isec,TObjArray **rowTriplet);
   Float_t GetSignal(TObjArray *p1, Int_t ntr, TMatrix *m1, TMatrix *m2,
                     Int_t *IndexRange);
@@ -126,7 +137,7 @@ private:
                          // index[2] pad row number  
                          // index[3] pad row number for which signal is calculated
   
-  ClassDef(AliTPC,2)  // Time Projection Chamber class
+  ClassDef(AliTPC,4)  // Time Projection Chamber class
 };
 
 

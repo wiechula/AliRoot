@@ -1,12 +1,17 @@
 // $Id$
 // Category: physics
 //
+// Author: I. Hrivnacova
+//
+// Class TG4G3PhysicsManager
+// -------------------------
 // See the class description in the header file.
 
 #include "TG4G3PhysicsManager.h"
 #include "TG4G3CutVector.h"
 #include "TG4G3ControlVector.h"
 #include "TG4G3Defaults.h"
+#include "TG4G3Units.h"
 
 #include <G4ParticleDefinition.hh>
 #include <G4VProcess.hh>
@@ -15,10 +20,13 @@
 
 TG4G3PhysicsManager* TG4G3PhysicsManager::fgInstance = 0;
 
+//_____________________________________________________________________________
 TG4G3PhysicsManager::TG4G3PhysicsManager()
   : fLock(false),
     fCutVector(0),
-    fControlVector(0) 
+    fControlVector(0),
+    fIsCutVector(0),
+    fIsControlVector(0) 
 {
 // 
   if (fgInstance) {
@@ -28,36 +36,39 @@ TG4G3PhysicsManager::TG4G3PhysicsManager()
       
   fgInstance = this;  
 
+  // create vector of kinetic energy cut values  
+  fCutVector = new TG4G3CutVector();
+
+  // create vector of control process control values
+  fControlVector = new TG4G3ControlVector();
+
   // initialize fIsCutVector 
-  fIsCutVector = new TG4boolVector;
+  fIsCutVector = new TG4boolVector();
   G4int i;
-  //for (i=0; i<kNofParticlesWSP; i++) fIsCutVector->insert(false);  
   for (i=0; i<kNofParticlesWSP; i++) fIsCutVector->push_back(false);
 
   // initialize fIsControlVector 
   fIsControlVector = new TG4boolVector;
-  //for (i=0; i<kNofParticlesWSP; i++) fIsControlVector->insert(false);
   for (i=0; i<kNofParticlesWSP; i++) fIsControlVector->push_back(false);
-
-  // define fCutNameVector, fControlNameVector
-  FillG3CutNameVector();
-  FillG3ControlNameVector();
 }
 
+//_____________________________________________________________________________
 TG4G3PhysicsManager::TG4G3PhysicsManager(const TG4G3PhysicsManager& right) {
 // 
   TG4Globals::Exception(
     "Attempt to copy TG4G3PhysicsManager singleton.");
 }
 
+//_____________________________________________________________________________
 TG4G3PhysicsManager::~TG4G3PhysicsManager() {
 //
-  delete fIsCutVector;
+//  delete fIsCutVector;
   delete fIsControlVector;
 }
 
 // operators
 
+//_____________________________________________________________________________
 TG4G3PhysicsManager& 
 TG4G3PhysicsManager::operator=(const TG4G3PhysicsManager& right)
 {
@@ -72,68 +83,33 @@ TG4G3PhysicsManager::operator=(const TG4G3PhysicsManager& right)
           
 // private methods
 
-void TG4G3PhysicsManager::FillG3CutNameVector()
-{
-// Defines fCutNameVector.
-// ---
-
-  fG3CutNameVector.insert("CUTGAM");
-  fG3CutNameVector.insert("CUTELE");
-  fG3CutNameVector.insert("CUTNEU");
-  fG3CutNameVector.insert("CUTHAD");
-  fG3CutNameVector.insert("CUTMUO");
-  fG3CutNameVector.insert("BCUTE");
-  fG3CutNameVector.insert("BCUTM"); 
-  fG3CutNameVector.insert("DCUTE");
-  fG3CutNameVector.insert("DCUTM");
-  fG3CutNameVector.insert("PPCUTM");
-}
-
-void TG4G3PhysicsManager::FillG3ControlNameVector() 
-{
-// Defines fControlNameVector.
-// ---
-
-  fG3ControlNameVector.insert("PAIR");
-  fG3ControlNameVector.insert("COMP");
-  fG3ControlNameVector.insert("PHOT");
-  fG3ControlNameVector.insert("PFIS");
-  fG3ControlNameVector.insert("DRAY");
-  fG3ControlNameVector.insert("ANNI");
-  fG3ControlNameVector.insert("BREM");
-  fG3ControlNameVector.insert("HADR");
-  fG3ControlNameVector.insert("MUNU");
-  fG3ControlNameVector.insert("DCAY");
-  fG3ControlNameVector.insert("LOSS");
-  fG3ControlNameVector.insert("MULS");
-}
-
+//_____________________________________________________________________________
 void TG4G3PhysicsManager::SetCut(TG4G3Cut cut, G4double cutValue)
 {  
 // Sets kinetic energy cut (in a G3-like way).
 // ---
 
-  if (!fCutVector) {
-    // create vector of kinetic energy cut values  
-    fCutVector = new TG4G3CutVector();
-  }  
-  fCutVector->SetG3Cut(cut, cutValue);
+  fCutVector->SetCut(cut, cutValue);
   SwitchIsCutVector(cut);
 }  
 
-void TG4G3PhysicsManager::SetProcess(TG4G3Control control, G4int controlValue)
+//_____________________________________________________________________________
+void TG4G3PhysicsManager::SetProcess(TG4G3Control control, 
+                                     TG4G3ControlValue controlValue)
 {
 // Sets control process control (in a G3-like way).
 // ---
-
-  if (!fControlVector) {
-    // create vector of control process control values
-    fControlVector = new TG4G3ControlVector;
+  
+  if (control == kDRAY || control == kLOSS) {
+      SwitchIsCutVector(kDCUTE);
+      SwitchIsCutVector(kDCUTM);
   }  
-  fControlVector->SetG3Control(control, controlValue);
+
+  fControlVector->SetControl(control, controlValue, *fCutVector);
 } 
 
 
+//_____________________________________________________________________________
 void TG4G3PhysicsManager::SwitchIsCutVector(TG4G3Cut cut)
 {
 // Updates the vector of booleans (fIsCutVector) for the specified cut.
@@ -151,6 +127,7 @@ void TG4G3PhysicsManager::SwitchIsCutVector(TG4G3Cut cut)
            break;
     case kCUTELE:
            (*fIsCutVector)[kElectron] = true; 
+           (*fIsCutVector)[kEplus] = true; 
            break;
     case kDCUTE:
            (*fIsCutVector)[kElectron] = true; 
@@ -172,6 +149,7 @@ void TG4G3PhysicsManager::SwitchIsCutVector(TG4G3Cut cut)
   }
 }
 
+//_____________________________________________________________________________
 void TG4G3PhysicsManager::SwitchIsControlVector(TG4G3Control control)
 {
 // Updates the vector of booleans (fIsControlVector) for the specified control.
@@ -243,46 +221,9 @@ void TG4G3PhysicsManager::SwitchIsControlVector(TG4G3Control control)
   }
 }
 
-TG4G3Cut TG4G3PhysicsManager::GetG3Cut(G4String cutName)
-{
-// Retrieves corresponding TG4G3Cut constant from the cutName.
-// ---
-
-  if      (cutName == fG3CutNameVector[kCUTGAM]) return kCUTGAM; 
-  else if (cutName == fG3CutNameVector[kBCUTE])  return kBCUTE; 
-  else if (cutName == fG3CutNameVector[kBCUTM])  return kBCUTM; 
-  else if (cutName == fG3CutNameVector[kCUTELE]) return kCUTELE;
-  else if (cutName == fG3CutNameVector[kDCUTE])  return kDCUTE;
-  else if (cutName == fG3CutNameVector[kDCUTM])  return kDCUTM;
-  else if (cutName == fG3CutNameVector[kCUTNEU]) return kCUTNEU;
-  else if (cutName == fG3CutNameVector[kCUTHAD]) return kCUTHAD;
-  else if (cutName == fG3CutNameVector[kCUTMUO]) return kCUTMUO;
-  else return kNoG3Cuts;
-}
-
-TG4G3Control TG4G3PhysicsManager::GetG3Control(G4String controlName)
-{
-// Retrieves corresponding TG4G3Control constant from the controlName.
-// ---
-
-  if      (controlName == fG3ControlNameVector[kPAIR]) return kPAIR;
-  else if (controlName == fG3ControlNameVector[kCOMP]) return kCOMP;
-  else if (controlName == fG3ControlNameVector[kPHOT]) return kPHOT;
-  else if (controlName == fG3ControlNameVector[kPFIS]) return kPFIS;
-  else if (controlName == fG3ControlNameVector[kDRAY]) return kDRAY;
-  else if (controlName == fG3ControlNameVector[kANNI]) return kANNI;
-  else if (controlName == fG3ControlNameVector[kBREM]) return kBREM;
-  else if (controlName == fG3ControlNameVector[kHADR]) return kHADR;
-  else if (controlName == fG3ControlNameVector[kMUNU]) return kMUNU;
-  else if (controlName == fG3ControlNameVector[kDCAY]) return kDCAY;
-  else if (controlName == fG3ControlNameVector[kLOSS]) return kLOSS;
-  else if (controlName == fG3ControlNameVector[kMULS]) return kMULS;
-  else return kNoG3Controls;
-}
-
 // public methods
 
-
+//_____________________________________________________________________________
 void TG4G3PhysicsManager::CheckLock()
 {
 // Gives exception in case the physics manager is locked.
@@ -297,7 +238,7 @@ void TG4G3PhysicsManager::CheckLock()
   }  
 }
 
-
+//_____________________________________________________________________________
 G4VProcess* TG4G3PhysicsManager::FindProcess(G4String processName) const
 {
 // Finds G4VProcess with specified name.
@@ -316,7 +257,7 @@ G4VProcess* TG4G3PhysicsManager::FindProcess(G4String processName) const
   return firstFoundProcess;
 }
 
-
+//_____________________________________________________________________________
 G4bool TG4G3PhysicsManager::CheckCutWithTheVector(G4String name, 
                                  G4double value, TG4G3Cut& cut)
 {
@@ -328,14 +269,14 @@ G4bool TG4G3PhysicsManager::CheckCutWithTheVector(G4String name,
 // ---
 
   // convert cut name -> TG4G3Cut
-  cut = GetG3Cut(name);
+  cut = TG4G3CutVector::GetCut(name);
 
   // set switch vector element only if the value
   // is different from the value in cutVector
   if (cut !=kNoG3Cuts) {
-    // get tolerance from TG4G3Defaults in GeV
-    G4double tolerance = TG4G3Defaults::CutTolerance()/GeV;
-    if (!(fCutVector) || (abs(value - (*fCutVector)[cut]) > tolerance)) {
+    // get tolerance from TG4G3CutVector in G3 units
+    G4double tolerance = TG4G3CutVector::Tolerance()/ TG4G3Units::Energy();
+    if (abs(value - (*fCutVector)[cut]) > tolerance) {
       SwitchIsCutVector(cut);      
       return true;
     }  
@@ -344,8 +285,10 @@ G4bool TG4G3PhysicsManager::CheckCutWithTheVector(G4String name,
   return false;
 }
 
+//_____________________________________________________________________________
 G4bool TG4G3PhysicsManager::CheckControlWithTheVector(G4String name, 
-                                 G4double value, TG4G3Control& control)
+                                 G4double value, TG4G3Control& control,
+				 TG4G3ControlValue& controlValue)
 {
 // Retrieves corresponding TG4G3Control from the name and 
 // in case the value is different from the value in controlVector
@@ -355,12 +298,15 @@ G4bool TG4G3PhysicsManager::CheckControlWithTheVector(G4String name,
 // ---
 
   // convert control name -> TG4G3Control
-  control = GetG3Control(name);
+  control = TG4G3ControlVector::GetControl(name);
+
+  // convert double value -> TG4G3ControlValue
+  controlValue = TG4G3ControlVector::GetControlValue(value, control);
 
   // set switch vector element only if the value
   // is different from the value in controlVector
   if (control !=kNoG3Controls) {
-    if (!(fControlVector) || (abs(value - (*fControlVector)[control]) > 0.01)) {
+    if (controlValue != (*fControlVector)[control]) {
       SwitchIsControlVector(control);      
       return true;
     }  
@@ -369,6 +315,7 @@ G4bool TG4G3PhysicsManager::CheckControlWithTheVector(G4String name,
   return false;
 }
 
+//_____________________________________________________________________________
 G4bool TG4G3PhysicsManager::CheckCutWithG3Defaults(G4String name, 
                                  G4double value, TG4G3Cut& cut)
 {
@@ -380,12 +327,12 @@ G4bool TG4G3PhysicsManager::CheckCutWithG3Defaults(G4String name,
 // ---
 
   // convert cut name -> TG4G3Cut
-  cut = GetG3Cut(name);
+  cut = TG4G3CutVector::GetCut(name);
 
   // set switch vector element only if the value
   // is different from G3 default
   if (cut !=kNoG3Cuts) {
-    if (!TG4G3Defaults::IsDefaultCut(cut, value)) {
+    if (!fG3Defaults.IsDefaultCut(cut, value)) {
       SwitchIsCutVector(cut);      
       return true;
     }  
@@ -394,8 +341,10 @@ G4bool TG4G3PhysicsManager::CheckCutWithG3Defaults(G4String name,
   return false;
 }
 
+//_____________________________________________________________________________
 G4bool TG4G3PhysicsManager::CheckControlWithG3Defaults(G4String name, 
-                                 G4double value, TG4G3Control& control)
+                                 G4double value, TG4G3Control& control,
+                                 TG4G3ControlValue& controlValue)
 {
 // Retrieves corresponding TG4G3Control from the name and 
 // in case the value is different from the G3 default value
@@ -405,12 +354,15 @@ G4bool TG4G3PhysicsManager::CheckControlWithG3Defaults(G4String name,
 // ---
 
   // convert control name -> TG4G3Control
-  control = GetG3Control(name);
+  control = TG4G3ControlVector::GetControl(name);
+
+  // convert double value -> TG4G3ControlValue
+  controlValue = TG4G3ControlVector::GetControlValue(value, control);
 
   // set switch vector element only if the value
   // is different from G3 default
   if (control !=kNoG3Controls) {
-    if (!TG4G3Defaults::IsDefaultControl(control, value)) {
+    if (!fG3Defaults.IsDefaultControl(control, controlValue)) {
       SwitchIsControlVector(control);      
       return true;
     }  
@@ -419,36 +371,32 @@ G4bool TG4G3PhysicsManager::CheckControlWithG3Defaults(G4String name,
   return false;
 }
 
+//_____________________________________________________________________________
 void TG4G3PhysicsManager::SetG3DefaultCuts() 
 {
 // Sets G3 default values of kinetic energy cuts.
 // ---
 
   CheckLock();
-  if (!fCutVector) {
-    // create vector of kinetic energy cut values  
-    fCutVector = new TG4G3CutVector();
-  }  
   fCutVector->SetG3Defaults();
 }
 
+//_____________________________________________________________________________
 void TG4G3PhysicsManager::SetG3DefaultControls()
 {
 // Sets G3 default values of control process controls.
 // ---
 
   CheckLock();
-  if (!fControlVector) {
-    // create vector of control process control values
-    fControlVector = new TG4G3ControlVector;
-  }  
   fControlVector->SetG3Defaults();
 }  
 
+//_____________________________________________________________________________
 G4bool TG4G3PhysicsManager::IsSpecialCuts() const
 {
 // Returns true if any special cut value is set.
 // ---
+
 
   for (G4int i=0; i<kNofParticlesWSP; i++)
   {  if ((*fIsCutVector)[i]) return true; }
@@ -456,6 +404,7 @@ G4bool TG4G3PhysicsManager::IsSpecialCuts() const
   return false;
 }
 
+//_____________________________________________________________________________
 G4bool TG4G3PhysicsManager::IsSpecialControls() const
 {
 // Returns true if any special control value is set.
@@ -467,6 +416,7 @@ G4bool TG4G3PhysicsManager::IsSpecialControls() const
   return false;
 }
 
+//_____________________________________________________________________________
 TG4G3ParticleWSP TG4G3PhysicsManager::GetG3ParticleWSP(
                                       G4ParticleDefinition* particle) const 
 {
@@ -501,44 +451,43 @@ TG4G3ParticleWSP TG4G3PhysicsManager::GetG3ParticleWSP(
   }    
 }  
 
-void TG4G3PhysicsManager::GetG3ParticleWSPName(G4int particleWSP,
-                                               G4String& name) const 
+//_____________________________________________________________________________
+G4String TG4G3PhysicsManager::GetG3ParticleWSPName(G4int particleWSP) const 
 {
-// Fills the passed name with the name/type of particle specified
-// by TG4G3ParticleWSP constant.
+// Returns the name of the particle specified by TG4G3ParticleWSP constant.
 // (See TG4G3ParticleWSP.h, too.)
 // ---
 
   switch (particleWSP) {
     case kGamma:
-      name = "Gamma";
+      return "Gamma";
       break;
     case kElectron:
-      name = "Electron";
+      return "Electron";
       break;
     case kEplus:
-      name = "Eplus";
+      return "Eplus";
       break;
     case kNeutralHadron:
-      name = "NeutralHadron";
+      return "NeutralHadron";
       break;
     case kChargedHadron:
-      name = "ChargedHadron";
+      return "ChargedHadron";
       break;
     case kMuon:
-      name = "Muon";
+      return "Muon";
       break;
     case kAny:
-      name = "Any";
+      return "Any";
       break;
     case kNofParticlesWSP:
-      name = "NoSP";
+      return "NoSP";
       break;
     default:
       G4String text = "TG4G3PhysicsManager::GetG3ParticleWSPName:\n";
       text = text + "   Wrong particleWSP."; 
       TG4Globals::Exception(text);
-      break;      
+      return "";
   }
 }  
 

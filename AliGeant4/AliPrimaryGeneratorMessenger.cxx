@@ -1,6 +1,10 @@
 // $Id$
 // Category: run
 //
+// Author: I. Hrivnacova
+//
+// Class AliPrimaryGeneratorMessenger
+// ----------------------------------
 // See the class description in the header file.
 
 #include "AliPrimaryGeneratorMessenger.h"
@@ -11,6 +15,7 @@
 #include <G4UIcmdWithAString.hh>
 #include <G4UIcmdWithAnInteger.hh>
 
+//_____________________________________________________________________________
 AliPrimaryGeneratorMessenger::AliPrimaryGeneratorMessenger(
   AliPrimaryGeneratorAction* primaryGenAction)
   : fPrimaryGenAction(primaryGenAction)
@@ -47,10 +52,12 @@ AliPrimaryGeneratorMessenger::AliPrimaryGeneratorMessenger(
   fVerboseCmd->AvailableForStates(Idle);
 }
 
+//_____________________________________________________________________________
 AliPrimaryGeneratorMessenger::AliPrimaryGeneratorMessenger() {
 //
 }
 
+//_____________________________________________________________________________
 AliPrimaryGeneratorMessenger::AliPrimaryGeneratorMessenger(
                                  const AliPrimaryGeneratorMessenger& right) {
 //				 
@@ -58,6 +65,7 @@ AliPrimaryGeneratorMessenger::AliPrimaryGeneratorMessenger(
     "AliPrimaryGeneratorMessenger is protected from copying.");
 }
 
+//_____________________________________________________________________________
 AliPrimaryGeneratorMessenger::~AliPrimaryGeneratorMessenger() {
 //
   delete fPrimariesDirectory;
@@ -68,6 +76,7 @@ AliPrimaryGeneratorMessenger::~AliPrimaryGeneratorMessenger() {
 
 // operators
 
+//_____________________________________________________________________________
 AliPrimaryGeneratorMessenger& 
 AliPrimaryGeneratorMessenger::operator=(
                                 const AliPrimaryGeneratorMessenger &right)
@@ -83,6 +92,7 @@ AliPrimaryGeneratorMessenger::operator=(
 
 // public methods
 
+//_____________________________________________________________________________
 void AliPrimaryGeneratorMessenger::SetNewValue(G4UIcommand * command,
        G4String newValue)
 { 

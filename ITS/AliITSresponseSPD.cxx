@@ -16,17 +16,15 @@
 #include <TMath.h>
 
 #include "AliITSresponseSPD.h"
- 
-//___________________________________________
-ClassImp(AliITSresponseSPD)	
 
-AliITSresponseSPD::AliITSresponseSPD()
-{
+ClassImp(AliITSresponseSPD)	
+//______________________________________________________________________
+AliITSresponseSPD::AliITSresponseSPD(){
   // constructor
-   SetDiffCoeff();
+
+   SetThresholds();
    SetNoiseParam();
    SetDataType();
-   SetMinVal();
-
+   SetFractionDead();
 }
 

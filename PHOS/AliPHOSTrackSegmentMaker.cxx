@@ -17,34 +17,29 @@
 // Algorithm Base class to construct PHOS track segments
 // Associates EMC and PPSD clusters
 // Unfolds the EMC cluster   
-//                  
+//*-- 
 //*-- Author: Dmitri Peressounko (RRC Ki & SUBATECH)
 
 
 // --- ROOT system ---
 
-#include "TFile.h"
-#include "TROOT.h"
-
 // --- Standard library ---
 
 // --- AliRoot header files ---
-#include "AliRun.h"
 #include "AliPHOSTrackSegmentMaker.h"
-#include "AliPHOS.h"
-#include "AliPHOSGeometry.h"
 
 ClassImp( AliPHOSTrackSegmentMaker) 
 
 
 //____________________________________________________________________________
- AliPHOSTrackSegmentMaker:: AliPHOSTrackSegmentMaker() : TTask()
+  AliPHOSTrackSegmentMaker:: AliPHOSTrackSegmentMaker() : TTask("","")
 {
+  // ctor
 }
+
 //____________________________________________________________________________
-AliPHOSTrackSegmentMaker::AliPHOSTrackSegmentMaker(char * header,char * branch): TTask("AliPHOSTrackSegmentMaker","")
+AliPHOSTrackSegmentMaker::AliPHOSTrackSegmentMaker(const char * headerFile, const char * name): TTask(name, headerFile)
 {
-
-
+  // ctor
 }
 

@@ -9,7 +9,7 @@
 // The main HIJING options are accessable for the user through this interface.
 // andreas.morsch@cern.ch
 
-#include "AliGenerator.h"
+#include "AliGenMC.h"
 #include <TString.h>
 #include <TArrayI.h>
 
@@ -17,8 +17,9 @@ class THijing;
 class TArrayI;
 class TParticle;
 class TClonesArray;
+class TGraph;
 
-class AliGenHijing : public AliGenerator
+class AliGenHijing : public AliGenMC
 {
     enum {kNoTrigger, kHardProcesses, kDirectPhotons};
 
@@ -48,17 +49,21 @@ class AliGenHijing : public AliGenerator
 	fMaxImpactParam=bmax;
 	}
     virtual void    KeepFullEvent();
-    virtual void    SetJetQuenching(Int_t flag=1)     {fQuench    = flag;}
-    virtual void    SetShadowing(Int_t flag=1)        {fShadowing = flag;}
-    virtual void    SetDecaysOff(Int_t flag=1)        {fDecaysOff = flag;}
-    virtual void    SetTrigger(Int_t flag=kNoTrigger) {fTrigger   = flag;}
-    virtual void    SetFlavor(Int_t flag=0)           {fFlavor    = flag;}    
-    virtual void    SetEvaluate(Int_t flag=0)         {fEvaluate  = flag;}
-    virtual void    SetSelectAll(Int_t flag=0)        {fSelectAll = flag;}    
+    virtual void    SetJetQuenching(Int_t flag=1)     {fQuench     = flag;}
+    virtual void    SetShadowing(Int_t flag=1)        {fShadowing  = flag;}
+    virtual void    SetDecaysOff(Int_t flag=1)        {fDecaysOff  = flag;}
+    virtual void    SetTrigger(Int_t flag=kNoTrigger) {fTrigger    = flag;}
+    virtual void    SetFlavor(Int_t flag=0)           {fFlavor     = flag;}
+    virtual void    SetEvaluate(Int_t flag=0)         {fEvaluate   = flag;}
+    virtual void    SetSelectAll(Int_t flag=0)        {fSelectAll  = flag;}
+    virtual void    SetRadiation(Int_t flag=3)        {fRadiation  = flag;}    
     virtual void    SetSpectators(Int_t spects=1)     {fSpectators = spects;}
+    virtual void    SetPtMinJet(Float_t ptmin)        {fPtMinJet   = ptmin;}
     AliGenHijing &  operator=(const AliGenHijing & rhs);
 // Physics Routines	    
     virtual void EvaluateCrossSections();
+    virtual TGraph* CrossSection()     {return fDsigmaDb;}
+    virtual TGraph* BinaryCollisions() {return fDnDb;}    
  protected:
     Bool_t SelectFlavor(Int_t pid);
     void   MakeHeader();
@@ -91,14 +96,16 @@ class AliGenHijing : public AliGenerator
     Float_t     fPtHardMin;      // lower pT-hard cut 
     Float_t     fPtHardMax;      // higher pT-hard cut
     Int_t       fSpectators;     // put spectators on stack
-
+    TGraph*     fDsigmaDb;       // dSigma/db for the system
+    TGraph*     fDnDb;           // dNBinaryCollisions/db
+    Float_t     fPtMinJet;       // Minimum Pt of triggered Jet
+    Int_t       fRadiation;      // Flag to switch on/off initial and final state radiation
+    
+// ZDC proposal (by Chiara) to store num. of SPECTATORS protons and neutrons
+    Int_t 	fSpecn;		 // Num. of spectator neutrons
+    Int_t 	fSpecp;		 // Num. of spectator protons
+     
  private:
-    // check if particle is selected as parent particle
-    Bool_t ParentSelected(Int_t ip);
-    // check if particle is selected as child particle
-    Bool_t ChildSelected(Int_t ip);
-    // all kinematic selection cuts go here 
-    Bool_t KinematicSelection(TParticle *particle);
     // adjust the weight from kinematic cuts
     void   AdjustWeights();
     // check seleted daughters

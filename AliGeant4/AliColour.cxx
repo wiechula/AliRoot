@@ -1,11 +1,16 @@
 // $Id$
 // Category: visualization
 //
+// Author: I. Hrivnacova
+//
+// Class AliColour
+// ---------------
 // See the class description in the header file.
 
 #include "AliColour.h"
 #include <G4Colour.hh>
   
+//_____________________________________________________________________________
 AliColour::AliColour()
   : fName (""),
     fRed(0.),
@@ -15,6 +20,7 @@ AliColour::AliColour()
 //
 }
 
+//_____________________________________________________________________________
 AliColour::AliColour(G4String name, G4double red, G4double blue, G4double green)
   : fName(name),
     fRed(red),
@@ -24,18 +30,21 @@ AliColour::AliColour(G4String name, G4double red, G4double blue, G4double green)
 //
 }
 
+//_____________________________________________________________________________
 AliColour::AliColour(const AliColour& right) {
 //
   // copy stuff
   *this = right;
 }
 
+//_____________________________________________________________________________
 AliColour::~AliColour() {
 //
 }
 
 // operators
 
+//_____________________________________________________________________________
 AliColour& AliColour::operator=(const AliColour& right)
 {    
   // check assignement to self
@@ -49,6 +58,7 @@ AliColour& AliColour::operator=(const AliColour& right)
   return *this;
 }
 
+//_____________________________________________________________________________
 G4int AliColour::operator==(const AliColour& right) const
 {    
 //
@@ -60,6 +70,7 @@ G4int AliColour::operator==(const AliColour& right) const
   return returnValue;  
 }
 
+//_____________________________________________________________________________
 G4int AliColour::operator!=(const AliColour& right) const
 {
 //    

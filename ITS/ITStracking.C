@@ -1,4 +1,6 @@
+#ifndef __CINT__
 #include "iostream.h"
+#endif
 
 void ITStracking(Int_t evNumber1=0,Int_t evNumber2=0,int min_t=-1, int max_t=0,Bool_t flagvert=1) {
 
@@ -26,9 +28,9 @@ void ITStracking(Int_t evNumber1=0,Int_t evNumber2=0,int min_t=-1, int max_t=0,B
       if (!gAlice) gAlice = new AliRun("gAlice","Alice test program");
    }
 
-
-  AliITS* ITS =(AliITS *)gAlice->GetDetector("ITS");
-  if (!ITS) return;
+  AliITS* IITTSS =(AliITS *)gAlice->GetDetector("ITS");        
+  if (!IITTSS) return;                                        
+  AliITSTrackerV1* ITStracker = new AliITSTrackerV1(IITTSS,flagvert);   
 
 //
 //   Loop over events 
@@ -50,7 +52,7 @@ void ITStracking(Int_t evNumber1=0,Int_t evNumber2=0,int min_t=-1, int max_t=0,B
      TStopwatch timer;
 	  
 	  timer.Start();
-     ITS->DoTracking(nev,min_t,max_t,file,flagvert);
+     ITStracker->DoTracking(nev,min_t,max_t,file);    // nuova
      timer.Stop(); timer.Print();
    }   // event loop 
    file->Close();   

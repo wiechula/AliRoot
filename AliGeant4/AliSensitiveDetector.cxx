@@ -1,6 +1,10 @@
 // $Id$ //
-// Category: geometry
+// Category: digits+hits
 //
+// Author: I. Hrivnacova
+//
+// Class AliSensitiveDetector
+// --------------------------
 // See the class description in the header file.
 
 #include "AliSensitiveDetector.h"
@@ -10,6 +14,7 @@
 
 #include "TG4G3Units.h"
 
+//_____________________________________________________________________________
 AliSensitiveDetector::AliSensitiveDetector(G4String sdName, AliModule* module)
   : TG4VSensitiveDetector(sdName),
     fModule(module),
@@ -19,6 +24,7 @@ AliSensitiveDetector::AliSensitiveDetector(G4String sdName, AliModule* module)
 //
 }
 
+//_____________________________________________________________________________
 AliSensitiveDetector::AliSensitiveDetector(G4String sdName, AliModule* module, 
                                            G4int id)
   : TG4VSensitiveDetector(sdName, id),
@@ -29,6 +35,7 @@ AliSensitiveDetector::AliSensitiveDetector(G4String sdName, AliModule* module,
 //
 }
 
+//_____________________________________________________________________________
 AliSensitiveDetector::AliSensitiveDetector(const AliSensitiveDetector& right)
   : TG4VSensitiveDetector(right)
 {
@@ -37,16 +44,19 @@ AliSensitiveDetector::AliSensitiveDetector(const AliSensitiveDetector& right)
   *this = right;
 }  
   
+//_____________________________________________________________________________
 AliSensitiveDetector::AliSensitiveDetector(){
 //
 }
 
+//_____________________________________________________________________________
 AliSensitiveDetector::~AliSensitiveDetector() {
 //
 }
 
 // operators
 
+//_____________________________________________________________________________
 AliSensitiveDetector& 
 AliSensitiveDetector::operator=(const AliSensitiveDetector& right)
 {
@@ -63,6 +73,7 @@ AliSensitiveDetector::operator=(const AliSensitiveDetector& right)
           
 // public methods
 
+//_____________________________________________________________________________
 void AliSensitiveDetector::Initialize(G4HCofThisEvent*HCE) 
 {
 // This method is called by G4 kernel at the beginning of event action
@@ -74,6 +85,7 @@ void AliSensitiveDetector::Initialize(G4HCofThisEvent*HCE)
 }  
   
   
+//_____________________________________________________________________________
 void AliSensitiveDetector::UserProcessHits(const G4Track* track, 
                                            const G4Step* step)
 {

@@ -13,15 +13,7 @@
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
 
-/*
-$Log$
-Revision 1.3  1999/11/03 14:23:17  fca
-New version of RALICE introduced
-
-Revision 1.2  1999/09/29 09:24:28  fca
-Introduction of the Copyright and cvs Log
-
-*/
+// $Id$
 
 ///////////////////////////////////////////////////////////////////////////
 // Class AliCalorimeter
@@ -56,7 +48,7 @@ Introduction of the Copyright and cvs Log
 //                      // Note : Module gain, edge and dead flags remain
 //
 //--- Author: Nick van Eijndhoven 13-jun-1997 UU-SAP Utrecht
-//- Modified: NvE 03-mar-2000 UU-SAP Utrecht
+//- Modified: NvE $Date$ UU-SAP Utrecht
 ///////////////////////////////////////////////////////////////////////////
 
 #include "AliCalorimeter.h"
@@ -80,6 +72,7 @@ AliCalorimeter::AliCalorimeter()
  fAttributes=0;
  fGains=0;
  fPositions=0;
+ fName=" ";
 }
 ///////////////////////////////////////////////////////////////////////////
 AliCalorimeter::~AliCalorimeter()
@@ -191,6 +184,8 @@ AliCalorimeter::AliCalorimeter(Int_t nrow,Int_t ncol)
 
  fNvetos=0;
  fVetos=0;
+
+ fName=" ";
 }
 ///////////////////////////////////////////////////////////////////////////
 Int_t AliCalorimeter::GetNrows()
@@ -1100,5 +1095,15 @@ AliSignal* AliCalorimeter::GetVetoSignal(Int_t i)
   cout << " --- First signal (if any) returned." << endl;
   return (AliSignal*)fVetos->At(0);
  }
+}
+///////////////////////////////////////////////////////////////////////////
+void AliCalorimeter::SetName(TString name)
+{
+ fName=name;
+}
+///////////////////////////////////////////////////////////////////////////
+TString AliCalorimeter::GetName()
+{
+ return fName;
 }
 ///////////////////////////////////////////////////////////////////////////

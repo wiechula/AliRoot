@@ -13,12 +13,7 @@
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
 
-/*
-$Log$
-Revision 1.2  1999/09/29 09:24:28  fca
-Introduction of the Copyright and cvs Log
-
-*/
+// $Id$
 
 ///////////////////////////////////////////////////////////////////////////
 // Class AliPosition
@@ -55,6 +50,7 @@ Introduction of the Copyright and cvs Log
 // q.GetPositionErrors(dloc,"sph");
 //
 //--- Author: Nick van Eijndhoven 06-feb-1999 UU-SAP Utrecht
+//- Modified: NvE $Date$ UU-SAP Utrecht
 ///////////////////////////////////////////////////////////////////////////
 
 #include "AliPosition.h"
@@ -133,5 +129,16 @@ void AliPosition::GetPositionErrors(Float_t* r,TString f)
 {
 // Provide position errors according to reference frame f
  GetErrors(r,f);
+}
+///////////////////////////////////////////////////////////////////////////
+Double_t AliPosition::GetDistance(AliPosition& p)
+{
+// Provide distance to position p.
+// The error on the result can be obtained as usual by invoking
+// GetResultError() afterwards. 
+ Ali3Vector d=(Ali3Vector)((*this)-p);
+ Double_t dist=d.GetNorm();
+ fDresult=d.GetResultError();
+ return dist;
 }
 ///////////////////////////////////////////////////////////////////////////

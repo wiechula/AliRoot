@@ -9,40 +9,46 @@
 //                  
 //*-- Author: Laurent Aphecetche & Yves Schutz (SUBATECH)
 
+#include <stdlib.h>
+
 // --- ROOT system ---
 
 class TString ; 
+class TTask ;
+class TFolder ;
 
 // --- AliRoot header files ---
 
-#include <stdlib.h>
 #include "AliDetector.h" 
 class AliPHOSGeometry ; 
+class AliPHOSQAChecker ;
 
 class AliPHOS : public AliDetector {
 
  public:
 
-  AliPHOS() : AliDetector() {}
-  AliPHOS(const char* name, const char* title="") : AliDetector(name, title) {}
+  AliPHOS() ;
+  AliPHOS(const char* name, const char* title="") ;  
   AliPHOS(const AliPHOS & phos) {
     // cpy ctor: no implementation yet
     // requested by the Coding Convention
     abort() ; 
   }
-  virtual ~AliPHOS() {}
+  virtual ~AliPHOS() ; 
   virtual void   AddHit(Int_t, Int_t*, Float_t *) {
     // do not use this definition but the one below
     abort() ; 
   }
   virtual void   AddHit( Int_t shunt, Int_t primary, Int_t track, Int_t id, Float_t *hits ) = 0 ;   
   virtual void   CreateMaterials() ;                     
-  virtual  AliPHOSGeometry * GetGeometry() = 0 ;
-
-  Int_t   IsVersion(void) const { return -1 ; } 
-  virtual void    SetTreeAddress();                
+  virtual  void  FinishRun() {WriteQA();}
+  virtual  AliPHOSGeometry * GetGeometry() const ;
+  virtual Int_t   IsVersion(void) const = 0 ;  
+  AliPHOSQAChecker * QAChecker() {return fQATask;}  
+  virtual void    SetTreeAddress();   
+  virtual TTree * TreeQA() const {return fTreeQA; } 
   virtual TString Version() {return TString(" ") ; } 
- 
+  virtual void WriteQA() ; 
   AliPHOS & operator = (const AliPHOS & rvalue)  {
     // assignement operator requested by coding convention
     // but not needed
@@ -51,6 +57,9 @@ class AliPHOS : public AliDetector {
   }
  
 protected:
+  
+  AliPHOSQAChecker * fQATask ; //! PHOS checkers container
+  TTree * fTreeQA ;            // the QA tree that contains the alarms
 
   ClassDef(AliPHOS,2) // Photon Spectrometer Detector (base class)
 

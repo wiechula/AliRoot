@@ -1,26 +1,27 @@
 // $Id$
 // Category: physics
 //
-// According to corresponding part of:
-// ExN04PhysicsList.cc,v 1.7 1999/12/15 14:49:26 gunter
-// GEANT4 tag Name: geant4-01-01
+// Author: I. Hrivnacova
+//
+// Class TG4PhysicsConstructorEM
+// -----------------------------
+// See the class description in the header file.
+// According to ExN04EMPhysics.cc,v 1.1.2.1 2001/06/28 19:07:37 gunter Exp 
+// GEANT4 tag Name: geant4-03-02
 
 #include "TG4PhysicsConstructorEM.h"
+#include "TG4ProcessControlMap.h"
+#include "TG4ProcessMCMap.h"
 
 #include <G4ParticleDefinition.hh>
 #include <G4ProcessManager.hh>
-#include <G4ComptonScattering.hh>
-#include <G4GammaConversion.hh>
-#include <G4PhotoElectricEffect.hh>
-#include <G4MultipleScattering.hh>
-#include <G4eIonisation.hh>
-#include <G4eBremsstrahlung.hh>
-#include <G4eplusAnnihilation.hh>
-#include <G4MuIonisation.hh>
-#include <G4MuBremsstrahlung.hh>
-#include <G4MuPairProduction.hh>
-#include <G4hIonisation.hh>
+#include <G4Gamma.hh>
+#include <G4Electron.hh>
+#include <G4Positron.hh>
+#include <G4NeutrinoE.hh>
+#include <G4AntiNeutrinoE.hh>
 
+//_____________________________________________________________________________
 TG4PhysicsConstructorEM::TG4PhysicsConstructorEM(const G4String& name)
   : G4VPhysicsConstructor(name)
 {
@@ -28,129 +29,128 @@ TG4PhysicsConstructorEM::TG4PhysicsConstructorEM(const G4String& name)
   SetVerboseLevel(1);
 }
 
+//_____________________________________________________________________________
 TG4PhysicsConstructorEM::~TG4PhysicsConstructorEM() {
 //
 }
 
-// protected methods
+// private methods
 
-void TG4PhysicsConstructorEM::ConstructParticle()
+//_____________________________________________________________________________
+void TG4PhysicsConstructorEM::ConstructProcessForGamma()
 {
-// The particles are constructed in the 
-// TG4ModularPhysicsList.
+// Constructs electromagnetic processes for gamma.
 // ---
+  
+  // add processes
+  G4ProcessManager* pManager = G4Gamma::Gamma()->GetProcessManager();
+  pManager->AddDiscreteProcess(&fPhotoEffect);
+  pManager->AddDiscreteProcess(&fComptonEffect);
+  pManager->AddDiscreteProcess(&fPairProduction);
+
+  // map to G3 controls
+  TG4ProcessControlMap* controlMap = TG4ProcessControlMap::Instance();
+  controlMap->Add(&fPhotoEffect, kPHOT); 
+  controlMap->Add(&fComptonEffect, kCOMP); 
+  controlMap->Add(&fPairProduction, kPAIR); 
+
+  // map to AliMCProcess codes
+  TG4ProcessMCMap* mcMap = TG4ProcessMCMap::Instance();
+  mcMap->Add(&fPhotoEffect, kPPhotoelectric); 
+  mcMap->Add(&fComptonEffect, kPCompton); 
+  mcMap->Add(&fPairProduction, kPPair); 
+}  
+
+
+//_____________________________________________________________________________
+void TG4PhysicsConstructorEM::ConstructProcessForElectron()
+{
+// Constructs electromagnetic processes for e-.
+// ---
+
+  // add process
+  G4ProcessManager* pManager = G4Electron::Electron()->GetProcessManager();
+  pManager->AddDiscreteProcess(&fElectronBremsStrahlung); 
+  pManager->AddProcess(&fElectronIonisation, ordInActive, 2, 2);
+  pManager->AddProcess(&fElectronMultipleScattering);
+
+  // set ordering
+  pManager->SetProcessOrdering(&fElectronMultipleScattering, idxAlongStep,  1);
+  pManager->SetProcessOrdering(&fElectronMultipleScattering, idxPostStep,  1);
+
+  // map to G3 controls
+  TG4ProcessControlMap* controlMap = TG4ProcessControlMap::Instance();
+  controlMap->Add(&fElectronBremsStrahlung, kBREM); 
+  controlMap->Add(&fElectronIonisation, kLOSS); 
+  controlMap->Add(&fElectronMultipleScattering, kMULS); 
+
+  // map to AliMCProcess codes
+  TG4ProcessMCMap* mcMap = TG4ProcessMCMap::Instance();
+  mcMap->Add(&fElectronBremsStrahlung, kPBrem); 
+  mcMap->Add(&fElectronMultipleScattering, kPMultipleScattering); 
+  mcMap->Add(&fElectronIonisation, kPEnergyLoss); 
 }
 
-void TG4PhysicsConstructorEM::ConstructProcess()
+//_____________________________________________________________________________
+void TG4PhysicsConstructorEM::ConstructProcessForPositron()
 {
-// Constructs electromagnetic processes.
+// Constructs electromagnetic processes for e+.
+// ---
+  
+  // add processes
+  G4ProcessManager * pManager = G4Positron::Positron()->GetProcessManager();
+  pManager->AddDiscreteProcess(&fPositronBremsStrahlung);
+  pManager->AddDiscreteProcess(&fAnnihilation);
+  pManager->AddRestProcess(&fAnnihilation);
+  pManager->AddProcess(&fPositronIonisation, ordInActive,2, 2);
+  pManager->AddProcess(&fPositronMultipleScattering);
+
+  // set ordering
+  pManager->SetProcessOrdering(&fPositronMultipleScattering, idxAlongStep,  1);
+  pManager->SetProcessOrdering(&fPositronMultipleScattering, idxPostStep,  1);
+
+  // map to G3 controls
+  TG4ProcessControlMap* controlMap = TG4ProcessControlMap::Instance();
+  controlMap->Add(&fPositronBremsStrahlung, kBREM); 
+  controlMap->Add(&fAnnihilation, kANNI); 
+  controlMap->Add(&fPositronIonisation, kLOSS); 
+  controlMap->Add(&fPositronMultipleScattering, kMULS); 
+
+  // map to AliMCProcess codes
+  TG4ProcessMCMap* mcMap = TG4ProcessMCMap::Instance();
+  mcMap->Add(&fPositronBremsStrahlung, kPBrem); 
+  mcMap->Add(&fAnnihilation, kPAnnihilation); 
+  mcMap->Add(&fPositronIonisation, kPEnergyLoss); 
+  mcMap->Add(&fPositronMultipleScattering, kPMultipleScattering); 
+}
+
+// protected methods
+
+//_____________________________________________________________________________
+void TG4PhysicsConstructorEM::ConstructParticle()
+{
+// Instantiates particles.
 // ---
 
-  theParticleIterator->reset();
-  while( (*theParticleIterator)() ){
-    G4ParticleDefinition* particle = theParticleIterator->value();
-    G4ProcessManager* pmanager = particle->GetProcessManager();
-    G4String particleName = particle->GetParticleName();
-     
-    if (particleName == "gamma") {
-    // gamma
-      // Construct processes for gamma
-      pmanager->AddDiscreteProcess(new G4GammaConversion());
-      pmanager->AddDiscreteProcess(new G4ComptonScattering());      
-      pmanager->AddDiscreteProcess(new G4PhotoElectricEffect());
+  // gamma
+  G4Gamma::GammaDefinition();
+ 
+  // electron
+  G4Electron::ElectronDefinition();
+  G4Positron::PositronDefinition();
+  G4NeutrinoE::NeutrinoEDefinition();
+  G4AntiNeutrinoE::AntiNeutrinoEDefinition();
+}
 
-    } else if (particleName == "e-") {
-    //electron
-      // Construct processes for electron
-      G4VProcess* theeminusMultipleScattering = new G4MultipleScattering();
-      G4VProcess* theeminusIonisation = new G4eIonisation();
-      G4VProcess* theeminusBremsstrahlung = new G4eBremsstrahlung();
-      // add processes
-      pmanager->AddProcess(theeminusMultipleScattering);
-      pmanager->AddProcess(theeminusIonisation);
-      pmanager->AddProcess(theeminusBremsstrahlung);      
-      // set ordering for AlongStepDoIt
-      pmanager->SetProcessOrdering(theeminusMultipleScattering, idxAlongStep,  1);
-      pmanager->SetProcessOrdering(theeminusIonisation, idxAlongStep,  2);
-      // set ordering for PostStepDoIt
-      pmanager->SetProcessOrdering(theeminusMultipleScattering, idxPostStep, 1);
-      pmanager->SetProcessOrdering(theeminusIonisation, idxPostStep, 2);
-      pmanager->SetProcessOrdering(theeminusBremsstrahlung, idxPostStep, 3);
+//_____________________________________________________________________________
+void TG4PhysicsConstructorEM::ConstructProcess()
+{
+// Constructs electromagnetic processes for e+.
+// ---
 
-    } else if (particleName == "e+") {
-    //positron
-      // Construct processes for positron
-      G4VProcess* theeplusMultipleScattering = new G4MultipleScattering();
-      G4VProcess* theeplusIonisation = new G4eIonisation();
-      G4VProcess* theeplusBremsstrahlung = new G4eBremsstrahlung();
-      G4VProcess* theeplusAnnihilation = new G4eplusAnnihilation();
-      // add processes
-      pmanager->AddProcess(theeplusMultipleScattering);
-      pmanager->AddProcess(theeplusIonisation);
-      pmanager->AddProcess(theeplusBremsstrahlung);
-      pmanager->AddProcess(theeplusAnnihilation);
-      // set ordering for AtRestDoIt
-      pmanager->SetProcessOrderingToFirst(theeplusAnnihilation, idxAtRest);
-      // set ordering for AlongStepDoIt
-      pmanager->SetProcessOrdering(theeplusMultipleScattering, idxAlongStep,  1);
-      pmanager->SetProcessOrdering(theeplusIonisation, idxAlongStep,  2);
-      // set ordering for PostStepDoIt
-      pmanager->SetProcessOrdering(theeplusMultipleScattering, idxPostStep, 1);
-      pmanager->SetProcessOrdering(theeplusIonisation, idxPostStep, 2);
-      pmanager->SetProcessOrdering(theeplusBremsstrahlung, idxPostStep, 3);
-      pmanager->SetProcessOrdering(theeplusAnnihilation, idxPostStep, 4);
-  
-    } else if( particleName == "mu+" || 
-               particleName == "mu-"    ) {
-    //muon  
-     // Construct processes for muon+
-     G4VProcess* aMultipleScattering = new G4MultipleScattering();
-     G4VProcess* aBremsstrahlung = new G4MuBremsstrahlung();
-     G4VProcess* aPairProduction = new G4MuPairProduction();
-     G4VProcess* anIonisation = new G4MuIonisation();
-      // add processes
-     pmanager->AddProcess(anIonisation);
-     pmanager->AddProcess(aMultipleScattering);
-     pmanager->AddProcess(aBremsstrahlung);
-     pmanager->AddProcess(aPairProduction);
-     // set ordering for AlongStepDoIt
-     pmanager->SetProcessOrdering(aMultipleScattering, idxAlongStep,  1);
-     pmanager->SetProcessOrdering(anIonisation, idxAlongStep,  2);
-     // set ordering for PostStepDoIt
-     pmanager->SetProcessOrdering(aMultipleScattering, idxPostStep, 1);
-     pmanager->SetProcessOrdering(anIonisation, idxPostStep, 2);
-     pmanager->SetProcessOrdering(aBremsstrahlung, idxPostStep, 3);
-     pmanager->SetProcessOrdering(aPairProduction, idxPostStep, 4);
-     
-    } else if( particleName == "GenericIon" ) {
-     G4VProcess* aionIonization = new G4hIonisation;
-     G4VProcess* aMultipleScattering = new G4MultipleScattering();
-     pmanager->AddProcess(aionIonization);
-     pmanager->AddProcess(aMultipleScattering);
-     // set ordering for AlongStepDoIt
-     pmanager->SetProcessOrdering(aMultipleScattering, idxAlongStep,  1);
-     pmanager->SetProcessOrdering(aionIonization, idxAlongStep,  2);
-     // set ordering for PostStepDoIt
-     pmanager->SetProcessOrdering(aMultipleScattering, idxPostStep, 1);
-     pmanager->SetProcessOrdering(aionIonization, idxPostStep, 2);
-
-   } else if ((!particle->IsShortLived()) &&
-	      (particle->GetPDGCharge() != 0.0) && 
-	      (particle->GetParticleName() != "chargedgeantino")) {
-     // all others charged particles except geantino
-     G4VProcess* aMultipleScattering = new G4MultipleScattering();
-     G4VProcess* anIonisation = new G4hIonisation();
-     // add processes
-     pmanager->AddProcess(anIonisation);
-     pmanager->AddProcess(aMultipleScattering);
-     // set ordering for AlongStepDoIt
-     pmanager->SetProcessOrdering(aMultipleScattering, idxAlongStep,  1);
-     pmanager->SetProcessOrdering(anIonisation, idxAlongStep,  2);
-     // set ordering for PostStepDoIt
-     pmanager->SetProcessOrdering(aMultipleScattering, idxPostStep, 1);
-     pmanager->SetProcessOrdering(anIonisation, idxPostStep, 2);
-    }
-  }
+  ConstructProcessForGamma();
+  ConstructProcessForElectron();
+  ConstructProcessForPositron();
 
   if (verboseLevel>0)
     G4cout << "### Electromagnetic physics constructed." << G4endl;

@@ -1,6 +1,10 @@
 // $Id$
 // Category: run
 //
+// Author: I. Hrivnacova
+//
+// Class AliRunMessenger
+// ---------------------
 // See the class description in the header file.
 
 #include "AliRunMessenger.h"
@@ -13,7 +17,7 @@
 #include <G4UIcmdWithoutParameter.hh>
 #include <G4UIcmdWithAString.hh>
 
-
+//_____________________________________________________________________________
 AliRunMessenger::AliRunMessenger()
 {
 // 
@@ -42,11 +46,13 @@ AliRunMessenger::AliRunMessenger()
   fLegoCmd->AvailableForStates(Idle);
 }
 
+//_____________________________________________________________________________
 AliRunMessenger::AliRunMessenger(const AliRunMessenger& right) {
 //
   AliGlobals::Exception("AliRunMessenger is protected from copying.");
 }
 
+//_____________________________________________________________________________
 AliRunMessenger::~AliRunMessenger() {
 //
   delete fRunDirectory;
@@ -58,6 +64,7 @@ AliRunMessenger::~AliRunMessenger() {
 
 // operators
 
+//_____________________________________________________________________________
 AliRunMessenger& AliRunMessenger::operator=(const AliRunMessenger &right)
 {
   // check assignement to self
@@ -70,6 +77,7 @@ AliRunMessenger& AliRunMessenger::operator=(const AliRunMessenger &right)
 
 // public methods
 
+//_____________________________________________________________________________
 void AliRunMessenger::SetNewValue(G4UIcommand* command, 
        G4String newValue)
 { 
@@ -92,6 +100,7 @@ void AliRunMessenger::SetNewValue(G4UIcommand* command,
     gAlice->Run(fBeamOnCmd->GetNewIntValue(newValue)); 
   }   
   else if(command == fLegoCmd) { 
+    //gAlice->SetDebug(1); 
     gAlice->RunLego(); 
   }   
 }

@@ -15,6 +15,31 @@
 
 /*
 $Log$
+Revision 1.27  2001/10/08 07:13:14  morsch
+Add setter for minimum transverse momentum of triggered jet.
+
+Revision 1.26  2001/10/04 08:12:24  morsch
+Redefinition of stable condition.
+
+Revision 1.25  2001/07/27 17:09:36  morsch
+Use local SetTrack, KeepTrack and SetHighWaterMark methods
+to delegate either to local stack or to stack owned by AliRun.
+(Piotr Skowronski, A.M.)
+
+Revision 1.24  2001/07/20 09:34:56  morsch
+Count the number of spectator neutrons and protons and add information
+to the event header. (Chiara Oppedisano)
+
+Revision 1.23  2001/07/13 17:30:22  morsch
+Derive from AliGenMC.
+
+Revision 1.22  2001/06/11 13:09:23  morsch
+- Store cross-Section and number of binary collisions as a function of impact parameter
+- Pass AliGenHijingEventHeader to gAlice.
+
+Revision 1.21  2001/02/28 17:35:24  morsch
+Consider elastic interactions (ks = 1 and ks = 11) as spectator (Chiara Oppedisano)
+
 Revision 1.20  2001/02/14 15:50:40  hristov
 The last particle in event marked using SetHighWaterMark
 
@@ -93,22 +118,25 @@ AliGenerator interface class to HIJING using THijing (test version)
 #include "AliGenHijing.h"
 #include "AliGenHijingEventHeader.h"
 #include "AliRun.h"
+#include "AliPDG.h"
 
 #include <TArrayI.h>
 #include <TParticle.h>
 #include <THijing.h>
+#include <TGraph.h>
+#include <TLorentzVector.h>
 
 
  ClassImp(AliGenHijing)
 
 AliGenHijing::AliGenHijing()
-                 :AliGenerator()
+                 :AliGenMC()
 {
 // Constructor
 }
 
 AliGenHijing::AliGenHijing(Int_t npart)
-    :AliGenerator(npart)
+    :AliGenMC(npart)
 {
 // Default PbPb collisions at 5. 5 TeV
 //
@@ -116,15 +144,19 @@ AliGenHijing::AliGenHijing(Int_t npart)
     SetImpactParameterRange();
     SetTarget();
     SetProjectile();
-    fKeep=0;
-    fQuench=1;
-    fShadowing=1;
-    fTrigger=0;
-    fDecaysOff=1;
-    fEvaluate=0;
-    fSelectAll=0;
-    fFlavor=0;
-    fSpectators=1;
+    fKeep       =  0;
+    fQuench     =  1;
+    fShadowing  =  1;
+    fTrigger    =  0;
+    fDecaysOff  =  1;
+    fEvaluate   =  0;
+    fSelectAll  =  0;
+    fFlavor     =  0;
+    fSpectators =  1;
+    fDsigmaDb   =  0;
+    fDnDb       =  0;
+    fPtMinJet   = -2.5; 	
+    fRadiation  =  1;
 //
 // Set random number generator   
     sRandom = fRandom;
@@ -139,6 +171,8 @@ AliGenHijing::AliGenHijing(const AliGenHijing & Hijing)
 AliGenHijing::~AliGenHijing()
 {
 // Destructor
+    if ( fDsigmaDb) delete  fDsigmaDb;  
+    if ( fDnDb)     delete  fDnDb;  
 }
 
 void AliGenHijing::Init()
@@ -153,13 +187,13 @@ void AliGenHijing::Init()
 		      fMinImpactParam, fMaxImpactParam));
 
     fHijing=(THijing*) fgMCEvGen;
-
+    fHijing->SetIHPR2(2,  fRadiation);
     fHijing->SetIHPR2(3,  fTrigger);
     fHijing->SetIHPR2(4,  fQuench);
     fHijing->SetIHPR2(6,  fShadowing);
     fHijing->SetIHPR2(12, fDecaysOff);    
     fHijing->SetIHPR2(21, fKeep);
-    fHijing->Rluset(50,0);
+    fHijing->SetHIPR1(10, fPtMinJet); 	
     fHijing->Initialize();
 
     
@@ -174,58 +208,61 @@ void AliGenHijing::Generate()
 {
 // Generate one event
 
-  Float_t polar[3] =   {0,0,0};
-  Float_t origin[3]=   {0,0,0};
-  Float_t origin0[3]=  {0,0,0};
+  Float_t polar[3]    =   {0,0,0};
+  Float_t origin[3]   =   {0,0,0};
+  Float_t origin0[3]  =   {0,0,0};
   Float_t p[3], random[6];
   Float_t tof;
 
   static TClonesArray *particles;
 //  converts from mm/c to s
-  const Float_t kconv=0.001/2.999792458e8;
+  const Float_t kconv = 0.001/2.999792458e8;
 //
-  Int_t nt=0;
-  Int_t jev=0;
+  Int_t nt  = 0;
+  Int_t jev = 0;
   Int_t j, kf, ks, imo;
-  kf=0;
+  kf = 0;
     
-  if(!particles) particles=new TClonesArray("TParticle",10000);
+  if(!particles) particles = new TClonesArray("TParticle",10000);
     
-  fTrials=0;
-  for (j=0;j<3;j++) origin0[j]=fOrigin[j];
-  if(fVertexSmear==kPerEvent) {
+  fTrials = 0;
+  for (j = 0;j < 3; j++) origin0[j] = fOrigin[j];
+  if(fVertexSmear == kPerEvent) {
 	Rndm(random,6);
-	for (j=0;j<3;j++) {
-      origin0[j]+=fOsigma[j]*TMath::Cos(2*random[2*j]*TMath::Pi())*
+	for (j=0; j < 3; j++) {
+	    origin0[j] += fOsigma[j]*TMath::Cos(2*random[2*j]*TMath::Pi())*
 		TMath::Sqrt(-2*TMath::Log(random[2*j+1]));
-//	        fHijing->SetMSTP(151,0);
 	}
-  } else if (fVertexSmear==kPerTrack) {
+  } else if (fVertexSmear == kPerTrack) {
 //	    fHijing->SetMSTP(151,0);
-    for (j=0;j<3;j++) {
+      for (j = 0; j < 3; j++) {
 //	      fHijing->SetPARP(151+j, fOsigma[j]*10.);
-    }
+      }
   }
   while(1)
-    {
-
+  {
+//    Generate one event
+// --------------------------------------------------------------------------
+      fSpecn	= 0;  
+      fSpecp	= 0;
+// --------------------------------------------------------------------------
       fHijing->GenerateEvent();
       fTrials++;
       fHijing->ImportParticles(particles,"All");
       Int_t np = particles->GetEntriesFast();
       printf("\n **************************************************%d\n",np);
-      Int_t nc=0;
+      Int_t nc = 0;
       if (np == 0 ) continue;
       Int_t i;
       Int_t * newPos = new Int_t[np];
 
-      for (i = 0; i<np; i++) *(newPos+i)=i;
+      for (i = 0; i < np; i++) *(newPos+i) = i;
 //
 //      First write parent particles
 //
 
-      for (i = 0; i<np; i++) {
-        TParticle *  iparticle       = (TParticle *) particles->At(i);
+      for (i = 0; i < np; i++) {
+	  TParticle *  iparticle       = (TParticle *) particles->At(i);
 // Is this a parent particle ?
         if (Stable(iparticle)) continue;
 //
@@ -238,35 +275,36 @@ void AliGenHijing::Generate()
         ks        = iparticle->GetStatusCode();
         if (kf == 92) continue;
 	    
-        if (!fSelectAll) selected = KinematicSelection(iparticle)&&SelectFlavor(kf);
+        if (!fSelectAll) selected = KinematicSelection(iparticle, 0)&&SelectFlavor(kf);
         hasSelectedDaughters = DaughtersSelection(iparticle, particles);
 //
 // Put particle on the stack if it is either selected or it is the mother of at least one seleted particle
 //
         if (selected || hasSelectedDaughters) {
-          nc++;
-          p[0]=iparticle->Px();
-          p[1]=iparticle->Py();
-          p[2]=iparticle->Pz();
-          origin[0]=origin0[0]+iparticle->Vx()/10;
-          origin[1]=origin0[1]+iparticle->Vy()/10;
-          origin[2]=origin0[2]+iparticle->Vz()/10;
-          tof=kconv*iparticle->T();
-          imo=-1;
-          if (hasMother) {
-            imo=iparticle->GetFirstMother();
-            TParticle* mother= (TParticle *) particles->At(imo);
-            imo = (mother->GetPdgCode() != 92) ? imo=*(newPos+imo) : -1;
-          }
+	    nc++;
+	    p[0] = iparticle->Px();
+	    p[1] = iparticle->Py();
+	    p[2] = iparticle->Pz();
+	    origin[0] = origin0[0]+iparticle->Vx()/10;
+	    origin[1] = origin0[1]+iparticle->Vy()/10;
+	    origin[2] = origin0[2]+iparticle->Vz()/10;
+	    tof = kconv*iparticle->T();
+	    imo = -1;
+	    TParticle* mother = 0;
+	    if (hasMother) {
+		imo = iparticle->GetFirstMother();
+		mother = (TParticle *) particles->At(imo);
+		imo = (mother->GetPdgCode() != 92) ? imo =* (newPos+imo) : -1;
+		
+	    }
 // Put particle on the stack ... 
 //		printf("\n set track mother: %d %d %d %d %d %d ",i,imo, kf, nt+1, selected, hasSelectedDaughters);
-
-          gAlice->SetTrack(0,imo,kf,p,origin,polar,
-                           tof,kPPrimary,nt);
+	    
+	    SetTrack(0,imo,kf,p,origin,polar, tof,kPPrimary,nt);
 // ... and keep it there
-          gAlice->KeepTrack(nt);
+	    KeepTrack(nt);
 //
-          *(newPos+i)=nt;
+	    *(newPos+i)=nt;
         } // selected
       } // particle loop parents
 //
@@ -277,119 +315,66 @@ void AliGenHijing::Generate()
         TParticle *  iparticle       = (TParticle *) particles->At(i);
 // Is this a final state particle ?
         if (!Stable(iparticle)) continue;
-//	    
+
         Bool_t  hasMother            =  (iparticle->GetFirstMother()   >=0);
         Bool_t  selected             =  kTRUE;
         kf        = iparticle->GetPdgCode();
         ks        = iparticle->GetStatusCode();
+// --------------------------------------------------------------------------
+// Count spectator neutrons and protons
+        if(ks == 0 || ks == 1 || ks == 10 || ks == 11){
+	  if(kf == kNeutron) fSpecn += 1;
+	  if(kf == kProton)  fSpecp += 1;
+	}
+// --------------------------------------------------------------------------
+//	    
         if (!fSelectAll) {
-          selected = KinematicSelection(iparticle)&&SelectFlavor(kf);
-	  if (!fSpectators && selected) selected = (ks != 0 && ks != 1 && ks != 10
-						    && ks != 11);
+	    selected = KinematicSelection(iparticle,0)&&SelectFlavor(kf);
+	    if (!fSpectators && selected) selected = (ks != 0 && ks != 1 && ks != 10
+						      && ks != 11);
         }
 //
 // Put particle on the stack if selected
 //
         if (selected) {
-          nc++;
-          p[0]=iparticle->Px();
-          p[1]=iparticle->Py();
-          p[2]=iparticle->Pz();
-          origin[0]=origin0[0]+iparticle->Vx()/10;
-          origin[1]=origin0[1]+iparticle->Vy()/10;
-          origin[2]=origin0[2]+iparticle->Vz()/10;
-          tof=kconv*iparticle->T();
-          imo=-1;
-        
-          if (hasMother) {
-            imo=iparticle->GetFirstMother();
-            TParticle* mother= (TParticle *) particles->At(imo);
-            imo = (mother->GetPdgCode() != 92) ? imo=*(newPos+imo) : -1;
-          }   
+	    nc++;
+	    p[0] = iparticle->Px();
+	    p[1] = iparticle->Py();
+	    p[2] = iparticle->Pz();
+	    origin[0] = origin0[0]+iparticle->Vx()/10;
+	    origin[1] = origin0[1]+iparticle->Vy()/10;
+	    origin[2] = origin0[2]+iparticle->Vz()/10;
+	    tof = kconv*iparticle->T();
+	    imo = -1;
+	    TParticle* mother = 0;
+	    if (hasMother) {
+		imo = iparticle->GetFirstMother();
+		mother = (TParticle *) particles->At(imo);
+		imo = (mother->GetPdgCode() != 92) ? imo=*(newPos+imo) : -1;
+	    }   
 // Put particle on the stack
-          gAlice->SetTrack(fTrackIt,imo,kf,p,origin,polar,
-                           tof,kPNoProcess,nt);
-//				    tof,"Secondary",nt);
-
-//  		printf("\n set track final: %d %d %d",imo, kf, nt);
-          gAlice->KeepTrack(nt);
-          *(newPos+i)=nt;
+	    SetTrack(fTrackIt,imo,kf,p,origin,polar,
+						     tof,kPNoProcess,nt);
+	    KeepTrack(nt);
+	    *(newPos+i)=nt;
         } // selected
       } // particle loop final state
  
-      delete newPos;
+      delete[] newPos;
 
       printf("\n I've put %i particles on the stack \n",nc);
       if (nc > 0) {
-        jev+=nc;
-        if (jev >= fNpart || fNpart == -1) {
-          fKineBias=Float_t(fNpart)/Float_t(fTrials);
-          printf("\n Trials: %i %i %i\n",fTrials, fNpart, jev);
-          break;
-        }
+	  jev += nc;
+	  if (jev >= fNpart || fNpart == -1) {
+	      fKineBias = Float_t(fNpart)/Float_t(fTrials);
+	      printf("\n Trials: %i %i %i\n",fTrials, fNpart, jev);
+	      break;
+	  }
       }
-    } // event loop
-  fHijing->Rluget(50,-1);
-  gAlice->SetHighWaterMark(nt);
-}
-
-Bool_t AliGenHijing::KinematicSelection(TParticle *particle)
-{
-// Perform kinematic selection
-    Double_t px=particle->Px();
-    Double_t py=particle->Py();
-    Double_t pz=particle->Pz();
-    Double_t  e=particle->Energy();
-
-//
-//  transverse momentum cut    
-    Double_t pt=TMath::Sqrt(px*px+py*py);
-    if (pt > fPtMax || pt < fPtMin) 
-    {
-//	printf("\n failed pt cut %f %f %f \n",pt,fPtMin,fPtMax);
-	return kFALSE;
-    }
-//
-// momentum cut
-    Double_t p=TMath::Sqrt(px*px+py*py+pz*pz);
-    if (p > fPMax || p < fPMin) 
-    {
-//	printf("\n failed p cut %f %f %f \n",p,fPMin,fPMax);
-	return kFALSE;
-    }
-    
-//
-// theta cut
-    Double_t  theta = Double_t(TMath::ATan2(Double_t(pt),Double_t(pz)));
-    if (theta > fThetaMax || theta < fThetaMin) 
-    {
-	
-//    	printf("\n failed theta cut %f %f %f \n",theta,fThetaMin,fThetaMax);
-	return kFALSE;
-    }
-
-//
-// rapidity cut
-    Double_t y;
-    if(e<=pz) y = 99;
-    else if (e<=-pz)  y = -99;
-    else y = 0.5*TMath::Log((e+pz)/(e-pz));
-    if (y > fYMax || y < fYMin)
-    {
-//	printf("\n failed y cut %f %f %f \n",y,fYMin,fYMax);
-	return kFALSE;
-    }
-
-//
-// phi cut
-    Double_t phi=Double_t(TMath::ATan2(Double_t(py),Double_t(px)));
-    if (phi > fPhiMax || phi < fPhiMin)
-    {
-//	printf("\n failed phi cut %f %f %f \n",phi,fPhiMin,fPhiMax);
-	return kFALSE;
-    }
-
-    return kTRUE;
+  } // event loop
+  MakeHeader();
+  
+  SetHighWaterMark(nt);
 }
 
 void AliGenHijing::KeepFullEvent()
@@ -401,46 +386,64 @@ void AliGenHijing::EvaluateCrossSections()
 {
 //     Glauber Calculation of geometrical x-section
 //
-    Float_t xTot=0.;          // barn
-    Float_t xTotHard=0.;      // barn 
-    Float_t xPart=0.;         // barn
-    Float_t xPartHard=0.;     // barn 
-    Float_t sigmaHard=0.1;    // mbarn
-    Float_t bMin=0.;
-    Float_t bMax=fHijing->GetHIPR1(34)+fHijing->GetHIPR1(35);
-    const Float_t kdib=0.2;
-    Int_t   kMax=Int_t((bMax-bMin)/kdib)+1;
+    Float_t xTot       = 0.;          // barn
+    Float_t xTotHard   = 0.;          // barn 
+    Float_t xPart      = 0.;          // barn
+    Float_t xPartHard  = 0.;          // barn 
+    Float_t sigmaHard  = 0.1;         // mbarn
+    Float_t bMin       = 0.;
+    Float_t bMax       = fHijing->GetHIPR1(34)+fHijing->GetHIPR1(35);
+    const Float_t kdib = 0.2;
+    Int_t   kMax       = Int_t((bMax-bMin)/kdib)+1;
 
 
     printf("\n Projectile Radius (fm): %f \n",fHijing->GetHIPR1(34));
     printf("\n Target     Radius (fm): %f \n",fHijing->GetHIPR1(35));    
     Int_t i;
-    Float_t oldvalue=0.;
+    Float_t oldvalue= 0.;
+
+    Float_t* b   = new Float_t[kMax];
+    Float_t* si1 = new Float_t[kMax];    
+    Float_t* si2 = new Float_t[kMax];    
     
-    for (i=0; i<kMax; i++)
+    for (i = 0; i < kMax; i++)
     {
-	Float_t xb=bMin+i*kdib;
+	Float_t xb  = bMin+i*kdib;
 	Float_t ov;
 	ov=fHijing->Profile(xb);
-	Float_t gb =  2.*0.01*fHijing->GetHIPR1(40)*kdib*xb*(1.-TMath::Exp(-fHijing->GetHINT1(12)*ov));
-	Float_t gbh = 2.*0.01*fHijing->GetHIPR1(40)*kdib*xb*sigmaHard*ov;
+	Float_t gb  =  2.*0.01*fHijing->GetHIPR1(40)*kdib*xb*(1.-TMath::Exp(-fHijing->GetHINT1(12)*ov));
+	Float_t gbh =  2.*0.01*fHijing->GetHIPR1(40)*kdib*xb*sigmaHard*ov;
 	xTot+=gb;
-	xTotHard+=gbh;
+	xTotHard += gbh;
 	if (xb > fMinImpactParam && xb < fMaxImpactParam)
 	{
-	    xPart+=gb;
-	    xPartHard+=gbh;
+	    xPart += gb;
+	    xPartHard += gbh;
 	}
 	
 	if(oldvalue) if ((xTot-oldvalue)/oldvalue<0.0001) break;
-	oldvalue=xTot;
+	oldvalue = xTot;
 	printf("\n Total cross section (barn): %d %f %f \n",i, xb, xTot);
 	printf("\n Hard  cross section (barn): %d %f %f \n\n",i, xb, xTotHard);
+	if (i>0) {
+	    si1[i] = gb/kdib;
+	    si2[i] = gbh/gb;
+	    b[i]  = xb;
+	}
     }
+
     printf("\n Total cross section (barn): %f \n",xTot);
     printf("\n Hard  cross section (barn): %f \n \n",xTotHard);
     printf("\n Partial       cross section (barn): %f %f \n",xPart, xPart/xTot*100.);
     printf("\n Partial  hard cross section (barn): %f %f \n",xPartHard, xPartHard/xTotHard*100.);
+
+//  Store result as a graph
+    b[0] = 0;
+    si1[0] = 0;
+    si2[0]=si2[1];
+    
+    fDsigmaDb  = new TGraph(i, b, si1);
+    fDnDb      = new TGraph(i, b, si2);
 }
 
 Bool_t AliGenHijing::DaughtersSelection(TParticle* iparticle, TClonesArray* particles)
@@ -449,18 +452,18 @@ Bool_t AliGenHijing::DaughtersSelection(TParticle* iparticle, TClonesArray* part
 // Looks recursively if one of the daughters has been selected
 //
 //    printf("\n Consider daughters %d:",iparticle->GetPdgCode());
-    Int_t imin=-1;
-    Int_t imax=-1;
+    Int_t imin = -1;
+    Int_t imax = -1;
     Int_t i;
-    Bool_t hasDaughters= (iparticle->GetFirstDaughter() >=0);
-    Bool_t selected=kFALSE;
+    Bool_t hasDaughters = (iparticle->GetFirstDaughter() >=0);
+    Bool_t selected = kFALSE;
     if (hasDaughters) {
-	imin=iparticle->GetFirstDaughter();
-	imax=iparticle->GetLastDaughter();       
-	for (i=imin; i<= imax; i++){
-	    TParticle *  jparticle       = (TParticle *) particles->At(i);	
-	    Int_t ip=jparticle->GetPdgCode();
-	    if (KinematicSelection(jparticle)&&SelectFlavor(ip)) {
+	imin = iparticle->GetFirstDaughter();
+	imax = iparticle->GetLastDaughter();       
+	for (i = imin; i <= imax; i++){
+	    TParticle *  jparticle = (TParticle *) particles->At(i);	
+	    Int_t ip = jparticle->GetPdgCode();
+	    if (KinematicSelection(jparticle,0)&&SelectFlavor(ip)) {
 		selected=kTRUE; break;
 	    }
 	    if (DaughtersSelection(jparticle, particles)) {selected=kTRUE; break; }
@@ -468,7 +471,6 @@ Bool_t AliGenHijing::DaughtersSelection(TParticle* iparticle, TClonesArray* part
     } else {
 	return kFALSE;
     }
-
     return selected;
 }
 
@@ -481,7 +483,7 @@ Bool_t AliGenHijing::SelectFlavor(Int_t pid)
 // 5: beauty
     if (fFlavor == 0) return kTRUE;
     
-    Int_t ifl=TMath::Abs(pid/100);
+    Int_t ifl = TMath::Abs(pid/100);
     if (ifl > 10) ifl/=10;
     return (fFlavor == ifl);
 }
@@ -490,10 +492,7 @@ Bool_t AliGenHijing::Stable(TParticle*  particle)
 {
 // Return true for a stable particle
 //
-    Int_t kf = TMath::Abs(particle->GetPdgCode());
-    
-    if ( (particle->GetFirstDaughter() < 0 ) || (kf == 1000*fFlavor+122))
-	 
+    if (particle->GetFirstDaughter() < 0 )
     {
 	return kTRUE;
     } else {
@@ -504,19 +503,30 @@ Bool_t AliGenHijing::Stable(TParticle*  particle)
 void AliGenHijing::MakeHeader()
 {
 // Builds the event header, to be called after each event
-    AliGenHijingEventHeader* header = new AliGenHijingEventHeader("Hijing");
-//    header->SetDate(date);
-//    header->SetRunNumber(run);
-//    header->SetEventNumber(event);
-    header->SetNProduced(fHijing->GetNATT());
-    header->SetImpactParameter(fHijing->GetHINT1(19));
-    header->SetTotalEnergy(fHijing->GetEATT());
-    header->SetHardScatters(fHijing->GetJATT());
-    header->SetParticipants(fHijing->GetNP(), fHijing->GetNT());
-    header->SetCollisions(fHijing->GetN0(),
-			  fHijing->GetN01(),
-			  fHijing->GetN10(),
-			  fHijing->GetN11());
+    AliGenEventHeader* header = new AliGenHijingEventHeader("Hijing");
+    ((AliGenHijingEventHeader*) header)->SetNProduced(fHijing->GetNATT());
+    ((AliGenHijingEventHeader*) header)->SetImpactParameter(fHijing->GetHINT1(19));
+    ((AliGenHijingEventHeader*) header)->SetTotalEnergy(fHijing->GetEATT());
+    ((AliGenHijingEventHeader*) header)->SetHardScatters(fHijing->GetJATT());
+    ((AliGenHijingEventHeader*) header)->SetParticipants(fHijing->GetNP(), fHijing->GetNT());
+    ((AliGenHijingEventHeader*) header)->SetCollisions(fHijing->GetN0(),
+						       fHijing->GetN01(),
+						       fHijing->GetN10(),
+						       fHijing->GetN11());
+    ((AliGenHijingEventHeader*) header)->SetSpectators(fSpecn, fSpecp);
+
+    TLorentzVector* jet1 = new TLorentzVector(fHijing->GetHINT1(21), 
+					      fHijing->GetHINT1(22),
+					      fHijing->GetHINT1(23),
+					      fHijing->GetHINT1(24));
+
+    TLorentzVector* jet2 = new TLorentzVector(fHijing->GetHINT1(31), 
+					      fHijing->GetHINT1(32),
+					      fHijing->GetHINT1(33),
+					      fHijing->GetHINT1(34));
+
+    ((AliGenHijingEventHeader*) header)->SetJets(jet1, jet2);
+    gAlice->SetGenEventHeader(header);    
 }
 
 AliGenHijing& AliGenHijing::operator=(const  AliGenHijing& rhs)

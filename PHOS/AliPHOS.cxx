@@ -12,7 +12,6 @@
  * about the suitability of this software for any purpose. It is          *
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
-
 /* $Id$ */
 
 //_________________________________________________________________________
@@ -25,9 +24,12 @@
 //*-- Author: Laurent Aphecetche & Yves Schutz (SUBATECH) 
 //////////////////////////////////////////////////////////////////////////////
 
+
 // --- ROOT system ---
 class TFile;
+#include "TROOT.h"
 #include "TTree.h"
+#include "TFolder.h" 
 
 // --- Standard library ---
 
@@ -39,9 +41,29 @@ class TFile;
 #include "AliRun.h"
 #include "AliMagF.h"
 #include "AliPHOSGeometry.h"
+#include "AliPHOSQAChecker.h" 
 
 ClassImp(AliPHOS)
+//____________________________________________________________________________
+AliPHOS:: AliPHOS() : AliDetector()
+{
+  // Create folder and task hierarchy
+  fName="PHOS";
 
+}
+
+//____________________________________________________________________________
+AliPHOS::AliPHOS(const char* name, const char* title): AliDetector(name, title) 
+{
+}
+
+
+//____________________________________________________________________________
+AliPHOS::~AliPHOS() 
+{  
+  // remove the alice folder and alice QA task that PHOS creates instead of AliRun
+  
+}
 
 //____________________________________________________________________________
 void AliPHOS::CreateMaterials()
@@ -103,7 +125,7 @@ void AliPHOS::CreateMaterials()
   Float_t aTI[2] = {12.011, 1.00794} ;
   Float_t zTI[2] = {6.0, 1.0} ;
   Float_t wTI[2] = {1.0, 1.0} ;
-  Float_t dTI = 0.1 ;
+  Float_t dTI = 0.04 ;
 
   AliMixture(7, "Thermo Insul.$", aTI, zTI, dTI, -2, wTI) ;
 
@@ -185,6 +207,28 @@ void AliPHOS::CreateMaterials()
 
   // --- Stainless steel (let it be pure iron) ---
   AliMaterial(17, "Steel$", 55.845, 26, 7.87, 1.76, 0., 0, 0) ;
+
+
+  // --- Fiberglass ---
+  Float_t aFG[4] = {16.0, 28.09, 12.011, 1.00794} ;
+  Float_t zFG[4] = {8.0, 14.0, 6.0, 1.0} ;
+  Float_t wFG[4] = {292.0, 68.0, 462.0, 736.0} ;
+  Float_t dFG    = 1.9 ;
+
+  AliMixture(18, "Fibergla$", aFG, zFG, dFG, -4, wFG) ;
+
+  // --- Cables in Air box  ---
+  // SERVICES
+
+  Float_t aCA[4] = { 1.,12.,55.8,63.5 };
+  Float_t zCA[4] = { 1.,6.,26.,29. }; 
+  Float_t wCA[4] = { .014,.086,.42,.48 };
+  Float_t dCA    = 0.8 ;  //this density is raw estimation, if you know better - correct
+
+  AliMixture(19, "Cables  $", aCA, zCA, dCA, -4, wCA) ;
+
+
+
  
   // --- Air ---
   AliMaterial(99, "Air$", 14.61, 7.3, 0.001205, 30420., 67500., 0, 0) ;
@@ -265,6 +309,14 @@ void AliPHOS::CreateMaterials()
   AliMedium(17, "Steel     $", 17, 0,
 	     isxfld, sxmgmx, 10.0, 0.1, 0.1, 0.1, 0.0001, 0, 0) ;
 
+  // Fibergalss                                                                     -> idtmed[717]
+  AliMedium(18, "Fiberglass$", 18, 0,
+	     isxfld, sxmgmx, 10.0, 0.1, 0.1, 0.1, 0.1, 0, 0) ;
+
+  // Cables in air                                                                  -> idtmed[718]
+  AliMedium(19, "Cables    $", 19, 0,
+	     isxfld, sxmgmx, 10.0, 0.1, 0.1, 0.1, 0.1, 0, 0) ;
+
   // Air                                                                            -> idtmed[798] 
   AliMedium(99, "Air          $", 99, 0,
 	     isxfld, sxmgmx, 10.0, 1.0, 0.1, 0.1, 10.0, 0, 0) ;
@@ -304,6 +356,15 @@ void AliPHOS::CreateMaterials()
 
 }
 //____________________________________________________________________________
+AliPHOSGeometry * AliPHOS::GetGeometry() const 
+{  
+  // gets the pointer to the AliPHOSGeometry unique instance 
+  
+  return AliPHOSGeometry::GetInstance(GetTitle(),"") ;  
+
+}
+
+//____________________________________________________________________________
 void AliPHOS::SetTreeAddress()
 { 
 
@@ -323,4 +384,24 @@ void AliPHOS::SetTreeAddress()
   }
 }
 
+//____________________________________________________________________________
+void AliPHOS::WriteQA()
+{
+
+  // Make TreeQA in the output file. 
+
+  if(fTreeQA == 0)
+    fTreeQA = new TTree("TreeQA", "QA Alarms") ;    
+  // Create Alarms branches
+  Int_t bufferSize = 32000 ;    
+  Int_t splitlevel = 0 ; 
+  TFolder * alarmsF = (TFolder*)gROOT->FindObjectAny("Folders/Run/Conditions/QA/PHOS") ; 
+  TString branchName(alarmsF->GetName());  
+  TBranch * alarmsBranch = fTreeQA->Branch(branchName,"TFolder", &alarmsF, bufferSize, splitlevel);
+  TString branchTitle = branchName + " QA alarms" ; 
+  alarmsBranch->SetTitle(branchTitle);
+  alarmsBranch->Fill() ; 
+
+  //fTreeQA->Fill() ; 
+}
 

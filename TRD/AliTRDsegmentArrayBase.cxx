@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.9  2001/07/27 13:03:15  hristov
+Default Branch split level set to 99
+
+Revision 1.8  2001/01/26 19:56:57  hristov
+Major upgrade of AliRoot code
+
 Revision 1.7  2000/11/20 08:56:07  cblume
 Cleanup of data arrays
 
@@ -300,9 +306,12 @@ void AliTRDsegmentArrayBase::ClearSegment(Int_t index)
   // Remove a segment from the active memory    
   //
 
-  if ((*fSegment)[index]){
-    delete (*fSegment)[index]; // because problem with deleting TClonesArray
-    fSegment->RemoveAt(index);
+  //PH  if ((*fSegment)[index]){
+  //PH    delete (*fSegment)[index]; // because problem with deleting TClonesArray
+  //PH    fSegment->RemoveAt(index);
+  //PH  }
+  if (fSegment->At(index)){
+    delete fSegment->RemoveAt(index);
   }
 
 }
@@ -319,7 +328,7 @@ void AliTRDsegmentArrayBase::MakeTree(char *file)
   if (fTree) delete fTree;
   fTree   = new TTree("Segment Tree","Tree with segments");
 
-  fBranch = fTree->Branch("Segment",psegment->IsA()->GetName(),&psegment,64000,1);
+  fBranch = fTree->Branch("Segment",psegment->IsA()->GetName(),&psegment,64000);
   if (file) 
       fBranch->SetFile(file);      
 
@@ -364,7 +373,8 @@ AliTRDsegmentID *AliTRDsegmentArrayBase::LoadSegment(Int_t index)
   if (fTreeIndex == 0)        return 0;
   if (fBranch    == 0)        return 0;
   if (index > fTreeIndex->fN) return 0;
-  AliTRDsegmentID *s = (AliTRDsegmentID*) (*fSegment)[index];
+  //PH  AliTRDsegmentID *s = (AliTRDsegmentID*) (*fSegment)[index];
+  AliTRDsegmentID *s = (AliTRDsegmentID*) fSegment->At(index);
   if (s == 0) s = NewSegment();
   s->SetID(index);
   
@@ -376,7 +386,8 @@ AliTRDsegmentID *AliTRDsegmentArrayBase::LoadSegment(Int_t index)
       treeIndex--;   
     fBranch->SetAddress(&s);
     fTree->GetEvent(treeIndex);
-    (*fSegment)[index] = (TObject*) s;
+    //PH    (*fSegment)[index] = (TObject*) s;
+    fSegment->AddAt((TObject*) s, index);
   }
   else 
     return 0;
@@ -405,7 +416,8 @@ AliTRDsegmentID *AliTRDsegmentArrayBase::LoadEntry(Int_t index)
 
   Int_t nindex = s->GetID();
   ClearSegment(nindex);
-  (*fSegment)[nindex] = (TObject *) s;
+  //PH  (*fSegment)[nindex] = (TObject *) s;
+  fSegment->AddAt((TObject *) s, nindex);
 
   return s;
 
@@ -478,6 +490,7 @@ const AliTRDsegmentID *AliTRDsegmentArrayBase::At(Int_t i) const
   //
 
   if ((i < 0) || (i >= fNSegment)) return 0; 
-  return (AliTRDsegmentID *)((*fSegment)[i]);
+  //PH  return (AliTRDsegmentID *)((*fSegment)[i]);
+  return (AliTRDsegmentID *) fSegment->At(i);
 
 }

@@ -5,7 +5,6 @@
 #pragma link C++ class  AliMUON+;
 #pragma link C++ class  AliMUONv0+;
 #pragma link C++ class  AliMUONv1+;
-#pragma link C++ class  AliMUONvTemp+;
 #pragma link C++ class  AliMUONHit+;
 #pragma link C++ class  AliMUONPadHit+;
 #pragma link C++ class  AliMUONDigit+;
@@ -54,6 +53,7 @@
 #pragma link C++ class  AliMUONRecoDisplay+;
 #pragma link C++ class  AliMUONMerger+;
 #pragma link C++ class  AliMUONFactory+;
+#pragma link C++ class  AliMUONDigitizer+;
 #endif
 
 

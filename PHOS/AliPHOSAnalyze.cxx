@@ -61,44 +61,36 @@
 //*-- Author: Dmitri Peressounko (SUBATECH & RRC Kurchatov Institute)
 //////////////////////////////////////////////////////////////////////////////
 
+
 // --- ROOT system ---
 
 #include "TFile.h"
 #include "TH1.h"
-#include "TPad.h"
 #include "TH2.h"
 #include "TH2.h"
 #include "TParticle.h"
 #include "TClonesArray.h"
 #include "TTree.h"
 #include "TMath.h"
-#include "TCanvas.h" 
-#include "TStyle.h" 
+#include "TROOT.h"
+#include "TFolder.h"
 
 // --- Standard library ---
 
-#include <iostream.h>
 #include <iomanip.h>
-#include <stdio.h>
 
 // --- AliRoot header files ---
 
 #include "AliRun.h"
 #include "AliPHOSv1.h"
 #include "AliPHOSAnalyze.h"
-#include "AliPHOSClusterizerv1.h"
-#include "AliPHOSTrackSegmentMakerv1.h"
-#include "AliPHOSPIDv1.h"
-#include "AliPHOSReconstructioner.h"
 #include "AliPHOSDigit.h"
-#include "AliPHOSDigitizer.h"
 #include "AliPHOSSDigitizer.h"
 #include "AliPHOSTrackSegment.h"
 #include "AliPHOSRecParticle.h"
-#include "AliPHOSIndexToObject.h"
-#include "AliPHOSHit.h"
 #include "AliPHOSCpvRecPoint.h"
-#include "AliPHOSPpsdRecPoint.h"
+#include "AliPHOSGetter.h"
+
 
 ClassImp(AliPHOSAnalyze)
 
@@ -114,8 +106,7 @@ AliPHOSAnalyze::AliPHOSAnalyze(Text_t * fileName)
 {
   // ctor: analyze events from root file "name"
   ffileName = fileName ;
-  fCorrection = 1.05 ;  //Value calculated for default parameters of reconstruction  
-  fObjGetter = 0 ;  // should be instantiated
+  fCorrection = 1.05 ;  //Value calculated for default parameters of reconstruction   
 }
 
 //____________________________________________________________________________
@@ -130,209 +121,206 @@ AliPHOSAnalyze::~AliPHOSAnalyze()
 {
   // dtor
 
-  if(fPHOS) {delete fPHOS     ; fPHOS    =0 ;}
-
 }
 //____________________________________________________________________________
 void AliPHOSAnalyze::DrawRecon(Int_t Nevent,Int_t Nmod,const char * branchName,const char* branchTitle){
   //Draws pimary particles and reconstructed 
   //digits, RecPoints, RecPartices etc 
   //for event Nevent in the module Nmod.
-  
-  TH2F * digitOccupancy  = new TH2F("digitOccupancy","EMC digits", 64,-71.,71.,64,-71.,71.);
-  TH2F * sdigitOccupancy = new TH2F("sdigitOccupancy","EMC sdigits", 64,-71.,71.,64,-71.,71.);
-  TH2F * emcOccupancy    = new TH2F("emcOccupancy","EMC RecPoints",64,-71.,71.,64,-71.,71.);
-  TH2F * ppsdUp          = new TH2F("ppsdUp","PPSD Up digits",     128,-71.,71.,128,-71.,71.) ;
-  TH2F * ppsdUpCl        = new TH2F("ppsdUpCl","PPSD Up RecPoints",128,-71.,71.,128,-71.,71.) ;
-  TH2F * ppsdLow         = new TH2F("ppsdLow","PPSD Low digits",     128,-71.,71.,128,-71.,71.) ;
-  TH2F * ppsdLowCl       = new TH2F("ppsdLowCl","PPSD Low RecPoints",128,-71.,71.,128,-71.,71.) ;
-  TH2F * nbar            = new TH2F("nbar","Primary nbar",    64,-71.,71.,64,-71.,71.);
-  TH2F * phot            = new TH2F("phot","Primary Photon",  64,-71.,71.,64,-71.,71.);
-  TH2F * charg           = new TH2F("charg","Primary charged",64,-71.,71.,64,-71.,71.);
-  TH2F * recPhot         = new TH2F("recPhot","RecParticles with primary Photon",64,-71.,71.,64,-71.,71.);
-  TH2F * recNbar         = new TH2F("recNbar","RecParticles with primary Nbar",  64,-71.,71.,64,-71.,71.);
-  
-  //========== Create IndexToObjectGetter
-  fObjGetter = AliPHOSIndexToObject::GetInstance(ffileName.Data(),branchName,branchTitle) ;
-  fObjGetter->GetEvent(Nevent);
-  
-  fPHOS  = (AliPHOSv1 *)gAlice->GetDetector("PHOS") ;
-  fGeom  = AliPHOSGeometry::GetInstance( fPHOS->GetGeometry()->GetName(), fPHOS->GetGeometry()->GetTitle() );  
 
+  //========== Create ObjectGetter
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance(ffileName.Data(),branchTitle) ;
+  const AliPHOSGeometry * phosgeom = gime->PHOSGeometry() ; 
+  gime->Event(Nevent);
+
+  Int_t nx = phosgeom->GetNPhi() ;
+  Int_t nz = phosgeom->GetNZ() ;
+  Float_t * cri= phosgeom->GetEMCAGeometry()->GetCrystalHalfSize() ;
+  Float_t x = nx*cri[0] ;
+  Float_t z = nz*cri[2] ;
+  Int_t nxCPV = (Int_t) (nx*phosgeom->GetPadSizePhi()/(2.*cri[0])) ;
+  Int_t nzCPV = (Int_t) (nz*phosgeom->GetPadSizeZ()/(2.*cri[2])) ;
+  
+  TH2F * emcDigits    = new TH2F("emcDigits","EMC digits",  nx,-x,x,nz,-z,z);
+  TH2F * emcSdigits   = new TH2F("emcSdigits","EMC sdigits", nx,-x,x,nz,-z,z);
+  TH2F * emcRecPoints = new TH2F("emcRecPoints","EMC RecPoints",nx,-x,x,nz,-z,z);
+  TH2F * cpvSdigits   = new TH2F("cpvSdigits","CPV sdigits", nx,-x,x,nz,-z,z);
+  TH2F * cpvDigits    = new TH2F("cpvDigits","CPV digits",   nxCPV,-x,x,nzCPV,-z,z) ;
+  TH2F * cpvRecPoints = new TH2F("cpvCl","CPV RecPoints",    nxCPV,-x,x,nzCPV,-z,z) ;
+  TH2F * nbar         = new TH2F("nbar","Primary nbar",    nx,-x,x,nz,-z,z);
+  TH2F * phot         = new TH2F("phot","Primary Photon",  nx,-x,x,nz,-z,z);
+  TH2F * charg        = new TH2F("charg","Primary charged",nx,-x,x,nz,-z,z);
+  TH2F * recPhot      = new TH2F("recPhot","RecParticles with primary Photon",nx,-x,x,nz,-z,z);
+  TH2F * recNbar      = new TH2F("recNbar","RecParticles with primary Nbar",  nx,-x,x,nz,-z,z);
+  
+  
   //Plot Primary Particles
-  TParticle * primary ;
+  const TParticle * primary ;
   Int_t iPrimary ;
-  for ( iPrimary = 0 ; iPrimary < fObjGetter->GimeNPrimaries() ; iPrimary++)
+  for ( iPrimary = 0 ; iPrimary < gime->NPrimaries() ; iPrimary++)
     {
-      primary = fObjGetter->GimePrimary(iPrimary) ;
+      primary = gime->Primary(iPrimary) ;
       Int_t primaryType = primary->GetPdgCode() ;
-      if( (primaryType == 211)||(primaryType == -211)||(primaryType == 2212)||(primaryType == -2212) ) {
+      if( (primaryType == 211)||(primaryType == -211)||(primaryType == 2212)||(primaryType == -2212)
+	  ||(primaryType == 11)||(primaryType == -11) ) {
         Int_t moduleNumber ;
         Double_t primX, primZ ;
-        fGeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
+        phosgeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
         if(moduleNumber==Nmod)
           charg->Fill(primZ,primX,primary->Energy()) ;
       }
       if( primaryType == 22 ) {
         Int_t moduleNumber ;
         Double_t primX, primZ ;
-        fGeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
-        if(moduleNumber==Nmod)
+        phosgeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
+        if(moduleNumber==Nmod) 
           phot->Fill(primZ,primX,primary->Energy()) ;
       }
       else{
         if( primaryType == -2112 ) {
           Int_t moduleNumber ;
           Double_t primX, primZ ;
-          fGeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
+          phosgeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
           if(moduleNumber==Nmod)
             nbar->Fill(primZ,primX,primary->Energy()) ;
         }
       }
     }  
+
   
   Int_t iSDigit ;
   AliPHOSDigit * sdigit ;
-  
-  for(iSDigit = 0; iSDigit < fObjGetter->GimeNSDigits(); iSDigit++)
+  TClonesArray * sdigits = gime->SDigits() ;
+  if(sdigits){
+    for(iSDigit = 0; iSDigit < sdigits->GetEntriesFast() ; iSDigit++)
       {
-	sdigit = fObjGetter->GimeSDigit(iSDigit) ;
+	sdigit = (AliPHOSDigit *) sdigits->At(iSDigit) ;
 	Int_t relid[4];
-	fGeom->AbsToRelNumbering(sdigit->GetId(), relid) ;
+	phosgeom->AbsToRelNumbering(sdigit->GetId(), relid) ;
 	Float_t x,z ;
-	fGeom->RelPosInModule(relid,x,z) ;
-	Float_t e = fObjGetter->GimeSDigitizer()->Calibrate(sdigit->GetAmp()) ;
+	phosgeom->RelPosInModule(relid,x,z) ;
+  	Float_t e = gime->SDigitizer()->Calibrate(sdigit->GetAmp()) ;
 	if(relid[0]==Nmod){
 	  if(relid[1]==0)  //EMC
-	    sdigitOccupancy->Fill(x,z,e) ;
-	  if((relid[1]>0)&&(relid[1]<17))
-	    ppsdUp->Fill(x,z,e) ;
-	  if(relid[1]>16)
-	    ppsdLow->Fill(x,z,e) ;
+	    emcSdigits->Fill(x,z,e) ;
+	  if( relid[1]!=0 )
+	    cpvSdigits->Fill(x,z,e) ;
 	}
       }
-  
+  }
+
   //Plot digits
   Int_t iDigit ;
   AliPHOSDigit * digit ;
-  for(iDigit = 0; iDigit < fObjGetter->GimeNDigits(); iDigit++)
-    {
-      digit = fObjGetter->GimeDigit(iDigit) ;
-      Int_t relid[4];
-      fGeom->AbsToRelNumbering(digit->GetId(), relid) ;
-      Float_t x,z ;
-      fGeom->RelPosInModule(relid,x,z) ;
-      Float_t e = fObjGetter->GimeSDigitizer()->Calibrate(digit->GetAmp()) ;
-      if(relid[0]==Nmod){
-	if(relid[1]==0)  //EMC
-	  digitOccupancy->Fill(x,z,e) ;
-	if((relid[1]>0)&&(relid[1]<17))
-	  ppsdUp->Fill(x,z,e) ;
-	if(relid[1]>16)
-	  ppsdLow->Fill(x,z,e) ;
+  TClonesArray * digits = gime->Digits(); 
+  if(digits) {
+    for(iDigit = 0; iDigit < digits->GetEntriesFast(); iDigit++)
+      {
+	digit = (AliPHOSDigit *) digits->At(iDigit) ;
+	Int_t relid[4];
+	phosgeom->AbsToRelNumbering(digit->GetId(), relid) ;
+	Float_t x,z ;
+	phosgeom->RelPosInModule(relid,x,z) ;
+	Float_t e = gime->SDigitizer()->Calibrate(digit->GetAmp()) ;
+	if(relid[0]==Nmod){
+	  if(relid[1]==0)  //EMC
+	    emcDigits->Fill(x,z,e) ;
+	  if( relid[1]!=0 )
+	    cpvDigits->Fill(x,z,e) ;
+	}
       }
-    }
-
-
+  }
+  
+  
   //Plot RecPoints
   Int_t irecp ;
   TVector3 pos ;
-  
-  for(irecp = 0; irecp < fObjGetter->GimeNEmcRecPoints() ; irecp ++){
-    AliPHOSEmcRecPoint * emc= fObjGetter->GimeEmcRecPoint(irecp) ;
-    if(emc->GetPHOSMod()==Nmod){
-      emc->GetLocalPosition(pos) ;
-      emcOccupancy->Fill(pos.X(),pos.Z(),emc->GetEnergy());
-    }
-  }
-
-
-  for(irecp = 0; irecp < fObjGetter->GimeNCpvRecPoints() ; irecp ++){
-    AliPHOSRecPoint * cpv = fObjGetter->GimeCpvRecPoint(irecp) ;
-    if((strcmp(cpv->ClassName(),"AliPHOSPpsdRecPoint" )) == 0){  // PPSD Rec Point
-      AliPHOSPpsdRecPoint * ppsd = (AliPHOSPpsdRecPoint*) cpv ;
-      ppsd->GetLocalPosition(pos) ;
-      if(ppsd->GetPHOSMod()==Nmod){
-	ppsd->GetLocalPosition(pos) ;
-	if(ppsd->GetUp())
-	  ppsdUpCl->Fill(pos.X(),pos.Z(),ppsd->GetEnergy());
-	else
-	  ppsdLowCl->Fill(pos.X(),pos.Z(),ppsd->GetEnergy());
-      }
-    }
-    else{
-      AliPHOSCpvRecPoint * cpv1 = (AliPHOSCpvRecPoint*) cpv ;
-      if(cpv1->GetPHOSMod()==Nmod){
-	cpv1->GetLocalPosition(pos) ;
-	ppsdUpCl->Fill(pos.X(),pos.Z(),cpv1->GetEnergy());
+  TObjArray * emcrp = gime->EmcRecPoints() ;
+  if(emcrp) {
+    for(irecp = 0; irecp < emcrp->GetEntriesFast() ; irecp ++){
+      AliPHOSEmcRecPoint * emc = (AliPHOSEmcRecPoint *) emcrp->At(irecp) ;
+      if(emc->GetPHOSMod()==Nmod){
+	emc->GetLocalPosition(pos) ;
+	emcRecPoints->Fill(pos.X(),pos.Z(),emc->GetEnergy());
       }
     }
   }
   
-  
+  TObjArray * cpvrp = gime->CpvRecPoints() ;
+  if(cpvrp) {
+    for(irecp = 0; irecp < cpvrp->GetEntriesFast() ; irecp ++){
+      AliPHOSRecPoint * cpv = (AliPHOSCpvRecPoint *) cpvrp->At(irecp) ;
+      if(cpv->GetPHOSMod()==Nmod){
+	cpv->GetLocalPosition(pos) ;
+	cpvRecPoints->Fill(pos.X(),pos.Z(),cpv->GetEnergy());
+      }
+    }
+  }
+    
   //Plot RecParticles
   AliPHOSRecParticle * recParticle ;
   Int_t iRecParticle ;
-  for(iRecParticle = 0; iRecParticle < fObjGetter->GimeNRecParticles() ;iRecParticle++ )
-    {
-      recParticle =  fObjGetter->GimeRecParticle(iRecParticle) ;
-      Int_t moduleNumberRec ;
-      Double_t recX, recZ ;
-      fGeom->ImpactOnEmc(recParticle->Theta(), recParticle->Phi(), moduleNumberRec, recX, recZ) ;
-      if(moduleNumberRec == Nmod){
-
-	Double_t minDistance = 5. ;
-	Int_t closestPrimary = -1 ;
-	
-
-	//extract list of primaries: it is stored at EMC RecPoints
-	Int_t emcIndex = fObjGetter->GimeTrackSegment(recParticle->GetPHOSTSIndex())->GetEmcIndex() ;
-	Int_t numberofprimaries ;
-	Int_t * listofprimaries  = fObjGetter->GimeEmcRecPoint(emcIndex)->GetPrimaries(numberofprimaries)  ;
-	Int_t index ;
-	TParticle * primary ;
-	Double_t distance = minDistance ;
-	
-	for ( index = 0 ; index < numberofprimaries ; index++){
-	  primary = fObjGetter->GimePrimary(listofprimaries[index]) ;
-	  Int_t moduleNumber ;
-	  Double_t primX, primZ ;
-	  fGeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
-	  if(moduleNumberRec == moduleNumber)
-	    distance = TMath::Sqrt((recX-primX)*(recX-primX)+(recZ-primZ)*(recZ-primZ) ) ;
-	  if(minDistance > distance)
-	    {
-	      minDistance = distance ;
-	      closestPrimary = listofprimaries[index] ;
-	    }
-	}
-	
-	if(closestPrimary >=0 ){
+  TClonesArray * rp = gime->RecParticles() ;
+  TClonesArray * ts = gime->TrackSegments() ;
+  if(rp && ts && emcrp) {
+    for(iRecParticle = 0; iRecParticle < rp->GetEntriesFast() ; iRecParticle++ )
+      {
+	recParticle = (AliPHOSRecParticle *) rp->At(iRecParticle) ;
+	Int_t moduleNumberRec ;
+	Double_t recX, recZ ;
+	phosgeom->ImpactOnEmc(recParticle->Theta(), recParticle->Phi(), moduleNumberRec, recX, recZ) ;
+	if(moduleNumberRec == Nmod){
 	  
-	  Int_t primaryType = fObjGetter->GimePrimary(closestPrimary)->GetPdgCode() ;
+	  Double_t minDistance = 5. ;
+	  Int_t closestPrimary = -1 ;	
+
+	  //extract list of primaries: it is stored at EMC RecPoints
+	  Int_t emcIndex = ((AliPHOSTrackSegment *) ts->At(recParticle->GetPHOSTSIndex()))->GetEmcIndex() ;
+	  Int_t numberofprimaries ;
+	  Int_t * listofprimaries  = ((AliPHOSRecPoint*) emcrp->At(emcIndex))->GetPrimaries(numberofprimaries)  ;
+	  Int_t index ;
+	  const TParticle * primary ;
+	  Double_t distance = minDistance ;
 	  
-	  if(primaryType==22)
-	    recPhot->Fill(recZ,recX,recParticle->Energy()) ;
-	  else
-	    if(primaryType==-2112)
-	      recNbar->Fill(recZ,recX,recParticle->Energy()) ; 
+	  for ( index = 0 ; index < numberofprimaries ; index++){
+	    primary = gime->Primary(listofprimaries[index]) ;
+	    Int_t moduleNumber ;
+	    Double_t primX, primZ ;
+	    phosgeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
+	    if(moduleNumberRec == moduleNumber)
+	      distance = TMath::Sqrt((recX-primX)*(recX-primX)+(recZ-primZ)*(recZ-primZ) ) ;
+	    if(minDistance > distance)
+	      {
+		minDistance = distance ;
+		closestPrimary = listofprimaries[index] ;
+	      }
+	  }
+	  
+	  if(closestPrimary >=0 ){
+	    
+	    Int_t primaryType = gime->Primary(closestPrimary)->GetPdgCode() ;
+	    
+	    if(primaryType==22)
+	      recPhot->Fill(recZ,recX,recParticle->Energy()) ;
+	    else
+	      if(primaryType==-2112)
+		recNbar->Fill(recZ,recX,recParticle->Energy()) ; 
+	  }
 	}
       }
-    }
 
+  }
   
   //Plot made histograms
-  digitOccupancy->Draw("box") ;
-  sdigitOccupancy->SetLineColor(5) ;
-  sdigitOccupancy->Draw("box") ;
-  emcOccupancy->SetLineColor(2) ;
-  emcOccupancy->Draw("boxsame") ;
-  ppsdUp->SetLineColor(3) ;
-  ppsdUp->Draw("boxsame") ;
-  ppsdLow->SetLineColor(4) ;
-  ppsdLow->Draw("boxsame") ;
-  phot->SetLineColor(8) ;
-  phot->Draw("boxsame") ;
+  emcSdigits->Draw("box") ;
+  emcDigits->SetLineColor(5) ;
+  emcDigits->Draw("box") ;
+  emcRecPoints->SetLineColor(2) ;
+  emcRecPoints->Draw("boxsame") ;
+  cpvSdigits->SetLineColor(1) ;
+  cpvSdigits->Draw("box") ;
+  charg->SetLineColor(2) ;
+  charg->Draw("boxsame") ;
   nbar->SetLineColor(6) ;
   nbar->Draw("boxsame") ;
   
@@ -341,8 +329,7 @@ void AliPHOSAnalyze::DrawRecon(Int_t Nevent,Int_t Nmod,const char * branchName,c
 void AliPHOSAnalyze::Ls(){
   //lists branches and titles of PHOS-related branches of TreeR, TreeD, TreeS
   
-  if(fObjGetter == 0)
-    fObjGetter = AliPHOSIndexToObject::GetInstance(ffileName.Data()) ;
+  AliPHOSGetter::GetInstance(ffileName.Data()) ;
 
   Int_t ibranch;
   TObjArray * branches; 
@@ -384,7 +371,7 @@ void AliPHOSAnalyze::Ls(){
  void AliPHOSAnalyze::InvariantMass(const char* branchTitle)    
 {
   // Calculates Real and Mixed invariant mass distributions
-  fObjGetter = AliPHOSIndexToObject::GetInstance(ffileName.Data(),"PHOSRP",branchTitle) ;
+  AliPHOSGetter * gime  = AliPHOSGetter::GetInstance(ffileName.Data(),branchTitle) ;
 
   Int_t nMixedEvents = 4 ; //# of events used for calculation of 'mixed' distribution 
 
@@ -423,26 +410,36 @@ void AliPHOSAnalyze::Ls(){
   
   //scan over all events
   Int_t event ;
-  for(event = 0; event < fObjGetter->GetMaxEvent(); event++  ){
-    
-    fObjGetter->GetEvent(event);
+  Int_t maxevent = (Int_t)gAlice->TreeE()->GetEntries() ; 
+  //  for(event = 0; event < gime->MaxEvent(); event++  ){
+  for(event = 0; event < maxevent; event++  ){
+    gime->Event(event,"R");  //will read only TreeR 
     
     //copy EM RecParticles to the "total" list        
-    AliPHOSRecParticle * recParticle ;
+    const AliPHOSRecParticle * recParticle ;
     Int_t iRecParticle ;
-    for(iRecParticle = 0; iRecParticle < fObjGetter->GimeNRecParticles()  ;iRecParticle++ )
+    TClonesArray * rp = gime->RecParticles() ;
+    if(!rp){
+      cout << "AliPHOSAnalyze::InvariantMass --> Can't find RecParticles " << endl ;
+      return ;
+    }
+
+    for(iRecParticle = 0; iRecParticle < rp->GetEntriesFast(); iRecParticle++ )
       {
-	recParticle = fObjGetter->GimeRecParticle(iRecParticle) ;
-	if((recParticle->GetType() == AliPHOSFastRecParticle::kGAMMA)||
-	   (recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEM))
+	recParticle = (AliPHOSRecParticle *) rp->At(iRecParticle) ;
+	if((recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMFAST)||
+	   (recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMSLOW))
 	  new( (*allRecParticleList)[iRecPhot++] ) AliPHOSRecParticle(*recParticle) ;
       }
     
     Int_t mevent = event%nMixedEvents ; //event number in the "mixed" cicle
     nRecParticles[mevent] = iRecPhot-1 ;  
-
+    
     //check, if it is time to calculate invariant mass?
-    if((mevent == 0) && (event +1 == fObjGetter->GetMaxEvent())){
+    Int_t maxevent = (Int_t)gAlice->TreeE()->GetEntries() ; 
+    if((mevent == 0) && (event +1 == maxevent)){
+      
+      //   if((mevent == 0) && (event +1 == gime->MaxEvent())){
       
       //calculate invariant mass:
       Int_t irp1,irp2 ;
@@ -472,14 +469,14 @@ void AliPHOSAnalyze::Ls(){
 	  
 	  if(irp2 <= nRecParticles[nCurEvent]){ //'Real' event
 	    hRealEM->Fill(invMass,pt);
-	    if((rp1->GetType() == AliPHOSFastRecParticle::kGAMMA)&&
-	       (rp2->GetType() == AliPHOSFastRecParticle::kGAMMA) )
+	    if((rp1->GetType() == AliPHOSFastRecParticle::kNEUTRALEMFAST)&&
+	       (rp2->GetType() == AliPHOSFastRecParticle::kNEUTRALEMFAST) )
 	      hRealPhot->Fill(invMass,pt);
 	  }
 	  else{
 	    hMixedEM->Fill(invMass,pt);
-	    if((rp1->GetType() == AliPHOSFastRecParticle::kGAMMA)&&
-	       (rp2->GetType() == AliPHOSFastRecParticle::kGAMMA) )
+	    if((rp1->GetType() == AliPHOSFastRecParticle::kNEUTRALEMFAST)&&
+	       (rp2->GetType() == AliPHOSFastRecParticle::kNEUTRALEMFAST) )
 	      hMixedPhot->Fill(invMass,pt);
 	  } //real-mixed
 	  
@@ -536,45 +533,64 @@ void AliPHOSAnalyze::Ls(){
     hEMEnergy   = new TH2F("hEMEnergy",   "Energy of EM with primary photon",    100, 0., 5., 100, 0., 5.);
 
 
-  fObjGetter = AliPHOSIndexToObject::GetInstance(ffileName.Data(),"PHOSRP",branchTitle) ;
-  fGeom = AliPHOSGeometry::GetInstance(((AliPHOS*)gAlice->GetModule("PHOS"))->GetGeometry()->GetName(),
-				       ((AliPHOS*)gAlice->GetModule("PHOS"))->GetGeometry()->GetTitle() );
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance(ffileName.Data(),branchTitle) ;
+  const AliPHOSGeometry * phosgeom = gime->PHOSGeometry() ; 
 
   Int_t ievent;
-  for ( ievent=0; ievent < fObjGetter->GetMaxEvent() ; ievent++){
+  Int_t maxevent = (Int_t)gAlice->TreeE()->GetEntries() ; 
+  for ( ievent=0; ievent < maxevent ; ievent++){
 
     //read the current event
-    fObjGetter->GetEvent(ievent) ;
+    gime->Event(ievent) ;
 
-    AliPHOSRecParticle * recParticle ;
+    const AliPHOSRecParticle * recParticle ;
     Int_t iRecParticle ;
-    for(iRecParticle = 0; iRecParticle < fObjGetter->GimeNRecParticles() ;iRecParticle++ ){
-      recParticle = fObjGetter->GimeRecParticle(iRecParticle) ;
+    TClonesArray * rp = gime->RecParticles() ;
+    if(!rp) {
+      cout << "AliPHOSAnalyze::EnergyResolution --> Event " <<ievent 
+	   << ",  Can't find RecParticles " << endl ;
+      return ;
+    }
+    TClonesArray * ts = gime->TrackSegments() ;
+    if(!ts) {
+      cout << "AliPHOSAnalyze::EnergyResolution --> Event " <<ievent 
+	   << ",  Can't find TrackSegments " << endl ;
+      return ;
+    }
+    TObjArray * emcrp = gime->EmcRecPoints() ;
+    if(!emcrp){
+      cout << "AliPHOSAnalyze::EnergyResolution --> Event " <<ievent 
+	   << ",  Can't find EmcRecPoints " << endl ;
+      return ;
+    }
+      
+    for(iRecParticle = 0; iRecParticle < rp->GetEntriesFast() ;iRecParticle++ ){
+      recParticle = (AliPHOSRecParticle *) rp->At(iRecParticle) ;
       
       //find the closest primary
       Int_t moduleNumberRec ;
       Double_t recX, recZ ;
-      fGeom->ImpactOnEmc(recParticle->Theta(), recParticle->Phi(), moduleNumberRec, recX, recZ) ;
+      phosgeom->ImpactOnEmc(recParticle->Theta(), recParticle->Phi(), moduleNumberRec, recX, recZ) ;
       
       Double_t minDistance  = 100. ;
       Int_t closestPrimary = -1 ;
       
       //extract list of primaries: it is stored at EMC RecPoints
-      Int_t emcIndex = fObjGetter->GimeTrackSegment(recParticle->GetPHOSTSIndex())->GetEmcIndex() ;
+      Int_t emcIndex = ((AliPHOSTrackSegment*) ts->At(recParticle->GetPHOSTSIndex()))->GetEmcIndex() ;
       Int_t numberofprimaries ;
-      Int_t * listofprimaries  = fObjGetter->GimeEmcRecPoint(emcIndex)->GetPrimaries(numberofprimaries)  ;
-
+      Int_t * listofprimaries  = ((AliPHOSEmcRecPoint*) emcrp->At(emcIndex))->GetPrimaries(numberofprimaries)  ;
+      
       Int_t index ;
-      TParticle * primary ;
+      const TParticle * primary ;
       Double_t distance = minDistance ;
       Double_t dX, dZ; 
       Double_t dXmin = 0.; 
       Double_t dZmin = 0. ;
       for ( index = 0 ; index < numberofprimaries ; index++){
-	primary = fObjGetter->GimePrimary(listofprimaries[index]) ;
+	primary = gime->Primary(listofprimaries[index]) ;
 	Int_t moduleNumber ;
 	Double_t primX, primZ ;
-	fGeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
+	phosgeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
 	if(moduleNumberRec == moduleNumber) {
 	  dX = recX - primX;
 	  dZ = recZ - primZ;
@@ -590,15 +606,15 @@ void AliPHOSAnalyze::Ls(){
 
       //if found primary, fill histograms
       if(closestPrimary >=0 ){
-	TParticle * primary = fObjGetter->GimePrimary(closestPrimary) ;
+	const TParticle * primary = gime->Primary(closestPrimary) ;
 	if(primary->GetPdgCode() == 22){
 	  hAllEnergy->Fill(primary->Energy(), recParticle->Energy()) ;
-	  if(recParticle->GetType() == AliPHOSFastRecParticle::kGAMMA){
+	  if(recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMFAST){
 	    hPhotEnergy->Fill(primary->Energy(), recParticle->Energy() ) ; 
 	    hEMEnergy->Fill(primary->Energy(), recParticle->Energy() ) ; 
 	  }
 	  else
-	    if(recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEM)
+	    if(recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMSLOW)
 	      hEMEnergy->Fill(primary->Energy(), recParticle->Energy() ) ; 
 	}
       }
@@ -655,46 +671,65 @@ void AliPHOSAnalyze::PositionResolution(const char * branchTitle)
 			     "Delta X of any RP with primary photon",100, -2., 2.);
 
 
-  fObjGetter = AliPHOSIndexToObject::GetInstance(ffileName.Data(),"PHOSRP",branchTitle) ;
-  fGeom = AliPHOSGeometry::GetInstance(((AliPHOS*)gAlice->GetModule("PHOS"))->GetGeometry()->GetName(),
-				       ((AliPHOS*)gAlice->GetModule("PHOS"))->GetGeometry()->GetTitle() );
-  
-  Int_t ievent;
-  for ( ievent=0; ievent < fObjGetter->GetMaxEvent() ; ievent++){
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance(ffileName.Data(),branchTitle) ;
+  const AliPHOSGeometry * phosgeom = gime->PHOSGeometry() ; 
 
-    //read the current event
-    fObjGetter->GetEvent(ievent) ;
+  Int_t ievent;
+  Int_t maxevent = (Int_t)gAlice->TreeE()->GetEntries() ; 
+  for ( ievent=0; ievent < maxevent ; ievent++){
     
-    AliPHOSRecParticle * recParticle ;
+    //read the current event
+    gime->Event(ievent) ;
+    TClonesArray * rp = gime->RecParticles() ;
+    if(!rp) {
+      cout << "AliPHOSAnalyze::PositionResolution --> Event " <<ievent 
+	   << ",  Can't find RecParticles " << endl ;
+      return ;
+    }
+    TClonesArray * ts = gime->TrackSegments() ;
+    if(!ts) {
+      cout << "AliPHOSAnalyze::PositionResolution --> Event " <<ievent 
+	   << ",  Can't find TrackSegments " << endl ;
+      return ;
+    }
+    TObjArray * emcrp = gime->EmcRecPoints() ;
+    if(!emcrp){
+      cout << "AliPHOSAnalyze::PositionResolution --> Event " <<ievent 
+	   << ",  Can't find EmcRecPoints " << endl ;
+      return ;
+    }
+    
+ 
+    const AliPHOSRecParticle * recParticle ;
     Int_t iRecParticle ;
-    for(iRecParticle = 0; iRecParticle < fObjGetter->GimeNRecParticles() ;iRecParticle++ ){
-      recParticle = fObjGetter->GimeRecParticle(iRecParticle) ;
+    for(iRecParticle = 0; iRecParticle < rp->GetEntriesFast(); iRecParticle++ ){
+      recParticle = (AliPHOSRecParticle *) rp->At(iRecParticle) ;
       
       //find the closest primary
       Int_t moduleNumberRec ;
       Double_t recX, recZ ;
-      fGeom->ImpactOnEmc(recParticle->Theta(), recParticle->Phi(), moduleNumberRec, recX, recZ) ;
+      phosgeom->ImpactOnEmc(recParticle->Theta(), recParticle->Phi(), moduleNumberRec, recX, recZ) ;
       
       Double_t minDistance  = 100. ;
       Int_t closestPrimary = -1 ;
       
       //extract list of primaries: it is stored at EMC RecPoints
-      Int_t emcIndex = fObjGetter->GimeTrackSegment(recParticle->GetPHOSTSIndex())->GetEmcIndex() ;
+      Int_t emcIndex = ((AliPHOSTrackSegment*) ts->At(recParticle->GetPHOSTSIndex()))->GetEmcIndex() ;
       Int_t numberofprimaries ;
-      Int_t * listofprimaries  = fObjGetter->GimeEmcRecPoint(emcIndex)->GetPrimaries(numberofprimaries)  ;
+      Int_t * listofprimaries  = ((AliPHOSEmcRecPoint *) emcrp->At(emcIndex))->GetPrimaries(numberofprimaries)  ;
 
       Int_t index ;
-      TParticle * primary ;
+      const TParticle * primary ;
       Double_t distance = minDistance ;
       Double_t dX = 1000; // incredible number
       Double_t dZ = 1000; // for the case if no primary will be found
       Double_t dXmin = 0.; 
       Double_t dZmin = 0. ;
       for ( index = 0 ; index < numberofprimaries ; index++){
-	primary = fObjGetter->GimePrimary(listofprimaries[index]) ;
+	primary = gime->Primary(listofprimaries[index]) ;
 	Int_t moduleNumber ;
 	Double_t primX, primZ ;
-	fGeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
+	phosgeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
 	if(moduleNumberRec == moduleNumber) {
 	  dX = recX - primX;
 	  dZ = recZ - primZ;
@@ -710,17 +745,17 @@ void AliPHOSAnalyze::PositionResolution(const char * branchTitle)
       
       //if found primary, fill histograms
       if(closestPrimary >=0 ){
-	TParticle * primary = fObjGetter->GimePrimary(closestPrimary) ;
+	const TParticle * primary = gime->Primary(closestPrimary) ;
 	if(primary->GetPdgCode() == 22){
 	  hAllPosition->Fill(primary->Energy(), minDistance) ;
 	  hAllPositionX->Fill(primary->Energy(), dX) ;
 	  hAllPositionZ->Fill(primary->Energy(), dZ) ;
-	  if(recParticle->GetType() == AliPHOSFastRecParticle::kGAMMA){
+	  if(recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMFAST){
 	    hPhotPosition->Fill(primary->Energy(), minDistance ) ; 
 	    hEMPosition->Fill(primary->Energy(), minDistance ) ; 
 	  }
 	  else
-	    if(recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEM)
+	    if(recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMSLOW)
 	      hEMPosition->Fill(primary->Energy(), minDistance ) ; 
 	}
       }
@@ -750,7 +785,6 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
   TH1F * hPrimary = 0;   //spectrum (P_t distribution) of primary photons         
   TH1F * hAllRP   = 0;   //spectrum of all RecParticles in PHOS
   TH1F * hPhot    = 0;   //spectrum of kGAMMA RecParticles
-  TH1F * hPPSD    = 0;   //spectrum of all RecParticles with PPSD signal
   TH1F * hShape   = 0;   //spectrum of all EM RecParticles
   TH1F * hVeto    = 0;   //spectrum of all neutral RecParticles
 
@@ -758,27 +792,22 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
   //primary - photon
   TH1F * hPhotReg = 0;   //Registeres as photon
   TH1F * hPhotEM  = 0;   //Registered as EM       
-  TH1F * hPhotPPSD= 0;   //Registered as RecParticle with PPSD signal        
 
   //primary - n
   TH1F * hNReg = 0;   //Registeres as photon          
   TH1F * hNEM  = 0;   //Registered as EM            
-  TH1F * hNPPSD= 0;   //Registered as RecParticle with PPSD signal           
 
   //primary - nBar
   TH1F * hNBarReg = 0;   //Registeres as photon
   TH1F * hNBarEM  = 0;   //Registered as EM          
-  TH1F * hNBarPPSD= 0;   //Registered as RecParticle with PPSD signal             
 
   //primary - charged hadron (pBar excluded)
   TH1F * hChargedReg = 0;   //Registeres as photon  
   TH1F * hChargedEM  = 0;   //Registered as EM           
-  TH1F * hChargedPPSD= 0;   //Registered as RecParticle with PPSD signal           
 
   //primary - pBar
   TH1F * hPbarReg = 0;   //Registeres as photon  
   TH1F * hPbarEM  = 0;   //Registered as EM 
-  TH1F * hPbarPPSD= 0;   //Registered as RecParticle with PPSD signal   
 
 
   //Reading histograms from the file
@@ -794,9 +823,6 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
   hPhot  = (TH1F*)cfile->Get("hPhot") ;
   if(hPhot == 0)
     hPhot = new TH1F("hPhot","All kGAMMA RecParticles",100, 0., 5.);
-  hPPSD = (TH1F*)cfile->Get("hPPSD") ;
-  if(hPPSD == 0)
-    hPPSD  = new TH1F("hPPSD", "All PPSD Recparticles",    100, 0., 5.);
   hShape = (TH1F*) cfile->Get("hShape") ;
   if(hShape == 0)
     hShape = new TH1F("hShape","All particles with EM shower",100, 0., 5.);
@@ -812,9 +838,6 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
   hPhotEM  =(TH1F*)cfile->Get("hPhotEM");
   if(hPhotEM== 0)
     hPhotEM   = new TH1F("hPhotEM",  "Photon registered as EM", 100, 0., 5.);
-  hPhotPPSD= (TH1F*)cfile->Get("hPhotPPSD");
-  if(hPhotPPSD== 0)
-    hPhotPPSD   = new TH1F("hPhotPPSD","Photon registered as PPSD", 100, 0., 5.);
 
   //primary - n
   hNReg = (TH1F*)cfile->Get("hNReg");
@@ -823,9 +846,6 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
   hNEM  = (TH1F*)cfile->Get("hNEM"); 
   if(hNEM== 0)
     hNEM      = new TH1F("hNEM",    "N registered as EM",      100, 0., 5.);
-  hNPPSD=(TH1F*)cfile->Get("hNPPSD"); 
-  if(hNPPSD== 0)
-    hNPPSD      = new TH1F("hNPPSD","N registered as PPSD",      100, 0., 5.);
 
   //primary - nBar
   hNBarReg =(TH1F*)cfile->Get("hNBarReg");
@@ -834,9 +854,6 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
   hNBarEM  =(TH1F*)cfile->Get("hNBarEM"); 
   if(hNBarEM== 0)
     hNBarEM   = new TH1F("hNBarEM",  "NBar registered as EM",   100, 0., 5.);
-  hNBarPPSD=(TH1F*)cfile->Get("hNBarPPSD");
-  if(hNBarPPSD== 0)
-    hNBarPPSD   = new TH1F("hNBarPPSD","NBar registered as PPSD",   100, 0., 5.);
 
   //primary - charged hadron (pBar excluded)
   hChargedReg = (TH1F*)cfile->Get("hChargedReg");
@@ -845,10 +862,7 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
   hChargedEM  = (TH1F*)cfile->Get("hChargedEM"); 
   if(hChargedEM== 0)
     hChargedEM= new TH1F("hChargedEM","Charged registered as EM",100, 0., 5.);
-  hChargedPPSD= (TH1F*)cfile->Get("hChargedPPSD");
-  if(hChargedPPSD== 0)
-    hChargedPPSD= new TH1F("hChargedPPSD","Charged registered as PPSD",100, 0., 5.);
-  
+ 
   //primary - pBar
   hPbarReg = (TH1F*)cfile->Get("hPbarReg");
   if(hPbarReg== 0)
@@ -856,9 +870,6 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
   hPbarEM  = (TH1F*)cfile->Get("hPbarEM");
   if(hPbarEM== 0)
     hPbarEM= new TH1F("hPbarEM","Pbar registered as EM",100, 0., 5.);
-  hPbarPPSD= (TH1F*)cfile->Get("hPbarPPSD");
-  if(hPbarPPSD== 0)
-    hPbarPPSD= new TH1F("hPbarPPSD","Pbar as PPSD",100, 0., 5.);
   
 
   //Now make some initializations
@@ -871,63 +882,84 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
 
 
 
-  fObjGetter = AliPHOSIndexToObject::GetInstance(ffileName.Data(),"PHOSRP",RecPointsTitle) ;
-  fGeom = AliPHOSGeometry::GetInstance(((AliPHOS*)gAlice->GetModule("PHOS"))->GetGeometry()->GetName(),
-				       ((AliPHOS*)gAlice->GetModule("PHOS"))->GetGeometry()->GetTitle() );
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance(ffileName.Data(),RecPointsTitle) ;
+  const AliPHOSGeometry * phosgeom = gime->PHOSGeometry() ; 
   
   Int_t ievent;
-  for ( ievent=0; ievent < fObjGetter->GetMaxEvent() ; ievent++){
+  Int_t maxevent = (Int_t)gAlice->TreeE()->GetEntries() ; 
+  for ( ievent=0; ievent < maxevent ; ievent++){
     
-    fObjGetter->GetEvent(ievent) ;
+    gime->Event(ievent) ;
+    
+    TClonesArray * rp = gime->RecParticles() ;
+    if(!rp) {
+      cout << "AliPHOSAnalyze::Contamination --> Event " <<ievent 
+	   << ",  Can't find RecParticles " << endl ;
+      return ;
+    }
+    TClonesArray * ts = gime->TrackSegments() ;
+    if(!ts) {
+      cout << "AliPHOSAnalyze::Contamination --> Event " <<ievent 
+	   << ",  Can't find TrackSegments " << endl ;
+      return ;
+    }
+    TObjArray * emcrp = gime->EmcRecPoints() ;
+    if(!emcrp){
+      cout << "AliPHOSAnalyze::Contamination --> Event " <<ievent 
+	   << ",  Can't find EmcRecPoints " << endl ;
+      return ;
+    }
+    
     
     //=========== Make spectrum of the primary photons
-    TParticle * primary ;
+    const TParticle * primary ;
     Int_t iPrimary ;
-    for( iPrimary = 0 ; iPrimary < fObjGetter->GimeNPrimaries() ; iPrimary++){
-      primary = fObjGetter->GimePrimary(iPrimary) ;
+    for( iPrimary = 0 ; iPrimary < gime->NPrimaries() ; iPrimary++){
+      primary = gime->Primary(iPrimary) ;
       Int_t primaryType = primary->GetPdgCode() ;
       if( primaryType == 22 ) {
 	//check, if photons folls onto PHOS
 	Int_t moduleNumber ;
 	Double_t primX, primZ ;
-	fGeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
+	phosgeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
 	if(moduleNumber)
 	  hPrimary->Fill(primary->Energy()) ;
 	
       }
       
     }
+    
     //========== Now scan over RecParticles            
-    AliPHOSRecParticle * recParticle ;
+    const AliPHOSRecParticle * recParticle ;
     Int_t iRecParticle ;
-    for(iRecParticle = 0; iRecParticle < fObjGetter->GimeNRecParticles(); iRecParticle++ ){
-      recParticle = fObjGetter->GimeRecParticle(iRecParticle) ;
+    for(iRecParticle = 0; iRecParticle < rp->GetEntriesFast(); iRecParticle++ ){
+      recParticle = (AliPHOSRecParticle *) rp->At(iRecParticle) ;
       //fill histo spectrum of all RecParticles
       hAllRP->Fill(CorrectedEnergy(recParticle->Energy())) ;
       
       //==========find the closest primary	
       Int_t moduleNumberRec ;
       Double_t recX, recZ ;
-      fGeom->ImpactOnEmc(recParticle->Theta(), recParticle->Phi(), moduleNumberRec, recX, recZ) ;
+      phosgeom->ImpactOnEmc(recParticle->Theta(), recParticle->Phi(), moduleNumberRec, recX, recZ) ;
       
       Double_t minDistance  = 100. ;
       Int_t closestPrimary = -1 ;
       
       //extract list of primaries: it is stored at EMC RecPoints
-      Int_t emcIndex = fObjGetter->GimeTrackSegment(recParticle->GetPHOSTSIndex())->GetEmcIndex() ;
+      Int_t emcIndex = ((AliPHOSTrackSegment *) ts->At(recParticle->GetPHOSTSIndex()))->GetEmcIndex() ;
       Int_t numberofprimaries ;
-      Int_t * listofprimaries  = fObjGetter->GimeEmcRecPoint(emcIndex)->GetPrimaries(numberofprimaries)  ;
+      Int_t * listofprimaries  = ((AliPHOSEmcRecPoint *) emcrp->At(emcIndex))->GetPrimaries(numberofprimaries)  ;
       Int_t index ;
-      TParticle * primary ;
+      const TParticle * primary ;
       Double_t distance = minDistance ;
       Double_t dX, dZ; 
       Double_t dXmin = 0.; 
       Double_t dZmin = 0. ;
       for ( index = 0 ; index < numberofprimaries ; index++){
-	primary = fObjGetter->GimePrimary(listofprimaries[index]) ;
+	primary = gime->Primary(listofprimaries[index]) ;
 	Int_t moduleNumber ;
 	Double_t primX, primZ ;
-	fGeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
+	phosgeom->ImpactOnEmc(primary->Theta(), primary->Phi(), moduleNumber, primX, primZ) ;
 	if(moduleNumberRec == moduleNumber) {
 	  dX = recX - primX;
 	  dZ = recZ - primZ;
@@ -944,7 +976,7 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
       //===========define the "type" of closest primary
       if(closestPrimary >=0 ){
 	Int_t primaryCode = -1;
-	TParticle * primary = fObjGetter->GimePrimary(closestPrimary) ;
+	const TParticle * primary = gime->Primary(closestPrimary) ;
 	Int_t primaryType = primary->GetPdgCode() ;
 	if(primaryType == 22) // photon ?
 	  primaryCode = 0 ;
@@ -957,13 +989,15 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
 	    else
 	      if(primaryType == -2122) //Anti proton
 		primaryCode = 4 ;
-	      else
-		if(fObjGetter->GimePrimary(closestPrimary)->GetPDG()->Charge())
+	      else {
+		TParticle tempo(*primary) ; 
+		if(tempo.GetPDG()->Charge())
 		  primaryCode = 3 ;
-	
+	      }
+
 	//==========Now look at the type of RecParticle
 	Float_t energy = CorrectedEnergy(recParticle->Energy()) ;
-	if(recParticle->GetType() == AliPHOSFastRecParticle::kGAMMA){
+	if(recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMFAST){
 	  hPhot->Fill(energy ) ; 	
 	  switch(primaryCode){
 	  case 0:
@@ -985,33 +1019,10 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
 	    break ;
 	  }
 	}
-	if((recParticle->GetType() == AliPHOSFastRecParticle::kGAMMA)||
-	   (recParticle->GetType() == AliPHOSFastRecParticle::kGAMMAHA)){ //with PPSD signal
-	  hPPSD->Fill(energy ) ; 
-	  switch(primaryCode){
-	  case 0:
-	    hPhotPPSD->Fill(energy ) ; 
-	    break ;
-	  case 1:
-	    hNPPSD->Fill(energy ) ; 
-	    break ;
-	  case 2:
-	    hNBarPPSD->Fill(energy ) ;
-	    break ;
-	  case 3:
-	    hChargedPPSD->Fill(energy ) ;
-	    break ;
-	  case 4:
-	    hPbarPPSD->Fill(energy ) ;
-	    break ;
-	  default:
-	    break ;
-	  }
-	}
-	if((recParticle->GetType() == AliPHOSFastRecParticle::kGAMMA)||
-	   (recParticle->GetType() == AliPHOSFastRecParticle::kELECTRON)||
-	   (recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEM)||
-	   (recParticle->GetType() == AliPHOSFastRecParticle::kABSURDEM) ){ //with EM shower
+	if((recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMFAST)||
+	   (recParticle->GetType() == AliPHOSFastRecParticle::kCHARGEDEMFAST)||
+	   (recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMSLOW)||
+	   (recParticle->GetType() == AliPHOSFastRecParticle::kCHARGEDEMSLOW) ){ //with EM shower
 	  hShape->Fill(energy ) ;
 	  switch(primaryCode){
 	  case 0:
@@ -1034,10 +1045,10 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
 	  }
 	}
 	
-	if((recParticle->GetType() == AliPHOSFastRecParticle::kGAMMA)||
-	   (recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALHA) ||
-	   (recParticle->GetType() == AliPHOSFastRecParticle::kGAMMAHA) ||
-	   (recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEM) ) //nuetral
+	if((recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMFAST)||
+	   (recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALHAFAST) ||
+	   (recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALEMSLOW) ||
+	   (recParticle->GetType() == AliPHOSFastRecParticle::kNEUTRALHASLOW) ) //nuetral
 	  hVeto->Fill(energy ) ;
 	
 	//fill number of primaries identified as ...
@@ -1055,24 +1066,18 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
   hPrimary->Write(0,kOverwrite); 
   hAllRP->Write(0,kOverwrite);  
   hPhot->Write(0,kOverwrite);  
-  hPPSD->Write(0,kOverwrite);  
   hShape->Write(0,kOverwrite); 
   hVeto->Write(0,kOverwrite);  
   hPhotReg->Write(0,kOverwrite); 
   hPhotEM->Write(0,kOverwrite);   
-  hPhotPPSD->Write(0,kOverwrite); 
   hNReg ->Write(0,kOverwrite);  
   hNEM  ->Write(0,kOverwrite); 
-  hNPPSD->Write(0,kOverwrite);  
   hNBarReg ->Write(0,kOverwrite); 
   hNBarEM  ->Write(0,kOverwrite); 
-  hNBarPPSD->Write(0,kOverwrite); 
   hChargedReg ->Write(0,kOverwrite); 
   hChargedEM  ->Write(0,kOverwrite); 
-  hChargedPPSD->Write(0,kOverwrite); 
   hPbarReg ->Write(0,kOverwrite); 
   hPbarEM  ->Write(0,kOverwrite); 
-  hPbarPPSD->Write(0,kOverwrite); 
   
   cfile->Write(0,kOverwrite); 
   cfile->Close();
@@ -1080,8 +1085,10 @@ void AliPHOSAnalyze::Contamination(const char* RecPointsTitle){
  
   
   //print Final Table
+  maxevent = (Int_t)gAlice->TreeE()->GetEntries() ; 
+ //  cout << "Resolutions: Analyzed " << gime->MaxEvent() << " event(s)" << endl ;
 
-  cout << "Resolutions: Analyzed " << fObjGetter->GetMaxEvent() << " event(s)" << endl ;
+  cout << "Resolutions: Analyzed " << maxevent << " event(s)" << endl ;
   cout << endl ;
   
   cout << "        Primary:    Photon  Neutron  Antineutron  Charged hadron   AntiProton" << endl ; 

@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.27  2001/07/27 13:03:12  hristov
+Default Branch split level set to 99
+
+Revision 1.26  2001/05/03 08:11:31  hristov
+stdlib.h included to define exit()
+
 Revision 1.25  2001/04/25 14:50:42  gosset
 Corrections to violations of coding conventions
 
@@ -755,11 +761,20 @@ void AliMUONEventReconstructor::AddHitsForRecFromRawClusters(TTree* TR)
   // on the radius between RMin and RMax.
   AliMUONHitForRec *hitForRec;
   AliMUONRawCluster *clus;
-  Int_t iclus, nclus;
+  Int_t iclus, nclus, nTRentries;
   TClonesArray *rawclusters;
   if (fPrintLevel >= 1) cout << "enter AddHitsForRecFromRawClusters" << endl;
   AliMUON *pMUON  = (AliMUON*) gAlice->GetModule("MUON"); // necessary ????
   // Security on MUON ????
+  pMUON->ResetRawClusters();
+  nTRentries = Int_t(TR->GetEntries());
+  if (nTRentries != 1) {
+    cout << "Error in AliMUONEventReconstructor::AddHitsForRecFromRawClusters"
+	 << endl;
+    cout << "nTRentries = " << nTRentries << " not equal to 1" << endl;
+    exit(0);
+  }
+  TR->GetEvent(0); // only one entry
   // Loop over tracking chambers
   for (Int_t ch = 0; ch < kMaxMuonTrackingChambers; ch++) {
     // number of HitsForRec to 0 for the chamber
@@ -768,8 +783,8 @@ void AliMUONEventReconstructor::AddHitsForRecFromRawClusters(TTree* TR)
     if (ch == 0) fIndexOfFirstHitForRecPerChamber[ch] = 0;
     else fIndexOfFirstHitForRecPerChamber[ch] = fNHitsForRec;
     rawclusters = pMUON->RawClustAddress(ch);
-    pMUON->ResetRawClusters();
-    TR->GetEvent((Int_t) (TR->GetEntries()) - 1); // to be checked ????
+//     pMUON->ResetRawClusters();
+//     TR->GetEvent((Int_t) (TR->GetEntries()) - 1); // to be checked ????
     nclus = (Int_t) (rawclusters->GetEntries());
     // Loop over (cathode correlated) raw clusters
     for (iclus = 0; iclus < nclus; iclus++) {
@@ -1506,7 +1521,7 @@ void AliMUONEventReconstructor::FillEvent()
    if (fRecoEvent->MakeDumpTracks(fRecTracksPtr)) {
       if (fPrintLevel > 1) fRecoEvent->EventInfo();
       TBranch *branch = fEventTree->GetBranch("Event");
-      if (!branch) branch = fEventTree->Branch("Event", "AliMUONRecoEvent", &fRecoEvent, 64000,1);
+      if (!branch) branch = fEventTree->Branch("Event", "AliMUONRecoEvent", &fRecoEvent, 64000);
       branch->SetAutoDelete();
       fTreeFile->cd();
       fEventTree->Fill();

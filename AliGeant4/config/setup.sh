@@ -330,6 +330,14 @@ if [ $AG4_VISUALIZE ]; then
   fi
 
   #
+  # tcsh UI
+  #
+  if [ "$VERBOSE" = "YES" ]; then
+    echo "* tcsh UI..."
+  fi
+  export G4UI_USE_TCSH=1
+
+  #
   # Xm UI
   #
   if [ "$VERBOSE" = "YES" ]; then
@@ -349,7 +357,7 @@ if [ $AG4_VISUALIZE ]; then
   export G4VIS_BUILD_DAWNFILE_DRIVER=1
   export G4VIS_USE_DAWN=1
   export G4VIS_USE_DAWNFILE=1
-  export G4DAWNFILE_VIEWER=david
+  #export G4DAWNFILE_VIEWER=david
   export DAWN_HOME=${G4_BASE}/tools/bin
   if [ "`echo ${PATH} | grep ${DAWN_HOME} `" = "" ]; then
     export PATH=$PATH:$DAWN_HOME

@@ -11,9 +11,10 @@
 //*-- Author: Gines Martinez & Yves Schutz (SUBATECH) 
 //*--         Dmitri Peressounko (SUBATECH & Kurchatov Institute)
 
+#include <stdlib.h>
+
 // --- ROOT system ---
 
-#include <stdlib.h>
 #include "TTask.h"
 class AliPHOSDigitizer ;
 class AliPHOSClusterizer ;
@@ -41,18 +42,18 @@ public:
 
   virtual void Exec(Option_t * option) ;
 
-  AliPHOSDigitizer         * GetDigitizer()  { return fDigitizer   ; }
-  AliPHOSClusterizer       * GetClusterizer(){ return fClusterizer ; }
-  AliPHOSPID               * GetPID()        { return fPID;          }
-  AliPHOSTrackSegmentMaker * GetTSMaker()    { return fTSMaker ;     }
-  AliPHOSSDigitizer        * GetSDigitizer() { return fSDigitizer  ; }
+  AliPHOSDigitizer         * GetDigitizer()  const { return fDigitizer   ; }
+  AliPHOSClusterizer       * GetClusterizer()const { return fClusterizer ; }
+  AliPHOSPID               * GetPID()        const { return fPID;          }
+  AliPHOSTrackSegmentMaker * GetTSMaker()    const { return fTSMaker ;     }
+  AliPHOSSDigitizer        * GetSDigitizer() const { return fSDigitizer  ; }
 
   void Print(Option_t * option)const ;
   
   void SetBranchTitle(const char* branch,const char * title) ;
             // Sets the branch titles to separate different reconstruction flows 
 
-  void StartFrom(char * module = "SDigitizer",char * title = 0) ;
+  void StartFrom(char * module = "SDigitizer",char * title = "Default") ;
             // From wich step reconstruction begins, 
             // title to be set to all reconstructed branches
 
@@ -70,19 +71,19 @@ private:
   
   TString  fHeaderFileName ;    // File with headers and gAlice
   TString  fDigitsBranch ;      // Title of digits branch
-  TString  fRecPointBranch ;    // -"-      RecPoints     -"-
-  TString  fTSBranch  ;         // -"-      TrackSegments -"-
-  TString  fRecPartBranch ;     // -"-      RecParticles  -"-
-  TString  fSDigitsBranch ;     // -"-      SDigits       -"-
+  TString  fRecPointBranch ;    // Title of RecPoints branch   
+  TString  fTSBranch  ;         // Title of TrackSegments branch
+  TString  fRecPartBranch ;     // Title of RecParticles branch 
+  TString  fSDigitsBranch ;     // Title of SDigits branch      
 
 
-  AliPHOSDigitizer         * fDigitizer ;
-  AliPHOSClusterizer       * fClusterizer ;
-  AliPHOSPID               * fPID ;
-  AliPHOSTrackSegmentMaker * fTSMaker ;
-  AliPHOSSDigitizer        * fSDigitizer ;
+  AliPHOSDigitizer         * fDigitizer ;   //! Pointer to AliPHOSDigitizer
+  AliPHOSClusterizer       * fClusterizer ; //! Pointer to AliPHOSClusterizer
+  AliPHOSPID               * fPID ;         //! Pointer to AliPHOSPID
+  AliPHOSTrackSegmentMaker * fTSMaker ;     //! Pointer to AliPHOSTrackSegmentMaker
+  AliPHOSSDigitizer        * fSDigitizer ;  //! Pointer to AliPHOSSDigitizer
 
-  Bool_t   fIsInitialized ;
+  Bool_t   fIsInitialized ; // kTRUE if reconstructioner is initialized
  
   ClassDef(AliPHOSReconstructioner,1)  // Reconstruction algorithm class (Base Class)
 

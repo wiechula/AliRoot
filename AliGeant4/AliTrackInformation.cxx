@@ -1,12 +1,17 @@
 // $Id$
 // Category: event
 //
+// Author: I. Hrivnacova
+//
+// Class AliTrackInformation
+// -------------------------
 // See the class description in the header file.
 
 #include "AliTrackInformation.h"
 
 G4Allocator<AliTrackInformation> gAliTrackInfoAllocator;
 
+//_____________________________________________________________________________
 AliTrackInformation::AliTrackInformation()
   : G4VUserTrackInformation(),
     fTrackParticleID(-1),
@@ -15,6 +20,7 @@ AliTrackInformation::AliTrackInformation()
 //
 }
 
+//_____________________________________________________________________________
 AliTrackInformation::AliTrackInformation(G4int trackParticleID) 
   : G4VUserTrackInformation(),
     fTrackParticleID(trackParticleID),
@@ -23,6 +29,7 @@ AliTrackInformation::AliTrackInformation(G4int trackParticleID)
 //
 }    
 
+//_____________________________________________________________________________
 AliTrackInformation::AliTrackInformation(G4int trackParticleID, 
                                          G4int parentParticleID)
   : G4VUserTrackInformation(),
@@ -32,12 +39,14 @@ AliTrackInformation::AliTrackInformation(G4int trackParticleID,
 //
 }    
 
+//_____________________________________________________________________________
 AliTrackInformation::~AliTrackInformation(){
 //
 }    
 
 // public methods
 
+//_____________________________________________________________________________
 void AliTrackInformation::Print() const
 {
 // Prints track information.

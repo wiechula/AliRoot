@@ -23,7 +23,7 @@ Int_t AliITSFindClusters() {
    Int_t ver = ITS->IsVersion(); 
    cerr<<"ITS version "<<ver<<" has been found !\n";
 
-   ITS->MakeTreeC();
+    ITS->MakeTreeC();
 // Set the models for cluster finding
    AliITSgeom *geom = ITS->GetITSgeom();
 
@@ -34,6 +34,10 @@ Int_t AliITSFindClusters() {
    TClonesArray *recp0  = ITS->ClustersAddress(0);
    AliITSClusterFinderSPD *rec0=new AliITSClusterFinderSPD(seg0,dig0,recp0);
    ITS->SetReconstructionModel(0,rec0);
+   // test
+   printf("SPD dimensions %f %f \n",seg0->Dx(),seg0->Dz());
+   printf("SPD npixels %d %d \n",seg0->Npz(),seg0->Npx());
+
 
    // SDD
    AliITSDetType *iDetType=ITS->DetType(1);
@@ -47,7 +51,7 @@ Int_t AliITSFindClusters() {
    Float_t thres = baseline;
    thres += (4.*noise_after_el);  // TB // (4.*noise_after_el);
    printf("thres %f\n",thres);
-   res1->Print();
+//   res1->Print();
    TClonesArray *dig1  = ITS->DigitsAddress(1);
    TClonesArray *recp1  = ITS->ClustersAddress(1);
    AliITSClusterFinderSDD *rec1=new AliITSClusterFinderSDD(seg1,res1,dig1,recp1);
@@ -73,25 +77,10 @@ Int_t AliITSFindClusters() {
 
    TStopwatch timer;
 
-   switch (ver) {
-   case 5:
-      cerr<<"Looking for clusters...\n";
-      {
-	timer.Start();
-	ITS->DigitsToRecPoints(0,0,"All");
-      }
-      break;
-   default:
-      cerr<<"Invalid ITS version !\n";
-      return 5;
-   }
-
+   cerr<<"Looking for clusters...\n";
+   timer.Start();
+   ITS->DigitsToRecPoints(0,0,"All");
    timer.Stop(); timer.Print();
-
-   delete rec0;
-   delete rec1;
-   delete rec2;
-
 
    delete gAlice; gAlice=0;
 

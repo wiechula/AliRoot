@@ -1,6 +1,10 @@
 //  $Id$
 // Category: geometry
 //
+// Author: I. Hrivnacova
+//
+// Class AliMagneticField
+// ----------------------
 // Uniform magnetic field.
 // According to:
 // Id: ExN02MagneticField.hh,v 1.1 1999/01/07 16:05:47 gunter Exp 
@@ -29,12 +33,9 @@ class AliMagneticField: public G4UniformMagField
     void SetFieldValue(G4double      fieldValue);
               // Set the field to (0, 0, fieldValue)
 
-    // get methods
-    G4ThreeVector GetConstantFieldValue();
-
   protected:
     // Find the global Field Manager
-    G4FieldManager* GetGlobalFieldManager(); 
+    G4FieldManager* GetGlobalFieldManager() const; 
 };
 
 #endif //ALI_MAGNETIC_FIELD_H

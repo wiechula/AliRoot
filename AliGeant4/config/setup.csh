@@ -330,6 +330,14 @@ if ( "$?AG4_VISUALIZE" == 1 ) then
   endif
 
   #
+  # tcsh UI
+  #
+  if ( "$VERBOSE" == "YES" ) then
+    echo "* tcsh UI..."
+  endif
+  setenv G4UI_USE_TCSH         1
+
+  #
   # Xm UI
   #
   if ( "$VERBOSE" == "YES" ) then
@@ -349,7 +357,7 @@ if ( "$?AG4_VISUALIZE" == 1 ) then
   setenv G4VIS_BUILD_DAWNFILE_DRIVER 1
   setenv G4VIS_USE_DAWN              1
   setenv G4VIS_USE_DAWNFILE          1
-  setenv G4DAWNFILE_VIEWER   david
+  #setenv G4DAWNFILE_VIEWER   david
   setenv DAWN_HOME ${G4_BASE}/tools/bin
   if ( "`echo ${PATH} | grep ${DAWN_HOME} `" == "" ) then
     setenv PATH "${PATH}:${DAWN_HOME}"

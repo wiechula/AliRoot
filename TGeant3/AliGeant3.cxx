@@ -15,6 +15,18 @@
 
 /*
 $Log$
+Revision 1.19  2001/10/03 08:39:03  morsch
+Bug in user decay routine leading to segmentation violation corrected.
+
+Revision 1.18  2001/07/19 09:10:23  morsch
+In decays with AliDecayer put long-lived particles undecayed on the stack.
+
+Revision 1.17  2001/06/15 09:31:23  morsch
+In gudcay: write only first generation decay products to stack to respect the possibility of secondary, tertiary, ... vertices during tracking.
+
+Revision 1.16  2001/05/16 14:57:23  alibrary
+New files for folders and Stack
+
 Revision 1.15  2001/03/20 06:28:49  alibrary
 New detector loop split in 2
 
@@ -431,8 +443,8 @@ void gudcay()
 //
     
     TGeant3* geant3=(TGeant3*) gMC;
-  // set decay table
-  gMC->Decayer()->ForceDecay();
+    // set decay table
+    gMC->Decayer()->ForceDecay();
 
 // Initialize 4-momentum vector    
     Int_t ipart = geant3->Gckine()->ipart;
@@ -454,15 +466,41 @@ void gudcay()
 // Fetch Particles
     Int_t np = geant3->Decayer()->ImportParticles(particles);
     if (np <=1) return;
-    
-    for (Int_t i=0; i< np; i++) 
+
+    TParticle *  iparticle = (TParticle *) particles->At(0);
+    Int_t ipF = 0, ipL = 0 ;
+    Int_t i,j;
+
+// Array to flag deselected particles
+    Int_t*  pFlag = new Int_t[np];
+    for (i=0; i<np; i++) pFlag[i]=0;
+// Particle loop
+    for (i=1; i < np; i++) 
     {
-	TParticle *  iparticle = (TParticle *) particles->At(i);
+	iparticle = (TParticle *) particles->At(i);
+	ipF = iparticle->GetFirstDaughter();
+	ipL = iparticle->GetLastDaughter();	
+	Int_t kf = iparticle->GetPdgCode();
 	Int_t ks = iparticle->GetStatusCode();
-// Final state particles only
-	if (ks < 1 || ks >  10) continue;
+//
+// Deselect daughters of deselected particles
+// and jump skip the current particle
+	if (pFlag[i] == 1) {
+	    if (ipF > 0) for (j=ipF-1; j<ipL; j++) pFlag[j]=1;
+	    continue;
+	} // deselected ??
+// Particles with long life-time are put on the stack for further tracking
+// Decay products are deselected
+//	
+	if (ks != 1) { 
+	    Double_t lifeTime = gMC->Decayer()->GetLifetime(kf);
+	    if (lifeTime > (Double_t) 1.e-15) {
+		if (ipF > 0) for (j=ipF-1; j<ipL; j++) pFlag[j]=1;
+	    } else{
+		continue;
+	    }
+	} // ks==1 ?
 // Skip neutrinos
-	Int_t  kf=iparticle->GetPdgCode();
 	if (kf==12 || kf ==-12) continue;
 	if (kf==14 || kf ==-14) continue;
 	if (kf==16 || kf ==-16) continue;
@@ -470,7 +508,7 @@ void gudcay()
 	Int_t index=geant3->Gcking()->ngkine;
 // Put particle on geant stack
 // momentum vector
-
+	
 	(geant3->Gcking()->gkin[index][0]) = iparticle->Px();
 	(geant3->Gcking()->gkin[index][1]) = iparticle->Py();
 	(geant3->Gcking()->gkin[index][2]) = iparticle->Pz();
@@ -485,10 +523,10 @@ void gudcay()
 	(geant3->Gckin3()->gpos[index][2]) = geant3->Gctrak()->vect[2];
 // time of flight offset (mm)
 	(geant3->Gcking()->tofd[index])    = 0.;
-//	(geant3->Gcking()->tofd[index])    = iparticle->T()/(10*kSpeedOfLight);
 // increase stack counter
 	(geant3->Gcking()->ngkine)=index+1;
     }
+    delete[] pFlag;
 }
 
 //______________________________________________________________________

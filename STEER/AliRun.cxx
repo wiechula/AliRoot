@@ -15,6 +15,43 @@
 
 /*
 $Log$
+Revision 1.78  2001/10/04 15:30:56  hristov
+Changes to accommodate the set of PHOS folders and tasks (Y.Schutz)
+
+Revision 1.77  2001/09/04 15:09:11  hristov
+fTreeE->Branch replaced temporary by fTreeE->BranchOld to avoid data corruption in case of many events per file
+
+Revision 1.76  2001/08/03 14:38:35  morsch
+Use original method to access TreeH.
+
+Revision 1.75  2001/07/28 10:52:27  hristov
+Event number updated correctly (M.Ivanov)
+
+Revision 1.74  2001/07/28 10:39:16  morsch
+GetEventsPerRun() method needed by afterburners added to AliRun.h
+Corresponding setters and getters have been from AliGenerator.
+
+Revision 1.73  2001/07/27 12:34:30  jchudoba
+remove the dummy argument in fStack->GetEvent call
+
+Revision 1.72  2001/07/03 08:10:57  hristov
+J.Chudoba's changes merged correctly with the HEAD
+
+Revision 1.70  2001/06/29 08:01:36  morsch
+Small correction to the previous.
+
+Revision 1.69  2001/06/28 16:27:50  morsch
+AliReco() with user control of event range.
+
+Revision 1.68  2001/06/11 13:14:40  morsch
+SetAliGenEventHeader() method added.
+
+Revision 1.67  2001/06/07 18:24:50  buncic
+Removed compilation warning in AliConfig initialisation.
+
+Revision 1.66  2001/05/22 14:32:40  hristov
+Weird inline removed
+
 Revision 1.65  2001/05/21 17:22:51  buncic
 Fixed problem with missing AliConfig while reading galice.root
 
@@ -191,7 +228,6 @@ Introduction of the Copyright and cvs Log
 #include <TFile.h>
 #include <TRandom.h>
 #include <TBRIK.h> 
-#include <TNode.h> 
 #include <TCint.h> 
 #include <TSystem.h>
 #include <TObjectTable.h>
@@ -200,7 +236,7 @@ Introduction of the Copyright and cvs Log
 #include <TROOT.h>
 #include <TBrowser.h>
 #include <TFolder.h>
-
+#include <TNode.h>
 #include "TParticle.h"
 #include "AliRun.h"
 #include "AliDisplay.h"
@@ -234,6 +270,7 @@ AliRun::AliRun()
   fHeader    = 0;
   fRun       = 0;
   fEvent     = 0;
+  fEventNrInRun = 0;
   fStack     = 0;
   fModules   = 0;
   fGenerator = 0;
@@ -309,6 +346,7 @@ AliRun::AliRun(const char *name, const char *title)
   fHeader    = new AliHeader();
   fRun       = 0;
   fEvent     = 0;
+  fEventNrInRun = 0;
   //
   fDisplay = 0;
   //
@@ -615,6 +653,7 @@ void AliRun::FinishEvent()
   if (fTreeH) fTreeH->Write(0,TObject::kOverwrite);
   
   ++fEvent;
+  ++fEventNrInRun;
 }
 
 //_____________________________________________________________________________
@@ -659,13 +698,14 @@ void AliRun::FinishRun()
   if (fTreeR) {
     delete fTreeR; fTreeR = 0;
   }
-  if (fTreeE) {
-    delete fTreeE; fTreeE = 0;
-  }
+//   if (fTreeE) {
+//     delete fTreeE; fTreeE = 0;
+//   }
   if (fTreeS) {
     delete fTreeS; fTreeS = 0;
   }
-    
+  fGenerator->FinishRun();
+  
   // Close output file
   file->Write();
 }
@@ -788,10 +828,10 @@ Int_t AliRun::GetEvent(Int_t event)
   ResetSDigits();
   
   // Delete Trees already connected
-  if (fTreeH) delete fTreeH;
-  if (fTreeD) delete fTreeD;
-  if (fTreeR) delete fTreeR;
-  if (fTreeS) delete fTreeS;
+  if (fTreeH) { delete fTreeH; fTreeH = 0;}
+  if (fTreeD) { delete fTreeD; fTreeD = 0;}
+  if (fTreeR) { delete fTreeR; fTreeR = 0;}
+  if (fTreeS) { delete fTreeS; fTreeS = 0;}
 
  // Create the particle stack
   if (fHeader) delete fHeader; 
@@ -800,27 +840,38 @@ Int_t AliRun::GetEvent(Int_t event)
   // Get header from file
   if(fTreeE) {
       fTreeE->SetBranchAddress("Header", &fHeader);
-      fTreeE->GetEntry(event);
-  }  
-  else 
-      Error("GetEvent","Cannot find Header Tree (TE)\n");
 
-  // Get the stack from the header
+      if (!fTreeE->GetEntry(event)) {
+	Error("GetEvent","Cannot find event:%d\n",event);
+	return -1;
+      }
+  }  
+  else {
+      Error("GetEvent","Cannot find Header Tree (TE)\n");
+      return -1;
+  }
+
+  // Get the stack from the header, set fStack to 0 if it 
+  // fails to get event
   if (fStack) delete fStack;
   fStack = fHeader->Stack();
-  fStack->GetEvent(event);
+  if (fStack) {
+    if (!fStack->GetEvent(event)) fStack = 0;
+  }
+
   //
   TFile *file = fTreeE->GetCurrentFile();
   char treeName[20];
+  
   file->cd();
 
   // Get Hits Tree header from file
   sprintf(treeName,"TreeH%d",event);
   fTreeH = (TTree*)gDirectory->Get(treeName);
   if (!fTreeH) {
-    Error("GetEvent","cannot find Hits Tree for event:%d\n",event);
+      Error("GetEvent","cannot find Hits Tree for event:%d\n",event);
   }
-  
+
   // Get Digits Tree header from file
   sprintf(treeName,"TreeD%d",event);
   fTreeD = (TTree*)gDirectory->Get(treeName);
@@ -855,7 +906,9 @@ Int_t AliRun::GetEvent(Int_t event)
     detector->SetTreeAddress();
   }
 
-  return fStack->GetNtrack();
+  fEvent=event; //MI change
+
+  return fHeader->GetNtrack();
 }
 
 //_____________________________________________________________________________
@@ -968,7 +1021,7 @@ void AliRun::InitMC(const char *setup)
 
    fMCQA = new AliMCQA(fNdets);
 
-   AliConfig *config = AliConfig::Instance();
+   AliConfig::Instance();
    //
    // Save stuff at the beginning of the file to avoid file corruption
    Write();
@@ -1206,7 +1259,8 @@ void AliRun::MakeTree(Option_t *option, const char *file)
 
   if (oE && !fTreeE) {
     fTreeE = new TTree("TE","Header");
-    branch = fTreeE->Branch("Header", "AliHeader", &fHeader, 4000, 0);         
+    //    branch = fTreeE->Branch("Header", "AliHeader", &fHeader, 4000, 0);         
+    branch = fTreeE->BranchOld("Header", "AliHeader", &fHeader, 4000, 0);         
     branch->SetAutoDelete(kFALSE);	     
     TFolder *folder = (TFolder *)gROOT->FindObjectAny("/Folders/RunMC/Event/Header");
     if (folder) folder->Add(fHeader);
@@ -1287,7 +1341,7 @@ void AliRun::BeginEvent()
   char hname[30];
   //
   // Initialise event header
-  fHeader->Reset(fRun,fEvent);
+  fHeader->Reset(fRun,fEvent,fEventNrInRun);
   //
   fStack->BeginEvent(fEvent);
 
@@ -1390,7 +1444,7 @@ void AliRun::RunMC(Int_t nevent, const char *setup)
   // a positive number of events will cause the finish routine
   // to be called
   //
-
+    fEventsPerRun = nevent;
   // check if initialisation has been done
   if (!fInitDone) InitMC(setup);
   
@@ -1412,12 +1466,17 @@ void AliRun::RunMC(Int_t nevent, const char *setup)
 }
 
 //_____________________________________________________________________________
-void AliRun::RunReco(const char *selected)
+void AliRun::RunReco(const char *selected, Int_t first, Int_t last)
 {
   //
   // Main function to be called to reconstruct Alice event
-  //  
-   for (Int_t nevent=0; nevent<gAlice->TreeE()->GetEntries(); nevent++) {
+  // 
+   cout << "Found "<< gAlice->TreeE()->GetEntries() << "events" << endl;
+   Int_t nFirst = first;
+   Int_t nLast  = (last < 0)? (Int_t) gAlice->TreeE()->GetEntries() : last;
+   
+   for (Int_t nevent = nFirst; nevent <= nLast; nevent++) {
+     cout << "Processing event "<< nevent << endl;
      GetEvent(nevent);
      // MakeTree("R");
      Digits2Reco(selected);
@@ -1681,27 +1740,27 @@ void AliRun::StepManager(Int_t id)
 //_____________________________________________________________________________
 void AliRun::Streamer(TBuffer &R__b)
 {
-   // Stream an object of class AliRun.
+  // Stream an object of class AliRun.
 
-   if (R__b.IsReading()) {
-      if (!gAlice) gAlice = this;
+  if (R__b.IsReading()) {
+    if (!gAlice) gAlice = this;
 
-      AliRun::Class()->ReadBuffer(R__b, this);
-      //
-      gROOT->GetListOfBrowsables()->Add(this,"Run");
+    AliRun::Class()->ReadBuffer(R__b, this);
+    //
+    gROOT->GetListOfBrowsables()->Add(this,"Run");
 
-      fTreeE = (TTree*)gDirectory->Get("TE");
-      if (fTreeE) {
+    fTreeE = (TTree*)gDirectory->Get("TE");
+    if (fTreeE) {
 	  fTreeE->SetBranchAddress("Header", &fHeader);
-      }
+    }
       
-      else    Error("Streamer","cannot find Header Tree\n");
-      fTreeE->GetEntry(0);
+    else    Error("Streamer","cannot find Header Tree\n");
+    fTreeE->GetEntry(0);
 
-      gRandom = fRandom;
-   } else {
-      AliRun::Class()->WriteBuffer(R__b, this);
-   }
+    gRandom = fRandom;
+  } else {
+    AliRun::Class()->WriteBuffer(R__b, this);
+  }
 }
 
 
@@ -1735,4 +1794,10 @@ TTree* AliRun::TreeK() {
   // Returns pointer to the TreeK array
   //
   return fStack->TreeK();
+}
+
+
+void AliRun::SetGenEventHeader(AliGenEventHeader* header)
+{
+    fHeader->SetGenEventHeader(header);
 }

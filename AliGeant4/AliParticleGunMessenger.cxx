@@ -1,6 +1,10 @@
 // $Id$
 // Category: event
 //
+// Author: I. Hrivnacova
+//
+// Class AliParticleGunMessenger
+// -----------------------------
 // See the class description in the header file.
 
 #include "AliParticleGunMessenger.h"
@@ -19,6 +23,7 @@
 #include <G4UIcmdWith3Vector.hh>
 #include <G4UIcmdWith3VectorAndUnit.hh>
 
+//_____________________________________________________________________________
 AliParticleGunMessenger::AliParticleGunMessenger(AliParticleGun* gun)
   :fGun(gun)
 {
@@ -140,16 +145,19 @@ AliParticleGunMessenger::AliParticleGunMessenger(AliParticleGun* gun)
   fParticle->SetPolarization(G4ThreeVector(0.0*cm, 0.0*cm, 0.0*cm));
 }
 
+//_____________________________________________________________________________
 AliParticleGunMessenger::AliParticleGunMessenger() {
 //
 }
 
+//_____________________________________________________________________________
 AliParticleGunMessenger::AliParticleGunMessenger(
                                  const AliParticleGunMessenger& right) {
 //				 
   AliGlobals::Exception("AliParticleGunMessenger is protected from copying.");
 }
 
+//_____________________________________________________________________________
 AliParticleGunMessenger::~AliParticleGunMessenger() {
 //
   delete fListAvailableCmd;
@@ -183,6 +191,7 @@ AliParticleGunMessenger::operator=(const AliParticleGunMessenger &right)
 
 // public methods
 
+//_____________________________________________________________________________
 void AliParticleGunMessenger::SetNewValue(G4UIcommand * command, 
        G4String newValues)
 {
@@ -252,6 +261,7 @@ void AliParticleGunMessenger::SetNewValue(G4UIcommand * command,
   }
 }
 
+//_____________________________________________________________________________
 G4String AliParticleGunMessenger::GetCurrentValue(G4UIcommand * command)
 {
 // Returns current command parameters as string.

@@ -25,30 +25,48 @@
 //*-- Author: Yves Schutz (SUBATECH)
 
 // --- ROOT system ---
-
+ 
 #include "TBRIK.h"
 #include "TNode.h"
 #include "TParticle.h"
+#include "TTree.h"
+#include "TGeometry.h"
+#include "TFile.h"
 
 // --- Standard library ---
 
 #include <stdio.h>
 
 // --- AliRoot header files ---
-
+#include "AliPHOSFastRecParticle.h"
+#include "AliPHOSGeometry.h"
 #include "AliPHOSvFast.h"
+#include "AliPHOSGetter.h"
 #include "AliRun.h"
 #include "AliConst.h"
+#include "AliMC.h"
 
 ClassImp(AliPHOSvFast)
 
 //____________________________________________________________________________
-AliPHOSvFast::AliPHOSvFast()
+AliPHOSvFast::AliPHOSvFast() : AliPHOS()
 {
-  // ctor
+  // default ctor : initialize data member
+   fBigBoxX = 0. ;                      
+   fBigBoxY = 0. ;                      
+   fBigBoxZ = 0. ;                       
+   fFastRecParticles = 0 ;        
+   fNRecParticles = 0 ;                
+   fRan = 0 ;                            
+   fResPara1 = 0. ;                       
+   fResPara2 = 0. ;                        
+   fResPara3 = 0. ;                      
+   fPosParaA0 = 0. ;                      
+   fPosParaA1 = 0. ;
+   fPosParaB0 = 0. ;     
+   fPosParaB1 = 0. ;    
+   fPosParaB2 = 0. ;    
 
-  fFastRecParticles = 0 ; 
-  fNRecParticles = 0 ; 
 }
 
 //____________________________________________________________________________
@@ -57,26 +75,21 @@ AliPHOSvFast::AliPHOSvFast(const char *name, const char *title):
 {
   // ctor
 
-  // gets an instance of the geometry parameters class  
-   
-  fGeom =  AliPHOSGeometry::GetInstance(title, "") ; 
-
-  if (fGeom->IsInitialized() ) 
-    cout << "AliPHOSvFast : PHOS geometry intialized for " << fGeom->GetName() << endl ;
-  else
-    cout << "AliPHOSvFast : PHOS geometry initialization failed !" << endl ;   
   
-  SetBigBox(0, fGeom->GetOuterBoxSize(0) ) ;
-  SetBigBox(1, fGeom->GetOuterBoxSize(1) + fGeom->GetCPVBoxSize(1) ) ; 
-  SetBigBox(2, fGeom->GetOuterBoxSize(0) ); 
-
+  // create the Getter 
+  AliPHOSGetter::GetInstance(gDirectory->GetName(), 0) ; 
+  
+  SetBigBox(0, GetGeometry()->GetOuterBoxSize(0) ) ;
+  SetBigBox(1, GetGeometry()->GetOuterBoxSize(3) + GetGeometry()->GetCPVBoxSize(1) ) ; 
+  SetBigBox(2, GetGeometry()->GetOuterBoxSize(2) ); 
+  
   fNRecParticles = 0 ; 
   fFastRecParticles = new AliPHOSFastRecParticle::FastRecParticlesList("AliPHOSFastRecParticle", 100) ;
-
+  
   fResPara1 = 0.030 ;    // GeV
   fResPara2 = 0.00003 ; 
   fResPara3 = 0.00001 ; 
-
+  
   fPosParaA0 = 2.87 ;    // mm
   fPosParaA1 = -0.0975 ;  
   fPosParaB0 = 0.257 ;   
@@ -136,17 +149,17 @@ void AliPHOSvFast::BuildGeometry()
   
   // position PHOS into ALICE
 
-  Float_t r = fGeom->GetIPtoCrystalSurface() + GetBigBox(1) / 2.0 ;
+  Float_t r = GetGeometry()->GetIPtoCrystalSurface() + GetBigBox(1) / 2.0 ;
   Int_t number = 988 ; 
-  Float_t pphi =  TMath::ATan( GetBigBox(0)  / ( 2.0 * fGeom->GetIPtoCrystalSurface() ) ) ;
+  Float_t pphi =  TMath::ATan( GetBigBox(0)  / ( 2.0 * GetGeometry()->GetIPtoCrystalSurface() ) ) ;
   pphi *= kRADDEG ;
   TNode * top = gAlice->GetGeometry()->GetNode("alice") ;
  
   char * nodename = new char[20] ;  
   char * rotname  = new char[20] ; 
 
-  for( Int_t i = 1; i <= fGeom->GetNModules(); i++ ) { 
-   Float_t angle = pphi * 2 * ( i - fGeom->GetNModules() / 2.0 - 0.5 ) ;
+  for( Int_t i = 1; i <= GetGeometry()->GetNModules(); i++ ) { 
+   Float_t angle = pphi * 2 * ( i - GetGeometry()->GetNModules() / 2.0 - 0.5 ) ;
    sprintf(rotname, "%s%d", "rot", number++) ;
    new TRotMatrix(rotname, rotname, 90, angle, 90, 90 + angle, 0, 0);
    top->cd();
@@ -190,12 +203,12 @@ void AliPHOSvFast::CreateGeometry()
   Int_t idrotm[99] ;
   Double_t const kRADDEG = 180.0 / kPI ;
   
-  for( Int_t i = 1; i <= fGeom->GetNModules(); i++ ) {
+  for( Int_t i = 1; i <= GetGeometry()->GetNModules(); i++ ) {
     
-    Float_t angle = fGeom->GetPHOSAngle(i) ;
+    Float_t angle = GetGeometry()->GetPHOSAngle(i) ;
     AliMatrix(idrotm[i-1], 90.0, angle, 90.0, 90.0+angle, 0.0, 0.0) ;
  
-    Float_t r = fGeom->GetIPtoCrystalSurface() + GetBigBox(1) / 2.0 ;
+    Float_t r = GetGeometry()->GetIPtoCrystalSurface() + GetBigBox(1) / 2.0 ;
 
     Float_t xP1 = r * TMath::Sin( angle / kRADDEG ) ;
     Float_t yP1 = -r * TMath::Cos( angle / kRADDEG ) ;
@@ -227,7 +240,7 @@ void AliPHOSvFast::Init(void)
 }
 
 //___________________________________________________________________________
-Float_t AliPHOSvFast::GetBigBox(Int_t index)
+Float_t AliPHOSvFast::GetBigBox(Int_t index) const
 {
   // Get the X, Y or Z dimension of the box describing a PHOS module
   
@@ -256,7 +269,7 @@ void AliPHOSvFast::MakeBranch(Option_t* opt, const char *file)
   
   char branchname[10];
   sprintf(branchname,"%s",GetName());
-  char *cd = strstr(opt,"R");
+  const char *cd = strstr(opt,"R");
   
   if (fFastRecParticles && gAlice->TreeR() && cd) {
     MakeBranchInTree(gAlice->TreeR(), 
@@ -317,7 +330,7 @@ void AliPHOSvFast::MakeRecParticle(const Int_t modid, const TVector3 pos, AliPHO
   // get the angle of incidence 
   
   Double_t incidencetheta = 90. * TMath::Pi() /180 - rp.Theta() ; 
-  Double_t incidencephi   = ( 270 + fGeom->GetPHOSAngle(modid) ) * TMath::Pi() / 180. - rp.Phi() ;   
+  Double_t incidencephi   = ( 270 + GetGeometry()->GetPHOSAngle(modid) ) * TMath::Pi() / 180. - rp.Phi() ;   
 
   // get the detected direction
   
@@ -344,59 +357,56 @@ Int_t AliPHOSvFast::MakeType(AliPHOSFastRecParticle & rp )
   else
     test = rp.GetPdgCode() ; 
 
+  cout << " SHOULD NOT BE USED until values of probabilities are properly set " << endl ;
+  assert(1==0) ;    // NB: ALL VALUES SHOLD BE CHECKED !!!!
   switch (test) { 
 
-  case 22:    // it's a photon
+  case 22:    // it's a photon              // NB: ALL VALUES SHOLD BE CHECKED !!!!
     ran = fRan.Rndm() ; 
-    if ( ran <= 0.5 )  // 50 % 
-      rv =  AliPHOSFastRecParticle::kGAMMA ; 
-    else {
-      ran = fRan.Rndm() ; 
-      if( ran <= 0.9498 )
-	rv =  AliPHOSFastRecParticle::kNEUTRALEM ; 
-      else
-	rv =  AliPHOSFastRecParticle::kNEUTRALHA ; 
-    }     
+    if( ran <= 0.9498 )
+      rv =  AliPHOSFastRecParticle::kNEUTRALHAFAST ; 
+    else
+      rv =  AliPHOSFastRecParticle::kNEUTRALEMFAST ;     
     break ; 
 
   case 2112:  // it's a neutron
     ran = fRan.Rndm() ; 
     if ( ran <= 0.9998 )
-      rv =  AliPHOSFastRecParticle::kNEUTRALHA ; 
+      rv =  AliPHOSFastRecParticle::kNEUTRALHASLOW ; 
     else 
-      rv = AliPHOSFastRecParticle::kNEUTRALEM ; 
+      rv = AliPHOSFastRecParticle::kNEUTRALEMSLOW ; 
     break ; 
-
+    
   case -2112: // it's a anti-neutron
     ran = fRan.Rndm() ; 
     if ( ran <= 0.9984 )
-      rv =  AliPHOSFastRecParticle::kNEUTRALHA ; 
+      rv =  AliPHOSFastRecParticle::kNEUTRALHASLOW ; 
     else 
-      rv =  AliPHOSFastRecParticle::kNEUTRALEM ; 
+      rv =  AliPHOSFastRecParticle::kNEUTRALEMSLOW ; 
     break ; 
     
   case 11:    // it's a electron
     ran = fRan.Rndm() ; 
     if ( ran <= 0.9996 )
-      rv =  AliPHOSFastRecParticle::kELECTRON ; 
+      rv =  AliPHOSFastRecParticle::kCHARGEDEMFAST ; 
     else 
-      rv =  AliPHOSFastRecParticle::kCHARGEDHA ; 
+      rv =  AliPHOSFastRecParticle::kCHARGEDHAFAST ; 
     break; 
 
   case -11:   // it's a positon
     ran = fRan.Rndm() ; 
     if ( ran <= 0.9996 )
-      rv =  AliPHOSFastRecParticle::kELECTRON ; 
+      rv =  AliPHOSFastRecParticle::kCHARGEDEMFAST ; 
     else 
-      rv =  AliPHOSFastRecParticle::kCHARGEDHA ; 
+      rv =  AliPHOSFastRecParticle::kCHARGEDHAFAST ; 
     break; 
 
   case -1:    // it's a charged
     ran = fRan.Rndm() ; 
     if ( ran <= 0.9996 )
-      rv =  AliPHOSFastRecParticle::kCHARGEDHA ; 
+      rv =  AliPHOSFastRecParticle::kCHARGEDHAFAST ; 
     else 
-      rv =  AliPHOSFastRecParticle::kGAMMA ; 
+      rv =  AliPHOSFastRecParticle::kNEUTRALHAFAST ; 
 
     break ; 
   }
@@ -457,7 +467,7 @@ Double_t AliPHOSvFast::SigmaE(Double_t energy)
 }
 
 //____________________________________________________________________________
-Double_t AliPHOSvFast::SigmaP(Double_t energy, Int_t incidence)
+Double_t AliPHOSvFast::SigmaP(Double_t energy, Double_t incidence)
 {
   // Calculates the energy dependent position resolution 
 
@@ -471,30 +481,40 @@ Double_t AliPHOSvFast::SigmaP(Double_t energy, Int_t incidence)
 void AliPHOSvFast::StepManager(void)
 {
   // Only verifies if the particle reaches PHOS and stops the tracking 
-  
+
   Int_t primary =  gAlice->GetPrimary( gAlice->CurrentTrack() ); 
+
   TLorentzVector lv ; 
   gMC->TrackPosition(lv) ;
   TVector3 pos = lv.Vect() ; 
   Int_t modid  ; 
   gMC->CurrentVolID(modid);
   
-  // Makes a reconstructed particle from the primary particle
+  Float_t energy = gMC->Etot() ; //Total energy of current track
 
-  TClonesArray * particlelist = gAlice->Particles() ;
-  TParticle * part = (TParticle *)particlelist->At(primary) ;  
+  //Calculating mass of current particle
+  TDatabasePDG * pdg = TDatabasePDG::Instance() ;
+  TParticlePDG * partPDG = pdg->GetParticle(gMC->TrackPid()) ;
+  Float_t mass = partPDG->Mass() ;
 
-  AliPHOSFastRecParticle rp(*part) ;
-  rp.SetPrimary(primary) ; 
+  if(energy > mass){
+    pos.SetMag(TMath::Sqrt(energy*energy-mass*mass)) ;
+    TLorentzVector pTrack(pos, energy) ;  
 
-  // Adds the response of PHOS to the particle
+    TParticle * part = new TParticle(gMC->TrackPid(), 0,-1,-1,-1,-1, pTrack, lv)  ;
+        
+    AliPHOSFastRecParticle rp(*part) ;
+    rp.SetPrimary(primary) ; 
 
-  MakeRecParticle(modid, pos, rp) ;
+    // Adds the response of PHOS to the particle
+    MakeRecParticle(modid, pos, rp) ;
+    
+    // add the `track' particle to the FastRecParticles list
   
-  // add the primary particle to the FastRecParticles list
-  
-  AddRecParticle(rp) ;
+    AddRecParticle(rp) ;
 
+    part->Delete() ;
+  }
   // stop the track as soon PHOS is reached
   
   gMC->StopTrack() ; 

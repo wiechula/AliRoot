@@ -41,6 +41,7 @@
 #include "AliPHOSFastRecParticle.h"
 #include "AliPHOSGeometry.h"
 #include "AliPHOSv4.h"
+#include "AliPHOSGetter.h"
 #include "AliRun.h"
 #include "AliConst.h"
 #include "AliMC.h"
@@ -48,19 +49,40 @@
 ClassImp(AliPHOSv4)
 
 //____________________________________________________________________________
+AliPHOSv4::AliPHOSv4() : AliPHOS()
+{
+  // default ctor : initialize data member
+   fBigBoxX = 0. ;                      
+   fBigBoxY = 0. ;                      
+   fBigBoxZ = 0. ;                       
+   fFastRecParticles = 0 ;        
+   fNRecParticles = 0 ;                
+   fRan = 0 ;                            
+   fResPara1 = 0. ;                       
+   fResPara2 = 0. ;                        
+   fResPara3 = 0. ;                      
+   fPosParaA0 = 0. ;                      
+   fPosParaA1 = 0. ;
+   fPosParaB0 = 0. ;     
+   fPosParaB1 = 0. ;    
+   fPosParaB2 = 0. ;    
+
+}
+
+//____________________________________________________________________________
 AliPHOSv4::AliPHOSv4(const char *name, const char *title):
   AliPHOS(name,title)
 {
   // ctor
 
-  // gets an instance of the geometry parameters class  
-  if (strcmp(GetTitle(),"") != 0 ) 
-    fGeom =  AliPHOSGeometry::GetInstance(GetTitle(), "") ; 
-     
+  
+  // create the geometry parameters object  
+  // and post it to a folder (Post retrieves the correct geometry)
+  AliPHOSGetter::GetInstance(gDirectory->GetName(), 0)->PostGeometry() ;    
     
-    SetBigBox(0, fGeom->GetOuterBoxSize(0) ) ;
-    SetBigBox(1, fGeom->GetOuterBoxSize(1) + fGeom->GetCPVBoxSize(1) ) ; 
-    SetBigBox(2, fGeom->GetOuterBoxSize(0) ); 
+    SetBigBox(0, GetGeometry()->GetOuterBoxSize(0) ) ;
+    SetBigBox(1, GetGeometry()->GetOuterBoxSize(1) + GetGeometry()->GetCPVBoxSize(1) ) ; 
+    SetBigBox(2, GetGeometry()->GetOuterBoxSize(0) ); 
     
     fNRecParticles = 0 ; 
     fFastRecParticles = new AliPHOSFastRecParticle::FastRecParticlesList("AliPHOSFastRecParticle", 100) ;
@@ -128,17 +150,17 @@ void AliPHOSv4::BuildGeometry()
   
   // position PHOS into ALICE
 
-  Float_t r = fGeom->GetIPtoCrystalSurface() + GetBigBox(1) / 2.0 ;
+  Float_t r = GetGeometry()->GetIPtoCrystalSurface() + GetBigBox(1) / 2.0 ;
   Int_t number = 988 ; 
-  Float_t pphi =  TMath::ATan( GetBigBox(0)  / ( 2.0 * fGeom->GetIPtoCrystalSurface() ) ) ;
+  Float_t pphi =  TMath::ATan( GetBigBox(0)  / ( 2.0 * GetGeometry()->GetIPtoCrystalSurface() ) ) ;
   pphi *= kRADDEG ;
   TNode * top = gAlice->GetGeometry()->GetNode("alice") ;
  
   char * nodename = new char[20] ;  
   char * rotname  = new char[20] ; 
 
-  for( Int_t i = 1; i <= fGeom->GetNModules(); i++ ) { 
-   Float_t angle = pphi * 2 * ( i - fGeom->GetNModules() / 2.0 - 0.5 ) ;
+  for( Int_t i = 1; i <= GetGeometry()->GetNModules(); i++ ) { 
+   Float_t angle = pphi * 2 * ( i - GetGeometry()->GetNModules() / 2.0 - 0.5 ) ;
    sprintf(rotname, "%s%d", "rot", number++) ;
    new TRotMatrix(rotname, rotname, 90, angle, 90, 90 + angle, 0, 0);
    top->cd();
@@ -158,7 +180,7 @@ void AliPHOSv4::CreateGeometry()
 {
   // Create the geometry for GEANT
   
-  AliPHOSv4 *phostmp = (AliPHOSv4*)gAlice->GetModule("PHOS") ;
+  AliPHOSv4 *phostmp = dynamic_cast<AliPHOSv4*>(gAlice->GetModule("PHOS")) ;
   
   if ( phostmp == NULL ) {
     
@@ -182,12 +204,12 @@ void AliPHOSv4::CreateGeometry()
   Int_t idrotm[99] ;
   Double_t const kRADDEG = 180.0 / kPI ;
   
-  for( Int_t i = 1; i <= fGeom->GetNModules(); i++ ) {
+  for( Int_t i = 1; i <= GetGeometry()->GetNModules(); i++ ) {
     
-    Float_t angle = fGeom->GetPHOSAngle(i) ;
+    Float_t angle = GetGeometry()->GetPHOSAngle(i) ;
     AliMatrix(idrotm[i-1], 90.0, angle, 90.0, 90.0+angle, 0.0, 0.0) ;
  
-    Float_t r = fGeom->GetIPtoCrystalSurface() + GetBigBox(1) / 2.0 ;
+    Float_t r = GetGeometry()->GetIPtoCrystalSurface() + GetBigBox(1) / 2.0 ;
 
     Float_t xP1 = r * TMath::Sin( angle / kRADDEG ) ;
     Float_t yP1 = -r * TMath::Cos( angle / kRADDEG ) ;
@@ -219,7 +241,7 @@ void AliPHOSv4::Init(void)
 }
 
 //___________________________________________________________________________
-Float_t AliPHOSv4::GetBigBox(Int_t index)
+Float_t AliPHOSv4::GetBigBox(Int_t index) const
 {
   // Get the X, Y or Z dimension of the box describing a PHOS module
   
@@ -309,7 +331,7 @@ void AliPHOSv4::MakeRecParticle(const Int_t modid, const TVector3 pos, AliPHOSFa
   // get the angle of incidence 
   
   Double_t incidencetheta = 90. * TMath::Pi() /180 - rp.Theta() ; 
-  Double_t incidencephi   = ( 270 + fGeom->GetPHOSAngle(modid) ) * TMath::Pi() / 180. - rp.Phi() ;   
+  Double_t incidencephi   = ( 270 + GetGeometry()->GetPHOSAngle(modid) ) * TMath::Pi() / 180. - rp.Phi() ;   
 
   // get the detected direction
   
@@ -449,7 +471,7 @@ Double_t AliPHOSv4::SigmaE(Double_t energy)
 }
 
 //____________________________________________________________________________
-Double_t AliPHOSv4::SigmaP(Double_t energy, Int_t incidence)
+Double_t AliPHOSv4::SigmaP(Double_t energy, Double_t incidence)
 {
   // Calculates the energy dependent position resolution 
 

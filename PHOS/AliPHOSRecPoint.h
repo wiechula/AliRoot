@@ -21,7 +21,6 @@
 
 #include "AliRecPoint.h"
 #include "AliPHOSDigit.h"
-#include "AliPHOSGeometry.h"
 
 class AliPHOSRecPoint : public AliRecPoint {
 
@@ -51,6 +50,7 @@ class AliPHOSRecPoint : public AliRecPoint {
   virtual void    EvalAll(Float_t logWeight,TClonesArray * digits) ;  
   virtual void    EvalPHOSMod(AliPHOSDigit * digit) ;  
   virtual void    EvalPrimaries(TClonesArray * digits) ;  
+  virtual void    GetGlobalPosition(TVector3 & gpos, TMatrix & gmat) const ; // return global position in ALICE
   virtual Int_t   GetPHOSMod(void) const {return fPHOSMod ; }
   virtual Int_t * GetPrimaries(Int_t & number) const {number = fMulTrack ; 
                                                       return fTracksList ; }
@@ -60,13 +60,12 @@ class AliPHOSRecPoint : public AliRecPoint {
     return kTRUE ; 
   }  
   virtual void    Paint(Option_t * option="");
-  virtual void    Print(Option_t * opt = "void") {
+  virtual void    Print(Option_t * opt = "void") const {
     // Print prototype
   } 
 
   AliPHOSRecPoint & operator = (const AliPHOSRecPoint & )  {
-    // assignement operator requested by coding convention
-    // but not needed
+    // assignement operator requested by coding convention but not needed
     assert(0==1) ;
     return *this ; 
   }

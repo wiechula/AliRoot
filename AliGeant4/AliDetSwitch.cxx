@@ -1,11 +1,16 @@
 // $Id$
 // Category: geometry
 //
+// Author: I. Hrivnacova
+//
+// Class AliDetSwitch
+// ------------------
 // See the class description in the header file.
 
 #include "AliDetSwitch.h"
 #include "AliGlobals.h"
 
+//_____________________________________________________________________________
 AliDetSwitch::AliDetSwitch(G4String detName, G4int nofVersions, 
                  G4int defaultVersion, G4int pprVersion,
 		 AliModuleType modType, G4bool isStandalone)
@@ -20,17 +25,21 @@ AliDetSwitch::AliDetSwitch(G4String detName, G4int nofVersions,
 //
 }
 
+//_____________________________________________________________________________
 AliDetSwitch::AliDetSwitch(const AliDetSwitch& right) {
 //
   // copy stuff
   *this = right;
 }
 
+//_____________________________________________________________________________
 AliDetSwitch::~AliDetSwitch(){
 //
 }
 
 // operators
+
+//_____________________________________________________________________________
 AliDetSwitch& AliDetSwitch::operator=(const AliDetSwitch& right)
 {    
   // check assignement to self
@@ -47,6 +56,7 @@ AliDetSwitch& AliDetSwitch::operator=(const AliDetSwitch& right)
   return *this;
 }
 
+//_____________________________________________________________________________
 G4int AliDetSwitch::operator==(const AliDetSwitch& right) const
 {    
 //
@@ -57,6 +67,7 @@ G4int AliDetSwitch::operator==(const AliDetSwitch& right) const
   return returnValue;  
 }
 
+//_____________________________________________________________________________
 G4int AliDetSwitch::operator!=(const AliDetSwitch& right) const
 { 
 //   
@@ -68,6 +79,7 @@ G4int AliDetSwitch::operator!=(const AliDetSwitch& right) const
   
 // public methods
 
+//_____________________________________________________________________________
 void AliDetSwitch::SwitchOn(G4int iVersion)
 {
 // Switchs on the iVersion version.
@@ -82,6 +94,7 @@ void AliDetSwitch::SwitchOn(G4int iVersion)
   fSwitchedVersion = iVersion;
 }
 
+//_____________________________________________________________________________
 void AliDetSwitch::SwitchOnDefault()
 {
 // Switchs on the default version.
@@ -90,6 +103,7 @@ void AliDetSwitch::SwitchOnDefault()
   fSwitchedVersion = fDefaultVersion;
 }
 
+//_____________________________________________________________________________
 void AliDetSwitch::SwitchOnPPR()
 {
 // Switchs on the default version.
@@ -98,6 +112,7 @@ void AliDetSwitch::SwitchOnPPR()
   fSwitchedVersion = fPPRVersion;
 }
 
+//_____________________________________________________________________________
 void AliDetSwitch::SwitchOff()
 {
 // No version is switched on.

@@ -19,9 +19,11 @@ SRCS          = AliGenHIJINGpara.cxx AliGenBox.cxx AliGenFixed.cxx \
 		AliGenDoubleScan.cxx AliGenCocktailEntry.cxx \
 		AliGenGSIlib.cxx AliGenPMDlib.cxx\
 	        AliGenHijing.cxx \
-		AliGenHijingEventHeader.cxx \
+		AliGenHijingEventHeader.cxx AliGenPythiaEventHeader.cxx \
 		AliDecayer.cxx AliDecayerPythia.cxx \
-                AliGenMevSim.cxx AliMevSimParticle.cxx AliMevSimConfig.cxx
+                AliGenMevSim.cxx AliMevSimParticle.cxx AliMevSimConfig.cxx \
+	        AliGenMC.cxx AliGenCocktailAfterBurner.cxx \
+         AliGenHBTprocessor.cxx 
 # C++ Headers
 
 HDRS          = $(SRCS:.cxx=.h) $(ALICE_ROOT)/include/THijing.h \
@@ -70,7 +72,7 @@ $(DICT):				$(HDRS)
 
 depend:					$(SRCS)
 
-HEADERS       = AliPythia.h AliDecayer.h AliDecayerPythia.h
+HEADERS       = AliPythia.h AliDecayer.h AliDecayerPythia.h AliGenHijingEventHeader.h
 
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
 

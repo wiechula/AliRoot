@@ -32,7 +32,7 @@ class AliStack : public TObject
     void  MakeTree(Int_t event, const char *file);
     void  BeginEvent(Int_t event);
     void  FinishRun();
-    void  GetEvent(Int_t nevent);
+    Bool_t GetEvent(Int_t nevent);
     void  SetTrack(Int_t done, Int_t parent, Int_t pdg, 
   	           Float_t *pmom, Float_t *vpos, Float_t *polar, 
                    Float_t tof, AliMCProcess mech, Int_t &ntr,
@@ -86,7 +86,7 @@ class AliStack : public TObject
     Int_t          fHgwmk;             //! Last track purified
     Int_t          fLoadPoint;         //! Next free position in the particle buffer
     TStopwatch     fTimer;             //! Timer object
-    ClassDef(AliStack,1) //Particles stack
+    ClassDef(AliStack,2) //Particles stack
 };
 
 // inline

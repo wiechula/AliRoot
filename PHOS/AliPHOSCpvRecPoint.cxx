@@ -36,8 +36,7 @@
 // --- AliRoot header files ---
 
 #include "AliPHOSCpvRecPoint.h"
-#include "AliPHOSPpsdRecPoint.h"
-
+#include "AliPHOSGetter.h"
 ClassImp(AliPHOSCpvRecPoint)
 
 //____________________________________________________________________________
@@ -63,7 +62,9 @@ Bool_t AliPHOSCpvRecPoint::AreNeighbours(AliPHOSDigit * digit1, AliPHOSDigit * d
   
   Bool_t aren = kFALSE ;
   
-  AliPHOSGeometry * phosgeom =  (AliPHOSGeometry *) fGeom ;
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  AliPHOSGeometry * phosgeom =  (AliPHOSGeometry*)gime->PHOSGeometry();
+
   Int_t relid1[4] ; 
   phosgeom->AbsToRelNumbering(digit1->GetId(), relid1) ; 
 
@@ -90,52 +91,41 @@ Int_t AliPHOSCpvRecPoint::Compare(const TObject * obj) const
 
   Int_t rv ; 
 
-  if( (strcmp(obj->ClassName() , "AliPHOSPpsdRecPoint" )) == 0)  // PPSD Rec Point
-    {
-      AliPHOSPpsdRecPoint * clu = (AliPHOSPpsdRecPoint *)obj ; 
-      if(this->GetPHOSMod()  < clu->GetPHOSMod() ) 
-	rv = -1 ;
-      else 
-	rv = 1 ;
-      return rv ;
-    }
-  else
-    {
-      AliPHOSCpvRecPoint * clu  = (AliPHOSCpvRecPoint *) obj ; 
-      
-      Int_t phosmod1 = GetPHOSMod() ;
-      Int_t phosmod2 = clu->GetPHOSMod() ;
-      
-      TVector3 locpos1; 
-      GetLocalPosition(locpos1) ;
-      TVector3 locpos2;  
-      clu->GetLocalPosition(locpos2) ;  
-      
-      if(phosmod1 == phosmod2 ) {
-	Int_t rowdif = (Int_t)TMath::Ceil(locpos1.X()/delta)-(Int_t)TMath::Ceil(locpos2.X()/delta) ;
-	if (rowdif> 0) 
-	  rv = 1 ;
-	else if(rowdif < 0) 
-	  rv = -1 ;
-	else if(locpos1.Z()>locpos2.Z()) 
-	  rv = -1 ;
-	else 
-	  rv = 1 ; 
-      }
-      
-      else {
-	if(phosmod1 < phosmod2 ) 
-	  rv = -1 ;
-	else 
-	  rv = 1 ;
-      }
-      
-      return rv ; 
-    }
+  AliPHOSCpvRecPoint * clu  = (AliPHOSCpvRecPoint *) obj ; 
+  
+  Int_t phosmod1 = GetPHOSMod() ;
+  Int_t phosmod2 = clu->GetPHOSMod() ;
+  
+  TVector3 locpos1; 
+  GetLocalPosition(locpos1) ;
+  TVector3 locpos2;  
+  clu->GetLocalPosition(locpos2) ;  
+  
+  if(phosmod1 == phosmod2 ) {
+    Int_t rowdif = (Int_t)TMath::Ceil(locpos1.X()/delta)-(Int_t)TMath::Ceil(locpos2.X()/delta) ;
+    if (rowdif> 0) 
+      rv = 1 ;
+    else if(rowdif < 0) 
+      rv = -1 ;
+    else if(locpos1.Z()>locpos2.Z()) 
+      rv = -1 ;
+    else 
+      rv = 1 ; 
+  }
+  
+  else {
+    if(phosmod1 < phosmod2 ) 
+      rv = -1 ;
+    else 
+      rv = 1 ;
+  }
+  
+  return rv ; 
+
 }
 
 //______________________________________________________________________________
-void AliPHOSCpvRecPoint::ExecuteEvent(Int_t event, Int_t px, Int_t py)
+void AliPHOSCpvRecPoint::ExecuteEvent(Int_t event, Int_t px, Int_t py) const
 {
 //   // Execute action corresponding to one event
 //   //  This member function is called when a AliPHOSRecPoint is clicked with the locator
@@ -146,7 +136,7 @@ void AliPHOSCpvRecPoint::ExecuteEvent(Int_t event, Int_t px, Int_t py)
 
 //   //   static Int_t pxold, pyold;
 
-//   AliPHOSIndexToObject * please =  AliPHOSIndexToObject::GetInstance() ; 
+//   AliPHOSGetter * gime =  AliPHOSGetter::GetInstance() ; 
   
 //   static TGraph *  digitgraph = 0 ;
   
@@ -175,7 +165,7 @@ void AliPHOSCpvRecPoint::ExecuteEvent(Int_t event, Int_t px, Int_t py)
 //     Float_t zimin = 999. ;
     
 //     for(iDigit=0; iDigit<kMulDigit; iDigit++) {
-//       digit = (AliPHOSDigit *) ( please->GimeDigit(fDigitsList[iDigit]) ) ;
+//       digit = (AliPHOSDigit *) ( gime->Digit(fDigitsList[iDigit]) ) ;
 //       phosgeom->AbsToRelNumbering(digit->GetId(), relid) ;
 //       phosgeom->RelPosInModule(relid, xi[iDigit], zi[iDigit]);
 //       if ( xi[iDigit] > ximax )
@@ -207,7 +197,7 @@ void AliPHOSCpvRecPoint::ExecuteEvent(Int_t event, Int_t px, Int_t py)
     
 //     Float_t x, z ; 
 //     for(iDigit=0; iDigit<kMulDigit; iDigit++) {
-//       digit = (AliPHOSDigit *) ( please->GimeDigit(fDigitsList[iDigit]) ) ;
+//       digit = (AliPHOSDigit *) ( gime->Digit(fDigitsList[iDigit]) ) ;
 //       phosgeom->AbsToRelNumbering(digit->GetId(), relid) ;
 //       phosgeom->RelPosInModule(relid, x, z);
 //       histo->Fill(x, z, fEnergyList[iDigit] ) ;
@@ -243,7 +233,9 @@ void AliPHOSCpvRecPoint::ExecuteEvent(Int_t event, Int_t px, Int_t py)
 }
 
 //____________________________________________________________________________
-void AliPHOSCpvRecPoint::EvalAll(Float_t logWeight,TClonesArray * digits){
+void AliPHOSCpvRecPoint::EvalAll(Float_t logWeight,TClonesArray * digits)
+{
+  // wraps other methods
   AliPHOSEmcRecPoint::EvalAll(logWeight,digits) ;
   EvalClusterLengths(digits) ;
 }
@@ -261,7 +253,8 @@ void AliPHOSCpvRecPoint::EvalLocalPosition(Float_t logWeight,TClonesArray * digi
   
   AliPHOSDigit * digit ;
 
-  AliPHOSGeometry * phosgeom =  (AliPHOSGeometry *) fGeom ;
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ;
+  AliPHOSGeometry * phosgeom =  (AliPHOSGeometry*)gime->PHOSGeometry();
 
   Int_t iDigit;
 
@@ -307,7 +300,8 @@ void AliPHOSCpvRecPoint::EvalClusterLengths(TClonesArray * digits)
 
   AliPHOSDigit * digit ;
 
-  AliPHOSGeometry * phosgeom =  (AliPHOSGeometry *) fGeom ;
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ;
+  AliPHOSGeometry * phosgeom =  (AliPHOSGeometry*)gime->PHOSGeometry();
 
   const Int_t kMaxLeng=20;
   Int_t idX[kMaxLeng], idZ[kMaxLeng];

@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.31  2001/08/30 09:30:30  hristov
+The split level of branches is set to 99
+
+Revision 1.30  2001/05/28 17:07:58  hristov
+Last minute changes; ExB correction in AliTRDclusterizerV1; taking into account of material in G10 TEC frames and material between TEC planes (C.Blume,S.Sedykh)
+
 Revision 1.29  2001/05/21 16:45:47  hristov
 Last minute changes (C.Blume)
 
@@ -990,22 +996,26 @@ void AliTRD::MakeBranch(Option_t* option, const char *file)
   //Int_t  buffersize = 4000;
   //Char_t branchname[15];
 
+  const char *cD = strstr(option,"D");
+
   AliDetector::MakeBranch(option,file);
 
   Int_t buffersize = 64000;
 
-  fDigitsArray = new AliTRDdataArrayI();
-  MakeBranchInTree(gAlice->TreeD() 
-                   ,"TRDdigits", fDigitsArray->IsA()->GetName()
-                   ,&fDigitsArray,buffersize,1,file);
-
-  for (Int_t iDict = 0; iDict < AliTRDdigitsManager::NDict(); iDict++) {
-    Char_t branchname[15];
-    sprintf(branchname,"TRDdictionary%d",iDict);
-    fDictionaryArray[iDict] = new AliTRDdataArrayI();
+  if (cD) {
+    fDigitsArray = new AliTRDdataArrayI();
     MakeBranchInTree(gAlice->TreeD() 
-                     ,branchname,fDictionaryArray[iDict]->IsA()->GetName()
-                     ,&fDictionaryArray[iDict],buffersize,1,file);
+                   ,"TRDdigits", fDigitsArray->IsA()->GetName()
+                   ,&fDigitsArray,buffersize,99,file);
+
+    for (Int_t iDict = 0; iDict < AliTRDdigitsManager::NDict(); iDict++) {
+      Char_t branchname[15];
+      sprintf(branchname,"TRDdictionary%d",iDict);
+      fDictionaryArray[iDict] = new AliTRDdataArrayI();
+      MakeBranchInTree(gAlice->TreeD() 
+                       ,branchname,fDictionaryArray[iDict]->IsA()->GetName()
+                       ,&fDictionaryArray[iDict],buffersize,99,file);
+    }
   }
 }
 
