@@ -15,21 +15,6 @@
 
 /*
 $Log$
-Revision 1.40  2002/02/12 11:05:53  morsch
-Get daughter indices right.
-
-Revision 1.39  2002/02/12 09:16:39  morsch
-Correction in SelectFlavor()
-
-Revision 1.38  2002/02/12 08:53:21  morsch
-SetNoGammas can be used to inhibit writing of gammas and pi0.
-
-Revision 1.37  2002/02/08 16:50:50  morsch
-Add name and title in constructor.
-
-Revision 1.36  2002/01/31 20:17:55  morsch
-Allow for triggered jets with simplified topology: Exact pT, back-to-back
-
 Revision 1.35  2001/12/13 07:56:25  hristov
 Set pointers to zero in the default constructor
 
@@ -175,9 +160,9 @@ AliGenHijing::AliGenHijing()
                  :AliGenMC()
 {
 // Constructor
-    fHijing = 0;
-    fDsigmaDb = 0;
-    fDnDb = 0;
+  fHijing = 0;
+  fDsigmaDb = 0;
+  fDnDb = 0;
 }
 
 AliGenHijing::AliGenHijing(Int_t npart)
@@ -185,9 +170,6 @@ AliGenHijing::AliGenHijing(Int_t npart)
 {
 // Default PbPb collisions at 5. 5 TeV
 //
-    fName = "Hijing";
-    fTitle= "Particle Generator using HIJING";
-
     SetEnergyCMS();
     SetImpactParameterRange();
     SetTarget();
@@ -212,7 +194,6 @@ AliGenHijing::AliGenHijing(Int_t npart)
     fEventVertex.Set(3);
 //
     SetSimpleJets();
-    SetNoGammas();
     
 //
 // Set random number generator   
@@ -248,48 +229,12 @@ void AliGenHijing::Init()
     fHijing=(THijing*) fgMCEvGen;
     fHijing->SetIHPR2(2,  fRadiation);
     fHijing->SetIHPR2(3,  fTrigger);
+    fHijing->SetIHPR2(4,  fQuench);
     fHijing->SetIHPR2(6,  fShadowing);
     fHijing->SetIHPR2(12, fDecaysOff);    
     fHijing->SetIHPR2(21, fKeep);
     fHijing->SetHIPR1(10, fPtMinJet); 	
     fHijing->SetHIPR1(50, fSimpleJet);
-//
-//  Quenching
-//
-//
-//  fQuench = 0:  no quenching
-//  fQuench = 1:  hijing default
-//  fQuench = 2:  new LHC  parameters for HIPR1(11) and HIPR1(14)
-//  fQuench = 3:  new RHIC parameters for HIPR1(11) and HIPR1(14)
-//  fQuench = 4:  new LHC  parameters with log(e) dependence
-//  fQuench = 5:  new RHIC parameters with log(e) dependence
-    fHijing->SetIHPR2(50, 0);
-    if (fQuench > 0) 
-	fHijing->SetIHPR2(4,  1);
-    else
-	fHijing->SetIHPR2(4,  0);
-// New LHC parameters from Xin-Nian Wang
-    if (fQuench == 2) {
-	fHijing->SetHIPR1(14, 1.1);
-	fHijing->SetHIPR1(11, 3.7);
-    } else if (fQuench == 3) {
-	fHijing->SetHIPR1(14, 0.20);
-	fHijing->SetHIPR1(11, 2.5);
-    } else if (fQuench == 4) {
-	fHijing->SetIHPR2(50, 1);
-	fHijing->SetHIPR1(14, 4.*0.34);
-	fHijing->SetHIPR1(11, 3.7);
-    } else if (fQuench == 5) {
-	fHijing->SetIHPR2(50, 1);
-	fHijing->SetHIPR1(14, 0.34);
-	fHijing->SetHIPR1(11, 2.5);
-    }
-    
-    
-    
-//
-//  Initialize Hijing  
-//    
     fHijing->Initialize();
 //
     if (fEvaluate) EvaluateCrossSections();
@@ -360,14 +305,9 @@ void AliGenHijing::Generate()
       Int_t nc = 0;
       if (np == 0 ) continue;
       Int_t i;
-      Int_t* newPos     = new Int_t[np];
-      Int_t* pSelected  = new Int_t[np];
+      Int_t * newPos = new Int_t[np];
 
-      for (i = 0; i < np; i++) {
-	  newPos[i]    = i;
-	  pSelected[i] = 0;
-      }
-      
+      for (i = 0; i < np; i++) *(newPos+i) = i;
 //      Get event vertex
 //
       TParticle *  iparticle = (TParticle *) particles->At(0);
@@ -376,101 +316,110 @@ void AliGenHijing::Generate()
       fEventVertex[2] = origin0[2];
       
 //
-//      First select parent particles
+//      First write parent particles
 //
 
       for (i = 0; i < np; i++) {
-	  iparticle = (TParticle *) particles->At(i);
+	  iparticle       = (TParticle *) particles->At(i);
 // Is this a parent particle ?
 	  if (Stable(iparticle)) continue;
 //
-	  Bool_t  selected             =  kTRUE;
-	  Bool_t  hasSelectedDaughters =  kFALSE;
-	  
-	  
-	  kf        = iparticle->GetPdgCode();
-	  ks        = iparticle->GetStatusCode();
-	  if (kf == 92) continue;
+        Bool_t  hasMother            =  (iparticle->GetFirstMother()   >=0);
+        Bool_t  selected             =  kTRUE;
+        Bool_t  hasSelectedDaughters =  kFALSE;
 	    
-	  if (!fSelectAll) selected = KinematicSelection(iparticle, 0) && 
-			       SelectFlavor(kf);
-	  hasSelectedDaughters = DaughtersSelection(iparticle, particles);
+	    
+        kf        = iparticle->GetPdgCode();
+        ks        = iparticle->GetStatusCode();
+        if (kf == 92) continue;
+	    
+        if (!fSelectAll) selected = KinematicSelection(iparticle, 0)&&SelectFlavor(kf);
+        hasSelectedDaughters = DaughtersSelection(iparticle, particles);
 //
-// Put particle on the stack if it is either selected or 
-// it is the mother of at least one seleted particle
+// Put particle on the stack if it is either selected or it is the mother of at least one seleted particle
 //
-	  if (selected || hasSelectedDaughters) {
-	      nc++;
-	      pSelected[i] = 1;
-	  } // selected
+        if (selected || hasSelectedDaughters) {
+	    nc++;
+	    p[0] = iparticle->Px();
+	    p[1] = iparticle->Py();
+	    p[2] = iparticle->Pz();
+	    origin[0] = origin0[0]+iparticle->Vx()/10;
+	    origin[1] = origin0[1]+iparticle->Vy()/10;
+	    origin[2] = origin0[2]+iparticle->Vz()/10;
+	    tof = kconv*iparticle->T();
+	    imo = -1;
+	    TParticle* mother = 0;
+	    if (hasMother) {
+		imo = iparticle->GetFirstMother();
+		mother = (TParticle *) particles->At(imo);
+		imo = (mother->GetPdgCode() != 92) ? imo =* (newPos+imo) : -1;
+		
+	    }
+// Put particle on the stack ... 
+//		printf("\n set track mother: %d %d %d %d %d %d ",i,imo, kf, nt+1, selected, hasSelectedDaughters);
+	    
+	    SetTrack(0,imo,kf,p,origin,polar, tof,kPPrimary,nt);
+// ... and keep it there
+	    KeepTrack(nt);
+//
+	    *(newPos+i)=nt;
+        } // selected
       } // particle loop parents
 //
-// Now select the final state particles
+// Now write the final state particles
 //
 
       for (i = 0; i<np; i++) {
-	  TParticle *  iparticle = (TParticle *) particles->At(i);
+        TParticle *  iparticle       = (TParticle *) particles->At(i);
 // Is this a final state particle ?
-	  if (!Stable(iparticle)) continue;
-      
-	  Bool_t  selected             =  kTRUE;
-	  kf        = iparticle->GetPdgCode();
-	  ks        = iparticle->GetStatusCode();
+        if (!Stable(iparticle)) continue;
+
+        Bool_t  hasMother            =  (iparticle->GetFirstMother()   >=0);
+        Bool_t  selected             =  kTRUE;
+        kf        = iparticle->GetPdgCode();
+        ks        = iparticle->GetStatusCode();
 // --------------------------------------------------------------------------
 // Count spectator neutrons and protons
-	  if(ks == 0 || ks == 1 || ks == 10 || ks == 11){
-	      if(kf == kNeutron) fSpecn += 1;
-	      if(kf == kProton)  fSpecp += 1;
-	  }
+        if(ks == 0 || ks == 1 || ks == 10 || ks == 11){
+	  if(kf == kNeutron) fSpecn += 1;
+	  if(kf == kProton)  fSpecp += 1;
+	}
 // --------------------------------------------------------------------------
 //	    
-	  if (!fSelectAll) {
-	      selected = KinematicSelection(iparticle,0)&&SelectFlavor(kf);
-	      if (!fSpectators && selected) selected = (ks != 0 && ks != 1 && ks != 10
-							&& ks != 11);
-	  }
+        if (!fSelectAll) {
+	    selected = KinematicSelection(iparticle,0)&&SelectFlavor(kf);
+	    if (!fSpectators && selected) selected = (ks != 0 && ks != 1 && ks != 10
+						      && ks != 11);
+        }
 //
 // Put particle on the stack if selected
 //
-	  if (selected) {
-	      nc++;
-	      pSelected[i] = 1;
-	  } // selected
+        if (selected) {
+	    nc++;
+	    p[0] = iparticle->Px();
+	    p[1] = iparticle->Py();
+	    p[2] = iparticle->Pz();
+	    origin[0] = origin0[0]+iparticle->Vx()/10;
+	    origin[1] = origin0[1]+iparticle->Vy()/10;
+	    origin[2] = origin0[2]+iparticle->Vz()/10;
+	    tof = kconv*iparticle->T();
+	    imo = -1;
+	    TParticle* mother = 0;
+	    if (hasMother) {
+		imo = iparticle->GetFirstMother();
+		mother = (TParticle *) particles->At(imo);
+		imo = (mother->GetPdgCode() != 92) ? imo=*(newPos+imo) : -1;
+	    }   
+// Put particle on the stack
+	    SetTrack(fTrackIt,imo,kf,p,origin,polar,
+						     tof,kPNoProcess,nt);
+	    KeepTrack(nt);
+	    *(newPos+i)=nt;
+        } // selected
       } // particle loop final state
-//
-// Write particles to stack
-//
-      for (i = 0; i<np; i++) {
-	  TParticle *  iparticle = (TParticle *) particles->At(i);
-	  Bool_t  hasMother   = (iparticle->GetFirstMother()     >=0);
-	  Bool_t  hasDaughter = (iparticle->GetFirstDaughter()   >=0);
-
-	  if (pSelected[i]) {
-	      kf   = iparticle->GetPdgCode();
-	      p[0] = iparticle->Px();
-	      p[1] = iparticle->Py();
-	      p[2] = iparticle->Pz();
-	      origin[0] = origin0[0]+iparticle->Vx()/10;
-	      origin[1] = origin0[1]+iparticle->Vy()/10;
-	      origin[2] = origin0[2]+iparticle->Vz()/10;
-	      tof = kconv*iparticle->T();
-	      imo = -1;
-	      TParticle* mother = 0;
-	      if (hasMother) {
-		  imo = iparticle->GetFirstMother();
-		  mother = (TParticle *) particles->At(imo);
-		  imo = (mother->GetPdgCode() != 92) ? imo = newPos[imo] : -1;
-	      } // if has mother   
-	      Bool_t tFlag = (fTrackIt && !hasDaughter);
-	      SetTrack(tFlag,imo,kf,p,origin,polar,
-		       tof,kPNoProcess,nt);
-	      KeepTrack(nt);
-	      newPos[i] = nt;
-	  } // if selected
-      } // particle loop
+ 
       delete[] newPos;
-      delete[] pSelected;
-      
+
       printf("\n I've put %i particles on the stack \n",nc);
       if (nc > 0) {
 	  jev += nc;
@@ -482,6 +431,7 @@ void AliGenHijing::Generate()
       }
   } // event loop
   MakeHeader();
+  
   SetHighWaterMark(nt);
 }
 
@@ -589,28 +539,17 @@ Bool_t AliGenHijing::SelectFlavor(Int_t pid)
 // 0: all
 // 4: charm and beauty
 // 5: beauty
-    Bool_t res = 0;
+    if (fFlavor == 0) return kTRUE;
     
-    if (fFlavor == 0) {
-	res = kTRUE;
-    } else {
-	Int_t ifl = TMath::Abs(pid/100);
-	if (ifl > 10) ifl/=10;
-	res = (fFlavor == ifl);
-    }
-//
-//  This part if gamma writing is inhibited
-    if (fNoGammas) 
-	res = res && (pid != kGamma && pid != kPi0);
-//
-    return res;
+    Int_t ifl = TMath::Abs(pid/100);
+    if (ifl > 10) ifl/=10;
+    return (fFlavor == ifl);
 }
 
 Bool_t AliGenHijing::Stable(TParticle*  particle)
 {
 // Return true for a stable particle
 //
-    
     if (particle->GetFirstDaughter() < 0 )
     {
 	return kTRUE;
@@ -715,21 +654,17 @@ Bool_t AliGenHijing::CheckTrigger()
     Double_t phi1      = jet1->Phi();
     Double_t phi2      = jet2->Phi();
     Bool_t   triggered = kFALSE;
-//    printf("\n Trigger: %f %f %f %f",
-//	   fEtaMinJet, fEtaMaxJet, fPhiMinJet, fPhiMaxJet);
-//    printf("\n Jet1: %f %f", phi1, eta1);
-//    printf("\n Jet2: %f %f", phi2, eta2);
-
-    
-    if (
-	(eta1 < fEtaMaxJet && eta1 > fEtaMinJet &&  
-	 phi1 < fPhiMaxJet && phi1 > fPhiMinJet) 
-	||
-	(eta2 < fEtaMaxJet && eta2 > fEtaMinJet &&  
-	 phi2 < fPhiMaxJet && phi2 > fPhiMinJet)
-	) 
-	triggered = kTRUE;
-
+    //Check eta range first...    
+    if ((eta1 < fEtaMaxJet && eta1 > fEtaMinJet) ||
+	(eta2 < fEtaMaxJet && eta2 > fEtaMinJet))
+    {
+	//Eta is okay, now check phi range
+        if ((phi1 < fPhiMaxJet && phi1 > fPhiMinJet) ||
+            (phi2 < fPhiMaxJet && phi2 > fPhiMinJet))
+        {
+	    triggered = kTRUE;
+        }
+    }
     return triggered;
 }
 

@@ -123,37 +123,27 @@ ifdef @PACKAGE@EXPORT
 #$(@PACKAGE@EXPORTDEST): $(patsubst %,@MODULE@/%,$(@PACKAGE@EXPORT))
 
 $(@PACKAGE@EXPORTDEST): $(EXPORTDIR)/%.h: @MODULE@/%.h
-ifndef ALIQUIET
-	  @echo "***** Copying file $^ to $@ *****"
-endif
+	  @echo "***** Copying file @MODULE@/$(notdir $@) to $@ *****"
 	  @[ -d $(dir $@) ] || mkdir $(dir $@)
-	  @cp $^ $@	
+	  @cp @MODULE@/$(notdir $@) $@	
 endif
 
 $(@PACKAGE@LIB):$(@PACKAGE@O) $(@PACKAGE@DO) @MODULE@/module.mk
-ifndef ALIQUIET
 	  @echo "***** Linking library $@ *****"
-endif
-	  $(MUTE)$(SHLD) $(SOFLAGS) $(@PACKAGE@ELIBSDIR) $(@PACKAGE@ELIBS)  -o $@ $(@PACKAGE@O) $(@PACKAGE@DO) $(SHLIB)
+	  $(SHLD) $(SOFLAGS) $(@PACKAGE@ELIBSDIR) $(@PACKAGE@ELIBS)  -o $@ $(@PACKAGE@O) $(@PACKAGE@DO) $(SHLIB)
  
 $(@PACKAGE@BIN):$(@PACKAGE@O) $(@PACKAGE@DO) @MODULE@/module.mk
-ifndef ALIQUIET
-	  @echo "***** Making executable $@ *****"
-endif
-	  $(MUTE)$(LD) $(LDFLAGS) $(@PACKAGE@O) $(@PACKAGE@DO) $(BINLIBDIRS) $(LIBS) $(@PACKAGE@ELIBS) $(EXEFLAGS) -o $@ 
+	  @echo "***** Makeing executable $@ *****"
+	  $(LD) $(LDFLAGS) $(@PACKAGE@O) $(@PACKAGE@DO) $(BINLIBDIRS) $(LIBS) $(@PACKAGE@ELIBS) $(EXEFLAGS) -o $@ 
 
-$(@PACKAGE@DS): $(@PACKAGE@CINTHDRS) $(@PACKAGE@DH) @MODULE@/module.mk
-ifndef ALIQUIET
+$(@PACKAGE@DS): $(@PACKAGE@CINTHDRS) $(@PACKAGE@DH)
 	 @echo "***** Creating $@ *****";	
-endif
 	 @(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
-	 $(MUTE)rootcint -f $@ -c $(CINTFLAGS) $(@PACKAGE@INC) $(@PACKAGE@CINTHDRS) $(@PACKAGE@DH) 
+	 rootcint -f $@ -c $(CINTFLAGS) $(@PACKAGE@INC) $^
 
 $(@PACKAGE@DO): $(@PACKAGE@DS)
-ifndef ALIQUIET
-		@echo "***** Compiling $< *****";
-endif
-		$(MUTE)$(CXX) -c $(@PACKAGE@INC)  -I$(ALICE_ROOT) $< -o $@ $(@PACKAGE@CXXFLAGS)
+		@echo "***** (Re)compiling $< *****";
+		$(CXX) -c $(@PACKAGE@INC)  $< -o $@ $(@PACKAGE@CXXFLAGS)
 
 #Different targets for the module
 
@@ -163,61 +153,43 @@ depend-@PACKAGE@: $(@PACKAGE@DEP)
 
 # determination of object files
 $(MODDIRO)/%.o: $(MODDIR)/%.cxx $(MODDIRO)/%.d 
-ifndef ALIQUIET
-	@echo "***** Compiling $< *****";
-endif
+	@echo "***** (Re)compiling $< *****";
 	@(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
-	$(MUTE)$(CXX) -c $(@PACKAGE@INC)   $< -o $@ $(@PACKAGE@CXXFLAGS)
+	$(CXX) -c $(@PACKAGE@INC)   $< -o $@ $(@PACKAGE@CXXFLAGS)
 
 $(MODDIRO)/%.o: $(MODDIR)/%.F $(MODDIRO)/%.d 
-ifndef ALIQUIET
-	@echo "***** Compiling $< *****";
-endif
+	@echo "***** (Re)compiling $< *****";
 	@(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
-	$(MUTE)$(F77) -c $(@PACKAGE@INC)  $< -o $@ $(@PACKAGE@FFLAGS)
+	$(F77) -c $(@PACKAGE@INC)  $< -o $@ $(@PACKAGE@FFLAGS)
 
 $(MODDIRO)/%.o: $(MODDIR)/%.f $(MODDIRO)/%.d 
-ifndef ALIQUIET
-	@echo "***** Compiling $< *****";
-endif
+	@echo "***** (Re)compiling $< *****";
 	@(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
-	$(MUTE)$(F77) -c $(@PACKAGE@INC)  $< -o $@ $(@PACKAGE@FFLAGS)
+	$(F77) -c $(@PACKAGE@INC)  $< -o $@ $(@PACKAGE@FFLAGS)
 
 $(MODDIRO)/%.o: $(MODDIR)/%.c $(MODDIRO)/%.d 
-ifndef ALIQUIET
-	@echo "***** Compiling $< *****";
-endif
+	@echo "***** (Re)compiling $< *****";
 	@(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
-	$(MUTE)$(CC) -c  $(@PACKAGE@INC)  $< -o $@   $(@PACKAGE@CFLAGS)
+	$(CC) -c  $(@PACKAGE@INC)  $< -o $@   $(@PACKAGE@CFLAGS)
 
 $(@PACKAGE@DDEP): $(@PACKAGE@DS)
-ifndef ALIQUIET
 		@echo "***** Making dependencies for $< *****";
-endif
 		@(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
 		@share/alibtool depend "$(@PACKAGE@ELIBSDIR) $(@PACKAGE@INC) $(DEPINC)  $<" > $@
 
 $(MODDIRO)/%.d: $(MODDIRS)/%.cxx
-ifndef ALIQUIET
 		@echo "***** Making dependencies for $< *****";
-endif
 		@(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
 		@share/alibtool depend "$(@PACKAGE@ELIBSDIR) $(@PACKAGE@INC) $(DEPINC)  $<" > $@
 $(MODDIRO)/%.d: $(MODDIRS)/%.f
-ifndef ALIQUIET
 		@echo "***** Making dependencies for $< *****";
-endif
 		@(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
 		@share/alibtool dependF "$(@PACKAGE@ELIBSDIR) $(@PACKAGE@INC) $(DEPINC)  $<" > $@
 $(MODDIRO)/%.d: $(MODDIRS)/%.F
-ifndef ALIQUIET
 		@echo "***** Making dependencies for $< *****";
-endif
 		@(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
-		$(MUTE)share/alibtool dependF "$(@PACKAGE@ELIBSDIR) $(@PACKAGE@INC) $(DEPINC)  $<" > $@
+		share/alibtool dependF "$(@PACKAGE@ELIBSDIR) $(@PACKAGE@INC) $(DEPINC)  $<" > $@
 $(MODDIRO)/%.d: $(MODDIRS)/%.c
-ifndef ALIQUIET
 		@echo "***** Making dependencies for $< *****";
-endif
 		@(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
 		@share/alibtool depend "$(@PACKAGE@ELIBSDIR) $(@PACKAGE@INC) $(DEPINC) $<" > $@

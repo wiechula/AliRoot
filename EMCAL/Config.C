@@ -8,9 +8,7 @@ enum PprRun_t
     kHijing_gj25,  kHijing_gj50, kHijing_gj75, kHijing_gj100, kHijing_gj125, 
     kJetPlusBg,    kGammaPlusBg, 
     kParam_8000_Ecal, kParam_4000_Ecal, 
-    kJets_50,       kJets_75,      kJets_100,      kJets_200,
-    kGammaJets_50,  kGammaJets_75, kGammaJets_100, kGammaJets_200,
-    kGammaJets_250, kGammaJets_300,
+    kJets_100,
     kGammaGun, kGammaBox
 };
 
@@ -25,18 +23,10 @@ enum PprRad_t
 };
 
 // This part for configuration    
-static PprRun_t run          = kHijing_jj75;
-//static PprRun_t run = kJets_100;
-static PprGeo_t geo          = kHoles;
-static PprRad_t rad          = kGluonRadiation;
-static Int_t    eventsPerRun = 100;
-static Int_t    simpleJet    = 1;
-if (rad == kGluonRadiation) 
-{
-    simpleJet = 0;
-}
-
-
+//static PprRun_t run = kParam_8000_Ecal;
+static PprRun_t run = kHijing_jj100;
+static PprGeo_t geo = kHoles;
+static PprRad_t rad = kGluonRadiation;
 // Comment line 
 static TString  comment;
 
@@ -475,7 +465,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	gener->SetMomentum(100.);
 	gener->SetPhi(240.);
 	gener->SetTheta(91.);
-	gener->SetPart(kGamma);
+	gener->SetPart(kElectron);
      break;
 
     case kGammaBox:
@@ -483,7 +473,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	gener->SetMomentumRange(100., 100.1);
 	gener->SetPhiRange(0,360);
 	gener->SetThetaRange(45., 135.);
-	gener->SetPart(kGamma);
+	gener->SetPart(kElectron);
 	break;
 	
     case kTest50:
@@ -608,7 +598,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	// trigger
 	gener->SetTrigger(1);
 	gener->SetPtJet(25.);
-	gener->SetSimpleJets(simpleJet);
+	gener->SetSimpleJets(1);
 	gener->SetRadiation(isw);
 	gener->SetJetEtaRange(-0.3,0.3);
 	gener->SetJetPhiRange(15.,105.);   
@@ -622,7 +612,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	// trigger
 	gener->SetTrigger(1);
 	gener->SetPtJet(50.);
-	gener->SetSimpleJets(simpleJet);
+	gener->SetSimpleJets(1);
 	gener->SetRadiation(isw);
 	gener->SetJetEtaRange(-0.3,0.3);
 	gener->SetJetPhiRange(15.,105.);   
@@ -636,7 +626,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	// trigger
 	gener->SetTrigger(1);
 	gener->SetPtJet(75.);
-	gener->SetSimpleJets(simpleJet);
+	gener->SetSimpleJets(1);
 	gener->SetRadiation(isw);
 	gener->SetJetEtaRange(-0.3,0.3);
 	gener->SetJetPhiRange(15.,105.);   
@@ -646,11 +636,11 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	//coment= comment.Append("HIJING Jet 100 GeV");
 	AliGenHijing *gener = HijingStandard();
 // impact parameter range
-	gener->SetImpactParameterRange(0., 5.);
+	gener->SetImpactParameterRange(10., 10.1);
 	// trigger
 	gener->SetTrigger(1);
 	gener->SetPtJet(100.);
-	gener->SetSimpleJets(simpleJet);
+	gener->SetSimpleJets(1);
 	gener->SetRadiation(isw);
 	gener->SetJetEtaRange(-0.3,0.3);
 	gener->SetJetPhiRange(15.,105.);   
@@ -664,7 +654,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	// trigger
 	gener->SetTrigger(1);
 	gener->SetPtJet(125.);
-	gener->SetSimpleJets(simpleJet);
+	gener->SetSimpleJets(1);
 	gener->SetRadiation(isw);
 	gener->SetJetEtaRange(-0.3,0.3);
 	gener->SetJetPhiRange(15.,105.);   
@@ -680,7 +670,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	// trigger
 	gener->SetTrigger(2);
 	gener->SetPtJet(25.);
-	gener->SetSimpleJets(simpleJet);
+	gener->SetSimpleJets(1);
 	gener->SetRadiation(isw);
 	gener->SetJetEtaRange(-0.3,0.3);
 	gener->SetJetPhiRange(15.,105.);   
@@ -694,7 +684,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	// trigger
 	gener->SetTrigger(2);
 	gener->SetPtJet(50.);
-	gener->SetSimpleJets(simpleJet);
+	gener->SetSimpleJets(1);
 	gener->SetRadiation(isw);
 	gener->SetJetEtaRange(-0.3,0.3);
 	gener->SetJetPhiRange(15.,105.);   
@@ -708,7 +698,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	// trigger
 	gener->SetTrigger(2);
 	gener->SetPtJet(75.);
-	gener->SetSimpleJets(simpleJet);
+	gener->SetSimpleJets(1);
 	gener->SetRadiation(isw);
 	gener->SetJetEtaRange(-0.3,0.3);
 	gener->SetJetPhiRange(15.,105.);   
@@ -722,7 +712,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	// trigger
 	gener->SetTrigger(2);
 	gener->SetPtJet(100.);
-	gener->SetSimpleJets(simpleJet);
+	gener->SetSimpleJets(1);
 	gener->SetRadiation(isw);
 	gener->SetJetEtaRange(-0.3,0.3);
 	gener->SetJetPhiRange(15.,105.);   
@@ -736,7 +726,7 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	// trigger
 	gener->SetTrigger(2);
 	gener->SetPtJet(125.);
-	gener->SetSimpleJets(simpleJet);
+	gener->SetSimpleJets(1);
 	gener->SetRadiation(isw);
 	gener->SetJetEtaRange(-0.3,0.3);
 	gener->SetJetPhiRange(15.,105.);   
@@ -820,100 +810,10 @@ AliGenerator* GeneratorFactory(PprRun_t run) {
 	gener->AddGenerator(bg,"Underlying Event", 1);
 
 	break;
-    case kJets_50:
-//  50 GeV Jets
-        AliGenPythia *gener = PythiaJets(50.);
-        break; 
-    case kJets_75:
-//  75 GeV Jets
-        AliGenPythia *gener = PythiaJets(75.);
-        break; 
     case kJets_100:
 //  100 GeV Jets  
 	AliGenPythia *gener = PythiaJets(100.);
-	break; 
-    case kJets_200:
-//  200 GeV Jets
-        AliGenPythia *gener = PythiaJets(200.);
-        break;
-    case kGammaJets_50:
-//  50 GeV Jets + Gamma
-        AliGenPythia *gener = PythiaJets(-1);
-        gener->SetEnergyCMS(5500.);
-        gener->SetProcess(kPyDirectGamma);
-        gener->SetJetEtaRange(-0.3,+0.3);
-        gener->SetJetPhiRange(15.,105.);
-        gener->SetGammaEtaRange(-0.12, 0.12);
-        gener->SetGammaPhiRange(220., 320.);
-        gener->SetStrucFunc(kGRV_LO_98);
-        gener->SetPtHard(50.,50.001);
-        gener->SetForceDecay(kAll);
-        break;
-    case kGammaJets_75:
-//  75 GeV Jets + Gamma 
-        AliGenPythia *gener = PythiaJets(-1);
-        gener->SetEnergyCMS(5500.);
-        gener->SetProcess(kPyDirectGamma);
-        gener->SetJetEtaRange(-0.3,+0.3);
-        gener->SetJetPhiRange(15.,105.);
-        gener->SetGammaEtaRange(-0.12, 0.12);
-        gener->SetGammaPhiRange(220., 320.);
-        gener->SetStrucFunc(kGRV_LO_98);
-        gener->SetPtHard(75.,75.001);
-        gener->SetForceDecay(kAll);
-        break; 
-    case kGammaJets_100:
-// 100 GeV Jets + Gamma
-        AliGenPythia *gener = PythiaJets(-1);
-        gener->SetEnergyCMS(5500.);
-        gener->SetProcess(kPyDirectGamma);
-        gener->SetJetEtaRange(-0.3,+0.3);
-        gener->SetJetPhiRange(15.,105.);
-        gener->SetGammaEtaRange(-0.12, 0.12);
-        gener->SetGammaPhiRange(220., 320.);
-        gener->SetStrucFunc(kGRV_LO_98);
-        gener->SetPtHard(100.,100.001);
-        gener->SetForceDecay(kAll);
-        break; 
-    case kGammaJets_200:
-//  200 GeV Jets + Gamma
-        AliGenPythia *gener = PythiaJets(-1);
-        gener->SetEnergyCMS(5500.);
-        gener->SetProcess(kPyDirectGamma);
-        gener->SetJetEtaRange(-0.3,+0.3);
-        gener->SetJetPhiRange(15.,105.);
-        gener->SetGammaEtaRange(-0.12, 0.12);
-        gener->SetGammaPhiRange(220., 320.);
-        gener->SetStrucFunc(kGRV_LO_98);
-        gener->SetPtHard(200.,200.001);
-        gener->SetForceDecay(kAll);
-        break; 
-    case kGammaJets_250:
-//  250 GeV Jets + Gamma
-        AliGenPythia *gener = PythiaJets(-1);
-        gener->SetEnergyCMS(5500.);
-        gener->SetProcess(kPyDirectGamma);
-        gener->SetJetEtaRange(-0.3,+0.3);
-        gener->SetJetPhiRange(15.,105.);
-        gener->SetGammaEtaRange(-0.12, 0.12);
-        gener->SetGammaPhiRange(220., 320.);
-        gener->SetStrucFunc(kGRV_LO_98);
-        gener->SetPtHard(250.,250.001);
-        gener->SetForceDecay(kAll);
-        break; 
-    case kGammaJets_300:
-//  300 GeV Jets + Gamma
-        AliGenPythia *gener = PythiaJets(-1);
-        gener->SetEnergyCMS(5500.);
-        gener->SetProcess(kPyDirectGamma);
-        gener->SetJetEtaRange(-0.3,+0.3);
-        gener->SetJetPhiRange(15.,105.);
-        gener->SetGammaEtaRange(-0.12, 0.12);
-        gener->SetGammaPhiRange(220., 320.);
-        gener->SetStrucFunc(kGRV_LO_98);
-        gener->SetPtHard(300.,300.001);
-        gener->SetForceDecay(kAll);
-        break;
+	break;
     }
 
     return gener;

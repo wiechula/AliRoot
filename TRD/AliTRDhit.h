@@ -23,12 +23,6 @@ class AliTRDhit : public AliHit {
           Int_t  GetDetector() const         { return fDetector; };
           Int_t  GetCharge() const           { return fQ;        };
 
-          void   SetX(Float_t x)             { fX        =   x; }
-          void   SetY(Float_t y)             { fY        =   y; }
-          void   SetZ(Float_t z)             { fZ        =   z; }
-          void   SetDetector(Int_t det)      { fDetector = det; }
-          void   SetQ(Int_t q)               { fQ        =   q; }
-
           Bool_t FromDrift() const           { return TestBit(kDrift);         };
           Bool_t FromAmplification() const   { return TestBit(kAmplification); };
           Bool_t FromTRphoton() const        { return TestBit(kTRphoton);      };

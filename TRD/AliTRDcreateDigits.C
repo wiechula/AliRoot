@@ -17,10 +17,14 @@ Int_t AliTRDcreateDigits()
   AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer","Digitizer class");
   digitizer->InitDetector();
 
-  // Set the parameter
-  digitizer->SetTailCancelation(0);
+  // Set the parameter (for TRF ~200ns)
+  digitizer->SetGasGain(1600.);
+  digitizer->SetChipGain(8.0);
+  digitizer->SetNoise(1000.);
+  digitizer->SetADCinRange(1000.);
+  digitizer->SetADCoutRange(1023.);
   digitizer->SetADCthreshold(0);
-  digitizer->SetDebug(1);
+  digitizer->SetVerbose(1);
 
   // Create the digits
   if (!(digitizer->MakeDigits())) {

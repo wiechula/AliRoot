@@ -40,8 +40,6 @@
 void G3CLRead(G4String &, char *);
 
 TG4GeometryManager* TG4GeometryManager::fgInstance = 0;
-const G4double      TG4GeometryManager::fgLimitDensity = 0.001*(g/cm3);
-const G4double      TG4GeometryManager::fgMaxStep = 10*cm;
 
 //_____________________________________________________________________________
 TG4GeometryManager::TG4GeometryManager() 
@@ -924,7 +922,7 @@ void TG4GeometryManager::SetUserLimits(const TG4G3CutVector& cuts,
 
   for (G4int i=0; i<lvStore->size(); i++) {
     G4LogicalVolume* lv = (*lvStore)[i];
- 
+
     // get limits from G3Med
     G4int mediumIndex = fGeometryServices->GetMediumId(lv);    
     G4UserLimits* limits = G3Med.get(mediumIndex)->GetLimits();
@@ -940,10 +938,6 @@ void TG4GeometryManager::SetUserLimits(const TG4G3CutVector& cuts,
       if (!tg4Limits) 
         tg4Limits = new TG4Limits(name, cuts, controls); 
     }
-    
-    // limit max step for low density materials (< AIR)
-    if (lv->GetMaterial()->GetDensity() < fgLimitDensity ) 
-      tg4Limits->SetMaxAllowedStep(fgMaxStep);
     
     // update controls in limits according to the setup 
     // in the passed vector

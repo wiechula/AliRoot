@@ -83,8 +83,6 @@ AliPHOSGetter::AliPHOSGetter(const char* headerFile, const char* branchTitle )
 {
   //Initialize  all lists
 
-  fDebug = 0 ; 
-  
   fHeaderFile         = headerFile ; 
   fBranchTitle        = branchTitle ;
   fSDigitsTitle       = branchTitle ; 
@@ -317,7 +315,6 @@ Bool_t AliPHOSGetter::PostSDigits(const char * name, const char * headerFile) co
     phosFolder = fSDigitsFolder->AddFolder("PHOS", "SDigits from PHOS") ; 
   }    
   TString subdir(headerFile) ;
-  subdir.ReplaceAll("/","_") ; 
   TFolder * phosSubFolder = dynamic_cast<TFolder*>(phosFolder->FindObject(subdir)) ; 
   if ( !phosSubFolder ) 
     phosSubFolder = phosFolder->AddFolder(subdir, ""); 
@@ -452,7 +449,6 @@ Bool_t AliPHOSGetter::PostSDigitizer(const char * name, const char * file) const
   TString sdname(name) ;
   sdname.Append(":") ;
   sdname.Append(file);
-  sdname.ReplaceAll("/","_") ; 
   AliPHOSSDigitizer * phossd  = dynamic_cast<AliPHOSSDigitizer *>(phos->GetListOfTasks()->FindObject( sdname )); 
   if (!phossd) {
     phossd = new AliPHOSSDigitizer() ;  
@@ -1539,12 +1535,8 @@ void AliPHOSGetter::ReadTreeS(Int_t event)
   TCollection * folderslist = phosF->GetListOfFolders() ; 
   
   //Add current file to list if it is not there yet
-  
-  TString subdir(fHeaderFile) ;
-  subdir.ReplaceAll("/","_") ; 
-
-  if ( (subdir != "aliroot") && ( !folderslist->Contains(subdir) ) ){
-    phosF->AddFolder(subdir, ""); 
+  if ( (fHeaderFile != "aliroot") && ( !folderslist->Contains(fHeaderFile) ) ){
+    phosF->AddFolder(fHeaderFile, ""); 
   }
     
   TIter next(folderslist) ; 
@@ -1552,12 +1544,10 @@ void AliPHOSGetter::ReadTreeS(Int_t event)
   TFile * file; 
   TTree * treeS = 0;
   while ( (folder = static_cast<TFolder*>(next())) ) {
-    TString fileName(folder->GetName()) ; 
-    fileName.ReplaceAll("_","/") ; 
-    if(fHeaderFile.CompareTo(fileName) == 0 ) 
+    if(fHeaderFile.CompareTo(folder->GetName()) == 0 ) 
       treeS=gAlice->TreeS() ;
     else{
-      file = static_cast<TFile*>(gROOT->GetFile(fileName)); 
+      file = static_cast<TFile*>(gROOT->GetFile(folder->GetName())); 
       file->cd() ;
       
       // Get SDigits Tree header from file
@@ -1618,9 +1608,7 @@ void AliPHOSGetter::ReadTreeS(Int_t event)
   next.Reset();
   folder = static_cast<TFolder*>(next());
   if(folder){
-    TString fileName(folder->GetName()) ; 
-    fileName.ReplaceAll("_","/") ; 
-    file   = static_cast<TFile*>(gROOT->GetFile(fileName)); 
+    file   = static_cast<TFile*>(gROOT->GetFile(folder->GetName())); 
     file   ->cd() ;
   }
   
@@ -1842,9 +1830,8 @@ TObject * AliPHOSGetter::ReturnO(TString what, TString name, TString file) const
     if (folder) 
       phosO  = dynamic_cast<TObject *>(folder->FindObject("Hits")) ;  
   }
-  else if ( what.CompareTo("SDigits") == 0 ) {
-    file.ReplaceAll("/","_") ; 
-    TString path = "PHOS/" + file  ;
+  else if ( what.CompareTo("SDigits") == 0 ) { 
+    TString path = "PHOS/" + file  ; 
     folder = dynamic_cast<TFolder *>(fSDigitsFolder->FindObject(path.Data())) ; 
     if (folder) { 
       if (name.IsNull())

@@ -15,8 +15,8 @@ SRCS          = AliTRD.cxx AliTRDv0.cxx AliTRDv1.cxx AliTRDv2.cxx \
                 AliTRDhit.cxx AliTRDdigit.cxx                     \
 		AliTRDpixel.cxx AliTRDmatrix.cxx                  \
                 AliTRDgeometry.cxx AliTRDgeometryFull.cxx         \
-                AliTRDgeometryHole.cxx AliTRDdigitizer.cxx        \
                 AliTRDgeometryDetail.cxx                          \
+                AliTRDgeometryHole.cxx AliTRDdigitizer.cxx        \
                 AliTRDclusterizer.cxx AliTRDclusterizerV0.cxx     \
                 AliTRDclusterizerV1.cxx AliTRDrecPoint.cxx        \
                 AliTRDsegmentArray.cxx AliTRDdataArray.cxx        \
@@ -26,7 +26,6 @@ SRCS          = AliTRD.cxx AliTRDv0.cxx AliTRDv1.cxx AliTRDv2.cxx \
                 AliTRDarrayI.cxx AliTRDarrayF.cxx                 \
                 AliTRDpoints.cxx AliTRDtimeBin.cxx                \
                 AliTRDtrackingSector.cxx                          \
-                AliTRDtrackHits.cxx                               \
                 AliTRDtrack.cxx AliTRDtracker.cxx                 \
                 AliTRDcluster.cxx                                 \
                 AliTRDpid.cxx AliTRDpidLQ.cxx                     \

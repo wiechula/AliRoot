@@ -31,8 +31,6 @@ public AliDecayer
     
     virtual Float_t GetPartialBranchingRatio(Int_t ipart);
     virtual Float_t GetLifetime(Int_t kf);
-    virtual void    WriteDecayTable();
-    virtual void    ReadDecayTable();
     
  private:
     void     DefineParticles();

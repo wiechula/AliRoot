@@ -75,18 +75,16 @@ G4bool TG4IntMap::Add(const G4String& first, G4int second)
 }
 
 //_____________________________________________________________________________
-G4int TG4IntMap::GetSecond(const G4String& name, G4bool warn)
+G4int TG4IntMap::GetSecond(const G4String& name)
 {
 // Gets second name associated with given name.
 // ---
 
   MapIterator i = fMap.find(name);
   if (i == fMap.end()) {
-    if (warn) {
-      G4String text = "   TG4IntMap::GetSecond: ";
-      text = text + name + " is not defined.";
-      TG4Globals::Warning(text);
-    }  
+    G4String text = "   TG4IntMap::GetSecond: ";
+    text = text + name + " is not defined.";
+    TG4Globals::Warning(text);
     return 0;
   }  
   else {                

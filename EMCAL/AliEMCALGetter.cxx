@@ -83,8 +83,6 @@ AliEMCALGetter::AliEMCALGetter(const char* headerFile, const char* branchTitle, 
 {
   //Initialize  all lists
 
-  fDebug = 0 ; 
-
   fHeaderFile         = headerFile ; 
   fBranchTitle        = branchTitle ;
   fSDigitsTitle       = branchTitle ; 
@@ -269,7 +267,6 @@ Bool_t AliEMCALGetter::PostSDigits(const char * name, const char * headerFile) c
     emcalFolder = fSDigitsFolder->AddFolder("EMCAL", "SDigits from EMCAL") ; 
   }    
   TString subdir(headerFile) ;
-  subdir.ReplaceAll("/", "_") ; 
   TFolder * emcalSubFolder = dynamic_cast<TFolder*>(emcalFolder->FindObject(subdir)) ; 
   if ( !emcalSubFolder ) 
     emcalSubFolder = emcalFolder->AddFolder(subdir, ""); 
@@ -404,7 +401,6 @@ Bool_t AliEMCALGetter::PostSDigitizer(const char * name, const char * file) cons
   TString sdname(name) ;
   sdname.Append(":") ;
   sdname.Append(file);
-  sdname.ReplaceAll("/","_") ; 
   AliEMCALSDigitizer * emcalsd  = dynamic_cast<AliEMCALSDigitizer *>(emcal->GetListOfTasks()->FindObject( sdname )); 
   if (!emcalsd) {
     emcalsd = new AliEMCALSDigitizer() ;  
@@ -1460,25 +1456,19 @@ void AliEMCALGetter::ReadTreeS(Int_t event)
   TCollection * folderslist = emcalF->GetListOfFolders() ; 
   
   //Add current file to list if it is not there yet
-
-  TString subdir(fHeaderFile) ;
-  subdir.ReplaceAll("/","_") ; 
-
-  if ( (subdir != "aliroot") && ( !folderslist->Contains(subdir) ) ){
-    emcalF->AddFolder(subdir, ""); 
+  if ( (fHeaderFile != "aliroot") && ( !folderslist->Contains(fHeaderFile) ) ){
+    emcalF->AddFolder(fHeaderFile, ""); 
   }
-
+    
   TIter next(folderslist) ; 
   TFolder * folder = 0 ; 
   TFile * file; 
   TTree * treeS = 0;
   while ( (folder = static_cast<TFolder*>(next())) ) {
-   TString fileName(folder->GetName()) ; 
-   fileName.ReplaceAll("_","/") ; 
-   if(fHeaderFile.CompareTo(fileName) == 0 ) 
+    if(fHeaderFile.CompareTo(folder->GetName()) == 0 ) 
       treeS=gAlice->TreeS() ;
     else{
-      file = static_cast<TFile*>(gROOT->GetFile(fileName)); 
+      file = static_cast<TFile*>(gROOT->GetFile(folder->GetName())); 
       file->cd() ;
       
       // Get SDigits Tree header from file
@@ -1490,7 +1480,7 @@ void AliEMCALGetter::ReadTreeS(Int_t event)
       cerr << "ERROR: AliEMCALGetter::ReadTreeS There is no SDigit Tree" << endl;
       return ;
     }
-   
+    
     //set address of the SDigits and SDigitizer
     TBranch   * sdigitsBranch    = 0;
     TBranch   * sdigitizerBranch = 0;
@@ -1537,9 +1527,7 @@ void AliEMCALGetter::ReadTreeS(Int_t event)
   next.Reset();
   folder = static_cast<TFolder*>(next());
   if(folder){
-    TString fileName(folder->GetName()) ; 
-    fileName.ReplaceAll("_","/") ; 
-    file   = static_cast<TFile*>(gROOT->GetFile(fileName)); 
+    file   = static_cast<TFile*>(gROOT->GetFile(folder->GetName())); 
     file   ->cd() ;
   }
   
@@ -1726,7 +1714,6 @@ TObject * AliEMCALGetter::ReturnO(TString what, TString name, TString file) cons
       emcalO  = dynamic_cast<TObject *>(folder->FindObject("Hits")) ;  
   }
   else if ( what.CompareTo("SDigits") == 0 ) { 
-    file.ReplaceAll("/","_") ; 
     TString path = "EMCAL/" + file  ; 
     folder = dynamic_cast<TFolder *>(fSDigitsFolder->FindObject(path.Data())) ; 
     if (folder) { 
@@ -1857,8 +1844,8 @@ const TTask * AliEMCALGetter::ReturnT(TString what, TString name) const
   TTask * task = 0 ; 
   while((task = static_cast<TTask *>(it.Next()) )){
     TString taskname(task->GetName()) ;
-    if(taskname.BeginsWith(name)){
-    return task ;}
+    if(taskname.BeginsWith(name))
+      return task ;
   }
   
   if(fDebug)

@@ -50,9 +50,6 @@
 #pragma link C++ class  AliGenReaderTreeK++;
 #pragma link C++ class  AliGenReaderEcalHijing++;
 #pragma link C++ class  AliGenReaderEcalJets++;
-#pragma link C++ class  AliGenGeVSim+;
-#pragma link C++ class  AliGeVSimParticle+;
-#pragma link C++ class  AliGenThetaSlice+; 
 #endif
 
 

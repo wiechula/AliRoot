@@ -1,11 +1,4 @@
-// $Id$
-// Category: global
-//
-// Author: I. Hrivnacova
-//
-// Class TG4UICmdWithAComplexString
-// --------------------------------
-// See the class description in the header file.
+// $ Id:$
 
 #include "TG4UICmdWithAComplexString.h"
 

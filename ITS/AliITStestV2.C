@@ -11,7 +11,7 @@ Int_t AliITStestV2(Char_t SlowOrFast='s') {
       cerr<<"Can't find gAlice !\n";
       return 2;
    }
-   AliKalmanTrack::SetConvConst(1000/0.299792458/gAlice->Field()->SolenoidField());
+   AliKalmanTrack::SetConvConst(100/0.299792458/0.2/gAlice->Field()->Factor());
    delete gAlice; gAlice=0;
    in->Close();
 

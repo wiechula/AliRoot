@@ -21,7 +21,7 @@ void hits2digits()
   AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer","Digitizer class");
 
   // Set the parameter
-  digitizer->SetDebug(1);
+  digitizer->SetVerbose(1);
 
   // Open the AliRoot file
   digitizer->Open(alifile);

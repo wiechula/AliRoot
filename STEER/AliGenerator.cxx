@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.17  2001/11/26 15:46:35  morsch
-Set default value for vertex truncation in constructor.
-
 Revision 1.16  2001/10/16 08:45:37  morsch
 All vertex truncation and event vertex moved here.
 
@@ -205,10 +202,7 @@ AliGenerator::~AliGenerator()
   //
   fOrigin.Set(0);
   fOsigma.Set(0);
-  if (fgMCEvGen) {
-    delete fgMCEvGen;
-    fgMCEvGen=0;
-  }
+  delete fgMCEvGen;
 }
 
 void AliGenerator::Init()

@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.13  2001/03/27 11:01:04  morsch
-Charm pt-distribution corrected. More realistic y-distribution for pi and K.
-
 Revision 1.12  2001/03/09 13:01:41  morsch
 - enum constants for paramterisation type (particle family) moved to AliGen*lib.h
 - use AliGenGSIlib::kUpsilon, AliGenPHOSlib::kEtaPrime to access the constants
@@ -270,60 +267,7 @@ Double_t AliGenMUONlib::YPhi( Double_t *px, Double_t *dummy)
 Int_t AliGenMUONlib::IpPhi(TRandom *)
 {
 // Phi composition
-    return 333;
-}
-
-//
-//                        omega
-//
-//
-//    pt-distribution (by scaling of pion distribution)
-//____________________________________________________________
-Double_t AliGenMUONlib::PtOmega( Double_t *px, Double_t *dummy)
-{
-// Omega pT
-  return PtScal(*px,5);
-}
-//    y-distribution
-Double_t AliGenMUONlib::YOmega( Double_t *px, Double_t *dummy)
-{
-// Omega y
-    Double_t *dum=0;
-    return YJpsi(px,dum);
-}
-//                 particle composition
-//
-Int_t AliGenMUONlib::IpOmega(TRandom *)
-{
-// Omega composition
-    return 223;
-}
-
-
-//
-//                        Eta
-//
-//
-//    pt-distribution (by scaling of pion distribution)
-//____________________________________________________________
-Double_t AliGenMUONlib::PtEta( Double_t *px, Double_t *dummy)
-{
-// Eta pT
-  return PtScal(*px,3);
-}
-//    y-distribution
-Double_t AliGenMUONlib::YEta( Double_t *px, Double_t *dummy)
-{
-// Eta y
-    Double_t *dum=0;
-    return YJpsi(px,dum);
-}
-//                 particle composition
-//
-Int_t AliGenMUONlib::IpEta(TRandom *)
-{
-// Eta composition
-    return 221;
+    return 41;
 }
 
 //
@@ -427,12 +371,6 @@ GenFunc AliGenMUONlib::GetPt(Int_t param,  const char* tname)
     case kPhi:
 	func=PtPhi;
 	break;
-    case kOmega:
-	func=PtOmega;
-	break;
-    case kEta:
-	func=PtEta;
-	break;
     case kJpsi:
 	func=PtJpsi;
 	break;
@@ -467,12 +405,6 @@ GenFunc AliGenMUONlib::GetY(Int_t param, const char* tname)
     case kPhi:
 	func=YPhi;
 	break;
-    case kEta:
-	func=YEta;
-	break;
-    case kOmega:
-	func=YOmega;
-	break;
     case kJpsi:
 	func=YJpsi;
 	break;
@@ -506,12 +438,6 @@ GenFuncIp AliGenMUONlib::GetIp(Int_t param,  const char* tname)
     {
     case kPhi:
 	func=IpPhi;
-	break;
-    case kEta:
-	func=IpEta;
-	break;
-    case kOmega:
-	func=IpOmega;
 	break;
     case kJpsi:
 	func=IpJpsi;

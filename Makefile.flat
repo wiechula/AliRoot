@@ -7,12 +7,6 @@
 ##### include general path/location macros #####
 override ALICE_ROOT=$(shell pwd)
 
-ifdef ALIVERBOSE
-MUTE:=
-else
-MUTE:=@
-endif
-
 include build/Makefile.config
 ################################################################## 
 # 
@@ -39,8 +33,6 @@ override ALICE_TARGET:=$(ALICE_TARGET)DEBUG
 FFLAGS := -g $(filter-out -O%,$(FFLAGS))
 CXXFLAGS := -g $(filter-out -O%,$(CXXLAGS))
 CFLAGS := -g $(filter-out -O%,$(CLAGS))
-SOFLAGS := -g $(filter-out -O%,$(SOFLAGS))
-LDFLAGS := -g $(filter-out -O%,$(LDFLAGS))
 endif
 ##################################################################
 
@@ -55,7 +47,10 @@ ALIROOTMODULES:= STEER \
          CASTOR RICH START STRUCT EVGEN RALICE ALIFAST \
 	 THijing CONTAINERS MEVSIM TMEVSIM THbtp HBTP EMCAL HBTAN
 
+#ALIROOTMODULES:= HBTP
+
 CERNMODULES:= PDF PYTHIA PYTHIA6 GEANT321 MINICERN HIJING
+
 
 MODULES:=$(ALIROOTMODULES) $(CERNMODULES)
 
@@ -72,12 +67,19 @@ MODDIRS := MODULES
 #      The module directory will be added by each module
 #
 
+CXXFLAGS += $(patsubst %,-I%,$(ALICE_ROOT))
 CXXFLAGS += -I$(ALICE_ROOT)/include
 CXXFLAGS += $(patsubst %,-I%,$(ROOTSYS)/include)
 
+FFLAGS += $(patsubst %,-I%,$(ALICE_ROOT))
+FFLAGS += -I$(ALICE_ROOT)/include
+FFLAGS += $(patsubst %,-I%,$(ROOTSYS)/include)
+
+CINTFLAGS += $(patsubst %,-I%,$(ALICE_ROOT))
 CINTFLAGS += -I$(ALICE_ROOT)/include
 CINTFLAGS += $(patsubst %,-I%,$(ROOTSYS)/include)
 
+DEPINC += $(patsubst %,-I%,$(ALICE_ROOT))
 DEPINC  += -I$(ALICE_ROOT)/include
 DEPINC += $(patsubst %,-I%,$(ROOTSYS)/include)
 #############################################################
@@ -99,14 +101,15 @@ default:     alilibs  aliroot
 #
 #            Each module will add to this
 
-ALLLIBS      :=
-ALLEXECS     :=
+ALLLIBS :=
+ALLEXECS :=
 INCLUDEFILES :=
-BINLIBS      := 
-EXPORTFILES  := 
+BINLIBS := 
+EXPORTFILES := 
 #############################################################
 
-BINLIBDIRS   := -L$(ALICE_ROOT)/$(LIBPATH)
+BINLIBDIRS := -L$(ALICE_ROOT)/$(LIBPATH)
+
 
 
 #Dependencies of module.mk files
@@ -116,10 +119,8 @@ include build/module.dep
 #############################################################
 # 
 #        Check if module.mk is present for the library
-%.mk: build/module.tpl
-ifndef ALIQUIET
+%.mk:
 	@echo "***** Creating $@ file *****";
-endif
 	@share/alibtool mkmodule  $(patsubst %/module.mk,%,$@) > $@;
 #############################################################
 
@@ -129,8 +130,9 @@ endif
 #             dependencies or module.mk files.
 
 ifeq ($(findstring $(MAKECMDGOALS), clean clean-all clean-dicts clean-modules clean-depend clean-objects clean-libs clean-bins),)
+#ifneq ($(findstring clean,$(MAKECMDGOALS)),clean)
 
-#            If making modules, not not include
+#            If makeing modules, not not include
 #                       anything
 
 ifneq ($(findstring modules,$(MAKECMDGOALS)),modules)
@@ -172,6 +174,8 @@ modules: $(patsubst %,%/module.mk,$(MODULES))
 
 aliroot: $(BINPATH) $(ALLEXECS) alilibs bin
 
+#haders: $(EXPORTFILES)
+
 alilibs: $(LIBPATH) $(ALLLIBS) lib modules
 
 # Single Makefile "distribution": Makefile + modules + mkdepend scripts
@@ -184,9 +188,7 @@ all: aliroot
 depend: $(INCLUDEFILES) 
 
 debug:
-ifndef ALIQUIET
 	@echo "***** Entering DEBUG mode. *****"
-endif
 	@(export ALIDEBUG=YES && $(MAKE) -f Makefile.flat )
 lib: 
 	@mkdir lib
@@ -197,22 +199,16 @@ bin:
 	@mkdir bin/tgt_$(ALICE_TARGET)
 
 $(MODULES):
-ifndef ALIQUIET
 	@echo "***** Making $@ *****"
-endif
-	@mkdir -p $@
+	mkdir -p $@
 
 $(BINPATH):
-ifndef ALIQUIET
 	@echo "***** Making $@ *****"
-endif
-	@mkdir -p $@
+	mkdir -p $@
 
 $(LIBPATH):
-ifndef ALIQUIET
 	@echo "***** Making $@ *****"
-endif
-	@mkdir -p $@
+	mkdir -p $@
 
 build/dummy.d: $(EXPORTFILES)
 	@(if [ ! -f $@ ] ; then \
@@ -220,7 +216,7 @@ build/dummy.d: $(EXPORTFILES)
 	fi)
 
 clean:
-	@echo "***** No targen clean, use one of these *****"
+	@echo "***** No targen clean, use on of these *****"
 	@echo "	clean-aliroot     : Clean up all aliroot libraries"
 	@echo "	clean-MODULENAME  : Clean everything from module MODULENAME"
 	@echo "	clean-all         : Cleans up everything, including cern libraires"
@@ -228,49 +224,50 @@ clean:
 	@echo "	clean-libs        : Clean all libraries (not object files)"
 	@echo "********************************************"
 
-clean-all: clean-modules clean-libs clean-bins
-ifndef ALIQUIET
+clean-all: clean-modules
 	@echo "***** Cleaning up everything ****"
-endif
-	$(MUTE)rm -rf $(patsubst %,%/tgt_$(ALICE_TARGET),$(MODULES))
-	$(MUTE)rm -rf $(EXPORTDIR)
+	rm -rf $(patsubst %,%/module.mk,$(MODULES)) 
+	rm -rf $(patsubst %,%/tgt_$(ALICE_TARGET),$(MODULES))
+	rm -rf lib/tgt_$(ALICE_TARGET)
+	rm -rf bin/tgt_$(ALICE_TARGET)
+	rm -rf $(EXPORTDIR)
 
 #This cleans only libraries that are not CERN-libraries
 
 clean-aliroot:   $(patsubst %,%/module.mk,$(ALIROOTMODULES)) $(patsubst %,clean-%,$(ALIROOTMODULES))
 
 clean-dicts:
-ifndef ALIQUIET
 	@echo "***** Cleaning up G__ files *****"
-endif
-	$(MUTE)rm -rf */tgt_$(ALICE_TARGET)/G__*
-
+	rm -rf */tgt_$(ALICE_TARGET)/G__*
 clean-modules:
-ifndef ALIQUIET
 	@echo "***** Cleaning up module.mk files *****"
-endif
-	$(MUTE)rm -rf $(patsubst %,%/module.mk,$(MODULES)) 
+	rm -rf $(patsubst %,%/module.mk,$(MODULES)) 
 
 clean-depend:
-ifndef ALIQUIET
 	@echo "***** Cleaning up dependencies *****"
-endif
-	$(MUTE)echo rm `find . -name "*.d"`
+	rm -rf */tgt_$(ALICE_TARGET)/*.d
+	rm -rf */tgt_$(ALICE_TARGET)/*/*.d
+	rm -rf */tgt_$(ALICE_TARGET)/*/*/*.d
+	rm -rf */tgt_$(ALICE_TARGET)/*/*/*/*.d
 
 clean-objects:
-ifndef ALIQUIET
 	@echo "***** Cleaning up .o files *****"
-endif
-	$(MUTE)echo rm `find . -name "*.o"`
+	rm -rf */tgt_$(ALICE_TARGET)/*.o
+	rm -rf */tgt_$(ALICE_TARGET)/*/*.o
+	rm -rf */tgt_$(ALICE_TARGET)/*/*/*.o
+	rm -rf */tgt_$(ALICE_TARGET)/*/*/*/*.o
 
 clean-libs:
-ifndef ALIQUIET
 	@echo "***** Cleaning up library files *****"
-endif
-	$(MUTE)rm -rf lib/tgt_$(ALICE_TARGET)/*
+	rm -rf lib/tgt_$(ALICE_TARGET)/*
 
 clean-bins:
-ifndef ALIQUIET
 	@echo "***** Cleaning up binary files *****"
-endif
-	$(MUTE)rm -rf bin/tgt_$(ALICE_TARGET)
+	rm -rf bin/tgt_$(ALICE_TARGET)
+
+
+
+
+
+
+

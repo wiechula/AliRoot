@@ -36,7 +36,6 @@
 // ---------
 //
 // AliSignal s;
-// s.SetName("Start counter");
 // Float_t pos[3]={-1,25,7};
 // Float_t err[3]={0.03,0.7,0.18};
 // Float_t signal=120.8;
@@ -54,10 +53,9 @@
 // AliSignal q(3); // q can store 3 signal values with their errors
 //                 // In the example below a signal contains the
 //                 // following data : timing, ADC and dE/dx
-// q.SetName("TOF hit");
 // q.SetPosition(pos,"car");
 // q.SetPositionErrors(err,"car");
-// signal=82.5; // e.g. signal time in ns
+// signal=82.5; // e.q. signal time in ns
 // error=2.01;
 // q.SetSignal(signal,1);
 // q.SetSignalError(error,1);
@@ -85,7 +83,6 @@ AliSignal::AliSignal(Int_t n)
  fNvalues=n;
  fSignal=0;
  fDsignal=0;
- fName=" ";
 }
 ///////////////////////////////////////////////////////////////////////////
 AliSignal::~AliSignal()
@@ -233,7 +230,7 @@ Float_t AliSignal::GetSignalError(Int_t j)
 void AliSignal::Info(TString f)
 {
 // Provide signal information within the coordinate frame f
- cout << " *AliSignal::Info* For signal of kind : " << fName << endl;
+ cout << " *AliSignal::Info* " << endl;
  cout << " Position";
  Ali3Vector::Info(f); 
  
@@ -246,16 +243,4 @@ void AliSignal::Info(TString f)
   }
  }
 } 
-///////////////////////////////////////////////////////////////////////////
-void AliSignal::SetName(TString name)
-{
-// Set the name tag to indicate the kind of signal.
- fName=name;
-}
-///////////////////////////////////////////////////////////////////////////
-TString AliSignal::GetName()
-{
-// Provide the name tag indicating the kind of signal.
- return fName;
-}
 ///////////////////////////////////////////////////////////////////////////

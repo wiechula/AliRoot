@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.11  2001/11/19 08:44:08  cblume
-Fix bugs reported by Rene
-
 Revision 1.10  2001/08/30 09:31:22  hristov
 The operator[] is replaced by At() or AddAt() in case of TObjArray.
 
@@ -113,8 +110,8 @@ AliTRDsegmentArrayBase::AliTRDsegmentArrayBase(Text_t *classname, Int_t n)
   SetClass(classname);
 
   if (MakeArray(n) == kFALSE) {
-    Error("AliTRDsegmentArrayBase","Cannot allocate %d segments in memory",n);
-    return;
+     Error("AliTRDsegmentArrayBase","Cannot allocate %d segments in memory",n);
+     return;
   }
 
 }
@@ -142,7 +139,7 @@ AliTRDsegmentArrayBase::~AliTRDsegmentArrayBase()
     delete fSegment;
   }
 
-  //if (fTree)      delete fTree;
+  if (fTree)      delete fTree;
   if (fTreeIndex) delete fTreeIndex;
 
 }
@@ -216,7 +213,7 @@ Bool_t AliTRDsegmentArrayBase::SetClass(Text_t *classname)
 }
 
 //_____________________________________________________________________________
-AliTRDsegmentID *AliTRDsegmentArrayBase::NewSegment()
+AliTRDsegmentID * AliTRDsegmentArrayBase::NewSegment()
 {
   //
   // Create a new object according to the class information

@@ -31,10 +31,9 @@ AliHBTAnalysis::AliHBTAnalysis()
    fNTrackFunctions = 0;
    fNParticleFunctions = 0;
    fNParticleAndTrackFunctions = 0;
-  
+   
    fPairCut = new AliHBTEmptyPairCut();//empty cut - accepts all particles
    
-   fBufferSize = 2; 
  }
 /*************************************************************************************/ 
 
@@ -165,8 +164,6 @@ void AliHBTAnalysis::ProcessTracksAndParticles()
   AliHBTPair * tmptrackpair;//temprary pointers to pairs
   AliHBTPair * tmppartpair;
   
-  
-  
   for (Int_t i = 0;i<Nev;i++)
     {
       partEvent= fReader->GetParticleEvent(i);
@@ -223,7 +220,7 @@ void AliHBTAnalysis::ProcessTracksAndParticles()
   /***************************************/
   /***** Filling denominators    *********/
   /***************************************/
-  for (Int_t i = 0;i<Nev-1;i++)   //In each event (but last) ....
+  for (Int_t i = 0;i<Nev;i++)   //In each event ....
     {
       
       partEvent= fReader->GetParticleEvent(i);
@@ -235,23 +232,17 @@ void AliHBTAnalysis::ProcessTracksAndParticles()
       
       for (Int_t j = 0; j< partEvent->GetNumberOfParticles(); j++) // ... Loop over all particles ...
        {
+//         if (N>MAXCOMB) break;
            
            part1= partEvent->GetParticle(j);
 
            track1= trackEvent->GetParticle(j);
  
+//         for (Int_t k = i+1; k<Nev;k++)  //  ... Loop over all proceeding events ...
            Int_t NNN;
-           
-           if ( ((i+fBufferSize) >= Nev) ||( fBufferSize < 0) ) //if buffer size is negative 
-                                                                //or current event+buffersize is greater
-                                                                //than max nuber of events
-            {
-             NNN = Nev; //set the max event number 
-            }
-           else 
-            {
-             NNN = i+fBufferSize; //set the current event number + fBufferSize
-            }
+  
+           if ( (i+2) < Nev) NNN = i+2;
+           else NNN = Nev;
  
            for (Int_t k = i+1; k<NNN;k++)  // ... Loop over next event
             {
@@ -370,7 +361,7 @@ void AliHBTAnalysis::ProcessTracks()
   /***************************************/
   /***** Filling diff histogram *********/
   /***************************************/
-  for (Int_t i = 0;i<Nev-1;i++)   //In each event (but last) ....
+  for (Int_t i = 0;i<Nev;i++)   //In each event ....
     {
       trackEvent = fReader->GetTrackEvent(i);
       if (!trackEvent) continue;
@@ -382,18 +373,11 @@ void AliHBTAnalysis::ProcessTracks()
            
            track1= trackEvent->GetParticle(j);
  
+//         for (Int_t k = i+1; k<Nev;k++)  //  ... Loop over all proceeding events ...
            Int_t NNN;
-           
-           if ( ((i+fBufferSize) >= Nev) ||( fBufferSize < 0) ) //if buffer size is negative 
-                                                                //or current event+buffersize is greater
-                                                                //than max nuber of events
-            {
-             NNN = Nev; //set the max event number 
-            }
-           else 
-            {
-             NNN = i+fBufferSize; //set the current event number + fBufferSize
-            }
+  
+           if ( (i+2) < Nev) NNN = i+2;
+           else NNN = Nev;
  
            for (Int_t k = i+1; k<NNN;k++)  // ... Loop over next event
             {
@@ -452,12 +436,10 @@ void AliHBTAnalysis::ProcessParticles()
   
   Int_t Nev = fReader->GetNumberOfPartEvents();
   
- // Nev = 1;
   /***************************************/
   /******   Looping same events   ********/
   /******   filling numerators    ********/
   /***************************************/
-  
   for (Int_t i = 0;i<Nev;i++)
     {
       partEvent= fReader->GetParticleEvent(i);
@@ -500,7 +482,7 @@ void AliHBTAnalysis::ProcessParticles()
   /***************************************/
   /***** Filling diff histogram *********/
   /***************************************/
-  for (Int_t i = 0;i<Nev-1;i++)   //In each event (but last)....
+  for (Int_t i = 0;i<Nev;i++)   //In each event ....
     {
       partEvent= fReader->GetParticleEvent(i);
       if (!partEvent) continue;
@@ -513,20 +495,12 @@ void AliHBTAnalysis::ProcessParticles()
            
            part1= partEvent->GetParticle(j);
  
+//         for (Int_t k = i+1; k<Nev;k++)  //  ... Loop over all proceeding events ...
            Int_t NNN;
-           
-           if ( ((i+fBufferSize) >= Nev) ||( fBufferSize < 0) ) //if buffer size is negative 
-                                                                //or current event+buffersize is greater
-                                                                //than max nuber of events
-            {
-             NNN = Nev; //set the max event number 
-            }
-           else 
-            {
-             NNN = i+fBufferSize; //set the current event number + fBufferSize
-            }
-           
-//           cout<<"NNN = "<<NNN<<endl;
+  
+           if ( (i+2) < Nev) NNN = i+2; //loop over next event
+           else NNN = Nev;
+ 
            for (Int_t k = i+1; k<NNN;k++)  // ... Loop over next event
             {
              

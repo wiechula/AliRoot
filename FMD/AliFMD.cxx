@@ -335,25 +335,22 @@ void AliFMD::SetTreeAddress ()
 }
 
 //---------------------------------------------------------------------
-
 void AliFMD::SetRingsSi1(Int_t ringsSi1)
 {
-  //  fRingsSi1=ringsSi1;
-  fRingsSi1=256;
+  fRingsSi1=ringsSi1;
 }
 void AliFMD::SetSectorsSi1(Int_t sectorsSi1)
 {
-  fSectorsSi1=20;
+  fSectorsSi1=sectorsSi1;
 }
 void AliFMD::SetRingsSi2(Int_t ringsSi2)
 {
-  fRingsSi2=128;
+  fRingsSi2=ringsSi2;
 }
 void AliFMD::SetSectorsSi2(Int_t sectorsSi2)
 {
-  fSectorsSi2=40;
+  fSectorsSi2=sectorsSi2;
 }
-
 //---------------------------------------------------------------------
 
 void AliFMD::SDigits2Digits() 
@@ -370,7 +367,7 @@ void AliFMD::SDigits2Digits()
     cout<<"AliFMD::SDigits2Digits Init"<<endl; 
     fMerger->Digitise();
     cout<<"AliFMD::SDigits2Digits Digitise() "<<endl; 
- 
+
 
 }
 //---------------------------------------------------------------------

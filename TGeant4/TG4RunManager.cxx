@@ -276,10 +276,6 @@ void TG4RunManager::LateInitialize()
   // print statistics
   TG4GeometryServices::Instance()->PrintStatistics(true, false);  
   TG4SDServices::Instance()->PrintStatistics(false, true);  
-
-  if (VerboseLevel() > 2) {
-    TG4GeometryServices::Instance()->PrintLogicalVolumeStore();  
-  }
 }
 
 //_____________________________________________________________________________

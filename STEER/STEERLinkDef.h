@@ -27,7 +27,6 @@
 #pragma link C++ class  AliMagF+;
 #pragma link C++ class  AliMagFC+;
 #pragma link C++ class  AliMagFCM+;
-#pragma link C++ class  AliMagFMaps+;
 #pragma link C++ class  AliMagFDM+;
 #pragma link C++ class  AliMC+;
 #pragma link C++ class  AliLego+;
@@ -54,11 +53,8 @@
 #pragma link C++ class  AliRunDigitizer+;
 #pragma link C++ class  AliStream+;
 #pragma link C++ class  AliMergeCombi+;
-#pragma link C++ class  AliFieldMap-;
-#pragma link C++ class  AliGausCorr+;
 
 #endif
-
 
 
 

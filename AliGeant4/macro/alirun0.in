@@ -25,9 +25,6 @@
 /aliDet/list
 /aliRun/initialize
 
-/process/eLoss/subsec true
-/process/eLoss/minsubsec 2 cm
-
 #/aliDet/printMaterials
 
 /tg4Control/rootCmd TStopwatch timer;

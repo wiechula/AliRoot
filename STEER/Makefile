@@ -21,10 +21,8 @@ SRCS          = AliDetector.cxx	AliHeader.cxx	AliMagF.cxx \
 		AliKalmanTrack.cxx AliCluster.cxx AliTracker.cxx\
 		AliMCQA.cxx AliPDG.cxx AliDebugVolume.cxx \
 		AliGenEventHeader.cxx AliStack.cxx AliConfig.cxx \
-		AliRunDigitizer.cxx AliDigitizer.cxx\
-		AliStream.cxx AliMergeCombi.cxx \
-		AliMagFMaps.cxx AliFieldMap.cxx \
-        AliGausCorr.cxx
+		AliRunDigitizer.cxx AliDigitizer.cxx AliStream.cxx \
+		AliMergeCombi.cxx
 
 # C++ Headers
 
@@ -72,7 +70,7 @@ $(DICT):				$(HDRS)
 
 depend:					$(SRCS)
 
-HEADERS 	= $(SRCS:.cxx=.h) AliPDG.h AliConst.h AliCallf77.h AliMCProcess.h AliConfig.h AliGenEventHeader.h AliGausCorr.h
+HEADERS 	= $(SRCS:.cxx=.h) AliPDG.h AliConst.h AliCallf77.h AliMCProcess.h AliConfig.h AliGenEventHeader.h
 
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
 

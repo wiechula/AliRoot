@@ -56,8 +56,6 @@ class AliITS : public AliDetector {
     //-------------------- Geometry Transformations --------------------
     // ITS geometry functions
     AliITSgeom   *GetITSgeom() const {return fITSgeom;}
-    // Sets ITS geometry ! be very careful using this function.
-    void   SetITSgeom(AliITSgeom *geom) {fITSgeom = geom;}
     // return pointer to the array of modules
     TObjArray    *GetModules() const {return fITSmodules;}
     // return pointer to a particular module
@@ -105,7 +103,6 @@ class AliITS : public AliDetector {
     //===================== Digitisation ===============================
     void MakeBranchS(const char *file);
     void SetTreeAddressS(TTree *treeS);
-    TClonesArray * GetSDigits() { return fSDigits; }
     void MakeBranchInTreeD(TTree *treeD,const char *file=0);
     void MakeBranchD(const char *file){
 	MakeBranchInTreeD(gAlice->TreeD(),file);}
@@ -185,7 +182,8 @@ class AliITS : public AliDetector {
     Int_t        fNDetTypes;   // Number of detector types
     TObjArray    *fDetTypes;   // List of detector types
 
-    TClonesArray    *fSDigits;    // List of Summable digits.
+//    TObjArray    *fSDigits;    // List of Summable digits.
+    TClonesArray  *fSDigits;   // List of Summable digits.
     Int_t         fNSDigits;   // Number of Summable Digits.
 
     TObjArray    *fDtype;      // List of digits

@@ -38,7 +38,7 @@ Int_t AliTRDanalyzeHits()
 
   Float_t rmin   = geo->Rmin();
   Float_t rmax   = geo->Rmax();
-  Float_t length = geo->GetChamberLength(0,2);
+  Float_t length = geo->GetChamberLengthI(0);
   Float_t width  = geo->GetChamberWidth(0);
   Int_t   ncol   = geo->GetColMax(0);
   Int_t   nrow   = geo->GetRowMax(0,2,13);
@@ -86,13 +86,15 @@ Int_t AliTRDanalyzeHits()
     Int_t nTotE  = 0;
     Int_t nTotP  = 0;    
 
+    // Get the number of hits in the TRD created by this particle
+    Int_t nHit = trd->Hits()->GetEntriesFast();
+
     // Loop through the TRD hits  
-    Int_t iHit = 0;
-    AliTRDhit *hit = (AliTRDhit *) trd->FirstHit(-1);
-    while (hit) {
+    for (Int_t iHit = 0; iHit < nHit; iHit++) {
 
       countHits++;
-      iHit++;
+
+      AliTRDhit *hit = (AliTRDhit *) trd->Hits()->UncheckedAt(iHit);
 
       Float_t x     = hit->X();
       Float_t y     = hit->Y();
@@ -102,20 +104,20 @@ Int_t AliTRDanalyzeHits()
       Int_t   det   = hit->GetDetector();
       Int_t   plane = geo->GetPlane(det);
 
-      if      (q > 0) {
+      if      (hit->FromDrift()) {
         hQdedx->Fill(q);
         hZY->Fill(z,y);
         if (plane == 0) {
           hXZ->Fill(x,z);
 	}
       }
-      else if (q < 0) {
+      else if (hit->FromTRphoton()) {
         hQtr->Fill(TMath::Abs(q));
       }
 
       TParticle *part = gAlice->Particle(track);
 
-      if ((plane == 0) && (q > 0)) {
+      if ((plane == 0) && (hit->FromDrift())) {
 
         // 3 GeV electrons
         if ((part->GetPdgCode() ==   11) && 
@@ -133,14 +135,12 @@ Int_t AliTRDanalyzeHits()
 
       }
 
-      hit = (AliTRDhit *) trd->NextHit();         
-
     }
 
-    if (nPrimE > 0) hNprimE->Fill(((Double_t) nPrimE)/3.7);
-    if (nPrimP > 0) hNprimP->Fill(((Double_t) nPrimP)/3.7);
-    if (nTotE  > 0) hNtotE->Fill(((Double_t) nTotE)/3.7);
-    if (nTotP  > 0) hNtotP->Fill(((Double_t) nTotP)/3.7);
+    if (nPrimE > 0) hNprimE->Fill(((Double_t) nPrimE)/3.);
+    if (nPrimP > 0) hNprimP->Fill(((Double_t) nPrimP)/3.);
+    if (nTotE  > 0) hNtotE->Fill(((Double_t) nTotE)/3.);
+    if (nTotP  > 0) hNtotP->Fill(((Double_t) nTotP)/3.);
 
   }
 

@@ -1,5 +1,5 @@
 // $Id$
-// Category: global
+// Category: physics
 //
 // Author: I. Hrivnacova
 //

@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.3  2001/10/21 18:35:19  hristov
-A pointer was set to zero in the default constructor to avoid memory management problems
-
 Revision 1.2  2001/08/30 09:48:12  hristov
 The operator[] is replaced by At() or AddAt() in case of TObjArray.
 
@@ -165,7 +162,7 @@ void AliLHC::Evaluate()
   //
   // Loop over generators and initialize
   while((region = (AliLhcIRegion*)nextregion())) {
-    region->DrawPlots();
+    region->Draw();
   }
   
   TIter next(fProcesses);
@@ -173,10 +170,10 @@ void AliLHC::Evaluate()
   //
   // Evolve for each process
   while((process = (AliLhcProcess*)next())) {
-    process->DrawPlots();
+    process->Draw();
   }
   
-  Beam(0)->DrawPlots();
+  Beam(0)->Draw();
 }
    
 AliLHC& AliLHC::operator=(const  AliLHC & rhs)

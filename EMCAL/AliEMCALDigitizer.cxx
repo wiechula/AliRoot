@@ -86,20 +86,20 @@ ClassImp(AliEMCALDigitizer)
   // ctor
 
   fSDigitizer = 0 ;
-  fNinputs = 0 ;
-  fPinNoise = 0.0 ;
-  fTowerDigitThreshold = 0.0 ;
-  fTimeResolution     = 0. ;
-  fTimeSignalLength   = 0. ;
-  fPreShowerDigitThreshold = 0. ;
-  fADCchannelTower = 0.0;      // width of one ADC channel in GeV
-  fADCpedestalTower = 0. ;      // pedestal of ADC
-  fNADCTower = 0;  // number of channels in Tower ADC
+  fNinputs = 1 ;
+  fPinNoise = 0.00001 ;
+  fTowerDigitThreshold = 0.001 ;
+  fTimeResolution     = 0.5e-9 ;
+  fTimeSignalLength   = 1.0e-9 ;
+  fPreShowerDigitThreshold = fTowerDigitThreshold/25. ;
+  fADCchannelTower = 0.000160;      // width of one ADC channel in GeV
+  fADCpedestalTower = 0.005 ;      // pedestal of ADC
+  fNADCTower = (Int_t) TMath::Power(2,16) ;  // number of channels in Tower ADC
 
-  fADCchannelPreSho  = 0.0;          // width of one ADC channel in Pre Shower
-  fADCpedestalPreSho = 0.0 ;         // pedestal of ADC
-  fNADCPreSho = 0;      // number of channels in Pre Shower ADC
-  fTimeThreshold = 0.0; //Means 1 MeV in terms of SDigits amplitude
+  fADCchannelPreSho  = 0.00000170;          // width of one ADC channel in Pre Shower
+  fADCpedestalPreSho = 0.005 ;         // pedestal of ADC
+  fNADCPreSho = (Int_t) TMath::Power(2,12);      // number of channels in Pre Shower ADC
+  fTimeThreshold = 0.001*10000000 ; //Means 1 MeV in terms of SDigits amplitude
   fManager = 0 ;
 
 
@@ -118,11 +118,11 @@ Bool_t AliEMCALDigitizer::Init()
   fTimeSignalLength   = 1.0e-9 ;
   fPreShowerDigitThreshold = fTowerDigitThreshold/25. ;
   fInitialized = kFALSE ;
-  fADCchannelTower = 0.000220;       // width of one ADC channel in GeV
+  fADCchannelTower = 0.000160;       // width of one ADC channel in GeV
   fADCpedestalTower = 0.005 ;      // GeV
   fNADCTower = (Int_t) TMath::Power(2,16) ;  // number of channels in Tower ADC
 
-  fADCchannelPreSho = 0.0000300;          // width of one ADC channel in Pre Shower
+  fADCchannelPreSho = 0.00000170;          // width of one ADC channel in Pre Shower
   fADCpedestalPreSho = 0.005 ;         // 
   fNADCPreSho = (Int_t) TMath::Power(2,12);      // number of channels in Pre ShowerADC
 
@@ -130,11 +130,11 @@ Bool_t AliEMCALDigitizer::Init()
  
 
 
-  if(fManager)
+if(fManager)
     SetTitle("aliroot") ;
   else if (strcmp(GetTitle(),"")==0) 
-    SetTitle("galice.root") ;
-  
+   SetTitle("galice.root") ;
+
   if( strcmp(GetName(), "") == 0 )
     SetName("Default") ;
   
@@ -167,7 +167,7 @@ Bool_t AliEMCALDigitizer::Init()
 //____________________________________________________________________________ 
 AliEMCALDigitizer::AliEMCALDigitizer(const char *headerFile,const char *name)
 {
-  SetName(name) ;
+   SetName(name) ;
   SetTitle(headerFile) ;
   fManager = 0 ;                     // We work in the standalong mode
   Init() ;
@@ -230,6 +230,7 @@ void AliEMCALDigitizer::Digitize(const Int_t event) {
     cerr << "ERROR: AliEMCALDigitizer::Digitize -> SDigitizer with name " << GetName() << " not found " << endl ; 
     abort() ; 
   }
+
 // loop through the sdigits posted to the White Board and add them to the noise
   TCollection * folderslist = gime->SDigitsFolder()->GetListOfFolders() ; 
   TIter next(folderslist) ; 
@@ -239,10 +240,8 @@ void AliEMCALDigitizer::Digitize(const Int_t event) {
   TObjArray * sdigArray = new TObjArray(2) ;
   while ( (folder = (TFolder*)next()) ) 
     if ( (sdigits = (TClonesArray*)folder->FindObject(GetName()) ) ) {
-      TString fileName(folder->GetName()) ;
-      fileName.ReplaceAll("_","/") ;
       cout << "INFO: AliEMCALDigitizer::Digitize -> Adding SDigits " 
-	   << GetName() << " from " << fileName << endl ; 
+	   << GetName() << " from " << folder->GetName() << endl ; 
       sdigArray->AddAt(sdigits, input) ;
       input++ ;
     }
@@ -365,6 +364,7 @@ void AliEMCALDigitizer::Digitize(const Int_t event) {
   
   //Set indexes in list of digits
   //Int_t i ;
+ cout << "fNADCTower = " << fNADCTower << "   fNADCPreSho = " << fNADCPreSho << endl ; 
  for (i = 0 ; i < ndigits ; i++) { 
     AliEMCALDigit * digit = (AliEMCALDigit *) digits->At(i) ; 
     digit->SetIndexInList(i) ; 
@@ -470,8 +470,8 @@ if(strcmp(GetName(), "") == 0 )
 	gime->ReadTreeS(treeS,input) ;
       }
     }
-    else 
-      gime->Event(ievent,"S") ; 
+    else
+      gime->Event(ievent,"S") ;
     
     Digitize(ievent) ; //Add prepared SDigits to digits and add the noise
     

@@ -18,20 +18,16 @@ void hits2sdigits()
   Char_t *alifile = "galice.root"; 
 
   // Create the TRD digitzer 
-  AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer"
-                                                  ,"TRD digitizer class");
+  AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer","Digitizer class");
 
   // Set the parameter
-  digitizer->SetDebug(1);
+  digitizer->SetVerbose(1);
 
   // For the summable digits
   digitizer->SetSDigits(kTRUE);
 
   // Open the AliRoot file
   digitizer->Open(alifile);
-
-  // For uncompressed hits
-  digitizer->SetHitTypeStandard();
 
   // Create the digits
   digitizer->MakeDigits();

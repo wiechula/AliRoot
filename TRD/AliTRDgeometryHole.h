@@ -21,12 +21,22 @@ class AliTRDgeometryHole : public AliTRDgeometry {
           void    SetPHOShole()       { };
           void    SetRICHhole()       { };
 
+          void    SetNRowPad();
+  virtual void    SetNRowPad(const Int_t p, const Int_t c, const Int_t npad);
+
           Bool_t  GetPHOShole() const { return kTRUE; };
           Bool_t  GetRICHhole() const { return kTRUE; };
 
  protected:
 
-  ClassDef(AliTRDgeometryHole,2)              // TRD geometry with hole
+  Float_t         fClengthI[kNplan];               // Length of the inner chambers
+  Float_t         fClengthM1[kNplan];              // Length of the middle chambers
+  Float_t         fClengthM2[kNplan];              // Length of the middle chambers
+  Float_t         fClengthO1[kNplan];              // Length of the outer chambers
+  Float_t         fClengthO2[kNplan];              // Length of the outer chambers
+  Float_t         fClengthO3[kNplan];              // Length of the outer chambers
+
+  ClassDef(AliTRDgeometryHole,1)                   // TRD geometry with hole
 
 };
 

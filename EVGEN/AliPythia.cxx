@@ -15,16 +15,6 @@
 
 /*
 $Log$
-Revision 1.19  2002/02/20 08:52:20  morsch
-Correct documentation of SetNuclei method.
-
-Revision 1.18  2002/02/07 10:43:06  morsch
-Tuned pp-min.bias settings (M.Monteno, R.Ugoccioni and N.Carrer)
-
-Revision 1.17  2001/12/19 15:40:43  morsch
-For kPyJets enforce simple jet topology, i.e no initial or final state
-gluon radiation and no primordial pT.
-
 Revision 1.16  2001/10/12 11:13:59  morsch
 Missing break statements added (thanks to Nicola Carrer)
 
@@ -163,19 +153,25 @@ void AliPythia::ProcInit(Process_t process, Float_t energy, StrucFunc_t strucfun
     case kPyMb:
 // Minimum Bias pp-Collisions
 //
+// Tuning of parameters descibed in G. Ciapetti and A. Di Ciaccio
+// Proc. of the LHC Workshop, Aachen 1990, Vol. II p. 155
 //   
 //      select Pythia min. bias model
 	SetMSEL(0);
-	SetMSUB(92,1);      // single diffraction AB-->XB
-	SetMSUB(93,1);      // single diffraction AB-->AX
-	SetMSUB(94,1);      // double diffraction
-	SetMSUB(95,1);	    // low pt production
-	SetMSTP(81,1);      // multiple interactions switched on
-	SetMSTP(82,3);      // model with varying impact param. & a single Gaussian
-	SetPARP(82,3.47);   // set value pT_0  for turn-off of the cross section of                  
-                            // multiple interaction at a reference energy = 14000 GeV
-	SetPARP(89,14000.); // reference energy for the above parameter
-	SetPARP(90,0.174);  // set exponent for energy dependence of pT_0 
+	SetMSUB(92,1);
+	SetMSUB(93,1);
+	SetMSUB(94,1);
+	SetMSUB(95,1);	
+//      Multiple interactions switched on
+	SetMSTP(81,1);
+	SetMSTP(82,2);
+//      Low-pT cut-off for hard scattering
+	SetPARP(81,1.9);
+//      model for subsequent non-hardest interaction
+//	90% gg->gg 10% gg->qq
+	SetPARP(86,0.9);
+//      90% of gluon interactions have minimum string length
+	SetPARP(85,0.9);
 	break;
     case kPyJets:
 	SetMSEL(1);
@@ -193,47 +189,10 @@ void AliPythia::ProcInit(Process_t process, Float_t energy, StrucFunc_t strucfun
     case kPyDirectGamma:
 	SetMSEL(10);
 	break;
-    case kPyCharmPbMNR:
-      // Tuning of Pythia parameters aimed to get a resonable agreement
-      // between with the NLO calculation by Mangano, Nason, Ridolfi for the
-      // c-cbar single inclusive and double differential distributions.
-      // This parameter settings are meant to work with Pb-Pb collisions
-      // (AliGenPythia::SetNuclei) and with kCTEQ_4L PDFs.
-      // To get a good agreement the minimum ptHard (AliGenPythia::SetPtHard)
-      // has to be set to 2.1GeV. Example in ConfigCharmPPR.C.
-
-      // All QCD processes
-      SetMSEL(1);
-
-      // No multiple interactions
-      SetMSTP(81,0);
-      SetPARP(81,0.0);
-      SetPARP(82,0.0);
-
-      // Initial/final parton shower on (Pythia default)
-      SetMSTP(61,1);
-      SetMSTP(71,1);
-
-      // 2nd order alpha_s
-      SetMSTP(2,2);
-
-      // QCD scales
-      SetMSTP(32,2);
-      SetPARP(34,1.0);
-
-      // Intrinsic <kT^2>
-      SetMSTP(91,1);
-      SetPARP(91,1.304);
-      SetPARP(93,6.52);
-
-      // Set c-quark mass
-      SetPMAS(4,1,1.2);
-
-      break;
     }
 //
 //  Initialize PYTHIA
-    SetMSTP(41,1);   // all resonance decays switched on
+    SetMSTP(41,1);
 
     Initialize("CMS","p","p",fEcms);
 
@@ -255,10 +214,14 @@ void AliPythia::SetNuclei(Int_t a1, Int_t a2)
 //    MSTP(52)  : (D=1) choice of proton and nuclear structure-function library
 //            =1: internal PYTHIA acording to MSTP(51) 
 //            =2: PDFLIB proton  s.f., with MSTP(51)  = 1000xNGROUP+NSET
-//    If the following mass number both not equal zero, nuclear corrections of the stf are used.
+//            =3: PDFLIB proton  s.f. with nuclar correction:
+//                MSTP( 51)  = 1000xNPGROUP+NPSET
+//                MSTP(151)  = 1000xNAGROUP+NASET
 //    MSTP(192) : Mass number of nucleus side 1
 //    MSTP(193) : Mass number of nucleus side 2
-    SetMSTP(52,2);
+
+    SetMSTP(52,3);
+    SetMSTP(191, 1001);
     SetMSTP(192, a1);
     SetMSTP(193, a2);  
 }

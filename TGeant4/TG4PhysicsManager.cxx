@@ -605,7 +605,7 @@ AliMCProcess TG4PhysicsManager::GetOpBoundaryStatus(const G4VProcess* process)
 
     // refraction
     case FresnelRefraction: 
-       return kPLightRefraction;
+       return kPLightReflection;
        ;;
 
     // absorption

@@ -15,12 +15,6 @@
 
 /*
 $Log$
-Revision 1.52  2002/02/18 09:26:09  kowal2
-Removed compiler warning
-
-Revision 1.51  2002/01/21 17:13:21  kowal2
-New track hits using root containers. Setting active sectors added.
-
 Revision 1.50  2001/12/06 14:16:19  kowal2
 meaningfull printouts
 
@@ -222,31 +216,6 @@ Introduction of the Copyright and cvs Log
 
 
 ClassImp(AliTPC) 
-
-//_____________________________________________________________________________
-// helper class for fast matrix and vector manipulation - no range checking
-// origin - Marian Ivanov
-
-class AliTPCFastMatrix : public TMatrix {
-public :
-  AliTPCFastMatrix(Int_t row_lwb, Int_t row_upb, Int_t col_lwb, Int_t col_upb);
-  inline Float_t & UncheckedAt(Int_t rown, Int_t coln) const  {return  (fIndex[coln])[rown];} //fast acces   
-  inline Float_t   UncheckedAtFast(Int_t rown, Int_t coln) const  {return  (fIndex[coln])[rown];} //fast acces   
-};
-
-AliTPCFastMatrix::AliTPCFastMatrix(Int_t row_lwb, Int_t row_upb, Int_t col_lwb, Int_t col_upb):
-  TMatrix(row_lwb, row_upb,col_lwb,col_upb)
-   {
-   };
-//_____________________________________________________________________________
-class AliTPCFastVector : public TVector {
-public :
-  AliTPCFastVector(Int_t size);
-  inline Float_t & UncheckedAt(Int_t index) const  {return  fElements[index];} //fast acces  
-};
-
-AliTPCFastVector::AliTPCFastVector(Int_t size):TVector(size){
-};
 
 //_____________________________________________________________________________
 AliTPC::AliTPC()
@@ -1183,8 +1152,8 @@ void AliTPC::Hits2ExactClustersSector(Int_t isec)
   //  Int_t sector,nhits;
   Int_t ipart;
   const Int_t kcmaxhits=30000;
-  AliTPCFastVector * xxxx = new AliTPCFastVector(kcmaxhits*4);
-  AliTPCFastVector & xxx = *xxxx;
+  TVector * xxxx = new TVector(kcmaxhits*4);
+  TVector & xxx = *xxxx;
   Int_t maxhits = kcmaxhits;
   //construct array for each padrow
   for (Int_t i=0; i<fTPCParam->GetNRow(isec);i++) 
@@ -1518,8 +1487,8 @@ void AliTPC::Merge(TTree * intree, Int_t *mask, Int_t nin, Int_t outid)
 
         if (q> zerosup){
 
-          if(q > fTPCParam->GetADCSat()) q = fTPCParam->GetADCSat();
-          digrow->SetDigitFast((Short_t)q,rows,col);  
+          if(q > fTPCParam->GetADCSat()) q = (Short_t)(fTPCParam->GetADCSat());
+          digrow->SetDigitFast(q,rows,col);  
           for (Int_t tr=0;tr<3;tr++){
             if (tr<labptr)
               ((AliSimDigits*)digrow)->SetTrackIDFast(label[tr],rows,col,tr);
@@ -1777,7 +1746,7 @@ void AliTPC::Hits2DigitsSector(Int_t isec)
 
       //--------------------------------------------------------
       //   Digitize this sector, row by row
-      //   row[i] is the pointer to the TObjArray of AliTPCFastVectors,
+      //   row[i] is the pointer to the TObjArray of TVectors,
       //   each one containing electrons accepted on this
       //   row, assigned into tracks
       //--------------------------------------------------------
@@ -1840,11 +1809,10 @@ void AliTPC::DigitizeRow(Int_t irow,Int_t isec,TObjArray **rows)
   //  Integrated signal for this row
   //  and a single track signal
   //    
-
-  AliTPCFastMatrix *m1 = new AliTPCFastMatrix(0,nofPads,0,nofTbins); // integrated
-  AliTPCFastMatrix *m2 = new AliTPCFastMatrix(0,nofPads,0,nofTbins); // single
+  TMatrix *m1   = new TMatrix(0,nofPads,0,nofTbins); // integrated
+  TMatrix *m2   = new TMatrix(0,nofPads,0,nofTbins); // single
   //
-  AliTPCFastMatrix &total  = *m1;
+  TMatrix &total  = *m1;
 
   //  Array of pointers to the label-signal list
 
@@ -1876,18 +1844,20 @@ void AliTPC::DigitizeRow(Int_t irow,Int_t isec,TObjArray **rows)
   Int_t tracks[3];
 
   AliDigits *dig = fDigitsArray->GetRow(isec,irow);
-  Int_t gi=-1;
-  Float_t fzerosup = zerosup+0.5;
-  for(Int_t it=0;it<nofTbins;it++){
-    Float_t *pq = &(total.UncheckedAt(0,it));
-    for(Int_t ip=0;ip<nofPads;ip++){
-      gi++;
-      Float_t q=*pq;      
-      pq++;
+  for(Int_t ip=0;ip<nofPads;ip++){
+    for(Int_t it=0;it<nofTbins;it++){
+
+      Float_t q = total(ip,it);
+
+      Int_t gi =it*nofPads+ip; // global index
+
       if(fDigitsSwitch == 0){
+
+	//        q = gRandom->Gaus(q,fTPCParam->GetNoise()*fTPCParam->GetNoiseNormFac()); 
 	q+=GetNoise();
-        if(q <=fzerosup) continue; // do not fill zeros
         q = TMath::Nint(q);
+
+        if(q <=zerosup) continue; // do not fill zeros
         if(q > fTPCParam->GetADCSat()) q = fTPCParam->GetADCSat();  // saturation
 
       }
@@ -1943,8 +1913,8 @@ void AliTPC::DigitizeRow(Int_t irow,Int_t isec,TObjArray **rows)
 
 //_____________________________________________________________________________
 
-Float_t AliTPC::GetSignal(TObjArray *p1, Int_t ntr, 
-             AliTPCFastMatrix *m1, AliTPCFastMatrix *m2,Int_t *indexRange)
+Float_t AliTPC::GetSignal(TObjArray *p1, Int_t ntr, TMatrix *m1, TMatrix *m2,
+                          Int_t *indexRange)
 {
 
   //---------------------------------------------------------------
@@ -1958,10 +1928,10 @@ Float_t AliTPC::GetSignal(TObjArray *p1, Int_t ntr,
   // Modified: Marian Ivanov 
   //-----------------------------------------------------------------
 
-  AliTPCFastVector *tv;
-
-  tv = (AliTPCFastVector*)p1->At(ntr); // pointer to a track
-  AliTPCFastVector &v = *tv;
+  TVector *tv;
+ 
+  tv = (TVector*)p1->At(ntr); // pointer to a track
+  TVector &v = *tv;
   
   Float_t label = v(0);
   Int_t centralPad = (fTPCParam->GetNPads(fCurrentIndex[1],fCurrentIndex[3])-1)/2;
@@ -1972,8 +1942,10 @@ Float_t AliTPC::GetSignal(TObjArray *p1, Int_t ntr,
   indexRange[2]=9999; //min time
   indexRange[3]=-1; // max time
 
-  AliTPCFastMatrix &signal = *m1;
-  AliTPCFastMatrix &total = *m2;
+  //  Float_t IneffFactor = 0.5; // inefficiency in the gain close to the edge, as above
+
+  TMatrix &signal = *m1;
+  TMatrix &total = *m2;
   //
   //  Loop over all electrons
   //
@@ -1982,28 +1954,22 @@ Float_t AliTPC::GetSignal(TObjArray *p1, Int_t ntr,
     Float_t aval =  v(idx+4);
     Float_t eltoadcfac=aval*fTPCParam->GetTotalNormFac(); 
     Float_t xyz[3]={v(idx+1),v(idx+2),v(idx+3)};
-    Int_t n = ((AliTPCParamSR*)fTPCParam)->CalcResponseFast(xyz,fCurrentIndex,fCurrentIndex[3]);
-
-    Int_t *index = fTPCParam->GetResBin(0);  
-    Float_t *weight = & (fTPCParam->GetResWeight(0));
-
-    if (n>0) for (Int_t i =0; i<n; i++){       
+    Int_t n = fTPCParam->CalcResponse(xyz,fCurrentIndex,fCurrentIndex[3]);
+    
+    if (n>0) for (Int_t i =0; i<n; i++){
+       Int_t *index = fTPCParam->GetResBin(i);        
        Int_t pad=index[1]+centralPad;  //in digit coordinates central pad has coordinate 0
-
-         if (pad>=0){
+       if ( ( pad<(fTPCParam->GetNPads(fCurrentIndex[1],fCurrentIndex[3]))) && (pad>=0)) {
 	 Int_t time=index[2];	 
-         Float_t qweight = *(weight)*eltoadcfac;
+	 Float_t weight = fTPCParam->GetResWeight(i); //we normalise response to ADC channel
+	 weight *= eltoadcfac;
 	 
-	 if (m1!=0) signal.UncheckedAt(pad,time)+=qweight;
-         total.UncheckedAt(pad,time)+=qweight;
-	 if (indexRange[0]>pad) indexRange[0]=pad;
-	 if (indexRange[1]<pad) indexRange[1]=pad;
-	 if (indexRange[2]>time) indexRange[2]=time;
-	 if (indexRange[3]<time) indexRange[3]=time;
-
-	 index+=3;
-	 weight++;	
-
+	 if (m1!=0) signal(pad,time)+=weight; 
+	 total(pad,time)+=weight;
+	 indexRange[0]=TMath::Min(indexRange[0],pad);
+	 indexRange[1]=TMath::Max(indexRange[1],pad);
+	 indexRange[2]=TMath::Min(indexRange[2],time);
+	 indexRange[3]=TMath::Max(indexRange[3],time); 
        }	 
     }
   } // end of loop over electrons
@@ -2012,8 +1978,8 @@ Float_t AliTPC::GetSignal(TObjArray *p1, Int_t ntr,
 }
 
 //_____________________________________________________________________________
-void AliTPC::GetList(Float_t label,Int_t np,AliTPCFastMatrix *m,
-                     Int_t *indexRange, Float_t **pList)
+void AliTPC::GetList(Float_t label,Int_t np,TMatrix *m,Int_t *indexRange,
+                     Float_t **pList)
 {
   //----------------------------------------------------------------------
   //  Updates the list of tracks contributing to digits for a given row
@@ -2023,7 +1989,7 @@ void AliTPC::GetList(Float_t label,Int_t np,AliTPCFastMatrix *m,
   // Origin: Marek Kowalski  IFJ, Krakow, Marek.Kowalski@ifj.edu.pl
   //-----------------------------------------------------------------
 
-  AliTPCFastMatrix &signal = *m;
+  TMatrix &signal = *m;
 
   // lop over nonzero digits
 
@@ -2131,13 +2097,12 @@ void AliTPC::MakeSector(Int_t isec,Int_t nrows,TTree *TH,
  
   //----------------------------------------------
   // Create TObjArray-s, one for each row,
-  // each TObjArray will store the AliTPCFastVectors
-  // of electrons, one AliTPCFastVectors per each track.
+  // each TObjArray will store the TVectors
+  // of electrons, one TVector per each track.
   //---------------------------------------------- 
     
   Int_t *nofElectrons = new Int_t [nrows]; // electron counter for each row
-  AliTPCFastVector **tracks = new AliTPCFastVector* [nrows]; //pointers to the track vectors
-
+  TVector **tracks = new TVector* [nrows]; //pointers to the track vectors
   for(i=0; i<nrows; i++){
     row[i] = new TObjArray;
     nofElectrons[i]=0;
@@ -2188,19 +2153,19 @@ void AliTPC::MakeSector(Int_t isec,Int_t nrows,TTree *TH,
 	   for(i=0;i<nrows;i++){
              if(previousTrack != -1){
 	       if(nofElectrons[i]>0){
-                 AliTPCFastVector &v = *tracks[i];
+	         TVector &v = *tracks[i];
 		 v(0) = previousTrack;
                  tracks[i]->ResizeTo(4*nofElectrons[i]+1); // shrink if necessary
 	         row[i]->Add(tracks[i]);                     
 	       }
                else{
-                 delete tracks[i]; // delete empty AliTPCFastVector
+                 delete tracks[i]; // delete empty TVector
                  tracks[i]=0;
 	       }
 	     }
 
              nofElectrons[i]=0;
-             tracks[i] = new AliTPCFastVector(481); // AliTPCFastVectors for the next fTrack
+             tracks[i] = new TVector(481); // TVectors for the next fTrack
 
 	   } // end of loop over rows
 	       
@@ -2257,11 +2222,13 @@ void AliTPC::MakeSector(Int_t isec,Int_t nrows,TTree *TH,
 	    }
 	  }
 	  
-          AliTPCFastVector &v = *tracks[rowNumber];
+	  TVector &v = *tracks[rowNumber];
 	  Int_t idx = 4*nofElectrons[rowNumber]-3;
-	  Real_t * position = &(((AliTPCFastVector&)v).UncheckedAt(idx)); //make code faster
-	  memcpy(position,xyz,4*sizeof(Float_t));
- 
+
+	  v(idx)=  xyz[0];   // X - pad row coordinate
+	  v(idx+1)=xyz[1];   // Y - pad coordinate (along the pad-row)
+          v(idx+2)=xyz[2];   // Z - time bin coordinate
+	  v(idx+3)=xyz[3];   // avalanche size  
 	} // end of loop over electrons
 
         tpcHit = (AliTPChit*)NextHit();
@@ -2275,7 +2242,7 @@ void AliTPC::MakeSector(Int_t isec,Int_t nrows,TTree *TH,
 
      for(i=0;i<nrows;i++){
        if(nofElectrons[i]>0){
-          AliTPCFastVector &v = *tracks[i];
+          TVector &v = *tracks[i];
 	  v(0) = previousTrack;
           tracks[i]->ResizeTo(4*nofElectrons[i]+1); // shrink if necessary
 	  row[i]->Add(tracks[i]);  
@@ -2990,8 +2957,8 @@ void AliTPC::FindTrackHitsIntersection(TClonesArray * arr)
   Int_t ipart;
   
   const Int_t kcmaxhits=30000;
-  AliTPCFastVector * xxxx = new AliTPCFastVector(kcmaxhits*4);
-  AliTPCFastVector & xxx = *xxxx;
+  TVector * xxxx = new TVector(kcmaxhits*4);
+  TVector & xxx = *xxxx;
   Int_t maxhits = kcmaxhits;
       
   //
