@@ -44,6 +44,7 @@
 #pragma link C++ class AliITSgeomSSD175+;
 #pragma link C++ class AliITSgeomSSD275and75+;
 #pragma link C++ class AliITSgeomSSD75and275+;
+#pragma link C++ class  AliITSLoader+;
 
 #pragma link C++ class  AliITSmodule+;
 #pragma link C++ class  AliITSRecPoint+;

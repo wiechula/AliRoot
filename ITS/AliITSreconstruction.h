@@ -12,6 +12,7 @@
 class AliRunLoader;
 class TString;
 class AliITS;
+class AliITSLoader;
 
 class AliITSreconstruction : public TTask{
  public:
@@ -35,9 +36,15 @@ class AliITSreconstruction : public TTask{
     Int_t   fEnt0;     //! first event to process, default 0.
     AliITS  *fITS;     //! Local pointer to ITS class.
 
+    AliITSLoader *fLoader; //! ITS loader
     AliRunLoader* fRunLoader;//!Run Loader
     
     ClassDef(AliITSreconstruction,2) // Task to Reconstruct ITS from Digits.
 
 };
 #endif
+
+
+
+
+

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.66.2.2  2002/06/06 14:23:56  hristov
+Merged with v3-08-02
+
 Revision 1.66.2.1  2002/05/31 09:37:56  hristov
 First set of changes done by Piotr
 
@@ -320,6 +323,7 @@ the AliITS class.
 #include "AliITSClusterFinderSSD.h"
 #include "AliITShit.h"
 #include "AliITSgeom.h"
+#include "AliITSLoader.h"
 #include "AliITSpList.h"
 #include "AliITSdigit.h"
 #include "AliITSmodule.h"
@@ -473,7 +477,6 @@ AliITS::~AliITS(){
 	delete fDetTypes;
     } // end if fDetTypes
 
-    if (TreeC()) delete TreeC();
 
     if (fITSgeom) delete fITSgeom;
 }
@@ -758,9 +761,9 @@ void AliITS::SetTreeAddress(){
     //      none.
     // Return:
     //      none.
-    TTree *treeS = gAlice->TreeS();
-    TTree *treeD = gAlice->TreeD();
-    TTree *treeR = gAlice->TreeR();
+    TTree *treeS = fLoader->TreeS();
+    TTree *treeD = fLoader->TreeD();
+    TTree *treeR = fLoader->TreeR();
 
     AliDetector::SetTreeAddress();
 
@@ -950,10 +953,13 @@ void AliITS::FillModules(Int_t evnt,Int_t bgrev,Int_t nmodules,
 	if(fHits2) fHits2->Clear();
 	if(trH1) delete trH1;
 	trH1=0;
-
+    /*
 	char treeName[20];
 	sprintf(treeName,"TreeH%d",bgrev);
 	trH1 = (TTree*)gDirectory->Get(treeName);
+    */
+    trH1 = TreeH();
+
 	if (!trH1) {
 	    Error("FillModules","cannot find Hits Tree for event:%d",bgrev);
 	} // end if !trH1
@@ -1012,7 +1018,7 @@ void AliITS::FillModules(Int_t evnt,Int_t bgrev,Int_t nmodules,
 		mod->AddHit(itsHit,track,i);
 	    }  // end loop over hits
 	} // end loop over tracks
-	TTree *fAli=gAlice->TreeK();
+	TTree *fAli=fLoader->GetRunLoader()->TreeK();
 	TFile *fileAli=0;
 	if (fAli) fileAli =fAli->GetCurrentFile();
 	fileAli->cd();
@@ -1044,8 +1050,8 @@ void AliITS::MakeBranchS(const char *fl){
 
     // only one branch for SDigits.
     sprintf(branchname,"%s",GetName());
-    if(fSDigits && gAlice->TreeS()){
-	MakeBranchInTree(gAlice->TreeS(),branchname,&fSDigits,buffersize,fl);
+    if(fSDigits && fLoader->TreeS()){
+	MakeBranchInTree(fLoader->TreeS(),branchname,&fSDigits,buffersize,fl);
     } // end if
 }
 //______________________________________________________________________
@@ -1140,7 +1146,7 @@ void AliITS::Hits2SDigits(){
     //      none.
 
 //    return; // Using Hits in place of the larger sDigits.
-    AliHeader *header=gAlice->GetHeader(); // Get event number from this file.
+    AliHeader *header=fLoader->GetRunLoader()->GetHeader(); // Get event number from this file.
     // Do the Hits to Digits operation. Use Standard input values.
     // Event number from file, no background hit merging , use size from
     // AliITSgeom class, option="All", input from this file only.
@@ -1154,7 +1160,7 @@ void AliITS::Hits2PreDigits(){
     // Outputs:
     //      none.
 
-    AliHeader *header=gAlice->GetHeader(); // Get event number from this file.
+    AliHeader *header=fLoader->GetRunLoader()->GetHeader(); // Get event number from this file.
     // Do the Hits to Digits operation. Use Standard input values.
     // Event number from file, no background hit merging , use size from
     // AliITSgeom class, option="All", input from this file only.
@@ -1183,7 +1189,7 @@ void AliITS::SDigitsToDigits(Option_t *opt){
 
     AliITSsimulation *sim      = 0;
     AliITSDetType    *iDetType = 0;
-    TTree            *trees    = gAlice->TreeS();
+    TTree            *trees    = fLoader->TreeS();
     if( !(trees && this->GetSDigits()) ){
 	Error("SDigits2Digits","Error: No trees or SDigits. Returning.");
 	return;
@@ -1213,15 +1219,15 @@ void AliITS::SDigitsToDigits(Option_t *opt){
         sim->FinishSDigitiseModule();
 
         // fills all branches - wasted disk space
-        gAlice->TreeD()->Fill();
+        fLoader->TreeD()->Fill();
         this->ResetDigits();
     } // end for module
 
-    gAlice->TreeD()->GetEntries();
+    fLoader->TreeD()->GetEntries();
 
-    gAlice->TreeD()->AutoSave();
+    fLoader->TreeD()->AutoSave();
     // reset tree
-    gAlice->TreeD()->Reset();
+    fLoader->TreeD()->Reset();
     
 }
 //______________________________________________________________________
@@ -1232,7 +1238,7 @@ void AliITS::Hits2Digits(){
     // Outputs:
     //      none.
 
-    AliHeader *header=gAlice->GetHeader(); // Get event number from this file.
+    AliHeader *header=fLoader->GetRunLoader()->GetHeader(); // Get event number from this file.
     // Do the Hits to Digits operation. Use Standard input values.
     // Event number from file, no background hit merging , use size from
     // AliITSgeom class, option="All", input from this file only.
@@ -1315,16 +1321,16 @@ void AliITS::HitsToPreDigits(Int_t evNumber,Int_t bgrev,Int_t size,
 	mod      = (AliITSmodule *)fITSmodules->At(module);
 	sim->SDigitiseModule(mod,module,evNumber);
 	// fills all branches - wasted disk space
-	gAlice->TreeS()->Fill(); 
+	fLoader->TreeS()->Fill(); 
 	ResetSDigits();
     } // end for module
 
     ClearModules();
 
-    gAlice->TreeS()->GetEntries();
-    gAlice->TreeS()->AutoSave();
+    fLoader->TreeS()->GetEntries();
+    fLoader->TreeS()->AutoSave();
     // reset tree
-    gAlice->TreeS()->Reset();
+    fLoader->TreeS()->Reset();
 }
 //______________________________________________________________________
 void AliITS::HitsToDigits(Int_t evNumber,Int_t bgrev,Int_t size,
@@ -1378,16 +1384,16 @@ void AliITS::HitsToDigits(Int_t evNumber,Int_t bgrev,Int_t size,
 	mod      = (AliITSmodule *)fITSmodules->At(module);
 	sim->DigitiseModule(mod,module,evNumber);
 	// fills all branches - wasted disk space
-	gAlice->TreeD()->Fill(); 
+	fLoader->TreeD()->Fill(); 
 	ResetDigits();
     } // end for module
 
     ClearModules();
 
-    gAlice->TreeD()->GetEntries();
-    gAlice->TreeD()->AutoSave();
+    fLoader->TreeD()->GetEntries();
+    fLoader->TreeD()->AutoSave();
     // reset tree
-    gAlice->TreeD()->Reset();
+    fLoader->TreeD()->Reset();
 }
 //______________________________________________________________________
 void AliITS::ResetSDigits(){
@@ -1517,93 +1523,103 @@ void AliITS::AddSimDigit(Int_t id,Float_t phys,Int_t *digits,Int_t *tracks,
 }
 //______________________________________________________________________
 void AliITS::MakeTreeC(Option_t *option){
-    //   Create a separate tree to store the clusters.
-    // Inputs:
-    //      Option_t *option  string which must contain "C" otherwise
-    //                        no Cluster Tree is created.
-    // Outputs:
-    //      none.
-    // Return:
-    //      none.
-    
-    
-    if (fLoader == 0x0)
-     {
-       Error("MakeTreeC","fLoader == 0x0");
-       return;
-     }
-    if(fLoader->TreeR())
-     {
-      fLoader->CleanRecPoints();
-    }
-    
-    const char *optC = strstr(option,"C");
-    
-    if (optC && !fLoader->TreeR()) fLoader->MakeTree("R");
-    else return;
+  //   Create a separate tree to store the clusters.
+  // Inputs:
+  //      Option_t *option  string which must contain "C" otherwise
+  //                        no Cluster Tree is created.
+  // Outputs:
+  //      none.
+  // Return:
+  //      none.
 
-    Int_t buffersize = 4000;
-    char branchname[30];
-    const char *det[3] = {"SPD","SDD","SSD"};
-    char digclass[40];
-    char clclass[40];
+  AliITSLoader *pITSLoader = (AliITSLoader*)fLoader;    
+    
+  if (pITSLoader == 0x0) {
+    Error("MakeTreeC","fLoader == 0x0");
+    return;
+  }
+
+  if(pITSLoader->LoadRawClusters("UPDATE")){
+    Error("MakeTreeC","problems in loading raw clusters");
+    return;
+  }
+
+  if(pITSLoader->TreeC()) {
+    pITSLoader->CleanRawClusters();
+  }
+    
+  const char *optC = strstr(option,"C");
+    
+  if (optC && !pITSLoader->TreeC()) pITSLoader->MakeTree("C");
+  else return;
+
+  TTree * TC = pITSLoader->TreeC();
+
+  Int_t buffersize = 4000;
+  char branchname[30];
+  const char *det[3] = {"SPD","SDD","SSD"};
+  char digclass[40];
+  char clclass[40];
 
     // one branch for Clusters per type of detector
-    Int_t i;   
-    for (i=0; i<kNTYPES ;i++) {
-        AliITSDetType *iDetType=DetType(i); 
-        iDetType->GetClassNames(digclass,clclass);
+  Int_t i;   
+  for (i=0; i<kNTYPES ;i++) {
+    AliITSDetType *iDetType=DetType(i); 
+    iDetType->GetClassNames(digclass,clclass);
 	// clusters
-        if(!ClustersAddress(i)){
-          fCtype->AddAt(new TClonesArray(clclass,1000),i);
-        }
-        if (kNTYPES==3) sprintf(branchname,"%sClusters%s",GetName(),det[i]);
+    if(!ClustersAddress(i)){
+      fCtype->AddAt(new TClonesArray(clclass,1000),i);
+    }
+    if (kNTYPES==3) sprintf(branchname,"%sClusters%s",GetName(),det[i]);
 	else  sprintf(branchname,"%sClusters%d",GetName(),i+1);
-	if (fCtype   && TreeC()) {
-	    TreeC()->Branch(branchname,&((*fCtype)[i]), buffersize);
-	} // end if fCtype && TreeC()
-    } // end for i
-  }
+	if (fCtype   && TC) {
+      TC->Branch(branchname,&((*fCtype)[i]), buffersize);
+	} // end if fCtype && TC
+  } // end for i
+}
+
 //______________________________________________________________________
 void AliITS::GetTreeC(Int_t event){
-    //    Get the clusters tree for this event and set the branch address.
-    // Inputs:
-    //      Int_t event    Event number for the cluster tree.
-    // Outputs:
-    //      none.
-    // Return:
-    //      none.
-    char branchname[30];
-    const char *det[3] = {"SPD","SDD","SSD"};
+  //    Get the clusters tree for this event and set the branch address.
+  // Inputs:
+  //      Int_t event    Event number for the cluster tree.
+  // Outputs:
+  //      none.
+  // Return:
+  //      none.
+  char branchname[30];
+  const char *det[3] = {"SPD","SDD","SSD"};
 
-    ResetClusters();
-    if (TreeC()) 
-     {
-      fLoader->CleanRecPoints();
-     } // end if TreeC()
+  AliITSLoader *pITSLoader = (AliITSLoader*)fLoader;
+  TTree * TC = pITSLoader->TreeC();
+
+  ResetClusters();
+  if (TC) {
+    pITSLoader->CleanRawClusters();
+  } // end if TreeC()
 
 
-    TBranch *branch;
+  TBranch *branch;
 
-    if (TreeC()) {
-        Int_t i;
+  if (TC) {
+    Int_t i;
 	char digclass[40];
 	char clclass[40];
 	for (i=0; i<kNTYPES; i++) {
-	    AliITSDetType *iDetType=DetType(i); 
-	    iDetType->GetClassNames(digclass,clclass);
-	    // clusters
-	    if(!fCtype->At(i)) fCtype->AddAt(new TClonesArray(clclass,1000),i);
-	    if(kNTYPES==3) sprintf(branchname,"%sClusters%s",GetName(),det[i]);
-	    else  sprintf(branchname,"%sClusters%d",GetName(),i+1);
-	    if (fCtype) {
-		branch = TreeC()->GetBranch(branchname);
-                if (branch) branch->SetAddress(&((*fCtype)[i]));
-	    } // end if fCtype
+      AliITSDetType *iDetType=DetType(i); 
+      iDetType->GetClassNames(digclass,clclass);
+      // clusters
+      if(!fCtype->At(i)) fCtype->AddAt(new TClonesArray(clclass,1000),i);
+      if(kNTYPES==3) sprintf(branchname,"%sClusters%s",GetName(),det[i]);
+      else  sprintf(branchname,"%sClusters%d",GetName(),i+1);
+      if (fCtype) {
+		branch = TC->GetBranch(branchname);
+        if (branch) branch->SetAddress(&((*fCtype)[i]));
+      } // end if fCtype
 	} // end for i
-    } else {
+  } else {
 	Error("GetTreeC","cannot find Clusters Tree for event:%d",event);
-    } // end if TreeC()
+  } // end if TC
 }
 //______________________________________________________________________
 void AliITS::AddCluster(Int_t id, AliITSRawCluster *c){
@@ -1676,8 +1692,8 @@ void AliITS::MakeBranchR(const char *file, Option_t *opt){
     } else {
       sprintf(branchname,"%sRecPoints",GetName());
     }
-    if (fRecPoints && gAlice->TreeR()) {
-	MakeBranchInTree(gAlice->TreeR(),branchname,&fRecPoints,buffsz,file);
+    if (fRecPoints && fLoader->TreeR()) {
+	MakeBranchInTree(fLoader->TreeR(),branchname,&fRecPoints,buffsz,file);
     } // end if
 }
 //______________________________________________________________________
@@ -1771,16 +1787,16 @@ void AliITS::HitsToFastRecPoints(Int_t evNumber,Int_t bgrev,Int_t size,
 	mod      = (AliITSmodule *)fITSmodules->At(module);
 	sim->CreateFastRecPoints(mod,module,gRandom);
     //	gAlice->TreeR()->Fill(); 
-    TBranch *br=gAlice->TreeR()->GetBranch("ITSRecPointsF");
+    TBranch *br=fLoader->TreeR()->GetBranch("ITSRecPointsF");
     br->Fill();
 	ResetRecPoints();
     } // end for module
 
     ClearModules();
 
-    gAlice->TreeR()->AutoSave();
+    fLoader->WriteRecPoints("OVERWRITE");
     // reset tree
-    gAlice->TreeR()->Reset();
+    fLoader->TreeR()->Reset();
 }
 //______________________________________________________________________
 void AliITS::Digits2Reco(){
@@ -1790,74 +1806,79 @@ void AliITS::Digits2Reco(){
     // Outputs:
     //      none.
 
-    AliHeader *header=gAlice->GetHeader();
+    AliHeader *header=fLoader->GetRunLoader()->GetHeader();
     // to Digits to RecPoints for event in file, all digits in file, and
     // all ITS detectors.
     DigitsToRecPoints(header->GetEvent(),0,fOpt);
 }
 //______________________________________________________________________
 void AliITS::DigitsToRecPoints(Int_t evNumber,Int_t lastentry,Option_t *opt){
-    // cluster finding and reconstruction of space points
-    // the condition below will disappear when the geom class will be
-    // initialized for all versions - for the moment it is only for v5 !
-    // 7 is the SDD beam test version
-    // Inputs:
-    //      Int_t evNumber   Event number to be processed.
-    //      Int_t lastentry  Offset for module when not all of the modules
-    //                       are processed.
-    //      Option_t *opt    String indicating which ITS sub-detectors should
-    //                       be processed. If ="All" then all of the ITS
-    //                       sub detectors are processed.
-    // Outputs:
-    //      none.
-    // Return:
-    //      none.
+  // cluster finding and reconstruction of space points
+  // the condition below will disappear when the geom class will be
+  // initialized for all versions - for the moment it is only for v5 !
+  // 7 is the SDD beam test version
+  // Inputs:
+  //      Int_t evNumber   Event number to be processed.
+  //      Int_t lastentry  Offset for module when not all of the modules
+  //                       are processed.
+  //      Option_t *opt    String indicating which ITS sub-detectors should
+  //                       be processed. If ="All" then all of the ITS
+  //                       sub detectors are processed.
+  // Outputs:
+  //      none.
+  // Return:
+  //      none.
 
-    if(!GetITSgeom()) return;
-    AliITSgeom *geom = GetITSgeom();
+  if(!GetITSgeom()) return;
+  AliITSgeom *geom = GetITSgeom();
     
-    const char *all = strstr(opt,"All");
-    const char *det[3] = {strstr(opt,"SPD"),strstr(opt,"SDD"),
-			  strstr(opt,"SSD")};
-    static Bool_t setRec=kTRUE;
-    if (setRec) SetDefaultClusterFinders();
-    setRec=kFALSE;
+  const char *all = strstr(opt,"All");
+  const char *det[3] = {strstr(opt,"SPD"),strstr(opt,"SDD"),
+                        strstr(opt,"SSD")};
+  static Bool_t setRec=kTRUE;
+  if (setRec) SetDefaultClusterFinders();
+  setRec=kFALSE;
 
-    TTree *treeC=TreeC();
-    AliITSClusterFinder *rec     = 0;
-    AliITSDetType      *iDetType = 0;
-    Int_t id,module,first=0;
-    for(module=0;module<geom->GetIndexMax();module++){
+  AliITSLoader *pITSloader = (AliITSLoader*)fLoader;
+  TTree *treeC=pITSloader->TreeC();
+  AliITSClusterFinder *rec     = 0;
+  AliITSDetType      *iDetType = 0;
+  Int_t id,module,first=0;
+  for(module=0;module<geom->GetIndexMax();module++){
 	id       = geom->GetModuleType(module);
-        if (!all && !det[id]) continue;
+    if (!all && !det[id]) continue;
 	if(det[id]) first = geom->GetStartDet(id);
 	iDetType = DetType(id);
 	rec = (AliITSClusterFinder*)iDetType->GetReconstructionModel();
-        TClonesArray *itsDigits  = this->DigitsAddress(id);
+    TClonesArray *itsDigits  = this->DigitsAddress(id);
 	if (!rec) {
-	    Error("DigitsToRecPoints",
-		  "The reconstruction class was not instanciated!");
-	    exit(1);
+      Error("DigitsToRecPoints",
+            "The reconstruction class was not instanciated!");
+      exit(1);
 	} // end if !rec
 	this->ResetDigits();
-	if (all) gAlice->TreeD()->GetEvent(lastentry+module);
-	else gAlice->TreeD()->GetEvent(lastentry+(module-first));
+    TTree *TD = pITSloader->TreeD();
+	if (all) {
+      TD->GetEvent(lastentry+module);
+    }
+    else {
+      TD->GetEvent(lastentry+(module-first));
+    }
 	Int_t ndigits = itsDigits->GetEntriesFast();
 	if (ndigits) rec->FindRawClusters(module);
-    gAlice->TreeR()->Fill(); 
+    pITSloader->TreeR()->Fill(); 
 	ResetRecPoints();
 	treeC->Fill();
-	ResetClusters();
-    } // end for module
+    ResetClusters();
+  } // end for module
 
-    gAlice->TreeR()->GetEntries();
-    treeC->GetEntries();
-    gAlice->TreeR()->AutoSave();
-    // reset tree
-    gAlice->TreeR()->Reset();
 
-    treeC->AutoSave();
-    treeC->Reset();
+  pITSloader->WriteRecPoints("OVERWRITE");
+  // reset tree
+  fLoader->TreeR()->Reset();
+
+  pITSloader->WriteRawClusters("OVERWRITE");
+  treeC->Reset();
 }
 //______________________________________________________________________
 void AliITS::ResetRecPoints(){
@@ -1870,4 +1891,16 @@ void AliITS::ResetRecPoints(){
     if (fRecPoints) fRecPoints->Clear();
     fNRecPoints = 0;
 }
+//______________________________________________________________________
+AliLoader* AliITS::MakeLoader(const char* topfoldername)
+{ 
+  //builds ITSgetter (AliLoader type)
+  //if detector wants to use castomized getter, it must overload this method
 
+  cout<<"AliITS::MakeLoader: Creating standard getter for detector "<<GetName()
+      <<". top folder is "<<topfoldername<<endl;
+     
+  fLoader = new AliITSLoader(GetName(),topfoldername);
+  return fLoader;
+ 
+}

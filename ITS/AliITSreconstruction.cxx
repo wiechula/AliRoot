@@ -15,6 +15,9 @@
  
 /*
 $Log$
+Revision 1.3.4.2  2002/06/06 14:23:57  hristov
+Merged with v3-08-02
+
 Revision 1.3.4.1  2002/05/31 09:37:56  hristov
 First set of changes done by Piotr
 
@@ -46,10 +49,10 @@ in the nessesary complilation files.
 
 #include "AliRun.h"
 #include "AliRunLoader.h"
-#include "AliLoader.h"
 
 #include "AliITS.h"
 #include "AliITSDetType.h"
+#include "AliITSLoader.h"
 #include "AliITSreconstruction.h"
 #include "AliITSsegmentationSPD.h"
 #include "AliITSsegmentationSDD.h"
@@ -79,6 +82,7 @@ AliITSreconstruction::AliITSreconstruction(){
     fDet[0] = fDet[1] = fDet[2] = kTRUE;
     fInit     = kFALSE;
     fRunLoader = 0x0;
+    fLoader = 0x0;
 }
 //______________________________________________________________________
 AliITSreconstruction::AliITSreconstruction(const char* filename){
@@ -105,7 +109,7 @@ AliITSreconstruction::AliITSreconstruction(const char* filename){
     gAlice = fRunLoader->GetAliRun();
 
     if(!gAlice) {
-          cout << "gAlice not found on file. Aborting." << endl;
+          Error("AliITSreconstruction","gAlice not found on file. Aborting.");
           fInit = kFALSE;
           return;
       } // end if !gAlice
@@ -137,7 +141,16 @@ Bool_t AliITSreconstruction::Init(){
     //   none.
     // Return:
     //    kTRUE if no errors initilizing this class occurse else kFALSE
-    Int_t nparticles;
+
+    fRunLoader->LoadHeader();  
+
+    fLoader = (AliITSLoader*) fRunLoader->GetLoader("ITSLoader");
+    if(!fLoader) {
+      Error("AliITSreconstruction","ITA loader not found");
+      fInit = kFALSE;
+    }
+
+    //Int_t retcode;
     fITS = (AliITS*) gAlice->GetDetector("ITS");
     if(!fITS){
       cout << "ITS not found aborting. fITS=" << fITS << endl;
@@ -153,10 +166,21 @@ Bool_t AliITSreconstruction::Init(){
 
     fDet[0] = fDet[1] = fDet[2] = kTRUE;
     fEnt0 = 0;
+
     fEnt  = gAlice->GetEventsPerRun();
+
+    fLoader->LoadDigits("read");
+    fLoader->LoadRecPoints("update");
     fITS->MakeTreeC();
-    nparticles = fRunLoader->GetEvent(fEnt0);
-    fRunLoader->LoadHeader();
+    fITS->SetTreeAddress();
+    /*
+    retcode = fRunLoader->GetEvent(fEnt0);
+    if(retcode != 0){
+      cerr << "Unable to load event 0 - aborting\n";
+      fInit = kFALSE;
+      return fInit;
+    }
+    */
     // finished init.
     fInit = InitRec();
     return fInit;
@@ -240,22 +264,18 @@ void AliITSreconstruction::Exec(const Option_t *opt){
       return;
     } // end if !fInit
 
-    AliLoader* gime = fRunLoader->GetLoader("ITSLoader");
-    if (gime == 0x0)
-     {
-       Error("Exec","Can not get loader for ITS");
-       return;
-     }
-
     for(evnt=0;evnt<fEnt;evnt++)
      {
 
       fRunLoader->GetEvent(evnt);
-//      gAlice->SetEvent(evnt);
-      if(!gime->TreeR()) gime->MakeTree("R");
-      fITS->MakeBranch("R");
-      fITS->DigitsToRecPoints(evnt,0,lopt);
+      fLoader->LoadDigits("read");
+      fLoader->LoadRecPoints("update");
       fITS->MakeTreeC();
+//      gAlice->SetEvent(evnt);
+      if(!fLoader->TreeR()) fLoader->MakeTree("R");
+      fITS->MakeBranch("R");
+      fITS->SetTreeAddress();
+      fITS->DigitsToRecPoints(evnt,0,lopt);
     } // end for evnt
 }
 //______________________________________________________________________ 
