@@ -28,7 +28,7 @@
       x="16"
       y="176"
       width="246"
-      height="36"
+      height="28"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -46,7 +46,7 @@
     >&lt;&lt;Interface&gt;&gt;</text>
     <text name="Fig0.3"
       x="17"
-      y="195"
+      y="190"
       fill="1"
       fillcolor="-56"
       stroke="0"
@@ -56,7 +56,7 @@
     >AliPHOSClusterizer</text>
     <text name="Fig0.4"
       x="16"
-      y="211"
+      y="203"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -67,7 +67,7 @@
 public void MakeClusters()</text>
   </group>
   <group name="Fig1"
-       description="uci.uml.visual.FigClass[272, 172, 255, 223]"
+       description="uci.uml.visual.FigClass[272, 172, 255, 224]"
        href="S.100198"
        fill="1"
        fillcolor="-1"
@@ -81,7 +81,7 @@ public void MakeClusters()</text>
       x="273"
       y="173"
       width="253"
-      height="221"
+      height="222"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -99,7 +99,7 @@ public void MakeClusters()</text>
     >AliPHOSClusterizerv1</text>
     <text name="Fig1.2"
       x="272"
-      y="190"
+      y="187"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -114,7 +114,7 @@ private fPpsdClusteringThreshold = 0
 private fPpsdEnergyThreshold = 0</text>
     <text name="Fig1.3"
       x="272"
-      y="278"
+      y="281"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -131,7 +131,7 @@ public void SetPpsdClusteringThreshold()
 public void SetPpsdEnergyThreshold()</text>
   </group>
   <group name="Fig2"
-       description="uci.uml.visual.FigClass[336, 36, 146, 83]"
+       description="uci.uml.visual.FigClass[336, 36, 146, 84]"
        href="S.100160"
        fill="1"
        fillcolor="-1"
@@ -145,7 +145,7 @@ public void SetPpsdEnergyThreshold()</text>
       x="337"
       y="37"
       width="144"
-      height="81"
+      height="82"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -163,7 +163,7 @@ public void SetPpsdEnergyThreshold()</text>
     >AliPHOSDigit</text>
     <text name="Fig2.2"
       x="336"
-      y="54"
+      y="51"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -174,7 +174,7 @@ public void SetPpsdEnergyThreshold()</text>
 private int fId = 0</text>
     <text name="Fig2.3"
       x="336"
-      y="86"
+      y="85"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -185,7 +185,7 @@ private int fId = 0</text>
 public int GetId()</text>
   </group>
   <group name="Fig3"
-       description="uci.uml.visual.FigClass[542, 172, 206, 111]"
+       description="uci.uml.visual.FigClass[542, 172, 206, 112]"
        href="S.100094"
        fill="1"
        fillcolor="-1"
@@ -199,7 +199,7 @@ public int GetId()</text>
       x="543"
       y="173"
       width="204"
-      height="109"
+      height="110"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -217,7 +217,7 @@ public int GetId()</text>
     >AliPHOSGeometry</text>
     <text name="Fig3.2"
       x="542"
-      y="190"
+      y="187"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -227,7 +227,7 @@ public int GetId()</text>
     >private many data</text>
     <text name="Fig3.3"
       x="542"
-      y="208"
+      y="215"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -241,7 +241,7 @@ public void RelToAbsNumbering()
 public void AbsToRelNumbering()</text>
   </group>
   <text name="Fig4"
-    x="600"
+    x="587"
     y="264"
     fill="1"
     fillcolor="-1"
@@ -275,7 +275,7 @@ public void AbsToRelNumbering()</text>
       x="272"
       y="400"
       width="171"
-      height="36"
+      height="28"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -293,7 +293,7 @@ public void AbsToRelNumbering()</text>
     >&lt;&lt;Interface&gt;&gt;</text>
     <text name="Fig5.3"
       x="273"
-      y="419"
+      y="414"
       fill="1"
       fillcolor="-56"
       stroke="0"
@@ -303,7 +303,7 @@ public void AbsToRelNumbering()</text>
     >AliPHOSCluster</text>
     <text name="Fig5.4"
       x="272"
-      y="435"
+      y="427"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -317,7 +317,7 @@ public void Print()
 public void GetRelPosition()</text>
   </group>
   <group name="Fig6"
-       description="uci.uml.visual.FigClass[16, 277, 245, 279]"
+       description="uci.uml.visual.FigClass[16, 277, 245, 280]"
        href="S.100334"
        fill="1"
        fillcolor="-1"
@@ -331,7 +331,7 @@ public void GetRelPosition()</text>
       x="17"
       y="278"
       width="243"
-      height="277"
+      height="278"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -349,7 +349,7 @@ public void GetRelPosition()</text>
     >AliPHOSEmcCluster</text>
     <text name="Fig6.2"
       x="16"
-      y="295"
+      y="292"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -364,7 +364,7 @@ private fLocMaxCut = 0.6
 public fW0 = 4.</text>
     <text name="Fig6.3"
       x="16"
-      y="383"
+      y="394"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -385,7 +385,7 @@ public void SetLocalMaxCut()
 public void SetLowWeightCut()</text>
   </group>
   <group name="Fig7"
-       description="uci.uml.visual.FigClass[440, 397, 171, 111]"
+       description="uci.uml.visual.FigClass[440, 397, 171, 112]"
        href="S.100336"
        fill="1"
        fillcolor="-1"
@@ -399,7 +399,7 @@ public void SetLowWeightCut()</text>
       x="441"
       y="398"
       width="169"
-      height="109"
+      height="110"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -417,7 +417,7 @@ public void SetLowWeightCut()</text>
     >AliPHOSPpsdCluster</text>
     <text name="Fig7.2"
       x="440"
-      y="415"
+      y="412"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -429,7 +429,7 @@ private fEnergy = 0
 private int fMultiplicity = 0</text>
     <text name="Fig7.3"
       x="440"
-      y="461"
+      y="460"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -609,7 +609,7 @@ public bool GetUp()</text>
       strokecolor="-16777216"
     >
       <moveto x="512"
-              y="394" />
+              y="395" />
       <lineto x="512"
               y="398" />
     </path>
