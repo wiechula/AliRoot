@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.3.2.1  2002/05/31 09:37:55  hristov
+First set of changes done by Piotr
+
 Revision 1.5  2002/04/26 10:37:23  morsch
 Method RewindEvent() added. (N. Carrer)
 
@@ -96,20 +99,7 @@ Int_t AliGenReaderTreeK::NextEvent()
 //  Read the next event  
 //  cd to file with old kine tree    
     if (!fBaseFile) Init();
-//    fFile->cd();
-
-//Run Loader does everything
-//  Connect header tree
-//    if (!fTreeE) fTreeE = (TTree*)gDirectory->Get("TE");
-//    if (fHeader) delete fHeader;
-//    fHeader = 0;
-//    fTreeE->SetBranchAddress("Header", &fHeader);
 //  Get next event
-//    fTreeE->GetEntry(fNcurrent);
-//  Connect Stack
-//    if (fStack) delete fStack;
-//    fStack = fHeader->Stack();
-//    fStack->GetEvent(fNcurrent);
      
     fInRunLoader->GetEvent(fNcurrent);
     fStack = fInRunLoader->Stack();

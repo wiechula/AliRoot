@@ -15,6 +15,13 @@
 
 /*
 $Log$
+
+Revision 1.7.2.1  2002/05/31 09:37:55  hristov
+First set of changes done by Piotr
+
+Revision 1.8  2002/03/22 13:00:25  morsch
+Initialize sum to 0. (Jiri Chudoba).
+
 Revision 1.8  2002/03/22 13:00:25  morsch
 Initialize sum to 0. (Jiri Chudoba).
 

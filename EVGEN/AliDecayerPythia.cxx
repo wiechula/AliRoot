@@ -15,6 +15,10 @@
 
 /*
 $Log$
+
+Revision 1.10.4.1  2002/05/31 09:37:55  hristov
+First set of changes done by Piotr
+
 Revision 1.11  2002/04/26 10:32:59  morsch
 Option kNoDecayHeavy added.
 

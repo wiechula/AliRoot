@@ -15,6 +15,10 @@
 
 /*
 $Log$
+
+Revision 1.10.2.1  2002/05/31 09:37:55  hristov
+First set of changes done by Piotr
+
 Revision 1.11  2002/03/20 10:21:13  hristov
 Set fPtMax to 15 GeV in order to avoid some numerical problems
 

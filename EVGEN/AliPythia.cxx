@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.20.4.1  2002/05/31 09:37:55  hristov
+First set of changes done by Piotr
+
+Revision 1.24  2002/05/22 13:22:53  morsch
+Process kPyMbNonDiffr added.
+
 Revision 1.23  2002/05/06 07:17:29  morsch
 Pyr gives random number r in interval 0 < r < 1.
 
@@ -188,7 +194,21 @@ void AliPythia::ProcInit(Process_t process, Float_t energy, StrucFunc_t strucfun
 	SetPARP(82,3.47);   // set value pT_0  for turn-off of the cross section of                  
                             // multiple interaction at a reference energy = 14000 GeV
 	SetPARP(89,14000.); // reference energy for the above parameter
-	SetPARP(90,0.174);  // set exponent for energy dependence of pT_0 
+	SetPARP(90,0.174);  // set exponent for energy dependence of pT_0
+    case kPyMbNonDiffr:
+// Minimum Bias pp-Collisions
+//
+//   
+//      select Pythia min. bias model
+	SetMSEL(0);
+	SetMSUB(95,1);	    // low pt production
+	SetMSTP(81,1);      // multiple interactions switched on
+	SetMSTP(82,3);      // model with varying impact param. & a single Gaussian
+	SetPARP(82,3.47);   // set value pT_0  for turn-off of the cross section of                  
+                            // multiple interaction at a reference energy = 14000 GeV
+	SetPARP(89,14000.); // reference energy for the above parameter
+	SetPARP(90,0.174);  // set exponent for energy dependence of pT_0
+ 
 	break;
     case kPyJets:
 	SetMSEL(1);

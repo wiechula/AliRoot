@@ -15,6 +15,10 @@
 
 /*
 $Log$
+
+Revision 1.19.2.1  2002/05/31 09:37:55  hristov
+First set of changes done by Piotr
+
 Revision 1.22  2002/05/15 11:59:49  morsch
 CdEventFile() method added.
 

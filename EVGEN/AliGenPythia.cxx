@@ -15,6 +15,13 @@
 
 /*
 $Log$
+
+Revision 1.51.2.1  2002/05/31 09:37:55  hristov
+First set of changes done by Piotr
+
+Revision 1.57  2002/05/22 13:22:53  morsch
+Process kPyMbNonDiffr added.
+
 Revision 1.56  2002/04/26 10:30:01  morsch
 Option kPyBeautyPbMNR added. (N. Carrer).
 
@@ -296,7 +303,7 @@ void AliGenPythia::Init()
 	break;
     case kPyD0PbMNR:
 	fParentSelect[0] =   421;
-	fFlavorSelect    =  4;	
+	fFlavorSelect    =   4;	
 	break;
     case kPyBeauty:
     case kPyBeautyPbMNR:
@@ -324,6 +331,7 @@ void AliGenPythia::Init()
 	fParentSelect[0] = 443;
 	break;
     case kPyMb:
+    case kPyMbNonDiffr:
     case kPyJets:
     case kPyDirectGamma:
 	break;
@@ -394,7 +402,8 @@ void AliGenPythia::Generate()
 	Int_t nc = 0;        // Total n. of selected particles
 	Int_t nParents = 0;  // Selected parents
 	Int_t nTkbles = 0;   // Trackable particles
-	if (fProcess != kPyMb && fProcess != kPyJets && fProcess != kPyDirectGamma) {
+	if (fProcess != kPyMb && fProcess != kPyJets && fProcess != kPyDirectGamma &&
+	    fProcess != kPyMbNonDiffr) {
 	    
 	    for (i = 0; i<np; i++) {
 		iparticle = (TParticle *) fParticles->At(i);
