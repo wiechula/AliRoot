@@ -74,11 +74,11 @@ class AliLoader: public TNamed
     
   //void SetTopFolder(TString& str){}; //Sets root top folder for the run
     
-    void           SetHitsFileName(TString& fname){*fHitsFileName = fname;}
-    void           SetSDigitsFileName(TString& fname){*fSDigitsFileName = fname;}
-    void           SetDigitsFileName(TString& fname){*fDigitsFileName = fname;}
-    void           SetRecPointsFileName(TString& fname){*fRecPointsFileName = fname;}
-    void           SetTracksFileName(TString& fname){*fTracksFileName = fname;}
+    void           SetHitsFileName(TString& fname){fHitsFileName = fname;}
+    void           SetSDigitsFileName(TString& fname){fSDigitsFileName = fname;}
+    void           SetDigitsFileName(TString& fname){fDigitsFileName = fname;}
+    void           SetRecPointsFileName(TString& fname){fRecPointsFileName = fname;}
+    void           SetTracksFileName(TString& fname){fTracksFileName = fname;}
   
     Int_t          SetEventFolder(TFolder* eventfolder);//sets the event folder
     Int_t          Register();//triggers creation of subfolders for a given detector
@@ -109,11 +109,11 @@ class AliLoader: public TNamed
     virtual void   MakeRecPointsContainer();
     virtual void   MakeTracksContainer();
         
-    const TString& GetHitsContainerName() const{ return *fHitsContainerName;}
-    const TString& GetSDigitsContainerName() const{ return *fSDigitsContainerName;}
-    const TString& GetDigitsContainerName() const{ return *fDigitsContainerName;}
-    const TString& GetRecPointsContainerName() const{ return *fRecPointsContainerName;}
-    const TString& GetTracksContainerName() const{ return *fTracksContainerName;}
+    const TString& GetHitsContainerName() const{ return fHitsContainerName;}
+    const TString& GetSDigitsContainerName() const{ return fSDigitsContainerName;}
+    const TString& GetDigitsContainerName() const{ return fDigitsContainerName;}
+    const TString& GetRecPointsContainerName() const{ return fRecPointsContainerName;}
+    const TString& GetTracksContainerName() const{ return fTracksContainerName;}
 
     virtual void   CleanFolders();
     virtual void   CloseFiles();
@@ -128,7 +128,7 @@ class AliLoader: public TNamed
     virtual Int_t PostDigitizer(AliDigitizer* task);
     virtual Int_t PostReconstructioner(TTask* task);
     virtual Int_t PostTracker(TTask* task);
-
+    
     virtual void  CleanHits()     {Clean(*fHitsContainerName);}//cleans hits from folder
     virtual void  CleanSDigits()  {Clean(*fSDigitsContainerName);}
     virtual void  CleanDigits()   {Clean(*fDigitsContainerName);}
@@ -140,11 +140,11 @@ class AliLoader: public TNamed
     virtual void  CleanReconstructioner();
     virtual void  CleanTracker();
     
-    void        SetCompressionLevel(Int_t cl);
+    void          SetCompressionLevel(Int_t cl);
+    void          SetDirName(TString& name);
     
-    const TString& GetDetectorName() const{return *fDetectorName;}
+    const TString& GetDetectorName() const{return fDetectorName;}
     AliRunLoader*  GetRunLoader();//gets the run-getter from event folder
-    
    protected:
 
     /*********************************************/
@@ -157,7 +157,7 @@ class AliLoader: public TNamed
     Int_t         OpenDigitsFile(Option_t* opt); //opt is passed to TFile::Open
     Int_t         OpenRecPointsFile(Option_t* opt);
     Int_t         OpenTracksFile(Option_t* opt);
-    Int_t         OpenDataFile(TString& filename,TFile*& file,TDirectory*& dir,Option_t* opt);
+    Int_t         OpenDataFile(const TString& filename,TFile*& file,TDirectory*& dir,Option_t* opt);
     
     void          CloseHitsFile(){CloseDataFile(fHitsFile,fHitsDir);}
     void          CloseSDigitsFile(){CloseDataFile(fSDigitsFile,fSDigitsDir);}
@@ -183,19 +183,18 @@ class AliLoader: public TNamed
     TObject*      GetDetectorData(const char* name){return GetDetectorDataFolder()->FindObject(name);}
     TObject**     GetDetectorDataRef(TObject* obj);
 
-
     /**********************************************/
     /************    PROTECTED      ***************/
     /*********        D A T A          ************/
     /**********************************************/
    
-    TString*      fDetectorName;
+    TString      fDetectorName;
     
-    TString*      fHitsFileName;  //name of file with hits
-    TString*      fSDigitsFileName;//name of file with SDigits 
-    TString*      fDigitsFileName;//name of file with Digits
-    TString*      fRecPointsFileName;//name of file with Recontructed Points
-    TString*      fTracksFileName;//name of file with Tracks
+    TString       fHitsFileName;  //name of file with hits
+    TString       fSDigitsFileName;//name of file with SDigits 
+    TString       fDigitsFileName;//name of file with Digits
+    TString       fRecPointsFileName;//name of file with Recontructed Points
+    TString       fTracksFileName;//name of file with Tracks
     
     TFile*        fHitsFile;    //!pointer to file with hits
     TFile*        fSDigitsFile; //!pointer to file with SDigits
@@ -222,11 +221,11 @@ class AliLoader: public TNamed
     TFolder*      fQAFolder;          //!Folder that contains the QA objects
 
 
-    TString*      fHitsContainerName;//name of conatiner (TREE) for hits - standard TreeH
-    TString*      fDigitsContainerName;//name of conatiner (TREE) for digits - standard  TreeD
-    TString*      fSDigitsContainerName;//name of conatiner (TREE) for Sdigits - standard TreeS
-    TString*      fRecPointsContainerName;//name of conatiner (TREE) for Rec Points - standard TreeR
-    TString*      fTracksContainerName;//name of conatiner (TREE) for Tracks 
+    TString       fHitsContainerName;//name of conatiner (TREE) for hits - standard TreeH
+    TString       fDigitsContainerName;//name of conatiner (TREE) for digits - standard  TreeD
+    TString       fSDigitsContainerName;//name of conatiner (TREE) for Sdigits - standard TreeS
+    TString       fRecPointsContainerName;//name of conatiner (TREE) for Rec Points - standard TreeR
+    TString       fTracksContainerName;//name of conatiner (TREE) for Tracks 
     
     static const TString   fgkDefaultHitsContainerName;//default name of conatiner (TREE) for hits
     static const TString   fgkDefaultDigitsContainerName;//default name of conatiner (TREE) for digits
@@ -251,8 +250,9 @@ class AliLoader: public TNamed
     /*********** AliRunLoader as well**************/
     /**********************************************/
    public:
-    static TDirectory*   ChangeDir(TFile* file, Int_t eventno); //changes the root directory in "file" to directory corresponing to eventno
-    static Bool_t        TestFileOption(Option_t* opt);
+    static TDirectory*    ChangeDir(TFile* file, Int_t eventno); //changes the root directory in "file" to directory corresponing to eventno
+    static Bool_t         TestFileOption(Option_t* opt);
+    const TString SetFileOffset(const TString& fname);//adds the proper number before .root
 
     ClassDef(AliLoader,1)
  };
@@ -265,12 +265,12 @@ inline TFolder* AliLoader::GetDetectorDataFolder()
  //helper function which returns the folder of name "name" in data folder
    if(!fDetectorDataFolder)
     {
-      fDetectorDataFolder = dynamic_cast<TFolder*>(GetDataFolder()->FindObject(fDetectorName->Data()));
+      fDetectorDataFolder = dynamic_cast<TFolder*>(GetDataFolder()->FindObject(fDetectorName.Data()));
       if(!fDetectorDataFolder)
        {
          Fatal("GetDetectorDataFolder",
                "Can not find folder %s in folder %s. Aborting",
-               fDetectorName->Data(),GetDataFolder()->GetName());
+               fDetectorName.Data(),GetDataFolder()->GetName());
          return 0x0;
        }
       

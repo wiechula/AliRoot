@@ -58,11 +58,12 @@ AliRunLoader::AliRunLoader()
 {
   fEventFolder = 0x0;
   fCurrentEvent = 0;
+  fNEventsPerFile = 1;
   fStack = 0x0;
   fHeader = 0x0;
   fLoaders = 0x0;
-  fKineFileName = 0x0;
-  fTrackRefsFileName = 0x0;
+  fKineFileName = "";
+  fTrackRefsFileName = "";
   fGAFile = 0x0;
   fKineFile = 0x0;
   fKineDir = 0x0;
@@ -72,18 +73,20 @@ AliRunLoader::AliRunLoader()
 }
 /**************************************************************************/
 
-AliRunLoader::AliRunLoader(const char* eventfoldername):TNamed(fgkRunLoaderName,fgkRunLoaderName)
+AliRunLoader::AliRunLoader(const char* eventfoldername):
+  TNamed(fgkRunLoaderName,fgkRunLoaderName),
+  fKineFileName(fgkDefaultKineFileName),
+  fTrackRefsFileName(fgkDefaultTrackRefsFileName)
 {
 //ctor
   fEventFolder = 0x0;
   fCurrentEvent = 0;
+  fNEventsPerFile = 1;
   fStack = 0x0;
   fHeader = 0x0;
   fGAFile = 0x0;
   fKineFile = 0x0;
   fKineDir = 0x0;
-  fKineFileName = new TString(fgkDefaultKineFileName);
-  fTrackRefsFileName = new TString(fgkDefaultTrackRefsFileName);
   fLoaders = new TObjArray();
   SetEventFolderName(eventfoldername);
 }
@@ -109,8 +112,6 @@ AliRunLoader::~AliRunLoader()
   delete fGAFile; 
   delete fKineFile;
   delete fTrackRefsFile;
-  delete fKineFileName;
-  delete fTrackRefsFileName;
 }
 /**************************************************************************/
 
@@ -226,7 +227,7 @@ Int_t AliRunLoader::SetEvent()
      fKineDir = AliLoader::ChangeDir(fKineFile,fCurrentEvent);
      if (fKineDir == 0x0)
       {
-        Error("SetEvent","Can not change to root directory in file %s",fKineFileName->Data());
+        Error("SetEvent","Can not change to root directory in file %s",fKineFileName.Data());
         return 1;
       }
    }
@@ -237,7 +238,7 @@ Int_t AliRunLoader::SetEvent()
      fTrackRefsDir = AliLoader::ChangeDir(fTrackRefsFile,fCurrentEvent);
      if (fTrackRefsDir == 0x0)
       {
-        Error("SetEvent","Can not change to root directory in file %s",fTrackRefsFileName->Data());
+        Error("SetEvent","Can not change to root directory in file %s",fTrackRefsFileName.Data());
         return 2;
       }
    }
@@ -331,6 +332,20 @@ AliRunLoader* AliRunLoader::Open
     result = new AliRunLoader(eventfoldername);
   }
  
+//procedure for extracting dir name from the file name 
+ TString fname(filename);
+ Int_t  nsl = fname.Last('/');//look for slash in file name
+ TString dirname;
+ if (nsl < 0) 
+  {//slash not found
+    Int_t  nsl = fname.Last(':');//look for colon e.g. rfio:galice.root
+    if (nsl < 0) dirname = ".";//not found
+    else dirname = fname.Remove(nsl);//found
+  }
+ else dirname = fname.Remove(nsl);//slash found
+ 
+ cout<<"Dir name is : "<<dirname<<endl;
+ result->SetDirName(dirname); 
  result->SetGAliceFile(gAliceFile);//set the pointer to gAliceFile
  return result;
 }
@@ -378,6 +393,7 @@ void AliRunLoader::MakeHeader()
         branch->SetAddress(&fHeader);
         tree->GetEvent(fCurrentEvent);
         fStack = fHeader->Stack(); //should be safe - if we created Stack, header returns pointer to the same object
+        fStack->SetEventFolderName(fEventFolder->GetName());
         if (TreeK()) fStack->GetEvent();
       }
    } 
@@ -419,8 +435,6 @@ void AliRunLoader::MakeTree(Option_t *option)
         MakeStack();
         fStack->ConnectTree();
         WriteKinematics("OVERWRITE");
-
-        GetEventFolder()->ls();
      }
    }
   
@@ -536,7 +550,7 @@ Int_t AliRunLoader::LoadKinematics(Option_t* option)
  return 0;
 }
 /**************************************************************************/
-Int_t AliRunLoader::OpenDataFile(TString& filename,TFile*& file,TDirectory*& dir,Option_t* opt)
+Int_t AliRunLoader::OpenDataFile(const TString& filename,TFile*& file,TDirectory*& dir,Option_t* opt)
 {
 //Opens File with kinematics
  if (file)
@@ -1037,6 +1051,7 @@ AliLoader* AliRunLoader::GetLoader(AliDetector* det) const
  if(det == 0x0) return 0x0;
  TString getname(det->GetName());
  getname+="Loader";
+ cout<<"AliRunLoader::GetLoader(AliDetector* det): loader name is "<<getname<<endl;
  return GetLoader(getname);
 }
 
@@ -1405,6 +1420,7 @@ void AliRunLoader::UnloadgAlice()
  if (GetEventFolder()) GetEventFolder()->Remove(alirun);
  delete alirun;
 }
+/**************************************************************************/
 
 void  AliRunLoader::MakeTrackRefsContainer()
 {
@@ -1413,7 +1429,7 @@ void  AliRunLoader::MakeTrackRefsContainer()
   GetEventFolder()->Add(tree);
   WriteTrackRefs();
 }
-
+/**************************************************************************/
 
 Int_t AliRunLoader::LoadTrackRefs(Option_t* option)
 {
@@ -1441,5 +1457,56 @@ Int_t AliRunLoader::LoadTrackRefs(Option_t* option)
     Error("LoadTrackRefs","PostTrackRefs returned error");
     return retval;
   }
- return 0; 
+ return 0;
 }
+/**************************************************************************/
+
+void  AliRunLoader::SetDirName(TString& dirname)
+{
+//sets directory name 
+  if (dirname.IsNull()) return;
+  
+  fTrackRefsFileName = dirname + "/" + fTrackRefsFileName;
+  fKineFileName = dirname + "/" + fKineFileName;
+
+  TIter next(fLoaders);
+  AliLoader *loader;
+  while((loader = (AliLoader*)next()))
+   {
+    loader->SetDirName(dirname);
+   }
+
+}
+Int_t AliRunLoader::OpenKineFile(Option_t* opt)
+ {
+ //Opens file with kinematicss
+   return OpenDataFile(SetFileOffset(fKineFileName),fKineFile,fKineDir,opt);
+ }
+Int_t AliRunLoader::OpenTrackRefsFile(Option_t* opt)
+ {
+  //opens file with Track References
+   return OpenDataFile(SetFileOffset(fTrackRefsFileName),fTrackRefsFile,fTrackRefsDir,opt);
+ }
+Int_t AliRunLoader::GetFileOffset() const
+{
+  return fCurrentEvent%fNEventsPerFile;
+}
+
+/*****************************************************************************/ 
+const TString AliRunLoader::SetFileOffset(const TString& fname)
+{
+return fname;
+
+/*  Int_t offset = GetFileOffset();
+  if (offset < 1) return fname;
+  TString soffset;
+  soffset += offset;//automatic conversion to string
+  TString dotroot(".root");
+  const TString& offfsetdotroot = offset+dotroot;
+  TString out = fname.ReplaceAll(dotroot,offfsetdotroot);
+  cout<<"AliLoader::SetFileOffset: in="<<fname<<" out="<<out<<endl;
+  return out;
+*/
+}
+
+/*****************************************************************************/ 

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.16.6.2  2002/06/06 14:18:33  hristov
+Merged with v3-08-02
+
 Revision 1.16.6.1  2002/05/31 09:37:59  hristov
 First set of changes done by Piotr
 
@@ -201,8 +204,9 @@ MakeBranchInTree(TTree *tree, const char* name, const char *classname,
 //
 // if (GetDebug()>1)
  printf("* MakeBranch * Making Branch %s \n",name);
-      
- TBranch *branch = 0;
+ if (tree == 0x0) return 0x0;
+ TBranch *branch = tree->GetBranch(name);
+ if (branch) return branch;
     
  if (classname) 
   {

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.13.4.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
 Revision 1.15  2002/04/09 13:38:47  jchudoba
 Add const to the filename argument
 
@@ -180,8 +183,8 @@ AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliR
   Int_t i;
   fNinputs = nInputStreams;
   
-  fOutputFileName = "";
-  fOutputDirName = ".";
+  fOutputFileName = "./galice.root";
+//  fOutputDirName = ".";
   
   fCombination.Set(kMaxStreamsToMerge);
 
@@ -315,9 +318,8 @@ Bool_t AliRunDigitizer::InitGlobal()
 void AliRunDigitizer::SetOutputFile(TString fn)
 // the output will be to separate file, not to the signal file
 {
+ //here should be protection to avoid setting the same file as any input 
   fOutputFileName = fn;
-  
-//  (static_cast<AliStream*>(fInputStreams->At(0)))->ChangeMode("READ");
   InitOutputGlobal();
 }
 
@@ -326,13 +328,12 @@ Bool_t AliRunDigitizer::InitOutputGlobal()
 {
 // Creates the output file, called by InitEvent()
 
-  TString fn;
-  fn = fOutputDirName + '/' + fOutputFileName;
-  fOutputStream = new AliStream(fgkDefOutFolderName,"update");
-  fOutputStream->AddFile(fn);
+  
+  fOutputStream = new AliStream(fgkDefOutFolderName,"recreate");
+  fOutputStream->AddFile(fOutputFileName);
 
   if (GetDebug()>2) {
-    cerr<<"AliRunDigitizer::InitOutputGlobal(): file "<<fn.Data()<<" was opened"<<endl;
+    cerr<<"AliRunDigitizer::InitOutputGlobal(): file "<<fOutputFileName<<" was opened"<<endl;
   }
 
   if (fOutputStream->OpenNextFile() == kFALSE)

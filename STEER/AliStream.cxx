@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.4.4.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
 Revision 1.5  2002/04/09 13:38:47  jchudoba
 Add const to the filename argument
 
@@ -55,6 +58,7 @@ Class to manage input filenames, used by AliRunDigitizer
 #include "TArrayI.h"
 #include "TClonesArray.h"
 #include "TFile.h"
+#include "AliLoader.h"
 
 ClassImp(AliStream)
 
@@ -104,16 +108,20 @@ Bool_t AliStream::NextEventInStream()
   if (fFileNames->GetLast() < 0) return kFALSE;
   
   AliRunLoader* currentloader = AliRunLoader::GetRunLoader(fEventFolderName);
-  if (!currentloader) 
+  if (currentloader == 0x0) 
    {
-    if (!OpenNextFile()) return kFALSE;
+    cout<<"AliStream::NextEventInStream: Can not get RL from folder named "
+        <<fEventFolderName<<". Attempting to open next file\n";
+    Int_t res = OpenNextFile();
+    if ( res == 0) return kFALSE;
+    currentloader = AliRunLoader::GetRunLoader(fEventFolderName);
    }
   
   if (fLastEventSerialNr+1 >= fEvents) 
    {
     if (!OpenNextFile()) return kFALSE;
    }
-
+  cout<<"AliStream::NextEventInStream:  Trying to get event "<<fLastEventSerialNr+1<<endl;
   currentloader->GetEvent(++fLastEventSerialNr);
   return kTRUE;
 }
@@ -142,8 +150,7 @@ Bool_t AliStream::OpenNextFile()
     return kFALSE;
   }
 
-  const char * filename = 
-    static_cast<TObjString*>(fFileNames->At(fCurrentFileIndex))->GetName();
+  const char* filename =   static_cast<TObjString*>(fFileNames->At(fCurrentFileIndex))->GetName();
 
 // check if the file was already opened by some other code
   TFile *f = (TFile *)(gROOT->GetListOfFiles()->FindObject(filename));
@@ -159,7 +166,7 @@ Bool_t AliStream::OpenNextFile()
   currentloader = AliRunLoader::Open(filename,fEventFolderName,fMode);
   
 
-  if (currentloader) 
+  if (currentloader == 0x0) 
    {
 // cannot open file specified on input. Do not skip it silently.
     cerr<<"Cannot open session "<<filename<<endl;
@@ -167,14 +174,23 @@ Bool_t AliStream::OpenNextFile()
    }
    
 // find nr of events in the given file  
-  Int_t res = currentloader->LoadHeader();
-  if (res)
-   {
-     Error("OpenNextFile","Problems with loading header");
-     return kFALSE;
-   }
   
-  fEvents = static_cast<Int_t>(currentloader->TreeE()->GetEntries());
+  if ( AliLoader::TestFileOption(fMode) )//tests if file is opened in read or update mode
+   {
+    Int_t res = currentloader->LoadHeader();
+    if (res)
+     {
+       Error("OpenNextFile","Problems with loading header");
+       return kFALSE;
+     }
+    fEvents = static_cast<Int_t>(currentloader->TreeE()->GetEntries());
+   }
+  else
+    {
+     //if it is new, create or recreate there is no chance to find header in file
+      fEvents = 0;
+    }
+   
   fLastEventSerialNr = -1;
   return kTRUE;
 }

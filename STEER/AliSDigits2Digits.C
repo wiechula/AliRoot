@@ -41,11 +41,11 @@
 
 void AliCopyN(TString inputFile, TString outputFile);
 
-Int_t AliSDigits2Digits(TString fileNameDigits="digits.root", 
-			TString fileNameSDigits="rfio:sdigits.root", 
-			Int_t nEvents = 1, Int_t iITS = 0, Int_t iTPC = 0,
-			Int_t iTRD = 0,  Int_t iPHOS = 0, Int_t iMUON = 0,
-			Int_t iRICH = 0, Int_t iCopy = 1)
+Int_t AliSDigits2Digits(TString output="out/galice.root", 
+                        TString input="wrk/galice.root", 
+                        Int_t nEvents = 1, Int_t iITS = 0, Int_t iTPC = 1,
+                        Int_t iTRD = 0,  Int_t iPHOS = 0, Int_t iMUON = 0,
+                        Int_t iRICH = 0, Int_t iCopy = 0)
 {
 // delete the current gAlice object, the one from input file
 //  will be used
@@ -55,13 +55,14 @@ Int_t AliSDigits2Digits(TString fileNameDigits="digits.root",
     gAlice = 0;
   } // end if gAlice
   AliRunDigitizer * manager = new AliRunDigitizer(1,1);
-  manager->SetInputStream(0,fileNameSDigits.Data());
-  if (fileNameDigits != "") {
-    if (iCopy) {
-      AliCopyN(fileNameSDigits,fileNameDigits);
-    }
-    manager->SetOutputFile(fileNameDigits);
-  }
+  manager->SetDebug(1000);
+  manager->SetInputStream(0,input);
+    if (iCopy) 
+     {
+//      AliCopyN(fileNameSDigits,fileNameDigits);
+     }
+  
+  manager->SetOutputFile(output);
   manager->SetNrOfEventsToWrite(nEvents);
   if (iITS) AliITSDigitizer *dITS  = new AliITSDigitizer(manager);
   if (iTPC) AliTPCDigitizer *dTPC  = new AliTPCDigitizer(manager);
@@ -82,19 +83,5 @@ Int_t AliSDigits2Digits(TString fileNameDigits="digits.root",
 void AliCopyN(TString inputFileName, TString outputFileName) {
 // copy some objects
 
-  TFile *inputFile = OpenFile(inputFileName);
-  if (!inputFile) return;
-
-  TFile *outputFile = TFile::Open(outputFileName.Data(),"update");
-  if (!outputFile->IsOpen()) {
-    cerr<<"Can't open "<<outputFileName.Data()<<" !\n";
-    return;
-  }
-  if (!ImportgAlice(inputFile)) return;
-  AliCopy(inputFile, outputFile);
-  inputFile->Close();
-  delete inputFile;
-  outputFile->Close();
-  delete outputFile;
 }
 ////////////////////////////////////////////////////////////////////////

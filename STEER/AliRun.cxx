@@ -17,6 +17,9 @@
 
 /*
 $Log$
+Revision 1.81.2.2  2002/06/06 14:18:33  hristov
+Merged with v3-08-02
+
 Revision 1.81.2.1  2002/05/31 09:37:59  hristov
 First set of changes done by Piotr
 
@@ -934,12 +937,13 @@ void AliRun::InitMC(const char *setup)
     return;
   }
 
-  cout<<" AliRun::InitMC before init macro fRunLoader = "<<fRunLoader<<endl;
+//  cout<<" AliRun::InitMC before init macro fRunLoader = "<<fRunLoader<<endl;
   gROOT->LoadMacro(setup);
   gInterpreter->ProcessLine(fConfigFunction.Data());
-  cout<<" AliRun::InitMC after init macro fRunLoader = "<<fRunLoader<<endl;
+//  cout<<" AliRun::InitMC after init macro fRunLoader = "<<fRunLoader<<endl;
   
   InitLoaders();
+  
   fRunLoader->LoadHits("recreate","all");// all getters (detectors) recreate file for hits
 
   fRunLoader->CdGAFile();
@@ -1361,6 +1365,8 @@ void AliRun::RunReco(const char *selected, Int_t first, Int_t last)
   //
   // Main function to be called to reconstruct Alice event
   // 
+   if (gAlice->TreeE() == 0x0) fRunLoader->LoadHeader();
+   
    cout << "Found "<< gAlice->TreeE()->GetEntries() << "events" << endl;
    Int_t nFirst = first;
    Int_t nLast  = (last < 0)? (Int_t) gAlice->TreeE()->GetEntries() : last;
@@ -1413,55 +1419,50 @@ void AliRun::Tree2Tree(Option_t *option, const char *selected)
 
    AliDetector *detector = 0;
 
-   TDirectory *cwd = gDirectory;
-
-   char outFile[32];
-   
    while((detector = (AliDetector*)next())) 
     {
      if (selected) 
        if (strcmp(detector->GetName(),selected)) continue;
      if (detector->IsActive())
       { 
-       if (gSystem->Getenv("CONFIG_SPLIT_FILE")) 
-        {
-          if (oS) 
-           {
-            sprintf(outFile,"SDigits.%s.root",detector->GetName());
-            detector->MakeBranch("S",outFile);
-           }    
-          if (oD) 
-           {
-            sprintf(outFile,"Digits.%s.root",detector->GetName());
-            detector->MakeBranch("D",outFile);
-           }    
-          if (oR) 
-           {
-            sprintf(outFile,"Reco.%s.root",detector->GetName());
-            detector->MakeBranch("R",outFile);
-           }    
-        }
-       else 
-        {
-          detector->MakeBranch(option);
-        }
-       cwd->cd(); 
+       
+       AliLoader* loader = detector->GetLoader();
+       if (loader == 0x0) continue;
+       
        if (oS) 
         {
           cout << "Hits2SDigits: Processing " << detector->GetName() << "..." << endl;
-          detector->Hits2SDigits(); 
+          loader->LoadHits("read");
+          if (loader->TreeS() == 0x0) loader->MakeTree("S");
+          detector->MakeBranch(option);
+          detector->SetTreeAddress();
+          detector->Hits2SDigits();
+          loader->UnloadHits();
+          loader->UnloadSDigits();
         }  
        if (oD) 
         {
           cout << "SDigits2Digits: Processing " << detector->GetName() << "..." << endl;
+          loader->LoadSDigits("read");
+          if (loader->TreeD() == 0x0) loader->MakeTree("D");
+          detector->MakeBranch(option);
+          detector->SetTreeAddress();
           detector->SDigits2Digits();
+          loader->UnloadSDigits();
+          loader->UnloadDigits();
         } 
        if (oR) 
         {
           cout << "Digits2Reco: Processing " << detector->GetName() << "..." << endl;
+          loader->LoadDigits("read");
+          if (loader->TreeR() == 0x0) loader->MakeTree("R");
+          detector->MakeBranch(option);
+          detector->SetTreeAddress();
           detector->Digits2Reco(); 
+          loader->UnloadDigits();
+          loader->UnloadRecPoints();
+
         }
-       cwd->cd();        
      }   
    }
 }

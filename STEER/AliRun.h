@@ -167,6 +167,7 @@ public:
 
    
    void SetRunLoader(AliRunLoader* rloader);
+   AliRunLoader* GetRunLoader() const {return fRunLoader;}
 //   void SetEventFolderName(const char* eventfoldername);
 protected:
   virtual  void  Tree2Tree(Option_t *option, const char *detector=0);

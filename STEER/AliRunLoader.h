@@ -70,7 +70,8 @@ class AliRunLoader: public TNamed
     void        UnloadgAlice();
     void        UnloadTrackRefs();
     
-    void        SetKineFileName(TString& fname){*fKineFileName = fname;}
+    void        SetKineFileName(const TString& fname){fKineFileName = fname;}
+    void        SetTrackRefsFileName(const TString& fname){fTrackRefsFileName = fname;}
     
     TTree*      TreeE() const; //returns the tree from folder; shortcut method
     AliHeader*  GetHeader() const;
@@ -118,7 +119,9 @@ class AliRunLoader: public TNamed
     void        CdGAFile();
 
     void        MakeTrackRefsContainer();
-
+    void        SetDirName(TString& dirname);
+    Int_t       GetFileOffset() const;
+    void        SetNumberOfEventsPerFile(Int_t nevpf){fNEventsPerFile = nevpf;}
   protected:
     TObjArray     *fLoaders;          //  List of Detectors
     TFolder       *fEventFolder;      //!top folder for this run
@@ -131,11 +134,13 @@ class AliRunLoader: public TNamed
     
     TFile*         fKineFile;    //!pointer to file with kinematics
     TDirectory*    fKineDir;     //!pointer to Dir with current event in Kine File
-    TString*       fKineFileName;//name of file with hits
+    TString        fKineFileName;//name of file with hits
 
     TFile*         fTrackRefsFile;    //!pointer to file with kinematics
     TDirectory*    fTrackRefsDir;     //!pointer to Dir with current event in Kine File
-    TString*       fTrackRefsFileName;//name of file with hits
+    TString        fTrackRefsFileName;//name of file with hits
+    
+    Int_t          fNEventsPerFile;
     
     static const TString   fgkDefaultKineFileName;//default file name with kinamatics
     static const TString   fgkDefaultTrackRefsFileName;//default file name with kinamatics
@@ -143,11 +148,12 @@ class AliRunLoader: public TNamed
     void           SetGAliceFile(TFile* gafile);//sets the pointer to gAlice file
     Int_t          PostKinematics();
     Int_t          PostTrackRefs();
-    Int_t          OpenKineFile(Option_t* opt){return OpenDataFile(*fKineFileName,fKineFile,fKineDir,opt);}
-    Int_t          OpenTrackRefsFile(Option_t* opt){return OpenDataFile(*fTrackRefsFileName,fTrackRefsFile,fTrackRefsDir,opt);}
+    Int_t          OpenKineFile(Option_t* opt);
+    Int_t          OpenTrackRefsFile(Option_t* opt);
 
-    Int_t          OpenDataFile(TString& filename,TFile*& file,TDirectory*& dir,Option_t* opt);
-
+    Int_t          OpenDataFile(const TString& filename,TFile*& file,TDirectory*& dir,Option_t* opt);
+    void           SetUnixDir(const TString& udirname);
+    const TString  SetFileOffset(const TString& fname);//adds the proper number before .root
   private:
     void  GetListOfDetectors(const char * namelist,TObjArray& pointerarray) const;
 
