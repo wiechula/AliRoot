@@ -150,11 +150,7 @@ Read(AliHBTRun* particles, AliHBTRun *tracks)
       totalNevents++;
      }
      delete rl;
-//    delete gAlice;
-//    gAlice = 0;
-
-    
-    currentdir++;
+     currentdir++;
   }while(currentdir < Ndirs);//end of loop over directories specified in fDirs Obj Array
  fIsRead = kTRUE;
  return 0;
