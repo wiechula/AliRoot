@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.18.2.2  2002/06/06 14:18:33  hristov
+Merged with v3-08-02
+
 Revision 1.18.2.1  2002/05/31 09:37:59  hristov
 First set of changes done by Piotr
 
@@ -600,12 +603,13 @@ void  AliStack::Reset(Int_t size)
   //
   // Resets stack
   //
-
+  
   fNtrack=0;
   fNprimary=0;
   fHgwmk=0;
   fLoadPoint=0;
   fCurrent = -1;
+  fTreeK = 0x0;
   ResetArrays(size);
 }
 
@@ -871,8 +875,6 @@ void AliStack::BeginEvent()
 // start a new event
  fNprimary = 0;
  fNtrack = 0;
-
- fTreeK = 0x0;//force extracting Tree from 
 
  if(TreeK())
   {

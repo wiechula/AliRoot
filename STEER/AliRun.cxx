@@ -17,6 +17,9 @@
 
 /*
 $Log$
+Revision 1.81.2.3  2002/06/18 10:18:32  hristov
+Important update (P.Skowronski)
+
 Revision 1.81.2.2  2002/06/06 14:18:33  hristov
 Merged with v3-08-02
 
@@ -1236,10 +1239,11 @@ void AliRun::BeginEvent()
   fEventEnergy.Reset();  
     // Clean detector information
   CleanDetectors();
-  fRunLoader->Stack()->BeginEvent();
-  fRunLoader->MakeTree("K");
-  fRunLoader->MakeTrackRefsContainer();
   fRunLoader->Stack()->Reset();
+  fRunLoader->MakeTree("K");
+  fRunLoader->Stack()->BeginEvent();//this resets the pointer to 
+  fRunLoader->MakeTrackRefsContainer();
+  
     // Reset stack info
 //  fRunLoader->CleanKinematics();
   fRunLoader->MakeTrackRefsContainer();
