@@ -13,7 +13,7 @@ SRCS          =
 
 FSRCS	= $(wildcard spdf/*.F)
 
-FOBJS	= $(FSRCS:.F=.o)
+FOBJS	= $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 SRCS	= $(FSRCS)
 OBJS	= $(FOBJS)
@@ -32,12 +32,12 @@ FFLAGS      = $(FOPT) $(CLIBFOPT) $(CLIBDEFS) -I.
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libpdf.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libpdf.a
+SLIBRARY	= $(LIBDIR)/libpdf.$(SL)
+ALIBRARY	= $(LIBDIR)/libpdf.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libpdf.$(SL):  $(OBJS)
+$(LIBDIR)/libpdf.$(SL):  $(OBJS)
 
 depend:			$(SRCS)
 
@@ -49,4 +49,4 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
--include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 

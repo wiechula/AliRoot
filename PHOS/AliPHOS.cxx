@@ -19,8 +19,6 @@
 // --- galice header files ---
 #include "AliPHOS.h"
 #include "AliRun.h"
-#include "AliMC.h" 
-#include "TGeant3.h"
 
 //______________________________________________________________________________
 
@@ -194,7 +192,6 @@ void AliPHOS::CreateMaterials()
 // ORIGIN    : NICK VAN EIJNDHOVEN 
 
 
-  AliMC* pMC = AliMC::GetMC();
 
     Int_t   ISXFLD = gAlice->Field()->Integ();
     Float_t SXMGMX = gAlice->Field()->Max();
@@ -235,8 +232,7 @@ void AliPHOS::CreateMaterials()
     Float_t wtx[2] = { 1.,1. };
     Float_t dtx    = 1.83;
 
-    Int_t *idtmed = gAlice->Idtmed();
-    
+    Int_t *idtmed = fIdtmed->GetArray()-699;
 
     AliMixture(  0, "PbWO4$",          ax, zx, dx, -3, wx);
     AliMixture(  1, "Polystyrene$",    ap, zp, dp, -2, wp);
@@ -250,23 +246,23 @@ void AliPHOS::CreateMaterials()
     AliMixture(  8, "Textolit$",        atx, ztx, dtx, -2, wtx);
     AliMaterial(99, "Air$",             14.61, 7.3, .001205, 30420., 67500);
 
-    AliMedium(700, "PHOS Xtal    $", 0, 1, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(701, "CPV scint.   $", 1, 1, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(702, "Al parts     $", 2, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
-    AliMedium(703, "Tyvek wrapper$", 3, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
-    AliMedium(704, "Polyst. foam $", 4, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(705, "Steel cover  $", 5, 0, ISXFLD, SXMGMX, 10., .1, .1, 1e-4, 1e-4);
-    AliMedium(706, "Si PIN       $", 6, 0, ISXFLD, SXMGMX, 10., .1, .1, .01, .01);
-    AliMedium(707, "Thermo Insul.$", 7, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(708, "Textolit     $", 8, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(799, "Air          $",99, 0, ISXFLD, SXMGMX, 10., 1., .1, .1, 10);
+    AliMedium(0, "PHOS Xtal    $", 0, 1, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(1, "CPV scint.   $", 1, 1, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(2, "Al parts     $", 2, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
+    AliMedium(3, "Tyvek wrapper$", 3, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
+    AliMedium(4, "Polyst. foam $", 4, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(5, "Steel cover  $", 5, 0, ISXFLD, SXMGMX, 10., .1, .1, 1e-4, 1e-4);
+    AliMedium(6, "Si PIN       $", 6, 0, ISXFLD, SXMGMX, 10., .1, .1, .01, .01);
+    AliMedium(7, "Thermo Insul.$", 7, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(8, "Textolit     $", 8, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(99, "Air          $",99, 0, ISXFLD, SXMGMX, 10., 1., .1, .1, 10);
 
 // --- Generate explicitly delta rays in the steel cover --- 
-    pMC->Gstpar(idtmed[704], "LOSS", 3.);
-    pMC->Gstpar(idtmed[704], "DRAY", 1.);
+    gMC->Gstpar(idtmed[704], "LOSS", 3.);
+    gMC->Gstpar(idtmed[704], "DRAY", 1.);
 // --- and in aluminium parts --- 
-    pMC->Gstpar(idtmed[701], "LOSS", 3.);
-    pMC->Gstpar(idtmed[701], "DRAY", 1.);
+    gMC->Gstpar(idtmed[701], "LOSS", 3.);
+    gMC->Gstpar(idtmed[701], "DRAY", 1.);
 }
  
 //______________________________________________________________________________

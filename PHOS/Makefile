@@ -19,7 +19,7 @@ HDRS          = $(SRCS:.cxx=.h) PHOSLinkDef.h
 
 DICT          = PHOSCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN sources
 
@@ -27,15 +27,15 @@ FSRCS = AliPHOSf.F AliPHOScommon.F
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.F=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -48,13 +48,13 @@ FFLAGS      = $(FOPT)
 ##### Other Libraries #####
 
 SHSRCS  = $(wildcard shaker/*.f)
-SHOBJS  = $(SHSRCS:.f=.o)
+SHOBJS  = $(patsubst %.f,tgt_$(ALICE_TARGET)/%.o,$(SHSRCS))
 
-RCSRCS  = $(wildcard reconstruction/*.f) $(wildcard utils/*.cxx) $(wildcard utils/*.f) 
-RCOBJS  = $(patsubst %.f,%.o,$(patsubst %.cxx,%.o,$(RCSRCS))) 
+RCSRCS  = $(wildcard reconstruction/*.f)  
+RCOBJS  = $(patsubst %.f,tgt_$(ALICE_TARGET)/%.o,$(RCSRCS))
 
 DUSRCS	= libPHOSdummy.cxx
-DUOBJS	= $(DUSRCS:.cxx=.o)
+DUOBJS	= $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DUSRCS))
 
 ALSRCS  = $(SRCS) $(SHSRCS) $(RCSRCS) $(DUSRCS) dummies.c
 
@@ -62,18 +62,18 @@ ALOBJS  = $(SHOBJS) $(RCOBJS) $(DUOBJS)
 
 ##### COMMANDS ##### 
 
-SLIBRARY     	= $(ALICE_ROOT)/lib/libPHOSdummy.$(SL) $(ALICE_ROOT)/lib/libPHOSshaker.$(SL) \
-                  $(ALICE_ROOT)/lib/libPHOSreconstruction.$(SL) $(ALICE_ROOT)/lib/libPHOS.$(SL)
+SLIBRARY     	= $(LIBDIR)/libPHOSdummy.$(SL) $(LIBDIR)/libPHOSshaker.$(SL) \
+                  $(LIBDIR)/libPHOSreconstruction.$(SL) $(LIBDIR)/libPHOS.$(SL)
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libPHOSdummy.$(SL):		$(DUOBJS)
+$(LIBDIR)/libPHOSdummy.$(SL):		$(DUOBJS)
 
-$(ALICE_ROOT)/lib/libPHOSshaker.$(SL):		$(SHOBJS)
+$(LIBDIR)/libPHOSshaker.$(SL):		$(SHOBJS)
 
-$(ALICE_ROOT)/lib/libPHOSreconstruction.$(SL):	$(RCOBJS)
+$(LIBDIR)/libPHOSreconstruction.$(SL):	$(RCOBJS)
 
-$(ALICE_ROOT)/lib/libPHOS.$(SL):			$(OBJS) $(FOBJS)
+$(LIBDIR)/libPHOS.$(SL):			$(OBJS) $(FOBJS)
 
 $(DICT):					$(HDRS)
 
@@ -88,4 +88,19 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
--include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+### Target check creates violation reports (.viol), which depend on
+### stripped files (.ii), which in turn depend on preprocessed
+### files (.i). Dependences are in conf/GeneralDef.
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
+check:          $(CHECKS)
+
+
+
+
+
+
+

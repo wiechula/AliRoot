@@ -33,6 +33,16 @@ protected:
   Int_t          fNtracks;          // Number of tracks in TPC
   Int_t          *fClustersIndex;   // Index for each sector in fClusters
   Int_t          *fDigitsIndex;     // Index for each sector in fDigits
+
+  //MK changes
+
+  Float_t        fSide;  // selects left(-1), right(+1), or both(0) sides of the TPC
+  Int_t          fNoComp; // number of a drift gas components
+  Int_t          fMixtComp[3]; // drift gas components
+  Float_t        fMixtProp[3]; // mixture proportions
+
+  //   
+
   TClonesArray   *fClusters;        // List of clusters for all sectors
   TClonesArray   *fTracks;          // List of reconstructed tracks
   //MI changes
@@ -72,6 +82,12 @@ public:
   virtual void  SetSecUps (Int_t s1,Int_t s2,Int_t s3,Int_t s4,Int_t s5, Int_t s6,
 			   Int_t s7,Int_t s8,Int_t s9,Int_t s10, Int_t s11, Int_t s12);
   virtual void  SetSens(Int_t sens);
+  //MK changes
+
+  virtual void  SetSide(Float_t side);
+  virtual void  SetGasMixt(Int_t nc,Int_t c1,Int_t c2,Int_t c3,Float_t p1,
+                           Float_t p2,Float_t p3); 
+
   virtual void  StepManager()=0;
   virtual void  DrawDetector() {}
   AliTPCD*  GetDigParam() {return fDigParam;} //MI change8

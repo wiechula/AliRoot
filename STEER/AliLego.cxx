@@ -29,7 +29,7 @@
 //////////////////////////////////////////////////////////////
 
 #include "TMath.h"
-#include "TGeant3.h"
+#include "AliLego.h"
 #include "AliRun.h"
 #include "AliConst.h"
 
@@ -70,7 +70,9 @@ void AliLego::GenerateKinematics()
 // Create a geantino with kinematics corresponding to the current
 // bins in theta and phi.
    
-   const Int_t mpart = 48;
+  //
+  // Rootinos are 0
+   const Int_t mpart = 0;
    Float_t orig[3], pmom[3];
    Float_t t, cost, sint, cosp, sinp;
    
@@ -183,16 +185,15 @@ Float_t AliLego::PropagateCylinder(Float_t *x, Float_t *v, Float_t r, Float_t z)
 void AliLego::Run()
 {
    // loop on phi,theta bins
-   AliMC* pMC=AliMC::GetMC();
-   pMC->InitLego();
+   gMC->InitLego();
    Float_t thed, phid, eta;
    for (fPhiBin=1; fPhiBin<=fNphi; fPhiBin++) {
       printf("AliLego Generating rays in phi bin:%d\n",fPhiBin);
       for (fThetaBin=1; fThetaBin<=fNtheta; fThetaBin++) {
-         pMC->Gtrigi();
-         pMC->Gtrigc();
+         gMC->Gtrigi();
+         gMC->Gtrigc();
          GenerateKinematics();
-         pMC->Gtreve();
+         gMC->Gtreve_root();
 
          thed = fCurTheta*kRaddeg;
          phid = fCurPhi*kRaddeg;
@@ -217,33 +218,45 @@ void AliLego::StepManager()
 {
 // called from AliRun::Stepmanager from gustep.
 // Accumulate the 3 parameters step by step
-  AliMC* pMC = AliMC::GetMC();
   
    Float_t t, tt;
    Float_t a,z,dens,radl,absl;
+   Int_t i;
+   Bool_t out;
    
-   Float_t step  = pMC->TrackStep();
+   Float_t step  = gMC->TrackStep();
        
-   Float_t vect[3], pmom[4];
-   pMC->TrackPosition(vect);  
-   pMC->TrackMomentum(pmom);
-   pMC->CurrentMaterial(a,z,dens,radl,absl);
+   Float_t vect[3], dir[3];
+   TLorentzVector pos, mom;
+
+   gMC->TrackPosition(pos);  
+   gMC->TrackMomentum(mom);
+   gMC->CurrentMaterial(a,z,dens,radl,absl);
    
    if (z < 1) return;
    
-// --- See if we have to stop now
-   if (TMath::Abs(vect[2]) > fZMax  || 
-       vect[0]*vect[0] +vect[1]*vect[1] > fRadMax*fRadMax) {
-       pMC->StopEvent();
+// --- See how long we have to go
+   if (TMath::Abs(pos[2]) <= fZMax  && 
+       pos[0]*pos[0] +pos[1]*pos[1] <= fRadMax*fRadMax) {
+
+     tt = step;
+     out = kFALSE;
    } else {
 
-// --- See how long we have to go
-      t  = PropagateCylinder(vect,pmom,fRadMax,fZMax);
+      for(i=0;i<3;++i) {
+	vect[i]=pos[i];
+	dir[i]=mom[i];
+      }
+      t  = PropagateCylinder(vect,dir,fRadMax,fZMax);
       tt = TMath::Min(step,t);
-
-      fTotAbso += tt/absl;
-      fTotRadl += tt/radl;
-      fTotGcm2 += tt*dens;
+      out = kTRUE;
    }
+
+   fTotAbso += tt/absl;
+   fTotRadl += tt/radl;
+   fTotGcm2 += tt*dens;
+
+// --- See if we have to stop now
+   if(out) gMC->StopEvent();
 }
 

@@ -33,6 +33,7 @@ FSRCS	= dummies.F hbcdf.F fzdummies.F \
 	  mathlib/gen/d/gauss.F \
 	  mathlib/gen/d/gauss128.F \
 	  mathlib/gen/d/gauss64.F \
+	  mathlib/gen/g/prob.F \
 	  mathlib/gen/n/mtlprt.F \
 	  mathlib/gen/n/mtlset.F \
 	  mathlib/gen/v/ranlux.F \
@@ -86,6 +87,7 @@ FSRCS	= dummies.F hbcdf.F fzdummies.F \
 	  packlib/kernlib/kerngen/tcgens/vfill.F \
 	  packlib/kernlib/kerngen/tcgens/vmax.F \
 	  packlib/kernlib/kerngen/tcgens/vmod.F \
+	  packlib/kernlib/kerngen/tcgens/vscale.F \
 	  packlib/kernlib/kerngen/tcgens/vunit.F \
 	  packlib/kernlib/kerngen/tcgens/vzero.F \
 	  packlib/kernlib/kernnum/e104fort/fint.F \
@@ -272,9 +274,9 @@ endif
 
 CXXSRC	=
 
-FOBJ	= $(FSRC:.F=.o)
-COBJ	= $(CSRC:.c=.o)
-CXXOBJ	= $(CXXSRC:.cxx=.o)
+FOBJ	= $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRC))
+COBJ	= $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRC))
+CXXOBJ	= $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(CXXSRC))
 
 SRCS	= $(FSRC) $(CSRC) $(CXXSRC)
 OBJS	= $(FOBJ) $(COBJ) $(CXXOBJ)
@@ -283,8 +285,8 @@ OBJS	= $(FOBJ) $(COBJ) $(CXXOBJ)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libminicern.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libminicern.a
+SLIBRARY	= $(LIBDIR)/libminicern.$(SL)
+ALIBRARY	= $(LIBDIR)/libminicern.a
 
 ifeq ($(PLATFORM),alpha)
         default:	$(ALIBRARY)
@@ -292,8 +294,8 @@ else
         default:	$(SLIBRARY)
 endif
 
-$(ALICE_ROOT)/lib/libminicern.$(SL):  $(OBJS)
-$(ALICE_ROOT)/lib/libminicern.a:  $(OBJS)
+$(LIBDIR)/libminicern.$(SL):  $(OBJS)
+$(LIBDIR)/libminicern.a:  $(OBJS)
 
 depend:			$(SRCS)
 
@@ -305,4 +307,4 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
--include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 

@@ -13,8 +13,10 @@
 
 #include <TMath.h>
 #include <TVector.h>
+#include <TRandom.h>
 
 #include "AliTRDv2.h"
+#include "AliTRDmatrix.h"
 #include "AliRun.h"
 #include "AliMC.h"
 #include "AliConst.h"
@@ -28,442 +30,85 @@ AliTRDv2::AliTRDv2(const char *name, const char *title)
   //
   // Standard constructor for Transition Radiation Detector version 2
   //
-  for (Int_t icham = 0; icham < ncham; ++icham) {
-    fIdSensI[icham] = 0;
-    fIdSensN[icham] = 0;
-    fIdSensO[icham] = 0;
+
+  fIdSens       = 0;
+
+  fIdSpace1     = 0;
+  fIdSpace2     = 0;
+  fIdSpace3     = 0;
+
+  fIdChamber1   = 0;
+  fIdChamber2   = 0;
+  fIdChamber3   = 0;
+
+  fSensSelect   = 0;
+  fSensPlane    = 0;
+  fSensChamber  = 0;
+  fSensSector   = 0;
+
+  for (Int_t iplan = 0; iplan < kNplan; iplan++) {
+    for (Int_t icham = 0; icham < kNcham; icham++) {
+      fRowMax[iplan][icham] = 0;
+    }
+    fColMax[iplan] = 0;
   }
-  fDeltaE = NULL;
+  fTimeMax      = 0;
+
+  fRowPadSize   = 0;
+  fColPadSize   = 0;
+  fTimeBinSize  = 0;
+
+  fGasGain      = 0;
+  fNoise        = 0;
+  fChipGain     = 0;
+  fADCoutRange  = 0;
+  fADCinRange   = 0;
+  fADCthreshold = 0;
+
+  fDiffusionT   = 0;
+  fDiffusionL   = 0;
+
+  fDeltaE       = NULL;
 
   SetBufferSize(128000);
+
 }
 
+//_____________________________________________________________________________
 AliTRDv2::~AliTRDv2()
 {
-   if (fDeltaE)  delete fDeltaE;
+
+  if (fDeltaE) delete fDeltaE;
+
 }
  
 //_____________________________________________________________________________
 void AliTRDv2::CreateGeometry()
 {
   //
-  // Create geometry for the Transition Radiation Detector version 2
+  // Create the GEANT geometry for the Transition Radiation Detector - Version 2
   // This version covers the full azimuth. 
-  // --- Author :  Christoph Blume (GSI) 20/5/99 
   //
-  // --- Volume names : 
-  //       TRD         --> Mother TRD volume                              (Al) 
-  //       UTRS        --> Sectors of the sub-detector                    (Al)
-  //       UTRI        --> Inner part of the detector frame               (Air) 
-  //     The chambers 
-  //       UCI1-6      --> The frame of the inner chambers                (C) 
-  //       UCN1-6      --> The frame of the neighbouring chambers         (C) 
-  //       UCO1-6      --> The frame of the outer chambers                (C) 
-  //       UII1-6      --> The inner part of the inner chambers           (Air) 
-  //       UIN1-6      --> The inner part of the neighbouring chambers    (Air) 
-  //       UIO1-6      --> The inner part of the outer chambers           (Air) 
-  //     The layers inside a chamber 
-  //       UT0I(N,O)   --> Radiator seal                                  (G10)
-  //       UT1I(N,O)   --> Radiator                                       (CO2)
-  //       UT2I(N,O)   --> Polyethylene of radiator                       (PE)
-  //       UT3I(N,O)   --> Entrance window                                (Mylar)
-  //       UXI(N,O)1-6 --> Gas volume (sensitive)                         (Xe/Isobutane)
-  //       UT5I(N,O)   --> Pad plane                                      (Cu)
-  //       UT6I(N,O)   --> Support structure                              (G10)
-  //       UT7I(N,O)   --> FEE + signal lines                             (Cu)
-  //       UT8I(N,O)   --> Polyethylene of cooling device                 (PE)
-  //       UT9I(N,O)   --> Cooling water                                  (Water)
+  // Author:  Christoph Blume (C.Blume@gsi.de) 20/07/99 
   //
-  //Begin_Html
-  /*
-    <img src="picts/AliTRDv2.gif">
-  */
-  //End_Html
-  //Begin_Html
-  /*
-    <img src="picts/AliTRDv2Tree.gif">
-  */
-  //End_Html
-  
+
   Float_t xpos, ypos, zpos;
-  Int_t   idmat[2];
 
-  const Int_t nparmo = 10;
-  const Int_t nparfr =  4;
-  const Int_t nparch =  3;
-  const Int_t nparic =  4;
-  const Int_t nparnc =  4;
-  const Int_t nparoc = 11;
+  // Check that FRAME is there otherwise we have no place where to put the TRD
+  AliModule* FRAME = gAlice->GetModule("FRAME");
+  if (!FRAME) return;
 
-  Float_t par_mo[nparmo];
-  Float_t par_fr[nparfr];
-  Float_t par_ch[nparch];
-  Float_t par_ic[nparic];
-  Float_t par_nc[nparnc];
-  Float_t par_oc[nparoc];
+  // Define the chambers
+  AliTRD::CreateGeometry();
 
-  Int_t icham;
+  // Position the the TRD-sectors in all TRD-volumes in the spaceframe
+  xpos     = 0.;
+  ypos     = 0.;
+  zpos     = 0.;
+  gMC->Gspos("TRD ",1,"BTR1",xpos,ypos,zpos,0,"ONLY");
+  gMC->Gspos("TRD ",2,"BTR2",xpos,ypos,zpos,0,"ONLY");
+  gMC->Gspos("TRD ",3,"BTR3",xpos,ypos,zpos,0,"ONLY");
 
-  Int_t *idtmed = gAlice->Idtmed();
-  
-  AliMC* pMC = AliMC::GetMC();
-
-  //////////////////////////////////////////////////////////////////////////
-  //     Definition of Volumes 
-  //////////////////////////////////////////////////////////////////////////
-  
-  // Definition of the mother volume for the TRD (Al) 
-  par_mo[0] =   0.;
-  par_mo[1] = 360.;
-  par_mo[2] = nsect;
-  par_mo[3] = 2.;
-  par_mo[4] = -zmax1;
-  par_mo[5] = rmin;
-  par_mo[6] = rmax;
-  par_mo[7] =  zmax1;
-  par_mo[8] = rmin;
-  par_mo[9] = rmax;
-  pMC->Gsvolu("TRD ", "PGON", idtmed[1301-1], par_mo, nparmo);
-  pMC->Gsdvn("UTRS", "TRD ", nsect, 2);
-
-  // The minimal width of a sector in rphi-direction
-  Float_t widmi = rmin * TMath::Tan(kPI/nsect);
-  // The maximal width of a sector in rphi-direction
-  Float_t widma = rmax * TMath::Tan(kPI/nsect);
-  // The total thickness of the spaceframe (Al + Air)
-  Float_t frame = widmi - (widpl1 / 2);
-
-  // Definition of the inner part of the detector frame (Air) 
-  par_fr[0] = widmi - alframe / 2.;
-  par_fr[1] = widma - alframe / 2.;
-  par_fr[2] = zmax1;
-  par_fr[3] = (rmax - rmin) / 2;
-  pMC->Gsvolu("UTRI", "TRD1", idtmed[1302-1], par_fr, nparfr); 
-
-  // Some parameter for the chambers 
-  Float_t lendifc = (zmax1 - zmax2) / nmodul;
-  Float_t heightc = (rmax  - rmin ) / nmodul;
-  Float_t widdifc = (widma - widmi) / nmodul;
-
-  // Definition of the chambers 
-  Char_t ctagc[5], ctagi[5];
-  for (icham = 1; icham <= ncham; ++icham) {
-
-    // Carbon frame of the inner chambers (C) 
-    par_ch[0] = widmi + (icham-1) * widdifc - frame;
-    par_ch[1] = zleni   / 2.;
-    par_ch[2] = heightc / 2.;
-    sprintf(ctagc,"UCI%1d",icham);
-    pMC->Gsvolu(ctagc, "BOX ", idtmed[1307-1], par_ch, nparch);
-    // Inner part of the inner chambers (Air) 
-    par_ch[0] -= ccframe;
-    par_ch[1] -= ccframe;
-    sprintf(ctagc,"UII%1d",icham);
-    pMC->Gsvolu(ctagc, "BOX ", idtmed[1302-1], par_ch, nparch);
-
-    // Carbon frame of the neighbouring chambers (C) 
-    par_ch[0] = widmi + (icham-1) * widdifc - frame;
-    par_ch[1] = zlenn   / 2.;
-    par_ch[2] = heightc / 2.;
-    sprintf(ctagc,"UCN%1d",icham);
-    pMC->Gsvolu(ctagc, "BOX ", idtmed[1307-1], par_ch, nparch);
-    // Inner part of the neighbouring chambers (Air) 
-    par_ch[0] -= ccframe;
-    par_ch[1] -= ccframe;
-    sprintf(ctagc,"UIN%1d",icham);
-    pMC->Gsvolu(ctagc, "BOX ", idtmed[1302-1], par_ch, nparch);
-
-    // Carbon frame of the outer chambers (C) 
-    par_ch[0] = widmi + (icham-1) * widdifc - frame;
-    par_ch[1] = (icham - 6) * lendifc / 2. + zleno   / 2.;
-    par_ch[2] = heightc / 2.;
-    sprintf(ctagc,"UCO%1d",icham);
-    pMC->Gsvolu(ctagc, "BOX ", idtmed[1307-1], par_ch, nparch);
-    // Inner part of the outer chambers (Air) 
-    par_ch[0] -= ccframe;
-    par_ch[1] -= ccframe;
-    sprintf(ctagc,"UIO%1d",icham);
-    pMC->Gsvolu(ctagc, "BOX ", idtmed[1302-1], par_ch, nparch);
-
-  }
-
-  // Definition of the layers in each inner chamber 
-  par_ic[0] = -1.;
-  par_ic[1] = -1.;
-  // G10 layer (radiator layer)
-  par_ic[2] = sethick / 2;
-  pMC->Gsvolu("UT0I", "BOX ", idtmed[1313-1], par_ic, nparic);
-  // CO2 layer (radiator)
-  par_ic[2] = rathick / 2;
-  pMC->Gsvolu("UT1I", "BOX ", idtmed[1312-1], par_ic, nparic);
-  // PE layer (radiator)
-  par_ic[2] = pethick / 2;
-  pMC->Gsvolu("UT2I", "BOX ", idtmed[1303-1], par_ic, nparic);
-  // Mylar layer (entrance window + HV cathode) 
-  par_ic[2] = mythick / 2;
-  pMC->Gsvolu("UT3I", "BOX ", idtmed[1308-1], par_ic, nparic);
-  // Xe/Isobutane layer (gasvolume) 
-  par_ic[2] = xethick / 2.;
-  for (icham = 1; icham <= 6; ++icham) {
-    sprintf(ctagc,"UXI%1d",icham);
-    pMC->Gsvolu(ctagc, "BOX ", idtmed[1309-1], par_ic, nparic);
-  }
-  // Cu layer (pad plane)
-  par_ic[2] = cuthick / 2;
-  pMC->Gsvolu("UT5I", "BOX ", idtmed[1305-1], par_ic, nparic);
-  // G10 layer (support structure)
-  par_ic[2] = suthick / 2;
-  pMC->Gsvolu("UT6I", "BOX ", idtmed[1313-1], par_ic, nparic);
-  // Cu layer (FEE + signal lines)
-  par_ic[2] = fethick / 2;
-  pMC->Gsvolu("UT7I", "BOX ", idtmed[1305-1], par_ic, nparic);
-  // PE layer (cooling devices)
-  par_ic[2] = cothick / 2;
-  pMC->Gsvolu("UT8I", "BOX ", idtmed[1303-1], par_ic, nparic);
-  // Water layer (cooling)
-  par_ic[2] = wathick / 2;
-  pMC->Gsvolu("UT9I", "BOX ", idtmed[1314-1], par_ic, nparic);
-
-  // Definition of the layers in each neighbouring chamber 
-  par_nc[0] = -1.;
-  par_nc[1] = -1.;
-  // G10 layer (radiator layer)
-  par_nc[2] = sethick / 2;
-  pMC->Gsvolu("UT0N", "BOX ", idtmed[1313-1], par_nc, nparnc);
-  // CO2 layer (radiator)
-  par_nc[2] = rathick / 2;
-  pMC->Gsvolu("UT1N", "BOX ", idtmed[1312-1], par_nc, nparnc);
-  // PE layer (radiator)
-  par_nc[2] = pethick / 2;
-  pMC->Gsvolu("UT2N", "BOX ", idtmed[1303-1], par_nc, nparnc);
-  // Mylar layer (entrance window + HV cathode) 
-  par_nc[2] = mythick / 2;
-  pMC->Gsvolu("UT3N", "BOX ", idtmed[1308-1], par_nc, nparnc);
-  // Xe/Isobutane layer (gasvolume) 
-  par_nc[2] = xethick / 2.;
-  for (icham = 1; icham <= 6; ++icham) {
-    sprintf(ctagc,"UXN%1d",icham);
-    pMC->Gsvolu(ctagc, "BOX ", idtmed[1309-1], par_nc, nparnc);
-  }
-  // Cu layer (pad plane)
-  par_nc[2] = cuthick / 2;
-  pMC->Gsvolu("UT5N", "BOX ", idtmed[1305-1], par_nc, nparnc);
-  // G10 layer (support structure)
-  par_nc[2] = suthick / 2;
-  pMC->Gsvolu("UT6N", "BOX ", idtmed[1313-1], par_nc, nparnc);
-  // Cu layer (FEE + signal lines)
-  par_nc[2] = fethick / 2;
-  pMC->Gsvolu("UT7N", "BOX ", idtmed[1305-1], par_nc, nparnc);
-  // PE layer (cooling devices)
-  par_nc[2] = cothick / 2;
-  pMC->Gsvolu("UT8N", "BOX ", idtmed[1303-1], par_nc, nparnc);
-  // Water layer (cooling)
-  par_nc[2] = wathick / 2;
-  pMC->Gsvolu("UT9N", "BOX ", idtmed[1314-1], par_nc, nparnc);
-
-  // Definition of the layers in each outer chamber 
-  par_oc[0] = -1.;
-  par_oc[1] = -1.;
-  // G10 layer (radiator layer)
-  par_oc[2] = sethick / 2;
-  pMC->Gsvolu("UT0O", "BOX ", idtmed[1313-1], par_oc, nparoc);
-  // CO2 layer (radiator)
-  par_oc[2] = rathick / 2;
-  pMC->Gsvolu("UT1O", "BOX ", idtmed[1312-1], par_oc, nparoc);
-  // PE layer (radiator)
-  par_oc[2] = pethick / 2;
-  pMC->Gsvolu("UT2O", "BOX ", idtmed[1303-1], par_oc, nparoc);
-  // Mylar layer (entrance window + HV cathode) 
-  par_oc[2] = mythick / 2;
-  pMC->Gsvolu("UT3O", "BOX ", idtmed[1308-1], par_oc, nparoc);
-  // Xe/Isobutane layer (gasvolume) 
-  par_oc[2] = xethick / 2.;
-  for (icham = 1; icham <= 6; ++icham) {
-    sprintf(ctagc,"UXO%1d",icham);
-    pMC->Gsvolu(ctagc, "BOX ", idtmed[1309-1], par_oc, nparoc);
-  }
-  // Cu layer (pad plane)
-  par_oc[2] = cuthick / 2;
-  pMC->Gsvolu("UT5O", "BOX ", idtmed[1305-1], par_oc, nparoc);
-  // G10 layer (support structure)
-  par_oc[2] = suthick / 2;
-  pMC->Gsvolu("UT6O", "BOX ", idtmed[1313-1], par_oc, nparoc);
-  // Cu layer (FEE + signal lines)
-  par_oc[2] = fethick / 2;
-  pMC->Gsvolu("UT7O", "BOX ", idtmed[1305-1], par_oc, nparoc);
-  // PE layer (cooling devices)
-  par_oc[2] = cothick / 2;
-  pMC->Gsvolu("UT8O", "BOX ", idtmed[1303-1], par_oc, nparoc);
-  // Water layer (cooling)
-  par_oc[2] = wathick / 2;
-  pMC->Gsvolu("UT9O", "BOX ", idtmed[1314-1], par_oc, nparoc);
-
-  //////////////////////////////////////////////////////////////////////////
-  //     Positioning of Volumes   
-  //////////////////////////////////////////////////////////////////////////
-
-  // The rotation matrices 
-  AliMatrix(idmat[0],  90.,  90., 180.,   0.,  90.,   0.);
-  AliMatrix(idmat[1],  90.,  90.,   0.,   0.,  90.,   0.);
-
-  // Position of the layers in a chamber 
-  pMC->Gspos("UT2I", 1, "UT1I", 0., 0., pezpos, 0, "ONLY");
-  pMC->Gspos("UT2N", 1, "UT1N", 0., 0., pezpos, 0, "ONLY");
-  pMC->Gspos("UT2O", 1, "UT1O", 0., 0., pezpos, 0, "ONLY");
-  for (icham = 1; icham <= ncham; ++icham) {
-    // The inner chambers 
-    sprintf(ctagi,"UII%1d",icham);
-    sprintf(ctagc,"UXI%1d",icham);
-    pMC->Gspos("UT9I", icham, ctagi, 0., 0., wazpos, 0, "ONLY");
-    pMC->Gspos("UT8I", icham, ctagi, 0., 0., cozpos, 0, "ONLY");
-    pMC->Gspos("UT7I", icham, ctagi, 0., 0., fezpos, 0, "ONLY");
-    pMC->Gspos("UT6I", icham, ctagi, 0., 0., suzpos, 0, "ONLY");
-    pMC->Gspos("UT5I", icham, ctagi, 0., 0., cuzpos, 0, "ONLY");
-    pMC->Gspos(ctagc ,     1, ctagi, 0., 0., xezpos, 0, "ONLY");
-    pMC->Gspos("UT3I", icham, ctagi, 0., 0., myzpos, 0, "ONLY");
-    pMC->Gspos("UT1I", icham, ctagi, 0., 0., razpos, 0, "ONLY");
-    pMC->Gspos("UT0I", icham, ctagi, 0., 0., sezpos, 0, "ONLY");
-    // The neighbouring chambers 
-    sprintf(ctagi,"UIN%1d",icham);
-    sprintf(ctagc,"UXN%1d",icham);
-    pMC->Gspos("UT9N", icham, ctagi, 0., 0., wazpos, 0, "ONLY");
-    pMC->Gspos("UT8N", icham, ctagi, 0., 0., cozpos, 0, "ONLY");
-    pMC->Gspos("UT7N", icham, ctagi, 0., 0., fezpos, 0, "ONLY");
-    pMC->Gspos("UT6N", icham, ctagi, 0., 0., suzpos, 0, "ONLY");
-    pMC->Gspos("UT5N", icham, ctagi, 0., 0., cuzpos, 0, "ONLY");
-    pMC->Gspos(ctagc ,     1, ctagi, 0., 0., xezpos, 0, "ONLY");
-    pMC->Gspos("UT3N", icham, ctagi, 0., 0., myzpos, 0, "ONLY");
-    pMC->Gspos("UT1N", icham, ctagi, 0., 0., razpos, 0, "ONLY");
-    pMC->Gspos("UT0N", icham, ctagi, 0., 0., sezpos, 0, "ONLY");
-    // The outer chambers 
-    sprintf(ctagi,"UIO%1d",icham);
-    sprintf(ctagc,"UXO%1d",icham);
-    pMC->Gspos("UT9O", icham, ctagi, 0., 0., wazpos, 0, "ONLY");
-    pMC->Gspos("UT8O", icham, ctagi, 0., 0., cozpos, 0, "ONLY");
-    pMC->Gspos("UT7O", icham, ctagi, 0., 0., fezpos, 0, "ONLY");
-    pMC->Gspos("UT6O", icham, ctagi, 0., 0., suzpos, 0, "ONLY");
-    pMC->Gspos("UT5O", icham, ctagi, 0., 0., cuzpos, 0, "ONLY");
-    pMC->Gspos(ctagc ,     1, ctagi, 0., 0., xezpos, 0, "ONLY");
-    pMC->Gspos("UT3O", icham, ctagi, 0., 0., myzpos, 0, "ONLY");
-    pMC->Gspos("UT1O", icham, ctagi, 0., 0., razpos, 0, "ONLY");
-    pMC->Gspos("UT0O", icham, ctagi, 0., 0., sezpos, 0, "ONLY");
-  }
-
-  // Position of the inner part of the chambers in the carbon-frames 
-  for (icham = 1; icham <= ncham; ++icham) {
-    xpos = 0.;
-    ypos = 0.;
-    zpos = 0.;
-    // The inner chambers 
-    sprintf(ctagi,"UII%1d",icham);
-    sprintf(ctagc,"UCI%1d",icham);
-    pMC->Gspos(ctagi, 1, ctagc, xpos, ypos, zpos, 0, "ONLY");
-    // The neighbouring chambers 
-    sprintf(ctagi,"UIN%1d",icham);
-    sprintf(ctagc,"UCN%1d",icham);
-    pMC->Gspos(ctagi, 1, ctagc, xpos, ypos, zpos, 0, "ONLY");
-    // The outer chambers 
-    sprintf(ctagi,"UIO%1d",icham);
-    sprintf(ctagc,"UCO%1d",icham);
-    pMC->Gspos(ctagi, 1, ctagc, xpos, ypos, zpos, 0, "ONLY");
-  }
-
-  // Position of the chambers in the full TRD-setup 
-  for (icham = 1; icham <= ncham; ++icham) {
-    // The inner chambers
-    xpos = 0.;
-    ypos = 0.;
-    zpos = (icham-0.5) * heightc - (rmax - rmin) / 2;
-    sprintf(ctagc,"UCI%1d",icham);
-    pMC->Gspos(ctagc, 1, "UTRI", xpos, ypos, zpos, 0, "ONLY");
-    // The neighbouring chambers
-    xpos = 0.;
-    ypos = (zleni + zlenn) / 2.;
-    zpos = (icham-0.5) * heightc - (rmax - rmin) / 2;
-    sprintf(ctagc,"UCN%1d",icham);
-    pMC->Gspos(ctagc, 1, "UTRI", xpos, ypos, zpos, 0, "ONLY");
-    ypos = -ypos;
-    sprintf(ctagc,"UCN%1d",icham);
-    pMC->Gspos(ctagc, 2, "UTRI", xpos, ypos, zpos, 0, "ONLY");
-    // The outer chambers 
-    xpos = 0.;
-    ypos = (zleni / 2. + zlenn + zmax2 + (icham-1) * lendifc) / 2.;
-    zpos = (icham-0.5) * heightc - (rmax-rmin)/2;
-    sprintf(ctagc,"UCO%1d",icham);
-    pMC->Gspos(ctagc, 1, "UTRI", xpos, ypos, zpos, 0, "ONLY");
-    ypos = -ypos;
-    sprintf(ctagc,"UCO%1d",icham);
-    pMC->Gspos(ctagc, 2, "UTRI", xpos, ypos, zpos, 0, "ONLY");
-  }
-
-  // Position of the inner part of the detector frame
-  xpos = (rmax + rmin) / 2;
-  ypos = 0.;
-  zpos = 0.;
-  pMC->Gspos("UTRI", 1, "UTRS", xpos, ypos, zpos, idmat[0], "ONLY");
-
-  // Position of the TRD mother volume in the ALICE experiment 
-  xpos = 0.;
-  ypos = 0.;
-  zpos = 0.;
-  pMC->Gspos("TRD ", 1, "ALIC", xpos, ypos, zpos,        0, "ONLY");
-
-}
-
-//_____________________________________________________________________________
-void AliTRDv2::DrawModule()
-{
-  //
-  // Draw a shaded view of the Transition Radiation Detector version 1
-  //
-
-  AliMC* pMC = AliMC::GetMC();
-  
-  // Set everything unseen
-  pMC->Gsatt("*", "seen", -1);
-   
-  // Set ALIC mother transparent
-  pMC->Gsatt("ALIC","SEEN",0);
-  
-  // Set the volumes visible
-  pMC->Gsatt("TRD ","SEEN",0);
-  pMC->Gsatt("UTRS","SEEN",0);
-  pMC->Gsatt("UTRI","SEEN",0);
-  Char_t ctag[5];
-  for (Int_t icham = 0; icham < ncham; ++icham) {
-    sprintf(ctag,"UCI%1d",icham+1);
-    pMC->Gsatt(ctag,"SEEN",0);
-    sprintf(ctag,"UCN%1d",icham+1);
-    pMC->Gsatt(ctag,"SEEN",0);
-    sprintf(ctag,"UCO%1d",icham+1);
-    pMC->Gsatt(ctag,"SEEN",0);
-    sprintf(ctag,"UII%1d",icham+1);
-    pMC->Gsatt(ctag,"SEEN",0);
-    sprintf(ctag,"UIN%1d",icham+1);
-    pMC->Gsatt(ctag,"SEEN",0);
-    sprintf(ctag,"UIO%1d",icham+1);
-    pMC->Gsatt(ctag,"SEEN",0);
-    sprintf(ctag,"UXI%1d",icham+1);
-    pMC->Gsatt(ctag,"SEEN",1);
-    sprintf(ctag,"UXN%1d",icham+1);
-    pMC->Gsatt(ctag,"SEEN",1);
-    sprintf(ctag,"UXO%1d",icham+1);
-    pMC->Gsatt(ctag,"SEEN",1);
-  }
-  pMC->Gsatt("UT1I","SEEN",1);
-  pMC->Gsatt("UT1N","SEEN",1);
-  pMC->Gsatt("UT1O","SEEN",1);
-
-  pMC->Gdopt("hide", "on");
-  pMC->Gdopt("shad", "on");
-  pMC->Gsatt("*", "fill", 7);
-  pMC->SetClipBox(".");
-  pMC->SetClipBox("*", 0, 2000, -2000, 2000, -2000, 2000);
-  pMC->DefaultRange();
-  pMC->Gdraw("alic", 40, 30, 0, 12, 9.4, .021, .021);
-  pMC->Gdhead(1111, "Transition Radiation Detector Version 2");
-  pMC->Gdman(18, 4, "MAN");
-  pMC->Gdopt("hide", "off");
 }
 
 //_____________________________________________________________________________
@@ -472,41 +117,518 @@ void AliTRDv2::CreateMaterials()
   //
   // Create materials for the Transition Radiation Detector version 2
   //
+
   AliTRD::CreateMaterials();
+
+}
+
+//_____________________________________________________________________________
+void AliTRDv2::Diffusion(Float_t driftlength, Float_t *xyz)
+{
+  //
+  // Applies the diffusion smearing to the position of a single electron
+  //
+
+  if ((driftlength >        0) && 
+      (driftlength < kDrThick)) {
+    Float_t driftSqrt = TMath::Sqrt(driftlength);
+    Float_t sigmaT = driftSqrt * fDiffusionT;
+    Float_t sigmaL = driftSqrt * fDiffusionL;
+    xyz[0] = gRandom->Gaus(xyz[0], sigmaL);
+    xyz[1] = gRandom->Gaus(xyz[1], sigmaT);
+    xyz[2] = gRandom->Gaus(xyz[2], sigmaT);
+  }
+  else {
+    xyz[0] = 0.0;
+    xyz[1] = 0.0;
+    xyz[2] = 0.0;
+  }
+
+}
+
+//_____________________________________________________________________________
+void AliTRDv2::Hits2Digits()
+{
+  //
+  // Creates TRD digits from hits. This procedure includes the following:
+  //      - Diffusion
+  //      - Gas gain including fluctuations
+  //      - Pad-response (simple Gaussian approximation)
+  //      - Electronics noise
+  //      - Electronics gain
+  //      - Digitization
+  //      - ADC threshold
+  // The corresponding parameter can be adjusted via the various Set-functions.
+  // If these parameters are not explicitly set, default values are used (see
+  // Init-function).
+  // To produce digits from a galice.root file with TRD-hits use the
+  // digitsCreate.C macro.
+  //
+
+  printf(" Start creating digits\n");
+
+  ///////////////////////////////////////////////////////////////
+  // Parameter 
+  ///////////////////////////////////////////////////////////////
+
+  // Converts number of electrons to fC
+  const Float_t el2fC = 1.602E-19 * 1.0E15; 
+
+  ///////////////////////////////////////////////////////////////
+
+  Int_t nBytes = 0;
+
+  AliTRDhit *TRDhit;
+
+  // Position of pad 0,0,0 
+  // 
+  // chambers seen from the top:
+  //     +----------------------------+
+  //     |                            |
+  //     |                            |     ^
+  //     |                            | rphi|
+  //     |                            |     |
+  //     |0                           |     | 
+  //     +----------------------------+     +------>
+  //                                             z 
+  // chambers seen from the side:           ^
+  //     +----------------------------+ time|
+  //     |                            |     |
+  //     |0                           |     |
+  //     +----------------------------+     +------>
+  //                                             z
+  //                                             
+  // The pad row (z-direction)
+  Float_t row0[kNplan][kNcham];
+  for (Int_t iplan = 0; iplan < kNplan; iplan++) {
+    row0[iplan][0] = -fClengthI[iplan]/2. - fClengthM[iplan] - fClengthO[iplan] 
+                   + kCcthick; 
+    row0[iplan][1] = -fClengthI[iplan]/2. - fClengthM[iplan]                    
+                   + kCcthick;
+    row0[iplan][2] = -fClengthI[iplan]/2.                                       
+                   + kCcthick;
+    row0[iplan][3] =  fClengthI[iplan]/2.                                       
+                   + kCcthick; 
+    row0[iplan][4] =  fClengthI[iplan]/2. + fClengthM[iplan]                    
+                   + kCcthick; 
+  }
+  // The pad column (rphi-direction)  
+  Float_t col0[kNplan];
+  for (Int_t iplan = 0; iplan < kNplan; iplan++) {
+    col0[iplan]    = -fCwidth[iplan]/2. + kCcthick;
+  }
+  // The time bucket
+  Float_t time0[kNplan];
+  for (Int_t iplan = 0; iplan < kNplan; iplan++) {
+    time0[iplan]   = kRmin + kCcframe/2. + kDrZpos - 0.5 * kDrThick
+                           + iplan * (kCheight + kCspace);
+  } 
+
+  // Get the pointer to the hit tree
+  TTree *HitTree    = gAlice->TreeH();
+  // Get the pointer to the digits tree
+  TTree *DigitsTree = gAlice->TreeD();
+
+  // Get the number of entries in the hit tree
+  // (Number of primary particles creating a hit somewhere)
+  Int_t nTrack = (Int_t) HitTree->GetEntries();
+
+  Int_t chamBeg = 0;
+  Int_t chamEnd = kNcham;
+  if (fSensChamber) chamEnd = chamBeg = fSensChamber;
+  Int_t planBeg = 0;
+  Int_t planEnd = kNplan;
+  if (fSensPlane)   planEnd = planBeg = fSensPlane;
+  Int_t sectBeg = 0;
+  Int_t sectEnd = kNsect;
+  if (fSensSector)  sectEnd = sectBeg = fSensSector;
+
+  // Loop through all the chambers
+  for (Int_t icham = chamBeg; icham < chamEnd; icham++) {
+    for (Int_t iplan = planBeg; iplan < planEnd; iplan++) {
+      for (Int_t isect = sectBeg; isect < sectEnd; isect++) {
+
+        printf(" Digitizing chamber %d, plane %d, sector %d\n"
+              ,icham+1,iplan+1,isect+1);
+
+        // Create a detector matrix to keep the signal and track numbers
+        AliTRDmatrix *matrix = new AliTRDmatrix(fRowMax[iplan][icham]
+                                               ,fColMax[iplan]
+                                               ,fTimeMax
+                                               ,isect+1,icham+1,iplan+1);
+
+        // Loop through all entries in the tree
+        for (Int_t iTrack = 0; iTrack < nTrack; iTrack++) {
+
+          gAlice->ResetHits();
+          nBytes += HitTree->GetEvent(iTrack);
+
+          // Get the number of hits in the TRD created by this particle
+          Int_t nHit = fHits->GetEntriesFast();
+
+          // Loop through the TRD hits  
+          for (Int_t iHit = 0; iHit < nHit; iHit++) {
+
+            if (!(TRDhit = (AliTRDhit *) fHits->UncheckedAt(iHit))) 
+              continue;
+
+            Float_t x       = TRDhit->fX;
+            Float_t y       = TRDhit->fY;
+            Float_t z       = TRDhit->fZ;
+            Float_t q       = TRDhit->fQ;
+            Int_t   track   = TRDhit->fTrack;
+            Int_t   plane   = TRDhit->fPlane;
+            Int_t   sector  = TRDhit->fSector;
+            Int_t   chamber = TRDhit->fChamber;        
+
+            if ((sector  != isect+1) ||
+                (plane   != iplan+1) ||
+                (chamber != icham+1)) 
+              continue;
+
+            // Rotate the sectors on top of each other
+            Float_t phi  = 2.0 * kPI /  (Float_t) kNsect 
+                               * ((Float_t) sector - 0.5);
+            Float_t xRot = -x * TMath::Cos(phi) + y * TMath::Sin(phi);
+            Float_t yRot =  x * TMath::Sin(phi) + y * TMath::Cos(phi);
+            Float_t zRot =  z;
+
+            // The hit position in pad coordinates (center pad)
+            // The pad row (z-direction)
+            Int_t rowH  = (Int_t) ((zRot -  row0[iplan][icham]) / fRowPadSize);
+            // The pad column (rphi-direction)  
+            Int_t colH  = (Int_t) ((yRot -  col0[iplan]       ) / fColPadSize);
+            // The time bucket
+            Int_t timeH = (Int_t) ((xRot - time0[iplan]       ) / fTimeBinSize);
+
+            // Array to sum up the signal in a box surrounding the
+            // hit postition
+            const Int_t timeBox = 5;
+            const Int_t  colBox = 7;
+            const Int_t  rowBox = 5;
+            Float_t signalSum[rowBox][colBox][timeBox];
+            for (Int_t iRow  = 0;  iRow <  rowBox; iRow++ ) {
+              for (Int_t iCol  = 0;  iCol <  colBox; iCol++ ) {
+                for (Int_t iTime = 0; iTime < timeBox; iTime++) {
+                  signalSum[iRow][iCol][iTime] = 0;
+		}
+	      }
+	    }
+
+            // Loop over all electrons of this hit
+            Int_t nEl = (Int_t) q;
+            for (Int_t iEl = 0; iEl < nEl; iEl++) {
+
+              // Apply the diffusion smearing
+              Float_t driftlength = xRot - time0[iplan];
+              Float_t xyz[3];
+              xyz[0] = xRot;
+              xyz[1] = yRot;
+              xyz[2] = zRot;
+              Diffusion(driftlength,xyz);
+
+              // At this point absorption effects that depend on the 
+	      // driftlength could be taken into account.              
+
+              // The electron position and the distance to the hit position
+	      // in pad units
+              // The pad row (z-direction)
+              Int_t  rowE = (Int_t) ((xyz[2] -  row0[iplan][icham]) / fRowPadSize);
+              Int_t  rowD =  rowH -  rowE;
+              // The pad column (rphi-direction)
+              Int_t  colE = (Int_t) ((xyz[1] -  col0[iplan]       ) / fColPadSize);
+              Int_t  colD =  colH -  colE;
+              // The time bucket
+              Int_t timeE = (Int_t) ((xyz[0] - time0[iplan]       ) / fTimeBinSize);
+              Int_t timeD = timeH - timeE;
+
+              // Apply the gas gain including fluctuations
+              Int_t signal = (Int_t) (-fGasGain * TMath::Log(gRandom->Rndm()));
+
+	      // The distance of the electron to the center of the pad 
+	      // in units of pad width
+              Float_t dist = (xyz[1] - col0[iplan] - (colE + 0.5) * fColPadSize) 
+                           / fColPadSize;
+
+              // Sum up the signal in the different pixels
+              // and apply the pad response
+              Int_t  rowIdx =  rowD + (Int_t) ( rowBox / 2);
+              Int_t  colIdx =  colD + (Int_t) ( colBox / 2);
+              Int_t timeIdx = timeD + (Int_t) (timeBox / 2);
+              signalSum[rowIdx][colIdx-1][timeIdx] += PadResponse(dist-1.) * signal;
+              signalSum[rowIdx][colIdx  ][timeIdx] += PadResponse(dist   ) * signal;
+              signalSum[rowIdx][colIdx+1][timeIdx] += PadResponse(dist+1.) * signal;
+
+            }
+            
+            // Add the padcluster to the detector matrix
+            for (Int_t iRow  = 0;  iRow <  rowBox; iRow++ ) {
+              for (Int_t iCol  = 0;  iCol <  colBox; iCol++ ) {
+                for (Int_t iTime = 0; iTime < timeBox; iTime++) {
+
+                  Int_t  rowB =  rowH + iRow  - (Int_t) ( rowBox / 2); 
+                  Int_t  colB =  colH + iCol  - (Int_t) ( colBox / 2);
+                  Int_t timeB = timeH + iTime - (Int_t) (timeBox / 2);
+
+                  Float_t signalB = signalSum[iRow][iCol][iTime];
+                  if (signalB > 0.0) {
+                    matrix->AddSignal(rowB,colB,timeB,signalB);
+                    if (!(matrix->AddTrack(rowB,colB,timeB,track))) 
+                      printf("More than three tracks in a pixel!\n");
+		  }
+
+		}
+	      }
+	    }
+
+          }
+
+	}
+
+        // Create the hits for this chamber
+        for (Int_t iRow  = 0; iRow  <  fRowMax[iplan][icham]; iRow++ ) {
+          for (Int_t iCol  = 0; iCol  <  fColMax[iplan]         ; iCol++ ) {
+            for (Int_t iTime = 0; iTime < fTimeMax                ; iTime++) {         
+
+              Float_t signalAmp = matrix->GetSignal(iRow,iCol,iTime);
+
+              // Add the noise
+              signalAmp  = TMath::Max(gRandom->Gaus(signalAmp,fNoise),0.0);
+	      // Convert to fC
+              signalAmp *= el2fC;
+              // Convert to mV
+              signalAmp *= fChipGain;
+	      // Convert to ADC counts
+              Int_t adc  = (Int_t) (signalAmp * (fADCoutRange / fADCinRange));
+
+	      // Apply threshold on ADC value
+              if (adc > fADCthreshold) {
+
+                Int_t trackSave[3];
+                for (Int_t ii = 0; ii < 3; ii++) {
+                  trackSave[ii] = matrix->GetTrack(iRow,iCol,iTime,ii);
+	        }
+
+                Int_t digits[7];
+                digits[0] = matrix->GetSector();
+                digits[1] = matrix->GetChamber();
+                digits[2] = matrix->GetPlane();
+                digits[3] = iRow;
+                digits[4] = iCol;
+                digits[5] = iTime;
+                digits[6] = adc;
+
+		// Add this digit to the TClonesArray
+                AddDigit(trackSave,digits);
+
+	      }
+
+	    }
+	  }
+	}
+
+	// Clean up
+        delete matrix;
+
+      }
+    }
+  }
+
+  // Fill the digits-tree
+  DigitsTree->Fill();
+
 }
 
 //_____________________________________________________________________________
 void AliTRDv2::Init() 
 {
   //
-  // Initialise Transition Radiation Detector after geometry has been built
+  // Initialise Transition Radiation Detector after geometry has been built.
+  // Includes the default settings of all parameter for the digitization.
   //
+
+  AliTRD::Init();
+
+  if (fSensPlane)
+    printf("          Only plane %d is sensitive\n",fSensPlane);
+  if (fSensChamber)   
+    printf("          Only chamber %d is sensitive\n",fSensChamber);
+  if (fSensSector)
+    printf("          Only sector %d is sensitive\n",fSensSector);
+
+  for (Int_t i = 0; i < 80; i++) printf("*");
+  printf("\n");
 
   // First ionization potential (eV) for the gas mixture (90% Xe + 10% CO2)
   const Float_t kPoti = 12.1;
   // Maximum energy (50 keV);
   const Float_t kEend = 50000.0;
-
-  AliTRD::Init();
-
-  AliMC* pMC = AliMC::GetMC();
-
-  // Get the sensitive volumes
-  Char_t ctag[5];
-  for (Int_t icham = 0; icham < ncham; ++icham) {
-    sprintf(ctag,"UXI%1d",icham+1);
-    fIdSensI[icham] = pMC->VolId(ctag);
-    sprintf(ctag,"UXN%1d",icham+1);
-    fIdSensN[icham] = pMC->VolId(ctag);
-    sprintf(ctag,"UXO%1d",icham+1);
-    fIdSensO[icham] = pMC->VolId(ctag);
-  }
-
+  // Ermilova distribution for the delta-ray spectrum
   Float_t Poti = TMath::Log(kPoti);
   Float_t Eend = TMath::Log(kEend);
-
-  // Ermilova distribution for the delta-ray spectrum
   fDeltaE  = new TF1("deltae",Ermilova,Poti,Eend,0);
+
+  // Identifier of the sensitive volume (drift region)
+  fIdSens     = gMC->VolId("UL05");
+
+  // Identifier of the TRD-spaceframe volumina
+  fIdSpace1   = gMC->VolId("B028");
+  fIdSpace2   = gMC->VolId("B029");
+  fIdSpace3   = gMC->VolId("B030");
+
+  // Identifier of the TRD-driftchambers
+  fIdChamber1 = gMC->VolId("UCIO");
+  fIdChamber2 = gMC->VolId("UCIM");
+  fIdChamber3 = gMC->VolId("UCII");
+
+  // The default pad dimensions
+  if (!(fRowPadSize))  fRowPadSize  = 4.5;
+  if (!(fColPadSize))  fColPadSize  = 1.0;
+  if (!(fTimeBinSize)) fTimeBinSize = 0.1;
+
+  // The maximum number of pads
+  for (Int_t iplan = 0; iplan < kNplan; iplan++) {
+    // Rows 
+    fRowMax[iplan][0] = 1 + TMath::Nint((fClengthO[iplan] - 2. * kCcthick) 
+                                                          / fRowPadSize - 0.5);
+    fRowMax[iplan][1] = 1 + TMath::Nint((fClengthM[iplan] - 2. * kCcthick) 
+                                                          / fRowPadSize - 0.5);
+    fRowMax[iplan][2] = 1 + TMath::Nint((fClengthI[iplan] - 2. * kCcthick) 
+                                                          / fRowPadSize - 0.5);
+    fRowMax[iplan][3] = 1 + TMath::Nint((fClengthM[iplan] - 2. * kCcthick) 
+                                                          / fRowPadSize - 0.5);
+    fRowMax[iplan][4] = 1 + TMath::Nint((fClengthO[iplan] - 2. * kCcthick) 
+                                                          / fRowPadSize - 0.5);
+    // Columns
+    fColMax[iplan]    = 1 + TMath::Nint((fCwidth[iplan]   - 2. * kCcthick) 
+                                                          / fColPadSize - 0.5);
+  }
+  // Time buckets
+  fTimeMax = 1 + TMath::Nint(kDrThick / fTimeBinSize - 0.5);
+
+  // The default parameter for the digitization
+  if (!(fGasGain))      fGasGain      = 2.0E3;
+  if (!(fNoise))        fNoise        = 3000.;
+  if (!(fChipGain))     fChipGain     = 10.;
+  if (!(fADCoutRange))  fADCoutRange  = 255.;
+  if (!(fADCinRange))   fADCinRange   = 2000.;
+  if (!(fADCthreshold)) fADCthreshold = 0;
+
+  // Transverse and longitudinal diffusion coefficients (Xe/Isobutane)
+  if (!(fDiffusionT))   fDiffusionT   = 0.060;
+  if (!(fDiffusionL))   fDiffusionL   = 0.017;
+
+}
+
+//_____________________________________________________________________________
+void AliTRDv2::MakeBranch(Option_t* option)
+{
+  //
+  // Create Tree branches for the TRD digits.
+  //
+
+  Int_t  buffersize = 4000;
+  Char_t branchname[10];
+
+  sprintf(branchname,"%s",GetName());
+
+  AliDetector::MakeBranch(option); 
+
+  Char_t *D = strstr(option,"D");
+  if (fDigits && gAlice->TreeD() && D) {
+    gAlice->TreeD()->Branch(branchname,&fDigits, buffersize);
+    printf("Making Branch %s for digits\n",branchname);
+  }
+
+}
+
+//_____________________________________________________________________________
+Float_t AliTRDv2::PadResponse(Float_t x)
+{
+  //
+  // The pad response for the chevron pads. 
+  // We use a simple Gaussian approximation which should be good
+  // enough for our purpose.
+  //
+
+  // The parameters for the response function
+  const Float_t aa  =  0.8872;
+  const Float_t bb  = -0.00573;
+  const Float_t cc  =  0.454;
+  const Float_t cc2 =  cc*cc;
+
+  Float_t pr = aa * (bb + TMath::Exp(-x*x / (2. * cc2)));
+
+  //TF1 *funPR = new TF1("funPR","[0]*([1]+exp(-x*x /(2.*[2])))",-3,3);
+  //funPR->SetParameter(0,aa );
+  //funPR->SetParameter(1,bb );
+  //funPR->SetParameter(2,cc2);
+  //
+  //Float_t pr = funPR->Eval(distance);
+  //
+  //delete funPR;
+
+  return (pr);
+
+}
+
+//_____________________________________________________________________________
+void AliTRDv2::SetSensPlane(Int_t iplane)
+{
+  //
+  // Defines the hit-sensitive plane (1-6)
+  //
+
+  if ((iplane < 0) || (iplane > 6)) {
+    printf("Wrong input value: %d\n",iplane);
+    printf("Use standard setting\n");
+    fSensPlane  = 0;
+    fSensSelect = 0;
+    return;
+  }
+
+  fSensSelect = 1;
+  fSensPlane  = iplane;
+
+}
+
+//_____________________________________________________________________________
+void AliTRDv2::SetSensChamber(Int_t ichamber)
+{
+  //
+  // Defines the hit-sensitive chamber (1-5)
+  //
+
+  if ((ichamber < 0) || (ichamber > 5)) {
+    printf("Wrong input value: %d\n",ichamber);
+    printf("Use standard setting\n");
+    fSensChamber = 0;
+    fSensSelect  = 0;
+    return;
+  }
+
+  fSensSelect  = 1;
+  fSensChamber = ichamber;
+
+}
+
+//_____________________________________________________________________________
+void AliTRDv2::SetSensSector(Int_t isector)
+{
+  //
+  // Defines the hit-sensitive sector (1-18)
+  //
+
+  if ((isector < 0) || (isector > 18)) {
+    printf("Wrong input value: %d\n",isector);
+    printf("Use standard setting\n");
+    fSensSector = 0;
+    fSensSelect = 0;
+    return;
+  }
+
+  fSensSelect = 1;
+  fSensSector = isector;
 
 }
 
@@ -514,31 +636,37 @@ void AliTRDv2::Init()
 void AliTRDv2::StepManager()
 {
   //
-  // Called at every step in the Transition Radiation Detector version 2
+  // Called at every step in the Transition Radiation Detector version 2.
+  // Slow simulator. Every charged track produces electron cluster as hits 
+  // along its path across the drift volume. The step size is set acording
+  // to Bethe-Bloch. The energy distribution of the delta electrons follows
+  // a spectrum taken from Ermilova et al.
   //
 
-  Int_t          idSens, icSens, id;
-  Int_t          iPla, iCha, iSec;
-  Int_t          iOut;
-  Int_t          vol[3]; 
-  Int_t          iPid;
+  Int_t    iIdSens, icSens;
+  Int_t    iIdSpace, icSpace;
+  Int_t    iIdChamber, icChamber;
+  Int_t    vol[3]; 
+  Int_t    iPid;
 
-  const Double_t kBig = 1.0E+12;
+  Int_t    secMap1[10] = {  3,  7,  8,  9, 10, 11,  2,  1, 18, 17 };
+  Int_t    secMap2[ 5] = { 16, 15, 14, 13, 12 };
+  Int_t    secMap3[ 3] = {  5,  6,  4 };
 
-  Float_t        hits[4];
-  Float_t        mom[4];
-  Float_t        random[1];
-  Float_t        charge;
-  Float_t        aMass;
+  Float_t  hits[4];
+  Float_t  random[1];
+  Float_t  charge;
+  Float_t  aMass;
 
-  Double_t       pTot;
-  Double_t       qTot;
-  Double_t       eDelta;
-  Double_t       betaGamma, pp;
+  Double_t pTot;
+  Double_t qTot;
+  Double_t eDelta;
+  Double_t betaGamma, pp;
 
+  TLorentzVector pos, mom;
   TClonesArray  &lhits = *fHits;
 
-  AliMC* pMC = AliMC::GetMC();
+  const Double_t kBig = 1.0E+12;
 
   // Ionization energy
   const Float_t kWion    = 22.04;
@@ -556,34 +684,19 @@ void AliTRDv2::StepManager()
 
   // Set the maximum step size to a very large number for all 
   // neutral particles and those outside the driftvolume
-  pMC->SetMaxStep(kBig); 
+  gMC->SetMaxStep(kBig); 
 
   // Use only charged tracks 
-  if (( pMC->TrackCharge()   ) &&
-      (!pMC->TrackStop()     ) && 
-      (!pMC->TrackDisappear())) {
-
-    // Find the sensitive volume
-    idSens = pMC->CurrentVol(0,icSens);
-    iPla   = 0;
-    iOut   = 0;
-    for (Int_t icham = 0; icham < ncham; ++icham) {
-      if (idSens == fIdSensI[icham]) {
-        iOut = 0;
-        iPla = icham + 1;
-      }
-      if (idSens == fIdSensN[icham]) {
-        iOut = 1;
-        iPla = icham + 1;
-      }
-      if (idSens == fIdSensO[icham]) {
-        iOut = 2;
-        iPla = icham + 1;
-      }
-    }
+  if (( gMC->TrackCharge()       ) &&
+      (!gMC->IsTrackStop()       ) && 
+      (!gMC->IsTrackDisappeared())) {
 
     // Inside a sensitive volume?
-    if (iPla) {
+    iIdSens = gMC->CurrentVolID(icSens);
+    if (iIdSens == fIdSens) { 
+
+      iIdSpace   = gMC->CurrentVolOffID(4,icSpace  );
+      iIdChamber = gMC->CurrentVolOffID(1,icChamber);
 
       // Calculate the energy of the delta-electrons
       eDelta = TMath::Exp(fDeltaE->GetRandom()) - kPoti;
@@ -592,24 +705,36 @@ void AliTRDv2::StepManager()
       // The number of secondary electrons created
       qTot = (Double_t) ((Int_t) (eDelta / kWion) + 1);
 
+      // The hit coordinates and charge
+      gMC->TrackPosition(pos);
+      hits[0] = pos[0];
+      hits[1] = pos[1];
+      hits[2] = pos[2];
+      hits[3] = qTot;
+
       // The sector number
-      id = pMC->CurrentVolOff(4,0,iSec);
+      if      (iIdSpace == fIdSpace1) 
+        vol[0] = secMap1[icSpace-1];
+      else if (iIdSpace == fIdSpace2) 
+        vol[0] = secMap2[icSpace-1];
+      else if (iIdSpace == fIdSpace3) 
+        vol[0] = secMap3[icSpace-1];
 
-      // The chamber number
+      // The chamber number 
       //   1: outer left
-      //   2: neighbouring left
+      //   2: middle left
       //   3: inner
-      //   4: neighbouring right
+      //   4: middle right
       //   5: outer right
-      id = pMC->CurrentVolOff(2,0,iCha);
-      if (iCha == 1) 
-        iCha = 3 + iOut;
-      else
-        iCha = 3 - iOut;
+      if      (iIdChamber == fIdChamber1)
+        vol[1] = (hits[2] < 0 ? 1 : 5);
+      else if (iIdChamber == fIdChamber2)       
+        vol[1] = (hits[2] < 0 ? 2 : 4);
+      else if (iIdChamber == fIdChamber3)       
+        vol[1] = 3;
 
-      vol[0]  = iSec;
-      vol[1]  = iCha;
-      vol[2]  = iPla;
+      // The plane number
+      vol[2] = icChamber - TMath::Nint((Float_t) (icChamber / 7)) * 6;
 
       // Check on selected volumes
       Int_t addthishit = 1;
@@ -619,24 +744,22 @@ void AliTRDv2::StepManager()
         if ((fSensSector)  && (vol[0] != fSensSector )) addthishit = 0;
       }
 
+      // Add this hit
       if (addthishit) {
 
-        // Add this hit
-        pMC->TrackPosition(hits);
-        hits[3] = qTot;
         new(lhits[fNhits++]) AliTRDhit(fIshunt,gAlice->CurrentTrack(),vol,hits);
 
         // The energy loss according to Bethe Bloch
-        pMC->TrackMomentum(mom);
-        pTot = mom[3];
-        iPid = pMC->TrackPid();
+        gMC->TrackMomentum(mom);
+        pTot = mom.Rho();
+        iPid = gMC->TrackPid();
         if ( (iPid >  3) ||
 	    ((iPid <= 3) && (pTot < kPTotMax))) {
-          aMass     = pMC->TrackMass();
+          aMass     = gMC->TrackMass();
           betaGamma = pTot / aMass;
           pp        = kPrim * BetheBloch(betaGamma);
 	  // Take charge > 1 into account
-          charge = pMC->TrackCharge();
+          charge = gMC->TrackCharge();
           if (TMath::Abs(charge) > 1) pp = pp * charge*charge;
         }
         // Electrons above 20 Mev/c are at the plateau
@@ -647,15 +770,15 @@ void AliTRDv2::StepManager()
         // Calculate the maximum step size for the next tracking step
         if (pp > 0) {
           do 
-            pMC->Rndm(random,1);
+            gMC->Rndm(random,1);
           while ((random[0] == 1.) || (random[0] == 0.));
-          pMC->SetMaxStep( - TMath::Log(random[0]) / pp);
+          gMC->SetMaxStep( - TMath::Log(random[0]) / pp);
 	}
 
       }
       else {
         // set step size to maximal value
-        pMC->SetMaxStep(kBig); 
+        gMC->SetMaxStep(kBig); 
       }
 
     }
@@ -672,20 +795,20 @@ Double_t AliTRDv2::BetheBloch(Double_t bg)
   // The parametrization is the same as for the TPC and is taken from Lehrhaus.
   //
 
-  // The parameters have been adjusted to Xe-data found in:
-  // Allison & Cobb, Ann. Rev. Nucl. Sci. (1980), 30, 253
-  //const Double_t kP1 = 0.76176E-1;
-  //const Double_t kP2 = 10.632;
-  //const Double_t kP3 = 3.17983E-6;
-  //const Double_t kP4 = 1.8631;
-  //const Double_t kP5 = 1.9479;
-
   // This parameters have been adjusted to averaged values from GEANT
   const Double_t kP1 = 7.17960e-02;
   const Double_t kP2 = 8.54196;
   const Double_t kP3 = 1.38065e-06;
   const Double_t kP4 = 5.30972;
   const Double_t kP5 = 2.83798;
+
+  // This parameters have been adjusted to Xe-data found in:
+  // Allison & Cobb, Ann. Rev. Nucl. Sci. (1980), 30, 253
+  //const Double_t kP1 = 0.76176E-1;
+  //const Double_t kP2 = 10.632;
+  //const Double_t kP3 = 3.17983E-6;
+  //const Double_t kP4 = 1.8631;
+  //const Double_t kP5 = 1.9479;
 
   if (bg > 0) {
     Double_t yy = bg / TMath::Sqrt(1. + bg*bg);
@@ -703,7 +826,7 @@ Double_t AliTRDv2::BetheBloch(Double_t bg)
 Double_t Ermilova(Double_t *x, Double_t *)
 {
   //
-  // Calculates the delta-ray energy distribution according to Ermilova
+  // Calculates the delta-ray energy distribution according to Ermilova.
   // Logarithmic scale !
   //
 

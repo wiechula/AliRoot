@@ -1,4 +1,4 @@
-void MUONtest (Int_t evNumber1=0,Int_t evNumber2=0) 
+void MUONtestabso (Int_t evNumber1=0,Int_t evNumber2=0) 
 {
 /////////////////////////////////////////////////////////////////////////
 //   This macro is a small example of a ROOT macro
@@ -44,36 +44,15 @@ void MUONtest (Int_t evNumber1=0,Int_t evNumber2=0)
 //  Create some histograms
 
 
-   TH1F *ccharge1 = new TH1F("ccharge1","Cluster Charge distribution"
-			   ,100,0.,500.);
-   TH1F *pcharge1 = new TH1F("pcharge1","Pad      Charge distribution"
-			   ,100,0.,200.);
-   TH1F *xresid1  = new TH1F("xresid1","x-Residuals"
-			   ,100,-2.0,2.0);
-   TH1F *yresid1  = new TH1F("yresid1","y-Residuals"
-			   ,100,-0.2,0.2);
-   TH1F *npads1   = new TH1F("npads1" ,"Pads per Hit"
-			   ,20,-0.5,19.5);
-   TH2F *xresys1  = new TH2F("xresys1","x-Residuals systematics"
-			   ,50,-0.4,0.4,100,-0.2,0.2);
-   TH2F *yresys1  = new TH2F("yresys1","y-Residuals systematics"
-			   ,50,-0.4,0.4,100,-0.1,0.1);
+   TH1F *zv = new TH1F("zv","z vertex"
+			   ,100,468.,503.);
+   TH1F *xv = new TH1F("xv","x vertex"
+			   ,100,0.,50.);
+   TH1F *yv  = new TH1F("yv","y vertex"
+			   ,100,0.,50.);
 
-   TH1F *ccharge2 = new TH1F("ccharge2","Cluster Charge distribution"
-			   ,100,0.,500.);
-   TH1F *pcharge2 = new TH1F("pcharge2","Pad      Charge distribution"
-			   ,100,0.,200.);
-   TH1F *xresid2  = new TH1F("xresid2","x-Residuals"
-			   ,100,-2.0,2.0);
-   TH1F *yresid2  = new TH1F("yresid2","y-Residuals"
-			   ,100,-0.2,0.2);
-   TH1F *npads2   = new TH1F("npads2" ,"Pads per Hit"
-			   ,20,-0.5,19.5);
-   TH2F *xresys2  = new TH2F("xresys2","x-Residuals systematics"
-			   ,50,-0.4,0.4,100,-0.2,0.2);
-   TH2F *yresys2  = new TH2F("yresys2","y-Residuals systematics"
-			   ,50,-0.4,0.4,100,-0.1,0.1);
-
+   TH1F *ip  = new TH1F("ip","ipart"
+			   ,100,0.,50.);
 
    AliMUONchamber*  iChamber;
 //
@@ -88,17 +67,13 @@ void MUONtest (Int_t evNumber1=0,Int_t evNumber2=0)
        if (nev < evNumber1) continue;
        if (nparticles <= 0) return;
 
-       AliMUON *MUON  = (AliMUON*) gAlice->GetDetector("MUON");
-	   printf("\n track %d %d \n ", nev, MUON);
+       AliMUON *MUON  = (AliMUON*) gAlice->GetModule("MUON");
+	   printf("\n nev %d \n ", nev);
 
        TTree *TH = gAlice->TreeH();
        Int_t ntracks = TH->GetEntries();
-       Int_t Nc=0;
-       Int_t   npad[2];
-       Float_t Q[2], xmean[2],ymean[2],xres[2],yres[2], xonpad[2], yonpad[2];
-
 //
-//   Loop over events
+//   Loop over tracks
 //
        for (Int_t track=0; track<ntracks;track++) {
 	   
@@ -112,92 +87,30 @@ void MUONtest (Int_t evNumber1=0,Int_t evNumber2=0)
 		   Int_t   nch   = mHit->fChamber;  // chamber number
 		   Float_t x     = mHit->fX;        // x-pos of hit
 		   Float_t y     = mHit->fY;        // y-pos
-//
-//
-		   iChamber = & MUON->Chamber(nch-1);
-		   response=iChamber->GetResponseModel();
-//
-//
-		   if (nch <= 1) {
-		       for (Int_t i=0; i<2; i++) {
-			   xmean[i]=0;
-			   ymean[i]=0;
-			   Q[i]=0;
-			   npad[i]=0;
-		       }
-		       for (AliMUONcluster *mPad=(AliMUONcluster*)MUON->FirstPad(mHit);
-			    mPad;
-			    mPad=(AliMUONcluster*)MUON->NextPad()
-			   )
-		       {
-			   Int_t nseg     = mPad->fCathode;   // segmentation 
-			   Int_t nhit     = mPad->fHitNumber; // hit number
-			   Int_t qtot     = mPad->fQ;         // charge
-			   Int_t ipx      = mPad->fPadX;      // pad number on X
-			   Int_t ipy      = mPad->fPadY;      // pad number on Y
-			   Int_t iqpad    = mPad->fQpad;      // charge per pad
-			   Int_t rpad     = mPad->fRpad;      // r-pos of pad
-//
-//
-			   segmentation=iChamber->GetSegmentationModel(nseg);
-			   Int_t ind=nseg-1;
-//		       printf("Pad of hit, padx, pady, iqpad, ncha %d %d %d %d %d %d\n",
-//			      nhit, ipx, ipy, iqpad, nseg, ind);
+		   Float_t z     = mHit->fZ;        // y-pos
+               
+                if (nch > 1) continue;
 
-			   
-			   if (nseg == 1) {
-			       pcharge1->Fill(iqpad,(float) 1);
-			       ccharge1->Fill(qtot ,(float) 1);
-			   }  else {
-			       pcharge2->Fill(iqpad,(float) 1);
-			       ccharge2->Fill(qtot ,(float) 1);
-			   }
-// Calculate centre of gravity
-//
-			   if (iqpad > 0) {
-			       npad[ind]++;
-			       xmean[ind]+=iqpad*segmentation->GetPadx(ipx);
-			       ymean[ind]+=iqpad*segmentation->GetPady(ipy);
-			       Q[ind]+=iqpad;
-			   }
-			   
-		       } //pad hit loop
-		       for (Int_t i=0; i<2; i++) {
-			   segmentation = iChamber->GetSegmentationModel(i+1);
-			   if (Q[i] >0) {
-			       xmean[i] = xmean[i]/Q[i];
-			       xres[i]  = xmean[i]-x;
-			       ymean[i] = ymean[i]/Q[i];
-			       yres[i]  = ymean[i]-y;
-			       
-// Systematic Error
-//
-			       Int_t icx=segmentation.GetPadix(x);
-			       Int_t icy=segmentation.GetPadiy(y);
-			       xonpad[i]=segmentation.GetPadx(icx)-x;
-			       yonpad[i]=segmentation.GetPady(icy)-y;
-			   }
-		       } // plane loop
-		       xresid1->Fill(xres[0],(float) 1);
-		       yresid1->Fill(yres[0],(float) 1);
-		       npads1->Fill(npad[0],(float) 1);
-		       if (npad[0] >=2 && Q[0] > 6 ) {
-			   xresys1->Fill(xonpad[0],xres[0],(float) 1);
-			   yresys1->Fill(yonpad[0],yres[0],(float) 1);
-		       }
-		       
-		       xresid2->Fill(xres[1],(float) 1);
-		       yresid2->Fill(yres[1],(float) 1);
-		       npads2->Fill(npad[1],(float) 1);
-		       if (npad[1] >=2 && Q[1] > 6) {
-			   xresys2->Fill(xonpad[1],xres[1],(float) 1);
-			   yresys2->Fill(yonpad[1],yres[1],(float) 1);
-		       }
-		   } // chamber 1/2
-	       } // hit loop
-	   } // if MUON
-       } // track loop
-   } // event loop 
+		Int_t ipart = mHit->fParticle;
+		TClonesArray *fPartArray = gAlice->Particles();
+		TParticle *Part;
+		Int_t ftrack = mHit->fTrack;
+		Int_t id = ((TParticle*) fPartArray->UncheckedAt(ftrack))->GetPdgCode();
+		  ip->Fill((float)ipart,(float) 1);
+
+		if (ipart != 3) continue;
+		  Float_t xv = Part->Vx();      //  vertex  
+		  Float_t yv = Part->Vy();      //  vertex
+		  Float_t zv  = Part->Vz();      // z vertex 
+		  xv->Fill(xv,(float) 1);
+		  yv->Fill(yv,(float) 1);
+		  zv->Fill(zv,(float) 1);
+	       }
+
+	   }
+       }
+   }
+
    
 //Create a canvas, set the view range, show histograms
    TCanvas *c1 = new TCanvas("c1","Charge and Residuals",400,10,600,700);
@@ -215,111 +128,23 @@ void MUONtest (Int_t evNumber1=0,Int_t evNumber2=0)
    pad14->Draw();
    
    pad11->cd();
-   ccharge1->SetFillColor(42);
-   ccharge1->SetXTitle("ADC units");
-   ccharge1->Draw();
+   ip->SetFillColor(42);
+   ip->SetXTitle("ipart");
+   ip->Draw();
 
    pad12->cd();
-   pcharge1->SetFillColor(42);
-   pcharge1->SetXTitle("ADC units");
-   pcharge1->Draw();
+   xv->SetFillColor(42);
+   xv->SetXTitle("xvert");
+   xv->Draw();
 
    pad13->cd();
-   xresid1->SetFillColor(42);
-   xresid1->Draw();
+   yv->SetFillColor(42);
+   yv->SetXTitle("yvert");
+   yv->Draw();
 
    pad14->cd();
-   yresid1->SetFillColor(42);
-   yresid1->Draw();
-
-   TCanvas *c2 = new TCanvas("c2","Cluster Size",400,10,600,700);
-   pad21 = new TPad("pad21"," ",0.01,0.51,0.49,0.99);
-   pad22 = new TPad("pad22"," ",0.51,0.51,0.99,0.99);
-   pad23 = new TPad("pad23"," ",0.01,0.01,0.49,0.49);
-   pad24 = new TPad("pad24"," ",0.51,0.01,0.99,0.49);
-   pad21->SetFillColor(11);
-   pad22->SetFillColor(11);
-   pad23->SetFillColor(11);
-   pad24->SetFillColor(11);
-   pad21->Draw();
-   pad22->Draw();
-   pad23->Draw();
-   pad24->Draw();
-   
-   pad21->cd();
-   npads1->SetFillColor(42);
-   npads1->SetXTitle("Cluster Size");
-   npads1->Draw();
-
-   pad23->cd();
-   xresys1->SetXTitle("x on pad");
-   xresys1->SetYTitle("x-xcog");
-   xresys1->Draw();
-
-   pad24->cd();
-   yresys1->SetXTitle("y on pad");
-   yresys1->SetYTitle("y-ycog");
-   yresys1->Draw();
-
-   TCanvas *c3 = new TCanvas("c3","Charge and Residuals",400,10,600,700);
-   pad31 = new TPad("pad31"," ",0.01,0.51,0.49,0.99);
-   pad32 = new TPad("pad32"," ",0.51,0.51,0.99,0.99);
-   pad33 = new TPad("pad33"," ",0.01,0.01,0.49,0.49);
-   pad34 = new TPad("pad34"," ",0.51,0.01,0.99,0.49);
-   pad31->SetFillColor(11);
-   pad32->SetFillColor(11);
-   pad33->SetFillColor(11);
-   pad34->SetFillColor(11);
-   pad31->Draw();
-   pad32->Draw();
-   pad33->Draw();
-   pad34->Draw();
-   
-   pad31->cd();
-   ccharge2->SetFillColor(42);
-   ccharge2->SetXTitle("ADC units");
-   ccharge2->Draw();
-
-   pad32->cd();
-   pcharge2->SetFillColor(42);
-   pcharge2->SetXTitle("ADC units");
-   pcharge2->Draw();
-
-   pad33->cd();
-   xresid2->SetFillColor(42);
-   xresid2->Draw();
-
-   pad34->cd();
-   yresid2->SetFillColor(42);
-   yresid2->Draw();
-
-   TCanvas *c4 = new TCanvas("c4","Cluster Size",400,10,600,700);
-   pad41 = new TPad("pad41"," ",0.01,0.51,0.49,0.99);
-   pad42 = new TPad("pad42"," ",0.51,0.51,0.99,0.99);
-   pad43 = new TPad("pad43"," ",0.01,0.01,0.49,0.49);
-   pad44 = new TPad("pad44"," ",0.51,0.01,0.99,0.49);
-   pad41->SetFillColor(11);
-   pad42->SetFillColor(11);
-   pad43->SetFillColor(11);
-   pad44->SetFillColor(11);
-   pad41->Draw();
-   pad42->Draw();
-   pad43->Draw();
-   pad44->Draw();
-   
-   pad41->cd();
-   npads2->SetFillColor(42);
-   npads2->SetXTitle("Cluster Size");
-   npads2->Draw();
-
-   pad43->cd();
-   xresys2->SetXTitle("x on pad");
-   xresys2->SetYTitle("x-xcog");
-   xresys2->Draw();
-
-   pad44->cd();
-   yresys2->SetXTitle("y on pad");
-   yresys2->SetYTitle("y-ycog");
-   yresys2->Draw();
+   zv->SetFillColor(42);
+   zv->SetXTitle("zvert");
+   zv->Draw();
    
 }

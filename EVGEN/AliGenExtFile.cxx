@@ -78,17 +78,12 @@ void AliGenExtFile::NtupleInit()
 void AliGenExtFile::Generate()
 {
 
-  AliMC* pMC = AliMC::GetMC();
-
   Float_t polar[3]= {0,0,0};
   //
   Float_t origin[3]={0,0,0};
   Float_t p[3];
   Float_t random[6];
   Float_t prwn;
-  char name[100];
-  Float_t amass, charge, tlife;
-  Int_t itrtyp;
   Int_t i, j, nt, Ntracks=0;
   //
   NtupleInit();
@@ -101,7 +96,7 @@ void AliGenExtFile::Generate()
 
   for (j=0;j<3;j++) origin[j]=fOrigin[j];
   if(fVertexSmear==perEvent) {
-    pMC->Rndm(random,6);
+    gMC->Rndm(random,6);
     for (j=0;j<3;j++) {
 	origin[j]+=fOsigma[j]*TMath::Cos(2*random[2*j]*TMath::Pi())*
 	    TMath::Sqrt(-2*TMath::Log(random[2*j+1]));
@@ -122,8 +117,13 @@ void AliGenExtFile::Generate()
   }
   for (i=0; i<Ntracks; i++) {
 
-      pMC->Gfpart(Idpart, name, itrtyp,amass, charge, tlife); 
-      prwn=sqrt((E+amass)*(E-amass));
+      Double_t amass = TDatabasePDG::Instance()->GetParticle(Idpart)->Mass();
+      if(E<=amass) {
+	Warning("Generate","Particle %d no %d E = %f mass = %f\n",Idpart,i,E,amass);
+	prwn=0;
+      } else {
+	prwn=sqrt((E+amass)*(E-amass));
+      }
 
       Theta *= TMath::Pi()/180.;
       Phi    = (Phi-180)*TMath::Pi()/180.;      
@@ -138,7 +138,7 @@ void AliGenExtFile::Generate()
 	  p[2]=prwn*TMath::Cos(Theta);
 	  
 	  if(fVertexSmear==perTrack) {
-	      pMC->Rndm(random,6);
+	      gMC->Rndm(random,6);
 	      for (j=0;j<3;j++) {
 		  origin[j]=fOrigin[j]
 		      +fOsigma[j]*TMath::Cos(2*random[2*j]*TMath::Pi())*

@@ -45,8 +45,6 @@ void AliPIPEv0::CreateGeometry()
   
   Int_t idrotm[2099];
 
-  AliMC* pMC = AliMC::GetMC();
-  
 //
 // The peam pipe up to the Front Absorber
   filtmp=gSystem->ExpandPathName(pipename);
@@ -55,7 +53,7 @@ void AliPIPEv0::CreateGeometry()
   if(file) {
     fclose(file);
     printf(" Reading PIPE \n");
-    gAlice->ReadEuclid(pipename,20,topvol);
+    gAlice->ReadEuclid(pipename,this,topvol);
   } else {
     printf(" THE GEOM FILE %s DOES NOT EXIST !\n",pipename);
     exit(1);
@@ -68,7 +66,7 @@ void AliPIPEv0::CreateGeometry()
   if(file) {
     fclose(file);
     printf(" Reading PUMP \n");
-    gAlice->ReadEuclid(pumpname,20,topvol);
+    gAlice->ReadEuclid(pumpname,this,topvol);
   } else {
     printf(" THE GEOM FILE %s DOES NOT EXIST !\n",pumpname);
     exit(1);
@@ -79,15 +77,15 @@ void AliPIPEv0::CreateGeometry()
 // 
   AliMatrix(idrotm[2001],90.,0.,90.,90.,180.,0.);
   
-  pMC->Gspos("QBPM",1,"ALIC",0,0,0,idrotm[2001],"ONLY");
+  gMC->Gspos("QBPM",1,"ALIC",0,0,0,idrotm[2001],"ONLY");
 //
 //    PLACE ION PUMP (QIPM) AT Z=-385.
 //
-  pMC->Gspos("QIPM",1,"ALIC",0,0,-385,idrotm[2001],"ONLY");
+  gMC->Gspos("QIPM",1,"ALIC",0,0,-385,idrotm[2001],"ONLY");
 
-  pMC->Gsatt("QIPM", "SEEN", 0);
-  pMC->Gsatt("QBPM", "SEEN", 0);
-  pMC->Gsatt("QB20", "SEEN", 0);
+  gMC->Gsatt("QIPM", "SEEN", 0);
+  gMC->Gsatt("QBPM", "SEEN", 0);
+  gMC->Gsatt("QB20", "SEEN", 0);
 }
 
  
@@ -107,7 +105,7 @@ void AliPIPEv0::CreateMaterials()
   delete [] filtmp;
   if(file) {
     fclose(file);
-    gAlice->ReadEuclidMedia(name,20);
+    gAlice->ReadEuclidMedia(name,this);
   } else {
     printf(" THE MEDIA FILE %s DOES NOT EXIST !\n",name);
     exit(1);

@@ -27,7 +27,7 @@ FSRCS		= loadmod.F pydata.F ludata.F
 
 # FORTRAN Objectrs
 
-FOBJS		= $(FSRCS:.F=.o)
+FOBJS		= $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Sources
 
@@ -35,7 +35,7 @@ CSRCS		= dummies.c
 
 # C Objects
 
-COBJS		= $(CSRCS:.c=.o) 
+COBJS		= $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS)) 
 
 # C++ Sources
 
@@ -43,7 +43,7 @@ SRCS		= aliroot.cxx
 
 # C++ Objects
 
-OBJS		= $(SRCS:.cxx=.o) $(DICTO)
+OBJS		= $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # Global Macros
 
@@ -62,13 +62,13 @@ FFLAGS		= $(FOPT)
  
 # Target
 
-PROGRAM		= $(ALICE_ROOT)/bin/aliroot
+PROGRAM		= $(BINDIR)/aliroot
 
 default:	$(PROGRAM)
 
 depend:		$(ALLSRCS)
 
-$(ALICE_ROOT)/bin/aliroot:	$(OBJS) $(COBJS) $(FOBJS)
+$(BINDIR)/aliroot:	$(OBJS) $(COBJS) $(FOBJS)
 
 LIBS = $(ALILIBS) $(G3LIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia -lpythia -lpdf
 
@@ -80,4 +80,33 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
--include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Target check creates violation reports (.viol), which depend on
+### stripped files (.ii), which in turn depend on preprocessed
+### files (.i). Dependences are in conf/GeneralDef.
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
+check:          $(CHECKS)
+
+
+
+
+
+
+
