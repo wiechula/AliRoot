@@ -1,26 +1,14 @@
 static Int_t    eventsPerRun = 100;
 void Config()
 {
-    // 7-DEC-2000 09:00
-    // Switch on Transition Radiation simulation. 6/12/00 18:00
-    // iZDC=1  7/12/00 09:00
-    // ThetaRange is (0., 180.). It was (0.28,179.72) 7/12/00 09:00
-    // Theta range given through pseudorapidity limits 22/6/2001
 
     // Set Random Number seed
     // gRandom->SetSeed(12345);
 
     
-    // libraries required by geant321
-    // gSystem->Load("libMC");  
-    gSystem->Load("libminicern");
-    gSystem->Load("libPhysics");
-    gSystem->Load("libEG"); 
-    gSystem->Load("libEGPythia6");
-    //gSystem->Load("$(ROOTSYS)/lib/libPythia6");  
-    gSystem->Load("libpythia6");  
-    gSystem->Load("libgeant321");    
-    gSystem->Load("libITS");  
+  // libraries required by geant321
+  // gSystem->Load("libminicern");
+  // gSystem->Load("libgeant321");    
 
     new  TGeant3("C++ Interface to Geant3");
 
@@ -304,7 +292,7 @@ void Config()
     {
         //=================== CASTOR parameters ============================
 
-        AliCRT *CRT = new AliCRT("CRT", "normal CRT");
+        AliCRT *CRT = new AliCRTv0("CRT", "normal CRT");
     }
 
     if (iTRD)
