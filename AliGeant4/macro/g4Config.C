@@ -18,19 +18,14 @@ void Config()
   // Geant4
   // ============================= 
 
-  if (gClassTable->GetID("TGeant4") == -1) {
-    // load dynamically only if executable was not linked
-    // with geant4 libraries
+  // load Geant4 and AliRoot steer libraries
+  if (!gInterpreter->IsLoaded("g4libs.C")) gROOT->LoadMacro("g4libs.C");
+  gInterpreter->ProcessLine("g4libs()");
+  gInterpreter->ProcessLine("steerlibs()");
 
-    // load Geant4 and AliRoot steer libraries
-    if (!gInterpreter->IsLoaded("g4libs.C")) gROOT->LoadMacro("g4libs.C");
-    gInterpreter->ProcessLine("g4libs()");
-    gInterpreter->ProcessLine("steerlibs()");
-
-    // Create Geant4   
-    if (!gInterpreter->IsLoaded("g4menu.C")) gROOT->LoadMacro("g4menu.C");
-    gInterpreter->ProcessLine("CreateGeant4()");
-  }  
+  // Create Geant4   
+  if (!gInterpreter->IsLoaded("g4menu.C")) gROOT->LoadMacro("g4menu.C");
+  gInterpreter->ProcessLine("CreateGeant4()");
 
   // Physics process control
   gMC ->SetProcess("DCAY",1);
