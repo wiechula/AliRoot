@@ -15,6 +15,18 @@
 
 /*
 $Log$
+Revision 1.8  2001/10/18 14:11:35  morsch
+Some changes/bug corrections for SetHole(1) option.
+
+Revision 1.7  2001/10/16 14:50:59  morsch
+... or better use modified IsVersion() method.
+
+Revision 1.6  2001/10/16 14:33:04  morsch
+Hole() method needed by TRD to find out wheter frame has holes.
+
+Revision 1.5  2001/08/28 15:54:29  morsch
+Web frame and inner rings pointing.
+
 Revision 1.4  2001/06/22 14:11:17  morsch
 Back to official z-positions of rings.
 
@@ -92,13 +104,13 @@ void AliFRAMEv2::CreateGeometry()
   const Float_t krad2deg = 180./TMath::Pi();
   const Float_t kdeg2rad = 1./krad2deg;
 
-  Float_t iFrH   = 114.4;
-  Float_t ringH  = 4.;
-  Float_t ringW  = 10.;
-  Float_t longH  = 5.39;
-  Float_t longW  = 6.;  
-  Float_t dwl    = 3.14;
-  Float_t dwh    = 0.96;
+  Float_t iFrH   = 114.40;
+  Float_t ringH  =   4.00;
+  Float_t ringW  =  10.00;
+  Float_t longH  =   5.39;
+  Float_t longW  =   6.00;  
+  Float_t dwl    =   3.14;
+  Float_t dwh    =   0.96;
 
 // 
   Float_t dymodU[3] = {70.0, 224.0, 341.};
@@ -857,7 +869,7 @@ void AliFRAMEv2::CreateGeometry()
 // Mother volumes for TRD and TOF 
 // 
   if (!fHoles) {
-      
+      printf("\n FRAME Version without Holes !");
       ptrd1[0] = 49.8065;
       ptrd1[1] = 62.8535;
       ptrd1[2] = 375.5;
@@ -882,6 +894,7 @@ void AliFRAMEv2::CreateGeometry()
       gMC->Gspos("BTO2", 1, "B074", 0., 0.,  42.69, 0, "ONLY");
       gMC->Gspos("BTO3", 1, "B075", 0., 0.,  42.69, 0, "ONLY");
   } else {
+      printf("\n FRAME Version with Holes !");
       ptrd1[0] = 49.8065;
       ptrd1[1] = 62.8535;
       ptrd1[2] = 375.5;
@@ -902,23 +915,18 @@ void AliFRAMEv2::CreateGeometry()
       ptrd1[2] =  79.75;
       gMC->Gsvolu("BTO3", "TRD1", kAir, ptrd1, 4);  
       
-      gMC->Gspos("BTR1", 1, "B071", 0., 0., -10.8, 0, "ONLY");
 
-      gMC->Gspos("BTR2", 1, "B074", 0., -218.75, -10.8, idrotm[152], "ONLY");
-      gMC->Gspos("BTR2", 2, "B074", 0.,  218.75, -10.8,           0, "ONLY");
+      gMC->Gspos("BTR1", 1, "B071", 0.,    0.00, -10.8,            0, "ONLY");
+      gMC->Gspos("BTR2", 1, "B074", 0., -218.75, -10.8, idrotm[2070], "ONLY");
+      gMC->Gspos("BTR2", 2, "B074", 0.,  218.75, -10.8,            0, "ONLY");
+      gMC->Gspos("BTR3", 1, "B075", 0., -295.75, -10.8, idrotm[2070], "ONLY");
+      gMC->Gspos("BTR3", 2, "B075", 0.,  295.75, -10.8,            0, "ONLY");
 
-      gMC->Gspos("BTR3", 1, "B075", 0., -295.75, -10.8, idrotm[152], "ONLY");
-      gMC->Gspos("BTR3", 2, "B075", 0.,  295.75, -10.8,           0, "ONLY");
-
-
-      gMC->Gspos("BTO1", 1, "B071", 0., 0., -42.7, 0, "ONLY");
-
-      gMC->Gspos("BTO2", 1, "B074", 0., -218.75, -42.7, idrotm[152], "ONLY");
-      gMC->Gspos("BTO2", 2, "B074", 0.,  218.75, -42.7,           0, "ONLY");
-
-      gMC->Gspos("BTO3", 1, "B075", 0., -295.75, -42.7, idrotm[152], "ONLY");
-      gMC->Gspos("BTO3", 2, "B075", 0.,  295.75, -42.7,           0, "ONLY");
-      
+      gMC->Gspos("BTO1", 1, "B071", 0.,    0.00, 42.69,            0, "ONLY");
+      gMC->Gspos("BTO2", 1, "B074", 0., -218.75, 42.69, idrotm[2070], "ONLY");
+      gMC->Gspos("BTO2", 2, "B074", 0.,  218.75, 42.69,            0, "ONLY");
+      gMC->Gspos("BTO3", 1, "B075", 0., -295.75, 42.69, idrotm[2070], "ONLY");
+      gMC->Gspos("BTO3", 2, "B075", 0.,  295.75, 42.69,            0, "ONLY");
   }
 }
  
@@ -964,7 +972,12 @@ void AliFRAMEv2::Init()
     }
 }
 
-
+Int_t AliFRAMEv2::IsVersion() const 
+{
+    Int_t version = 0;
+    if (fHoles == 0) version = 1;
+    return version;
+}
 
 
 

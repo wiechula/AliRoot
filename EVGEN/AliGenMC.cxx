@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.3  2001/10/16 08:48:56  morsch
+Common vertex related code moved to base class AliGenerator.
+
+Revision 1.2  2001/10/15 08:15:51  morsch
+Event vertex and vertex truncation setting moved into AliMC.
+
+Revision 1.1  2001/07/13 10:56:00  morsch
+AliGenMC base class for AliGenParam and AliGenPythia commonalities.
+
 */
 
 #include "AliGenMC.h"
@@ -49,6 +58,7 @@ AliGenMC::AliGenMC(Int_t npart)
     fParentSelect.Set(8);
     fChildSelect.Set(8);
     for (Int_t i=0; i<8; i++) fParentSelect[i]=fChildSelect[i]=0;
+    
 }
 
 AliGenMC::AliGenMC(const AliGenMC & mc)

@@ -1,4 +1,4 @@
-############################### PHOS Makefile #################################
+ ############################### PHOS Makefile #################################
 
 # Include machine specific definitions
 
@@ -80,18 +80,24 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 -include tgt_$(ALICE_TARGET)/Make-depend 
 
+
 test:	
 		@echo " ____________________________________________________________ "
 		@echo " "
 		@echo " Starting the test of the simulation/reconstruction software. Please don't take the warning messages into account. "
 		@echo " ____________________________________________________________ "
-		@aliroot -b -q testsim.C > out
-		@aliroot -b -q testsimglobal.C > out
+		@aliroot -b -q "test.C(100)" > out
 		@rm out
 		@rm testPHOS.root
 
-
-
+test10:	
+		@echo " ____________________________________________________________ "
+		@echo " "
+		@echo " Starting the test of the simulation/reconstruction software. Please don't take the warning messages into account. "
+		@echo " ____________________________________________________________ "
+		@aliroot -b -q "test.C(10)" > out
+		@rm out
+		@rm testPHOS.root
 
 
 

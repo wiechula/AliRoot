@@ -41,6 +41,7 @@ void write_info(TString) ;
 void testsimglobal() 
 {
   
+  gSystem->SetIncludePath("-I$ROOTSYS/include -I$ALICE_ROOT/include -I.");
   Bool_t error = kFALSE ;
   TString mess("") ;
   
@@ -103,7 +104,7 @@ void testsimglobal()
     write_info(mess) ;
   }
   else {
-    gSystem->Exec("uuencode $ALICE_ROOT/PHOS/testPHOS.root testPHOS.root | mail -s 'PHOS INSTALLATION ERROR' almajor@caramail.com") ;
+    gSystem->Exec("uuencode $ALICE_ROOT/PHOS/testPHOS.root testPHOS.root | mail -s 'PHOS INSTALLATION ERROR' schutz@in2p3.fr") ;
     mess = "Error message to PHOS director has been sent, please wait for his answer before launching the whole simulation again."  ;
     write_info(mess) ;
   }
@@ -116,8 +117,8 @@ Bool_t sim_exam()
   
   // Definition of the alarm bounds for the examination
   const Float_t maxAlaHitsM = 12.79  ;  // total multiplicity
-  const Float_t maxAlaTotEn = 19.34  ;  // total energy
-  const Float_t maxAlaTotEnB = 18.35 ;  // per block multiplicity
+  const Float_t maxAlaTotEn = 19.34  ;    // total energy
+  const Float_t maxAlaTotEnB = 18.35 ;     // per block multiplicity
   const Float_t maxAlaHitsMB = 11.1  ;  // per block energy
   
   TString mess("") ;
@@ -160,13 +161,13 @@ Bool_t sim_exam()
     
     if (ratiohmb[i] > maxAlaHitsMB){
       error = kTRUE ;
-      mess = "Examination detected an error in " + TString((const char *)namemul) ;
+      mess = "Examination detected an error in " + TString(namemul) ;
       write_info(mess) ;
     }
     
     if (ratioenb[i] > maxAlaTotEnB) {
       error = kTRUE ;
-      mess = "Examination detected an error in " + TString((const char *)namen)  ;
+      mess = "Examination detected an error in " + TString(namen)  ;
       write_info(mess) ;
     }
   }
@@ -313,7 +314,7 @@ Bool_t digit()
   //Digits process
   AliPHOSGetter * gime = AliPHOSGetter::GetInstance("testPHOS.root") ;
   TString reconame = "test suite" ;
-  const Float_t maxDigits = 3489.41 ;
+  const Float_t maxDigits = 2860. ;
   const Float_t widDigits = TMath::Sqrt(maxDigits) ;
   
   TString mess("") ;
@@ -342,7 +343,7 @@ Bool_t recpoint()
   AliPHOSGetter * gime = AliPHOSGetter::GetInstance("testPHOS.root") ;
   TString reconame = "test suite" ;
   
-  const Float_t maxRecPoints = 222.83 ;
+  const Float_t maxRecPoints = 1.0 ;
   const Float_t widRecPoints = TMath::Sqrt(maxRecPoints) ;
   
   TString mess("") ;

@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.3  2001/10/21 19:07:24  hristov
+Several pointers were set to zero in the default constructors to avoid memory management problems
+
+Revision 1.2  2000/04/17 09:37:33  kowal2
+removed obsolete AliTPCDigitsDisplay.C
+
 Revision 1.1.4.2  2000/04/10 11:34:02  kowal2
 
 Clusters handling in a new data structure
@@ -51,7 +57,8 @@ AliTPCClustersRow::AliTPCClustersRow()
   //
   //default constructor
   fNclusters=0;
-  fClusters =  new TClonesArray("AliTPCcluster",kDefSize); 
+  fClusters =  new TClonesArray("AliTPCcluster",kDefSize);
+  fParam = 0;
 }
 //_____________________________________________________________________________
 AliTPCClustersRow::AliTPCClustersRow(Int_t size) 

@@ -99,7 +99,13 @@ AliPHOSPIDv1::AliPHOSPIDv1():AliPHOSPID()
   fRecPointsTitle    = "" ; 
   fRecParticlesTitle = "" ; 
   fIDOptions         = "dis time" ; 
-  fRecParticlesInRun = 0 ; 
+  fRecParticlesInRun = 0 ;
+  fEmcRecPoints = 0;
+  fCpvRecPoints = 0;
+  fTrackSegments = 0;
+  fRecParticles = 0;
+  fClusterizer = 0;
+  fTSMaker = 0;
 }
 
 //____________________________________________________________________________
@@ -219,6 +225,10 @@ void  AliPHOSPIDv1::Exec(Option_t * option)
     
     if(strstr(option,"deb"))
       PrintRecParticles(option) ;
+
+    //increment the total number of rec particles per run 
+    fRecParticlesInRun += gime->RecParticles()->GetEntriesFast() ; 
+
   }
   
   if(strstr(option,"tim")){
@@ -510,8 +520,6 @@ void AliPHOSPIDv1::PrintRecParticles(Option_t * option)
   
   cout << "AliPHOSPIDv1: event "<<gAlice->GetEvNumber()  << endl ;
   cout << "       found " << recParticles->GetEntriesFast() << " RecParticles " << endl ;
-
-  fRecParticlesInRun += recParticles->GetEntriesFast() ; 
   
   if(strstr(option,"all")) {  // printing found TS
     

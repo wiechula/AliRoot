@@ -67,6 +67,7 @@ Int_t AliTPCFindClusters(Int_t n=1) {
    delete gAlice; gAlice=0;
 
    out->Close();
+
    in->Close();
 
    return 0;

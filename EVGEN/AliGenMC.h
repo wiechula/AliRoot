@@ -61,8 +61,7 @@ class AliGenMC : public AliGenerator
     Float_t     fChildYMin;     // Children minimum y
     Float_t     fChildYMax;     // Children maximum y
     Decay_t     fForceDecay;    // Decay channel forced
-	
-    ClassDef(AliGenMC,1)       // AliGenerator implementation for generators using MC methods
+    ClassDef(AliGenMC,2)       // AliGenerator implementation for generators using MC methods
 };
 #endif
 

@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.16  2001/10/12 11:13:59  morsch
+Missing break statements added (thanks to Nicola Carrer)
+
+Revision 1.15  2001/03/27 10:54:50  morsch
+Add ResetDecayTable() and SsetDecayTable() methods.
+
 Revision 1.14  2001/03/09 13:03:40  morsch
 Process_t and Struc_Func_t moved to AliPythia.h
 
@@ -124,6 +130,7 @@ void AliPythia::ProcInit(Process_t process, Float_t energy, StrucFunc_t strucfun
 	SetMSUB(88,1);
 // gg-> chi_2c g
 	SetMSUB(89,1);	
+	break;
     case kPyCharmUnforced:
 	SetMSEL(0);
 // gq->qg   
@@ -132,6 +139,7 @@ void AliPythia::ProcInit(Process_t process, Float_t energy, StrucFunc_t strucfun
 	SetMSUB(53,1);
 // gg->gg
 	SetMSUB(68,1);
+	break;
     case kPyBeautyUnforced:
 	SetMSEL(0);
 // gq->qg   

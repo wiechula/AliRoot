@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.5  2001/10/21 19:07:24  hristov
+Several pointers were set to zero in the default constructors to avoid memory management problems
+
+Revision 1.4  2000/10/05 15:59:31  kowal2
+Forward declarations. Changes due to a new class AliComplexCluster.
+
 Revision 1.3  2000/06/30 12:07:49  kowal2
 Updated from the TPC-PreRelease branch
 
@@ -71,6 +77,7 @@ AliClustersArray::AliClustersArray()
   //
   fParam = 0;
   fClusterType = 0;
+  fClFinder = 0;
 }
 
 Bool_t  AliClustersArray::SetClusterType(Text_t * classname) 

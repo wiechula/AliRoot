@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.4  2001/10/21 18:30:02  hristov
+Several pointers were set to zero in the default constructors to avoid memory management problems
+
+Revision 1.3  2000/10/15 23:40:01  cblume
+Remove AliTRDconst
+
 Revision 1.2  2000/10/06 16:49:46  cblume
 Made Getters const
 
@@ -31,6 +37,14 @@ Add the tracking code
 
 ClassImp(AliTRDtimeBin)
 
+//______________________________________________________
+
+  AliTRDtimeBin::AliTRDtimeBin() {
+  //default constructor
+    fN=0;
+    for (Int_t i=0; i<kMAX_CLUSTER_PER_TIME_BIN; i++) 
+      fClusters[i]=0;
+  }
 //______________________________________________________
 
 void AliTRDtimeBin::InsertCluster(AliTRDcluster* c, UInt_t index) {

@@ -15,6 +15,19 @@
 
 /*
 $Log$
+Revision 1.14  2001/10/19 21:32:35  nilsen
+Minor changes to remove compliation warning on gcc 2.92.2 compiler, and
+cleanded up a little bit of code.
+
+Revision 1.13  2001/10/12 22:07:20  nilsen
+A patch for C++ io manipulation functions so that they will work both
+with GNU gcc 2.96 and GNU gcc 3.01 compilers. Needs to be tested with
+other platforms.
+
+Revision 1.12  2001/08/24 21:06:37  nilsen
+Added more documentation, fixed up some coding violations, and some
+forward declorations.
+
 Revision 1.11  2001/05/16 08:17:49  hristov
 Bug fixed in the StepManager to account for the difference in the geometry 
 tree for the ITS pixels. This fixes both the funny distribution of pixel 
@@ -238,7 +251,15 @@ void AliITSgeomSDD::Print(ostream *os) const {
 // Standard output format for this class.
 ////////////////////////////////////////////////////////////////////////
     Int_t i;
+#if defined __GNUC__
+#if __GNUC__ > 2
+    ios::fmtflags fmt;
+#else
     Int_t fmt;
+#endif
+#else
+    Int_t fmt;
+#endif
 
     fmt = os->setf(ios::scientific);  // set scientific floating point output
     *os << "TBRIK" << " ";
@@ -302,6 +323,19 @@ istream &operator>>(istream &is,AliITSgeomSDD &r){
 //======================================================================
 /*
 $Log$
+Revision 1.14  2001/10/19 21:32:35  nilsen
+Minor changes to remove compliation warning on gcc 2.92.2 compiler, and
+cleanded up a little bit of code.
+
+Revision 1.13  2001/10/12 22:07:20  nilsen
+A patch for C++ io manipulation functions so that they will work both
+with GNU gcc 2.96 and GNU gcc 3.01 compilers. Needs to be tested with
+other platforms.
+
+Revision 1.12  2001/08/24 21:06:37  nilsen
+Added more documentation, fixed up some coding violations, and some
+forward declorations.
+
 Revision 1.11  2001/05/16 08:17:49  hristov
 Bug fixed in the StepManager to account for the difference in the geometry tree for the ITS pixels. This fixes both the funny distribution of pixel coordinates and the missing hits/digits/points in many sectors of the ITS pixel barrel. Also included is a patch to properly get and use the detector dimensions through out the ITS code. (B.Nilsen)
 
@@ -763,6 +797,19 @@ istream &operator>>(istream &is,AliITSgeomSDD256 &r){
 //======================================================================
 /*
 $Log$
+Revision 1.14  2001/10/19 21:32:35  nilsen
+Minor changes to remove compliation warning on gcc 2.92.2 compiler, and
+cleanded up a little bit of code.
+
+Revision 1.13  2001/10/12 22:07:20  nilsen
+A patch for C++ io manipulation functions so that they will work both
+with GNU gcc 2.96 and GNU gcc 3.01 compilers. Needs to be tested with
+other platforms.
+
+Revision 1.12  2001/08/24 21:06:37  nilsen
+Added more documentation, fixed up some coding violations, and some
+forward declorations.
+
 Revision 1.11  2001/05/16 08:17:49  hristov
 Bug fixed in the StepManager to account for the difference in the geometry tree for the ITS pixels. This fixes both the funny distribution of pixel coordinates and the missing hits/digits/points in many sectors of the ITS pixel barrel. Also included is a patch to properly get and use the detector dimensions through out the ITS code. (B.Nilsen)
 

@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.3  2001/10/21 18:35:19  hristov
+A pointer was set to zero in the default constructor to avoid memory management problems
+
+Revision 1.2  2001/08/30 09:48:12  hristov
+The operator[] is replaced by At() or AddAt() in case of TObjArray.
+
 Revision 1.1  2001/07/25 17:28:32  morsch
 LHC related code. First commit.
 
@@ -40,6 +46,7 @@ AliLHC::AliLHC()
     fBeams->AddAt(0,1);    
     fTime = 0;
     fTimeMax = 0;
+    fTimeA = 0;
 }
 
 AliLHC::AliLHC(const AliLHC& lhc)
