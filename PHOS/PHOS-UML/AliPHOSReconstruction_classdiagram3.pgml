@@ -28,7 +28,7 @@
       x="32"
       y="16"
       width="176"
-      height="36"
+      height="28"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -46,7 +46,7 @@
     >&lt;&lt;Interface&gt;&gt;</text>
     <text name="Fig0.3"
       x="33"
-      y="35"
+      y="30"
       fill="1"
       fillcolor="-56"
       stroke="0"
@@ -56,7 +56,7 @@
     >AliPHOSSubTracker</text>
     <text name="Fig0.4"
       x="32"
-      y="51"
+      y="43"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -66,7 +66,7 @@
     >public void MakeSubTracks()</text>
   </group>
   <group name="Fig1"
-       description="uci.uml.visual.FigClass[16, 148, 237, 69]"
+       description="uci.uml.visual.FigClass[16, 148, 237, 70]"
        href="S.100649"
        fill="1"
        fillcolor="-1"
@@ -80,7 +80,7 @@
       x="17"
       y="149"
       width="235"
-      height="67"
+      height="68"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -98,7 +98,7 @@
     >AliPHOSSubTrackerv1</text>
     <text name="Fig1.2"
       x="16"
-      y="166"
+      y="163"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -109,7 +109,7 @@
 public fR0 = 0</text>
     <text name="Fig1.3"
       x="16"
-      y="198"
+      y="195"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -119,7 +119,7 @@ public fR0 = 0</text>
     >public float GetDistanceInPHOSPlane()</text>
   </group>
   <group name="Fig2"
-       description="uci.uml.visual.FigClass[270, 148, 206, 111]"
+       description="uci.uml.visual.FigClass[270, 148, 206, 112]"
        href="S.100094"
        fill="1"
        fillcolor="-1"
@@ -133,7 +133,7 @@ public fR0 = 0</text>
       x="271"
       y="149"
       width="204"
-      height="109"
+      height="110"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -151,7 +151,7 @@ public fR0 = 0</text>
     >AliPHOSGeometry</text>
     <text name="Fig2.2"
       x="270"
-      y="166"
+      y="163"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -161,7 +161,7 @@ public fR0 = 0</text>
     >private many data</text>
     <text name="Fig2.3"
       x="270"
-      y="184"
+      y="191"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -175,7 +175,7 @@ public void RelToAbsNumbering()
 public void AbsToRelNumbering()</text>
   </group>
   <text name="Fig3"
-    x="336"
+    x="323"
     y="208"
     fill="1"
     fillcolor="-1"
@@ -185,7 +185,7 @@ public void AbsToRelNumbering()</text>
     textsize="10"
   >singleton</text>
   <group name="Fig4"
-       description="uci.uml.visual.FigClass[8, 288, 196, 97]"
+       description="uci.uml.visual.FigClass[8, 288, 196, 98]"
        href="S.100688"
        fill="1"
        fillcolor="-1"
@@ -199,7 +199,7 @@ public void AbsToRelNumbering()</text>
       x="9"
       y="289"
       width="194"
-      height="95"
+      height="96"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -217,7 +217,7 @@ public void AbsToRelNumbering()</text>
     >AliPHOSSubTrack</text>
     <text name="Fig4.2"
       x="8"
-      y="306"
+      y="303"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -230,7 +230,7 @@ public fPpsdLow = 0
 public fPpsdUp = 0</text>
     <text name="Fig4.3"
       x="8"
-      y="366"
+      y="359"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -240,7 +240,7 @@ public fPpsdUp = 0</text>
     ></text>
   </group>
   <group name="Fig5"
-       description="uci.uml.visual.FigClass[352, 285, 245, 279]"
+       description="uci.uml.visual.FigClass[352, 285, 245, 280]"
        href="S.100334"
        fill="1"
        fillcolor="-1"
@@ -254,7 +254,7 @@ public fPpsdUp = 0</text>
       x="353"
       y="286"
       width="243"
-      height="277"
+      height="278"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -272,7 +272,7 @@ public fPpsdUp = 0</text>
     >AliPHOSEmcCluster</text>
     <text name="Fig5.2"
       x="352"
-      y="303"
+      y="300"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -287,7 +287,7 @@ private fLocMaxCut = 0.6
 public fW0 = 4.</text>
     <text name="Fig5.3"
       x="352"
-      y="391"
+      y="402"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -308,7 +308,7 @@ public void SetLocalMaxCut()
 public void SetLowWeightCut()</text>
   </group>
   <group name="Fig6"
-       description="uci.uml.visual.FigClass[368, 525, 171, 111]"
+       description="uci.uml.visual.FigClass[368, 525, 171, 112]"
        href="S.100336"
        fill="1"
        fillcolor="-1"
@@ -322,7 +322,7 @@ public void SetLowWeightCut()</text>
       x="369"
       y="526"
       width="169"
-      height="109"
+      height="110"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -340,7 +340,7 @@ public void SetLowWeightCut()</text>
     >AliPHOSPpsdCluster</text>
     <text name="Fig6.2"
       x="368"
-      y="543"
+      y="540"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -352,7 +352,7 @@ private fEnergy = 0
 private int fMultiplicity = 0</text>
     <text name="Fig6.3"
       x="368"
-      y="589"
+      y="588"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -432,7 +432,7 @@ public bool GetUp()</text>
       strokecolor="-16777216"
     >
       <moveto x="96"
-              y="217" />
+              y="218" />
       <lineto x="96"
               y="288" />
     </path>

@@ -272,6 +272,8 @@ void  AliPHOSTrackSegmentMakerv1::MakePairs(TObjArray * EmcRecPoints, TObjArray 
   AliPHOSPpsdRecPoint * ppsdLow ;
   AliPHOSPpsdRecPoint * ppsdUp ;
 
+  AliPHOSRecPoint * NullPointer = 0 ;
+
   while ( (linkLow =  (AliPHOSLink *)nextLow() ) ){
     emc = (AliPHOSEmcRecPoint *) EmcRecPoints->At(linkLow->GetEmc()) ;
     ppsdLow = (AliPHOSPpsdRecPoint *) PpsdRecPointsLow->At(linkLow->GetPpsd()) ;
@@ -289,11 +291,11 @@ void  AliPHOSTrackSegmentMakerv1::MakePairs(TObjArray * EmcRecPoints, TObjArray 
 	 nextUp.Reset();
          AliPHOSTrackSegment * subtr = new AliPHOSTrackSegment(emc, ppsdUp, ppsdLow ) ;
 	 trsl->Add(subtr) ;  
-	 EmcRecPoints->RemoveAt(linkLow->GetEmc()) ;	  
-	 PpsdRecPointsLow->RemoveAt(linkLow->GetPpsd()) ;
+	 EmcRecPoints->AddAt(NullPointer,linkLow->GetEmc()) ;	  
+	 PpsdRecPointsLow->AddAt(NullPointer,linkLow->GetPpsd()) ;
 	 
 	 if(ppsdUp)  
-	   PpsdRecPointsUp->RemoveAt(linkUp->GetPpsd()) ;
+	   PpsdRecPointsUp->AddAt(NullPointer,linkUp->GetPpsd()) ;
 	 
     } // if NLocMax
   } 
@@ -302,8 +304,8 @@ void  AliPHOSTrackSegmentMakerv1::MakePairs(TObjArray * EmcRecPoints, TObjArray 
   nextEmc.Reset() ;
 
   while( (emc = (AliPHOSEmcRecPoint*)nextEmc()) ){ //to create pairs if no PpsdLow
-    ppsdLow = NULL ; 
-    ppsdUp = NULL ;
+    ppsdLow = 0 ; 
+    ppsdUp  = 0 ;
     
     while ( (linkUp =  (AliPHOSLink *)nextUp() ) ){
       
@@ -317,8 +319,7 @@ void  AliPHOSTrackSegmentMakerv1::MakePairs(TObjArray * EmcRecPoints, TObjArray 
     trsl->Add(subtr) ;   
  
     if(ppsdUp)  
-      PpsdRecPointsUp->RemoveAt(linkUp->GetPpsd()) ;
-    
+      PpsdRecPointsUp->AddAt(NullPointer,linkUp->GetPpsd()) ;
   }
      
 }

@@ -28,7 +28,7 @@
       x="64"
       y="24"
       width="104"
-      height="36"
+      height="28"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -46,7 +46,7 @@
     >&lt;&lt;Interface&gt;&gt;</text>
     <text name="Fig0.3"
       x="65"
-      y="43"
+      y="38"
       fill="1"
       fillcolor="-56"
       stroke="0"
@@ -56,7 +56,7 @@
     >AliDetector</text>
     <text name="Fig0.4"
       x="64"
-      y="59"
+      y="51"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -66,7 +66,7 @@
     ></text>
   </group>
   <group name="Fig1"
-       description="uci.uml.visual.FigInterface[64, 160, 104, 64]"
+       description="uci.uml.visual.FigInterface[64, 160, 117, 64]"
        href="S.100078"
        fill="1"
        fillcolor="-56"
@@ -79,7 +79,7 @@
     <rectangle name="Fig1.0"
       x="65"
       y="161"
-      width="102"
+      width="115"
       height="62"
       fill="1"
       fillcolor="-56"
@@ -89,8 +89,8 @@
     <rectangle name="Fig1.1"
       x="64"
       y="160"
-      width="104"
-      height="36"
+      width="117"
+      height="28"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -108,7 +108,7 @@
     >&lt;&lt;Interface&gt;&gt;</text>
     <text name="Fig1.3"
       x="65"
-      y="179"
+      y="174"
       fill="1"
       fillcolor="-56"
       stroke="0"
@@ -118,17 +118,18 @@
     >AliPHOS</text>
     <text name="Fig1.4"
       x="64"
-      y="195"
+      y="187"
       fill="1"
       fillcolor="-56"
       stroke="1"
       strokecolor="-256"
       font="Dialog"
       textsize="9"
-    ></text>
+    >public void CreateMaterials()
+public void GetGeometry()</text>
   </group>
   <group name="Fig2"
-       description="uci.uml.visual.FigClass[56, 276, 181, 125]"
+       description="uci.uml.visual.FigClass[56, 276, 181, 126]"
        href="S.100080"
        fill="1"
        fillcolor="-1"
@@ -142,7 +143,7 @@
       x="57"
       y="277"
       width="179"
-      height="123"
+      height="124"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -157,10 +158,10 @@
       strokecolor="-16777216"
       font="Dialog"
       textsize="9"
-    >AliPHOSv4</text>
+    >AliPHOSv0</text>
     <text name="Fig2.2"
       x="56"
-      y="294"
+      y="291"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -170,7 +171,7 @@
     ></text>
     <text name="Fig2.3"
       x="56"
-      y="312"
+      y="321"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -185,7 +186,7 @@ public void MakeBranch()
 public void StepManager()</text>
   </group>
   <group name="Fig3"
-       description="uci.uml.visual.FigClass[278, 316, 206, 111]"
+       description="uci.uml.visual.FigClass[278, 316, 206, 112]"
        href="S.100094"
        fill="1"
        fillcolor="-1"
@@ -199,7 +200,7 @@ public void StepManager()</text>
       x="279"
       y="317"
       width="204"
-      height="109"
+      height="110"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -217,7 +218,7 @@ public void StepManager()</text>
     >AliPHOSGeometry</text>
     <text name="Fig3.2"
       x="278"
-      y="334"
+      y="331"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -227,7 +228,7 @@ public void StepManager()</text>
     >private many data</text>
     <text name="Fig3.3"
       x="278"
-      y="352"
+      y="359"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -265,7 +266,7 @@ public void AbsToRelNumbering()</text>
       x="304"
       y="448"
       width="104"
-      height="36"
+      height="28"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -283,7 +284,7 @@ public void AbsToRelNumbering()</text>
     >&lt;&lt;Interface&gt;&gt;</text>
     <text name="Fig4.3"
       x="305"
-      y="467"
+      y="462"
       fill="1"
       fillcolor="-56"
       stroke="0"
@@ -293,7 +294,7 @@ public void AbsToRelNumbering()</text>
     >AliHit</text>
     <text name="Fig4.4"
       x="304"
-      y="483"
+      y="475"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -303,7 +304,7 @@ public void AbsToRelNumbering()</text>
     ></text>
   </group>
   <group name="Fig5"
-       description="uci.uml.visual.FigClass[104, 444, 146, 111]"
+       description="uci.uml.visual.FigClass[104, 444, 146, 112]"
        href="S.100125"
        fill="1"
        fillcolor="-1"
@@ -317,7 +318,7 @@ public void AbsToRelNumbering()</text>
       x="105"
       y="445"
       width="144"
-      height="109"
+      height="110"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -335,7 +336,7 @@ public void AbsToRelNumbering()</text>
     >AliPHOSHit</text>
     <text name="Fig5.2"
       x="104"
-      y="462"
+      y="459"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -346,7 +347,7 @@ public void AbsToRelNumbering()</text>
 private int fId = 0</text>
     <text name="Fig5.3"
       x="104"
-      y="494"
+      y="492"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -355,6 +356,7 @@ private int fId = 0</text>
       textsize="9"
     >public float GetEnergy()
 public int G
+      
       
       etId()</text>
   </group>
@@ -383,7 +385,7 @@ public int G
       x="304"
       y="560"
       width="104"
-      height="36"
+      height="28"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -401,7 +403,7 @@ public int G
     >&lt;&lt;Interface&gt;&gt;</text>
     <text name="Fig6.3"
       x="305"
-      y="579"
+      y="574"
       fill="1"
       fillcolor="-56"
       stroke="0"
@@ -411,7 +413,7 @@ public int G
     >AliDigit</text>
     <text name="Fig6.4"
       x="304"
-      y="595"
+      y="587"
       fill="1"
       fillcolor="-56"
       stroke="1"
@@ -421,7 +423,7 @@ public int G
     ></text>
   </group>
   <group name="Fig7"
-       description="uci.uml.visual.FigClass[104, 556, 146, 83]"
+       description="uci.uml.visual.FigClass[104, 556, 146, 84]"
        href="S.100160"
        fill="1"
        fillcolor="-1"
@@ -435,7 +437,7 @@ public int G
       x="105"
       y="557"
       width="144"
-      height="81"
+      height="82"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -453,7 +455,7 @@ public int G
     >AliPHOSDigit</text>
     <text name="Fig7.2"
       x="104"
-      y="574"
+      y="571"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -464,7 +466,7 @@ public int G
 private int fId = 0</text>
     <text name="Fig7.3"
       x="104"
-      y="606"
+      y="605"
       fill="1"
       fillcolor="-1"
       stroke="1"
@@ -475,7 +477,7 @@ private int fId = 0</text>
 public int GetId()</text>
   </group>
   <text name="Fig8"
-    x="352"
+    x="339"
     y="400"
     fill="1"
     fillcolor="-1"
@@ -604,7 +606,7 @@ public int GetId()</text>
       <moveto x="137"
               y="445" />
       <lineto x="137"
-              y="400" />
+              y="401" />
     </path>
   </group>
   <group name="Fig14"
@@ -651,7 +653,7 @@ public int GetId()</text>
       strokecolor="-16777216"
     >
       <moveto x="72"
-              y="400" />
+              y="401" />
       <lineto x="72"
               y="568" />
       <lineto x="105"

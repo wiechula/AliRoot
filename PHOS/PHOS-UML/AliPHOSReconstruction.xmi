@@ -32,7 +32,53 @@
           <isLeaf XMI.value="false"/>
           <isRoot XMI.value="false"/>
           <realization> <XMI.reference target="S.100080"/> </realization>
-          <!-- realizations is: AliPHOSv4 -->
+          <!-- realizations is: AliPHOSv0 -->
+          <feature>
+            <Operation XMI.id = "S.101036">
+              <name>CreateMaterials</name>
+              <visibility XMI.value = "public"/>
+              <ownerScope XMI.value="instance"/>
+              <isQuery XMI.value="false"/>
+              <concurrency XMI.value="sequential"/>
+              <isPolymorphic XMI.value="false"/>
+              <operationSpecification>
+              </operationSpecification>
+              <parameter>
+                <Parameter XMI.id = "S.101037">
+                  <name>return</name>
+                  <visibility XMI.value = "public"/>
+                  <defaultValue>
+                  </defaultValue>
+                  <kind XMI.value="return"/>
+                  <type> <XMI.reference target="S.100004"/> </type>
+                  <!-- Type is: void -->
+                </Parameter>
+              </parameter>
+            </Operation>
+          </feature>
+          <feature>
+            <Operation XMI.id = "S.101038">
+              <name>GetGeometry</name>
+              <visibility XMI.value = "public"/>
+              <ownerScope XMI.value="instance"/>
+              <isQuery XMI.value="false"/>
+              <concurrency XMI.value="sequential"/>
+              <isPolymorphic XMI.value="false"/>
+              <operationSpecification>
+              </operationSpecification>
+              <parameter>
+                <Parameter XMI.id = "S.101039">
+                  <name>return</name>
+                  <visibility XMI.value = "public"/>
+                  <defaultValue>
+                  </defaultValue>
+                  <kind XMI.value="return"/>
+                  <type> <XMI.reference target="S.101040"/> </type>
+                  <!-- Type is: AliPHOSGeometry * -->
+                </Parameter>
+              </parameter>
+            </Operation>
+          </feature>
         </Interface>
       </ownedElement>
       <ownedElement>
@@ -49,7 +95,7 @@
       </ownedElement>
       <ownedElement>
         <Class XMI.id = "S.100080">
-          <name>AliPHOSv4</name>
+          <name>AliPHOSv0</name>
           <visibility XMI.value = "public"/>
           <isAbstract XMI.value="false"/>
           <isLeaf XMI.value="false"/>
@@ -352,7 +398,7 @@
                 <changeable XMI.value="none"/>
                 <targetScope XMI.value="instance"/>
                 <type> <XMI.reference target="S.100080"/> </type>
-                <!-- Type is: AliPHOSv4 -->
+                <!-- Type is: AliPHOSv0 -->
               </AssociationEnd>
             </connection>
             <connection>
@@ -418,6 +464,7 @@
           <feature>
             <Operation XMI.id = "S.100152">
               <name>G
+      
       
       etId</name>
               <visibility XMI.value = "public"/>
@@ -502,7 +549,7 @@
                 <changeable XMI.value="none"/>
                 <targetScope XMI.value="instance"/>
                 <type> <XMI.reference target="S.100080"/> </type>
-                <!-- Type is: AliPHOSv4 -->
+                <!-- Type is: AliPHOSv0 -->
               </AssociationEnd>
             </connection>
         </Association>
@@ -626,7 +673,7 @@
                 <changeable XMI.value="none"/>
                 <targetScope XMI.value="instance"/>
                 <type> <XMI.reference target="S.100080"/> </type>
-                <!-- Type is: AliPHOSv4 -->
+                <!-- Type is: AliPHOSv0 -->
               </AssociationEnd>
             </connection>
             <connection>
@@ -1035,7 +1082,7 @@
                 <changeable XMI.value="none"/>
                 <targetScope XMI.value="instance"/>
                 <type> <XMI.reference target="S.100080"/> </type>
-                <!-- Type is: AliPHOSv4 -->
+                <!-- Type is: AliPHOSv0 -->
               </AssociationEnd>
             </connection>
             <connection>
@@ -3526,7 +3573,6 @@ energy loss</name>
           <visibility XMI.value = "public"/>
           <discriminator>
           </discriminator>
-          <stereotype> <XMI.reference target="S.100348" /> </stereotype>
           <subtype> <XMI.reference target="S.101022"/> </subtype>
           <!-- subtype is: Photon: 
 conversion probability
@@ -3541,8 +3587,7 @@ the way of the particle -->
         <UseCase XMI.id = "S.101024">
           <name>Charged and Neutral hadrons:
 energy loss
-momentum smearing
-</name>
+momentum smearing</name>
           <visibility XMI.value = "public"/>
           <isAbstract XMI.value="false"/>
           <isLeaf XMI.value="false"/>
@@ -3555,12 +3600,10 @@ momentum smearing
           <visibility XMI.value = "public"/>
           <discriminator>
           </discriminator>
-          <stereotype> <XMI.reference target="S.100348" /> </stereotype>
           <subtype> <XMI.reference target="S.101024"/> </subtype>
           <!-- subtype is: Charged and Neutral hadrons:
 energy loss
-momentum smearing
- -->
+momentum smearing -->
           <supertype> <XMI.reference target="S.101008"/> </supertype>
           <!-- supertype is: 2. What is the incidence
 of other detectors on
@@ -3707,6 +3750,14 @@ resolution -->
       <isRoot XMI.value="false"/>
       <isActive XMI.value = "false"/>
     </Class>
+    <Class XMI.id = "S.101040">
+      <name>AliPHOSGeometry *</name>
+      <visibility XMI.value = "public"/>
+      <isAbstract XMI.value="false"/>
+      <isLeaf XMI.value="false"/>
+      <isRoot XMI.value="false"/>
+      <isActive XMI.value = "false"/>
+    </Class>
     <Class XMI.id = "S.100013">
       <name>Integer</name>
       <visibility XMI.value = "public"/>
@@ -3791,13 +3842,6 @@ resolution -->
       <isRoot XMI.value="false"/>
       <isActive XMI.value = "false"/>
     </Class>
-    <DataType XMI.id = "S.100006">
-      <name>int</name>
-      <visibility XMI.value = "public"/>
-      <isAbstract XMI.value="false"/>
-      <isLeaf XMI.value="false"/>
-      <isRoot XMI.value="false"/>
-    </DataType>
     <Class XMI.id = "S.100003">
       <name>String</name>
       <visibility XMI.value = "public"/>
@@ -3806,16 +3850,23 @@ resolution -->
       <isRoot XMI.value="false"/>
       <isActive XMI.value = "false"/>
     </Class>
-    <Class XMI.id = "S.100014">
-      <name>Boolean</name>
+    <DataType XMI.id = "S.100006">
+      <name>int</name>
+      <visibility XMI.value = "public"/>
+      <isAbstract XMI.value="false"/>
+      <isLeaf XMI.value="false"/>
+      <isRoot XMI.value="false"/>
+    </DataType>
+    <Class XMI.id = "S.100288">
+      <name>bool</name>
       <visibility XMI.value = "public"/>
       <isAbstract XMI.value="false"/>
       <isLeaf XMI.value="false"/>
       <isRoot XMI.value="false"/>
       <isActive XMI.value = "false"/>
     </Class>
-    <Class XMI.id = "S.100288">
-      <name>bool</name>
+    <Class XMI.id = "S.100014">
+      <name>Boolean</name>
       <visibility XMI.value = "public"/>
       <isAbstract XMI.value="false"/>
       <isLeaf XMI.value="false"/>
