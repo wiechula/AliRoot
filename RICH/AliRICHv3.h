@@ -21,8 +21,6 @@ public:
    virtual void   CreateGeometry();  // Provides geometry structure for simulation (currently GEANT volumes tree)
    virtual void   BuildGeometry();   // Provides geometry structure for event display (ROOT TNode tree)
    virtual void   Init();            // Makes nothing for a while
-   virtual void   StepManager();     // Processes the particle transport 
-       
 private:
     ClassDef(AliRICHv3,1)  //RICH full version, configurable with azimuthal rotation	
 };// class AliRICHv3

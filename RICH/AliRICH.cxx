@@ -15,6 +15,9 @@
 
 /*
   $Log$
+  Revision 1.58  2001/11/14 09:49:37  dibari
+  Use debug methods
+
   Revision 1.57  2001/11/09 17:29:31  dibari
   Setters fro models moved to header
 
@@ -2093,6 +2096,7 @@ void AliRICH::StepManager()
     
     idvol=-1;
     id=gMC->CurrentVolID(copy);
+    idvol = copy -1;
     Float_t cherenkovLoss=0;
     //gAlice->KeepTrack(gAlice->CurrentTrack());
     
@@ -2168,12 +2172,13 @@ void AliRICH::StepManager()
 			mom[1]=momentum(1);
 			mom[2]=momentum(2);
 			mom[3]=momentum(3);
+			Chamber(idvol).GlobaltoLocal(mom,localMom);
 			// Z-position for hit
 			
 			
 			/**************** Photons lost in second grid have to be calculated by hand************/ 
 			
-			Float_t cophi = TMath::Cos(TMath::ATan2(mom[0], mom[1]));
+			Float_t cophi = TMath::Cos(TMath::ATan2(localMom[0], localMom[1]));
 			Float_t t = (1. - .025 / cophi) * (1. - .05 /  cophi);
 			gMC->Rndm(ranf, 1);
 			//printf("grid calculation:%f\n",t);
@@ -2197,11 +2202,11 @@ void AliRICH::StepManager()
 			mom[1]=momentum(1);
 			mom[2]=momentum(2);
 			mom[3]=momentum(3);
-			
+			Chamber(idvol).GlobaltoLocal(mom,localMom);
 			/********* Photons lost by Fresnel reflection have to be calculated by hand********/ 
 			/***********************Cerenkov phtons (always polarised)*************************/
 			
-			Float_t cophi = TMath::Cos(TMath::ATan2(mom[0], mom[1]));
+			Float_t cophi = TMath::Cos(TMath::ATan2(localMom[0], localMom[1]));
 			Float_t t = Fresnel(ckovEnergy*1e9,cophi,1);
 			gMC->Rndm(ranf, 1);
 			if (ranf[0] < t) {
