@@ -24,11 +24,8 @@
 #include <TGeometry.h>
 #include <TNode.h>
 #include <TTUBE.h>
-#include "GParticle.h"
 #include "AliITS.h"
 #include "AliRun.h"
-
-#include "TGeant3.h"
 
 ClassImp(AliITS)
  
