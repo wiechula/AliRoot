@@ -63,14 +63,33 @@ class AliPHOSLoader : public AliLoader {
   // assignement operator requested by coding convention, but not needed
   AliPHOSLoader & operator = (const AliPHOSLoader & ) {return *this;}
 
-  Bool_t BranchExists(const TString& recName);
-  Int_t  PostHits(); //reads  from disk and sends them to folder; array as well as tree
-  Int_t  PostSDigits(); //reads SDigits from disk and sends them to folder; array as well as tree
-  Int_t  PostDigits(); //reads Digits from disk and sends them to folder; array as well as tree
-  Int_t  PostRecPoints(); //reads RecPoints from disk and sends them to folder; array as well as tree
-  Int_t  PostTracks();  //reads Tracks from disk and sends them to folder; array as well as tree
+  Int_t   GetEvent();//extends the method on PHOS RecPart posting
+  Int_t   SetEvent();//extends the method on PHOS RecPart posting
   
-  void   CleanFolders();//cleans all the stuff loaded by this detector + calls AliLoader::Clean
+  Bool_t  BranchExists(const TString& recName);
+  Int_t   LoadHits(Option_t* opt=""); //reads  from disk and sends them to folder; array as well as tree
+  Int_t   LoadSDigits(Option_t* opt="");
+  Int_t   LoadDigits(Option_t* opt=""); //reads Digits from disk and sends them to folder; array as well as tree
+  Int_t   LoadRecPoints(Option_t* opt=""); //reads RecPoints from disk and sends them to folder; array as well as tree
+  Int_t   LoadTracks(Option_t* opt="");  //reads Tracks from disk and sends them to folder; array as well as tree
+  
+  void    UnloadRecParticles();
+  void    UnloadTracks();
+  
+  Int_t   PostHits();  //Posts the 
+  Int_t   PostSDigits();
+  Int_t   PostDigits();
+  Int_t   PostRecPoints();
+  Int_t   PostTracks();
+  
+  void    CleanFolders();//cleans all the stuff loaded by this detector + calls AliLoader::Clean
+
+  void    CleanHits();
+  void    CleanSDigits();
+  void    CleanDigits();
+  void    CleanRecPoints();
+  void    CleanTracks();
+  void    CleanRecParticles();
 
 //up to now it is only here -> no definition about global/incremental tracking/PID
   Int_t   LoadRecParticles(Option_t* opt="");//loads reconstructed particles
@@ -147,6 +166,10 @@ class AliPHOSLoader : public AliLoader {
   
 protected:
   TString fBranchTitle;
+  Bool_t  fRecParticlesLoaded;
+  Bool_t  fTracksLoaded;
+  TString fRecParticlesFileOption;
+  Bool_t  IsOptionWritable(const TString& opt);
 private:
 
   Int_t ReadHits();

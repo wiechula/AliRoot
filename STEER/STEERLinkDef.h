@@ -62,7 +62,7 @@
 #pragma link C++ class  AliESD+;
 #pragma link C++ class  AliESDTrack+;
 #pragma link C++ class  AliESDVertex+;
-
+#pragma link C++ class AliLoaderDataInfo+;
 #endif
 
 

@@ -92,25 +92,92 @@ const TString AliPHOSLoader::fgkRecParticlesBranchName("PHOSRP");//Name for bran
 AliPHOSLoader::AliPHOSLoader()
  {
   fDebug = 0;
+  fRecParticlesLoaded = kFALSE;
  }
 //____________________________________________________________________________ 
 AliPHOSLoader::AliPHOSLoader(const Char_t *detname,const Char_t *eventfoldername):
       AliLoader(detname,eventfoldername)
 {
   fDebug=0;
+  fRecParticlesLoaded = kFALSE;
 }
 //____________________________________________________________________________ 
+
 AliPHOSLoader::~AliPHOSLoader()
 {
+  //remove and delete arrays
+  Clean(fgkHitsName);
+  Clean(fgkSDigitsName);
+  Clean(fgkDigitsName);
+  Clean(fgkEmcRecPointsName);
+  Clean(fgkCpvRecPointsName);
+  Clean(fgkTracksName);
+  Clean(fgkRecParticlesName);
 }
 
 void AliPHOSLoader::CleanFolders()
  {
+   CleanRecParticles();
    AliLoader::CleanFolders();
-   //the our stuff
  }
-
 //____________________________________________________________________________ 
+
+Int_t AliPHOSLoader::SetEvent()
+{
+  Bool_t tmp = fRecParticlesLoaded;
+  Bool_t checkreltracks = CheckReload(File(kTracks),FileName(kTracks));
+  if ( (checkreltracks)&& (fRecParticlesLoaded))
+   {
+     UnloadRecParticles();
+     fRecParticlesLoaded = kFALSE;
+   }
+  Int_t retval = AliLoader::SetEvent();
+  if (retval)
+   {
+     Error("SetEvent","AliLoader::SetEvent returned error");
+     return retval;
+   }
+  fRecParticlesLoaded = tmp;
+  return 0;
+}
+//____________________________________________________________________________ 
+
+Int_t AliPHOSLoader::GetEvent()
+{
+//Overloads GetEvent method called by AliRunLoader::GetEvent(Int_t) method
+//to add Rec Particles specific for PHOS
+
+//First call the original method to get whatever from std. setup is needed
+  Int_t retval;
+  
+  retval = AliLoader::GetEvent();
+  if (retval)
+   {
+     Error("GetEvent","AliLoader::GetEvent returned error");
+     return retval;
+   }
+
+  if (fRecParticlesLoaded) 
+   {//if yes
+    if (File(kTracks) == 0x0) //check if file is opened
+     {
+       retval = LoadTracks(fRecParticlesFileOption);//if not load the tracks (this method loads only tree, so not too much for us)
+       if (retval)
+        {
+         Error("GetEvent","Load Tracks returned error");
+         return retval;
+        }
+     }
+    return ReadRecParticles();//now we can 
+   }
+
+
+//Now, check if RecPart were loaded  
+  return 0;
+}
+//____________________________________________________________________________ 
+
+
 //____________________________________________________________________________ 
 const AliPHOS * AliPHOSLoader::PHOS() 
 {
@@ -133,25 +200,24 @@ const AliPHOSGeometry * AliPHOSLoader::PHOSGeometry()
 
 
 //____________________________________________________________________________ 
-Int_t AliPHOSLoader::PostHits(void)
+Int_t AliPHOSLoader::LoadHits(Option_t* opt)
 {  
 //------- Hits ----------------------
-//Overload (extends) PostHits implemented in AliLoader
+//Overload (extends) LoadHits implemented in AliLoader
 //
-
   Int_t res;
   
   //First call the AliLoader's method to send the TreeH to folder
-  res = AliLoader::PostHits();
+  res = AliLoader::LoadHits(opt);
   
   if (res)
    {//oops, error
-     Error("PostHits","AliLoader::PostHits returned error");
+     Error("LoadHits","AliLoader::LoadHits returned error");
      return res;
    }
 
   //read the data from tree in folder and send it to folder
-  cout<<"AliPHOSLoader::PostHits: Calling AliLoader::ReadHits()\n";
+  cout<<"AliPHOSLoader::LoadHits: Calling AliLoader::ReadHits()\n";
   res = ReadHits();
 
   return 0;
@@ -159,44 +225,41 @@ Int_t AliPHOSLoader::PostHits(void)
 
 
 //____________________________________________________________________________ 
-Int_t AliPHOSLoader::PostSDigits()
+Int_t AliPHOSLoader::LoadSDigits(Option_t* opt)
 {  //---------- SDigits -------------------------
   Int_t res;
   //First call the AliLoader's method to send the TreeS to folder
-  res = AliLoader::PostSDigits();
+  res = AliLoader::LoadSDigits(opt);
   if (res)
    {//oops, error
-     Error("PostSDigits","AliLoader::PostSDigits returned error");
+     Error("PostSDigits","AliLoader::LoadSDigits returned error");
      return res;
    }
-  return ReadSDigits();  
+  return ReadSDigits();
    
 } 
 //____________________________________________________________________________ 
-Int_t AliPHOSLoader::PostDigits()
+Int_t AliPHOSLoader::LoadDigits(Option_t* opt)
 { 
-
   Int_t res;
   //First call the AliLoader's method to send the TreeS to folder
-  res = AliLoader::PostDigits();
+  res = AliLoader::LoadDigits(opt);
   if (res)
    {//oops, error
-     Error("PostDigits","AliLoader::PostDigits returned error");
+     Error("LoadDigits","AliLoader::LoadDigits returned error");
      return res;
    }
   return ReadDigits();
 }
 //____________________________________________________________________________ 
-Int_t AliPHOSLoader::PostRecPoints() 
+Int_t AliPHOSLoader::LoadRecPoints(Option_t* opt) 
 { // -------------- RecPoints -------------------------------------------
-  
-
   Int_t res;
   //First call the AliLoader's method to send the TreeS to folder
-  res = AliLoader::PostRecPoints();
+  res = AliLoader::LoadRecPoints(opt);
   if (res)
    {//oops, error
-     Error("PostRecPoints","AliLoader::PostRecPoints returned error");
+     Error("LoadRecPoints","AliLoader::LoadRecPoints returned error");
      return res;
    }
 
@@ -206,28 +269,111 @@ Int_t AliPHOSLoader::PostRecPoints()
      Error("PostDigits","Can not get detector data folder");
      return 1;
    }
-
   PostReconstructioner();
 
   return ReadRecPoints();
 }
 //____________________________________________________________________________ 
-Int_t  AliPHOSLoader::PostTracks()
+
+Int_t  AliPHOSLoader::LoadTracks(Option_t* opt)
 {
+ //Loads Tracks: Open File, Reads Tree and posts, Read Data and Posts
+ if (fTracksLoaded)
+  {
+    Warning("LoadTracks","Tracks are already loaded");
+    return 0;
+  }
  Int_t res;
   //First call the AliLoader's method to send the TreeS to folder
- res = AliLoader::PostTracks();
+ if (File(kTracks) == 0x0) 
+  {//tracks can be loaded by LoadRecPoints
+   res = AliLoader::LoadTracks(opt);
+   if (res)
+    {//oops, error
+      Error("LoadTacks","AliLoader::LoadTacks returned error");
+      return res;
+    }
+  }
+ res = ReadTracks();
  if (res)
-  {//oops, error
-    Error("PostRecPoints","AliLoader::PostRecPoints returned error");
+  {
+    Error("LoadTacks","Error occured while reading Tracks");
     return res;
   }
- PostTracker();
- return ReadTracks();
- 
- Error("PostTracks","Do not forget to finish implementation of this method");
- return 1000;
+
+ res = PostTracker();
+ if (res)
+  {
+    Error("LoadTacks","Error occured while reading Tracker");
+    return res;
+  }
+ fTracksLoaded = kTRUE;
+ return 0;
 }
+//____________________________________________________________________________ 
+
+Int_t AliPHOSLoader::PostHits()
+{
+  Int_t reval = AliLoader::PostHits();
+  if (reval)
+   {
+     Error("","AliLoader::  returned error");
+     return reval;
+   }
+  return ReadHits();
+}
+//____________________________________________________________________________ 
+
+Int_t AliPHOSLoader::PostSDigits()
+{
+  Int_t reval = AliLoader::PostSDigits();
+  if (reval)
+   {
+     Error("PostSDigits","AliLoader::PostSDigits  returned error");
+     return reval;
+   }
+  return ReadSDigits();
+}
+//____________________________________________________________________________ 
+
+Int_t AliPHOSLoader::PostDigits()
+{
+  Int_t reval = AliLoader::PostDigits();
+  if (reval)
+   {
+     Error("PostDigits","AliLoader::PostDigits  returned error");
+     return reval;
+   }
+  return ReadDigits();
+}
+//____________________________________________________________________________ 
+
+Int_t AliPHOSLoader::PostRecPoints()
+{
+  Int_t reval = AliLoader::PostRecPoints();
+  if (reval)
+   {
+     Error("PostRecPoints","AliLoader::PostRecPoints  returned error");
+     return reval;
+   }
+  return ReadRecPoints();
+}
+//____________________________________________________________________________ 
+
+Int_t AliPHOSLoader::PostTracks()
+{
+  Int_t reval = AliLoader::PostTracks();
+  if (reval)
+   {
+     Error("PostTracks","AliLoader::PostTracks  returned error");
+     return reval;
+   }
+  return ReadTracks();
+}
+//____________________________________________________________________________ 
+
+
+
 //____________________________________________________________________________ 
 Int_t AliPHOSLoader::ReadHits()
 {
@@ -382,6 +528,20 @@ Int_t AliPHOSLoader::ReadDigits()
   return 0;  
 }
 
+void AliPHOSLoader::UnloadRecParticles()
+{
+  fRecParticlesLoaded = kFALSE;
+  CleanRecParticles();
+  if (fTracksLoaded == kFALSE) UnloadTracks();
+}
+
+void AliPHOSLoader::UnloadTracks()
+{
+ CleanTracks();//free the memory
+ //in case RecPart are loaded we can not onload tree and close the file
+ if (fRecParticlesLoaded == kFALSE) AliLoader::UnloadTracks();
+ else fTracksLoaded = kFALSE;//just mark that nobody needs them
+}
 
 //____________________________________________________________________________ 
 void AliPHOSLoader::Track(Int_t itrack)
@@ -582,8 +742,28 @@ Int_t AliPHOSLoader::LoadRecParticles(Option_t* opt)
  //Load tracks (treeT)
  //reads RecParticles from tree to to array and puts it in detector data folder (ReadRecParticles)
  
+ //if Tracks File is Opened and the option of the track
+ if (fRecParticlesLoaded) 
+  {
+   Warning("LoadRecParticles","Reconstructed Particles already loaded");
+   return 0;
+  }
+  
+ fRecParticlesFileOption = opt;
+ if( File(kTracks) && fTracksLoaded)//check the option if tracks were loaded by user with not writable option
+  if (File(kTracks)->IsWritable() == kFALSE)
+   {
+    //check if demended option is "writable" file
+    if (IsOptionWritable(fRecParticlesFileOption))
+     {
+       Error("LoadRecParticles",
+             "%s File (where Rec Particles for PHOS are stored) is opened and NOT \n\
+             \rwritable, while option demanded is writble.",File(kTracks)->GetName());
+       return 5;
+     }
+   }
  Int_t retval = 0;
- if (TreeT() == 0x0) 
+ if ( File(kTracks) == 0x0 )
   {
     retval = LoadTracks(opt);
     if (retval)
@@ -591,6 +771,8 @@ Int_t AliPHOSLoader::LoadRecParticles(Option_t* opt)
       Error("LoadRecParticles","Load Tracks returned error");
       return retval;
      }
+    fTracksLoaded = kFALSE; //tracks are loaded by us, not a user
+                            //thus tracks we can unload them if user asks to unload rec particles
   }
   
  retval = ReadRecParticles();
@@ -599,6 +781,9 @@ Int_t AliPHOSLoader::LoadRecParticles(Option_t* opt)
    Error("LoadRecParticles","Error occured while reading");
    return retval;
   }
+
+ fRecParticlesFileOption = opt;
+ fRecParticlesLoaded = kTRUE;
  return 0;
 }
 //____________________________________________________________________________ 
@@ -638,6 +823,7 @@ AliPHOSLoader* AliPHOSLoader::GetPHOSLoader(const  char* eventfoldername)
 /********************************************************************************************************/
 Bool_t AliPHOSLoader::BranchExists(const TString& recName)
  {
+  if (fBranchTitle.IsNull()) return kFALSE;
   TString dataname, zername ;
   TTree* tree;
   if(recName == "SDigits")
@@ -687,11 +873,11 @@ Bool_t AliPHOSLoader::BranchExists(const TString& recName)
     TString branchName(branch->GetName() ) ; 
     TString branchTitle(branch->GetTitle() ) ;  
     if ( branchName.BeginsWith(dataname) && branchTitle.BeginsWith(fBranchTitle) ){  
-      cerr << "WARNING: AliPHOSGetter::BranchExists -> branch " << dataname.Data() << " with title " << fBranchTitle << " already exits\n";
+      Warning("BranchExists","branch %s  with title  %s ",dataname.Data(),fBranchTitle.Data());
       return kTRUE ;
     }
     if ( branchName.BeginsWith(zername) &&  branchTitle.BeginsWith(titleName) ){
-      cerr << "WARNING:  AliPHOSGetter::BranchExists -> branch AliPHOS... with title " << branch->GetTitle() << " already exits\n";
+      Warning("BranchExists","branch AliPHOS... with title  %s ",branch->GetTitle());
       return kTRUE ; 
     }
   }
@@ -704,4 +890,69 @@ void AliPHOSLoader::SetBranchTitle(const TString& btitle)
   if (btitle.CompareTo(fBranchTitle) == 0) return;
   fBranchTitle = btitle;
   ReloadAll();
+ }
+//____________________________________________________________________________ 
+
+void AliPHOSLoader::CleanHits()
+{
+  AliLoader::CleanHits();
+  //Clear an array 
+  TClonesArray* hits = Hits();
+  if (hits) hits->Clear();
+}
+//____________________________________________________________________________ 
+
+void AliPHOSLoader::CleanSDigits()
+{
+  AliLoader::CleanSDigits();
+  TClonesArray* sdigits = SDigits();
+  if (sdigits) sdigits->Clear();
+  
+}
+//____________________________________________________________________________ 
+
+void AliPHOSLoader::CleanDigits()
+{
+  AliLoader::CleanDigits();
+  TClonesArray* digits = Digits();
+  if (digits) digits->Clear();
+}
+//____________________________________________________________________________ 
+
+void AliPHOSLoader::CleanRecPoints()
+{
+  AliLoader::CleanRecPoints();
+  TObjArray* recpoints = EmcRecPoints();
+  if (recpoints) recpoints->Clear();
+  recpoints = CpvRecPoints();
+  if (recpoints) recpoints->Clear();
+}
+//____________________________________________________________________________ 
+
+void AliPHOSLoader::CleanTracks()
+{
+//Cleans Tracks stuff
+  
+  AliLoader::CleanTracks();//tree
+  
+  //and clear the array
+  TClonesArray* tracks = TrackSegments();
+  if (tracks) tracks->Clear();
+
+}
+//____________________________________________________________________________ 
+
+Bool_t AliPHOSLoader::IsOptionWritable(const TString& opt)
+{
+  if (opt.CompareTo("recreate",TString::kIgnoreCase)) return kTRUE;
+  if (opt.CompareTo("new",TString::kIgnoreCase)) return kTRUE;
+  if (opt.CompareTo("create",TString::kIgnoreCase)) return kTRUE;
+  if (opt.CompareTo("update",TString::kIgnoreCase)) return kTRUE;
+  return kFALSE;
+}
+
+void AliPHOSLoader::CleanRecParticles()
+ {
+   TClonesArray *arr = RecParticles();
+   if (arr) arr->Clear();
  }

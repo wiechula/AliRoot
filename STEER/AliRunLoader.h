@@ -194,5 +194,4 @@ class AliRunLoader: public TNamed
     ClassDef(AliRunLoader,1)
 };
 
-
 #endif

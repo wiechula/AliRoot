@@ -39,42 +39,19 @@ ClassImp(AliLoader)
 
 AliLoader::AliLoader()
  {
-   fDetectorName = "";
-   fHitsFileName = "";
-   fSDigitsFileName = "";
-   fDigitsFileName = "";
-   fRecPointsFileName = "";
-   fTracksFileName = "";
-   
-   fHitsFile = 0x0;
-   fSDigitsFile = 0x0;
-   fDigitsFile = 0x0;
-   fRecPointsFile = 0x0;
-   fTracksFile = 0x0;
+//default constructor   
 
-   fHitsDir = 0x0;
-   fSDigitsDir = 0x0;
-   fDigitsDir = 0x0;
-   fRecPointsDir = 0x0;
-   fTracksDir = 0x0;
+   fDetectorName = "";
    
    fEventFolder = 0x0;
    fDataFolder = 0x0;
    fDetectorDataFolder = 0x0;
    
    fModuleFolder = 0x0;
-   fPrimariesFolder = 0x0;
    fQAFolder = 0x0;
    fTasksFolder = 0x0;
    
-   fHitsContainerName = "";
-   fDigitsContainerName = "";
-   fSDigitsContainerName = "";
-   fRecPointsContainerName = "";
-   fTracksContainerName = "";
-   
    fModuleFolder = 0x0;
-   fPrimariesFolder = 0x0;
    fDataFolder = 0x0;
    fDetectorDataFolder = 0x0;
    fTasksFolder = 0x0;
@@ -82,100 +59,43 @@ AliLoader::AliLoader()
  }
 /******************************************************************/
 
-AliLoader::
-AliLoader(const Char_t* detname,const Char_t* eventfoldername)
+AliLoader::AliLoader(const Char_t* detname,const Char_t* eventfoldername)
  {
   //ctor
    cout<<"AliLoader::AliLoader(const Char_t* detname = "
        <<detname<<",const Char_t* eventfoldername = "<<eventfoldername<<")"<<endl;
 
-     //try to find folder eventfoldername in top alice folder
-     //safe because GetTopFolder will abort in case of failure
-
+   //try to find folder eventfoldername in top alice folder
+   //safe because GetTopFolder will abort in case of failure
    fEventFolder = dynamic_cast<TFolder*>(GetTopFolder()->FindObject(eventfoldername));
-
    if (!fEventFolder)
     {
       Fatal("AliLoader","Can not find event folder %s. Aborting",eventfoldername);
     }
 
+   fDetectorName = detname;
+   fName = fDetectorName+"Loader";
+
+   InitDefaults();
+   //fileoption's don't need to initialized because default TString ctor does it correctly
+   
    fModuleFolder = 0x0;
-   fPrimariesFolder = 0x0;
    fDataFolder = 0x0;
    fDetectorDataFolder = 0x0;
    fTasksFolder = 0x0;
    fQAFolder = 0x0;
-
-   
-   fHitsFile = 0x0;
-   fSDigitsFile = 0x0;
-   fDigitsFile = 0x0;
-   fRecPointsFile = 0x0;
-   fTracksFile = 0x0;
-
-   fHitsDir = 0x0;
-   fSDigitsDir = 0x0;
-   fDigitsDir = 0x0;
-   fRecPointsDir = 0x0;
-   fTracksDir = 0x0;
-
-   fHitsContainerName = fgkDefaultHitsContainerName;
-   fDigitsContainerName = fgkDefaultDigitsContainerName;
-   fSDigitsContainerName = fgkDefaultSDigitsContainerName;
-   fRecPointsContainerName = fgkDefaultRecPointsContainerName;
-   fTracksContainerName = fgkDefaultTracksContainerName;
-
-   fDetectorName = detname;
-   fName = fDetectorName+"Loader";
-
-   fHitsFileName =      fDetectorName + ".Hits.root";
-   fSDigitsFileName =   fDetectorName + ".SDigits.root";
-   fDigitsFileName =    fDetectorName + ".Digits.root";
-   fRecPointsFileName = fDetectorName + ".RecPoints.root";
-   fTracksFileName =    fDetectorName + ".Tracks.root";
-
  }
 /*****************************************************************************/ 
 
-AliLoader::
-AliLoader(const Char_t * detname,TFolder* eventfolder)
+AliLoader::AliLoader(const Char_t * detname,TFolder* eventfolder)
 {
 
    fEventFolder = eventfolder;
    fDetectorName = detname;
    fName = fDetectorName+"Loader";
 
-   fHitsFileName =      fDetectorName + ".Hits.root";
-   fSDigitsFileName =   fDetectorName + ".SDigits.root";
-   fDigitsFileName =    fDetectorName + ".Digits.root";
-   fRecPointsFileName = fDetectorName + ".RecPoints.root";
-   fTracksFileName =    fDetectorName + ".Tracks.root";
-   
-   fHitsFile = 0x0;
-   fSDigitsFile = 0x0;
-   fDigitsFile = 0x0;
-   fRecPointsFile = 0x0;
-   fTracksFile = 0x0;
-
-   fHitsDir = 0x0;
-   fSDigitsDir = 0x0;
-   fDigitsDir = 0x0;
-   fRecPointsDir = 0x0;
-   fTracksDir = 0x0;
-
-   fModuleFolder = 0x0;
-   fPrimariesFolder = 0x0;
-   fDataFolder = 0x0;
-   fDetectorDataFolder = 0x0;
-   fTasksFolder = 0x0;
-   fQAFolder = 0x0;
-
-   fHitsContainerName = fgkDefaultHitsContainerName;
-   fDigitsContainerName = fgkDefaultDigitsContainerName;
-   fSDigitsContainerName = fgkDefaultSDigitsContainerName;
-   fRecPointsContainerName = fgkDefaultRecPointsContainerName;
-   fTracksContainerName = fgkDefaultTracksContainerName;
-  
+   InitDefaults();
+   //fileoption's don't need to initialized because default TString ctor does it correctly
 }
 /*****************************************************************************/ 
 AliLoader::~AliLoader()
@@ -185,228 +105,83 @@ AliLoader::~AliLoader()
 }
 
 /*****************************************************************************/ 
-Int_t AliLoader::LoadHits(Option_t* opt)
+void AliLoader::ResetDataInfo()
 {
-//opens the file, jups to proper root directory, posts data to proper folder
-//option is passed to TFile::Open and follows the same rules
-//If File will be opened in ReadOnly, no hits will be written
-//in case of success returns 0
-//  cout<<GetName()<<"::LoadHits()\n";
-  if (TreeH())
+  fDataInfo[kHits].fFile = 0x0;
+  fDataInfo[kSDigits].fFile = 0x0;
+  fDataInfo[kDigits].fFile = 0x0;
+  fDataInfo[kRecPoints].fFile = 0x0;
+  fDataInfo[kTracks].fFile = 0x0;
+   
+  fDataInfo[kHits].fDirectory = 0x0;
+  fDataInfo[kSDigits].fDirectory = 0x0;
+  fDataInfo[kDigits].fDirectory = 0x0;
+  fDataInfo[kRecPoints].fDirectory = 0x0;
+  fDataInfo[kTracks].fDirectory = 0x0;
+ 
+}
+
+void AliLoader::InitDefaults()
+{
+
+  fDataInfo[kHits].fFileName = fDetectorName + ".Hits.root";
+  fDataInfo[kSDigits].fFileName = fDetectorName + ".SDigits.root";
+  fDataInfo[kDigits].fFileName = fDetectorName + ".Digits.root";
+  fDataInfo[kRecPoints].fFileName = fDetectorName + ".RecPoints.root";
+  fDataInfo[kTracks].fFileName = fDetectorName + ".Tracks.root";
+  
+  fDataInfo[kHits].fContainerName = fgkDefaultHitsContainerName;
+  fDataInfo[kSDigits].fContainerName = fgkDefaultSDigitsContainerName;
+  fDataInfo[kDigits].fContainerName = fgkDefaultDigitsContainerName;
+  fDataInfo[kRecPoints].fContainerName = fgkDefaultRecPointsContainerName;
+  fDataInfo[kTracks].fContainerName = fgkDefaultTracksContainerName;
+
+  fDataInfo[kHits].fName = "Hits";
+  fDataInfo[kSDigits].fName = "Summable Digits";
+  fDataInfo[kDigits].fName = "Digits";
+  fDataInfo[kRecPoints].fName = "Reconstructed Points";
+  fDataInfo[kTracks].fName = "Tracks";
+
+}
+
+Int_t AliLoader::LoadData(EDataTypes dt,Option_t* opt)
+ {
+  if (Tree(dt))
    {
     TString sopt(opt);
     if( sopt.Contains("force",TString::kIgnoreCase) != 0)
      {
-       Warning("LoadHits","Hits are already loaded. Use FORCE option to force reload. Nothing done");
+       Warning("LoadData","Data <<%s>> are already loaded. Use FORCE option to force reload. Nothing done",DataName(dt).Data());
        return 0;
      }
     //else force option was used
    }
+  SetFileOption(dt,opt);
 
-  SetHitsFileOption(opt);
-  
   Int_t retval;
-  retval = OpenHitsFile(opt);
+  retval = OpenDataFile(dt,opt);
   if (retval) 
    {
-    Error("LoadHits","Error occured while opening hits file");
+    Error("LoadData","Error occured while opening <<%s>> file",DataName(dt).Data());
     return retval;
    }
-  
+
   //if file is recreated there is no sense to search for data to post and get Error message
   if (AliLoader::TestFileOption(opt) == kFALSE)
    {
-    MakeHitsContainer();
+    MakeTree(dt);
     return 0;
    }
-  
-//  Warning("LoadHits","Try to call PostHits");
-  retval = PostHits();
+
+  retval = PostData(dt);
   if (retval)
    {
-    Error("LoadHits","Error occured while posting hits from file to folder");
+    Error("LoadData","Error occured while posting %s from file to folder",DataName(dt).Data());
     return retval;
-   }
-  return 0;
-}
-/*****************************************************************************/ 
-Int_t AliLoader::LoadSDigits(Option_t* opt)
-{
-//opens the file, jups to proper root directory, posts data to proper folder
-//option is passed to TFile::Open and follows the same rules
-//in case of success returns 0
-  if (TreeS())
-   {
-    TString sopt(opt);
-    if(sopt.Contains("force",TString::kIgnoreCase) != 0)
-     {
-       Warning("LoadSDigits","Summable Digits are already loaded. Use FORCE option to force reload. Nothing done");
-       return 0;
-     }
-    //else force option was used
-   }
-  SetSDigitsFileOption(opt);
-  
-  Int_t retval;
-  if (fSDigitsFile  == 0x0)
-   {
-    retval = OpenSDigitsFile(opt);
-    if (retval) 
-     {
-      Error("LoadSDigits","Error occured while opening SDigits file");
-      return retval;
-     }
-    }
-  
-  //if file was   
-  if (AliLoader::TestFileOption(opt) == kFALSE) 
-   {
-    MakeSDigitsContainer();
-    return 0;
-   }
-  
-  retval = PostSDigits();
-  if (retval) 
-   {
-    Error("LoadSDigits","Error occured while posting SDigits from file to folder");
-    return retval;
-   }
-  return 0;
- 
-}
-/*****************************************************************************/ 
-
-Int_t AliLoader::LoadDigits(Option_t* opt)
-{
-//opens the file, jups to proper root directory, posts data to proper folder
-//option is passed to TFile::Open and follows the same rules
-//in case of success returns 0
-  if (TreeD())
-   {
-    TString sopt(opt);
-    if(sopt.Contains("force",TString::kIgnoreCase) != 0)
-     {
-       Warning("LoadDigits","Digits are already loaded. Use FORCE option to force reload. Nothing done");
-       return 0;
-     }
-    //else force option was used
-   }
-
-  SetDigitsFileOption(opt);
-  
-  Int_t retval;
-  retval = OpenDigitsFile(opt);
-  if (retval) 
-   {
-     Error("LoadDigits","Error occured while opening Digits file");
-     return retval;
-   }
-  
-  //test if there is sense to look for data in file
-  //if it is recreates
-  cout<<"LoadDigits("<<opt<<") ";
-  if (AliLoader::TestFileOption(opt) == kFALSE)
-   { 
-     cout<<"Make digits container\n";
-     MakeDigitsContainer();
-     return 0;
-   }
-
-  cout<<"Posting \n"; 
-  retval = PostDigits();
-  if (retval) 
-   {
-     Error("LoadDigits","Error occured while posting Digits from file to folder");
-     return retval;
    }
 
   return 0;
-}
-/*****************************************************************************/ 
-
-Int_t AliLoader::LoadRecPoints(Option_t* opt)
-{
-//opens the file, jups to proper root directory, posts data to proper folder
-//option is passed to TFile::Open and follows the same rules
-//in case of success returns 0
-  if (TreeR())
-   {
-    TString sopt(opt);
-    if(sopt.Contains("force",TString::kIgnoreCase) != 0)
-     {
-       Warning("LoadRecPoints","Recontructed Points are already loaded. Use FORCE option to force reload. Nothing done");
-       return 0;
-     }
-    //else force option was used
-   }
-
-  SetRecPointsFileOption(opt);
-
-  Int_t retval;
-  retval = OpenRecPointsFile(opt);
-  if (retval) 
-   {
-    Error("LoadRecPoints","Error occured while opening RecPoints file");
-    return retval;
-   }
-
-  if (AliLoader::TestFileOption(opt) == kFALSE)
-   {
-     MakeRecPointsContainer();
-     return 0;
-   }
-  retval = PostRecPoints();
-  if (retval) 
-   {
-    Error("LoadRecPoints","Error occured while posting RecPoints from file to folder");
-    return retval;
-   }
-  return 0;
-}
-/*****************************************************************************/ 
-
-Int_t AliLoader::LoadTracks(Option_t* opt)
-{
-//opens the file, jups to proper root directory, posts data to proper folder
-//option is passed to TFile::Open and follows the same rules
-//retrives track container from file and puts it in folder
-//in case of success returns 0
-
-  if (TreeT())
-   {
-    TString sopt(opt);
-    if(sopt.Contains("force",TString::kIgnoreCase) != 0)
-     {
-       Warning("LoadTracks","Tracks are already loaded. Use FORCE option to force reload. Nothing done");
-       return 0;
-     }
-    //else force option was used
-   }
-
-  SetTracksFileOption(opt);
-
-  Int_t retval;
-  retval = OpenTracksFile(opt); //
-  if (retval) 
-   {
-    Error("LoadTracks","Error occured while opening Tracks file");
-    return retval;
-   }
-
-  if (AliLoader::TestFileOption(opt) == kFALSE)
-   {
-    MakeTracksContainer();
-    return 0;
-   }
-  
-  retval = PostTracks();
-  if (retval) 
-   {
-    Error("LoadTracks","Error occured while posting Tracks from file to folder");
-    return retval;
-   }
-  return 0;
-}
+ }
 /*****************************************************************************/ 
 
 Int_t AliLoader::LoadSDigitizer(Option_t* opt)
@@ -432,7 +207,7 @@ Int_t AliLoader::LoadSDigitizer(Option_t* opt)
    }
   
   Int_t retval; //returned value
-  if (fSDigitsFile  == 0x0)
+  if (File(kSDigits)  == 0x0)
    {
       retval = OpenSDigitsFile(opt);
       if (retval) 
@@ -479,7 +254,7 @@ Int_t AliLoader::LoadDigitizer(Option_t* opt)
    }
   
   Int_t retval; //returned value
-  if (fDigitsFile  == 0x0)
+  if (File(kDigits)  == 0x0)
    {
       retval = OpenDigitsFile(opt);
       if (retval) 
@@ -526,7 +301,7 @@ Int_t AliLoader::LoadReconstructioner(Option_t* opt)
    }
   
   Int_t retval; //returned value
-  if (fRecPointsFile  == 0x0)
+  if (File(kRecPoints)  == 0x0)
    {
       retval = OpenRecPointsFile(opt);
       if (retval) 
@@ -573,7 +348,7 @@ Int_t AliLoader::LoadTracker(Option_t* opt)
    }
   
   Int_t retval; //returned value
-  if (fRecPointsFile  == 0x0)
+  if (File(kRecPoints)  == 0x0)
    {
       retval = OpenRecPointsFile(opt);
       if (retval) 
@@ -611,83 +386,83 @@ Int_t AliLoader::SetEvent()
     }
    Int_t evno = rg->GetEventNumber();
    
-   if(fHitsFile)
+   if(File(kHits))
     {
-      if (CheckReload(fHitsFile,fHitsFileName))
+      if (CheckReload(File(kHits),FileName(kHits)))
        {
          UnloadHits();
-         cout<<"AliLoader::SetEvent: Reloading new file for hits. file opt is "<<fHitsFileOption<<endl;
-         OpenHitsFile(fHitsFileOption);
+         cout<<"AliLoader::SetEvent: Reloading new file for hits. file opt is "<<FileOption(kHits)<<endl;
+         OpenHitsFile(FileOption(kHits));
        }
-      fHitsDir = ChangeDir(fHitsFile,evno);
-      if (fHitsDir == 0x0)
+      Directory(kHits) = ChangeDir(File(kHits),evno);
+      if (Directory(kHits) == 0x0)
         {
-          Error("SetEvent","Can not chage directory to file %s",fHitsFile->GetName());
+          Error("SetEvent","Can not chage directory to file %s",File(kHits)->GetName());
           return 1;
         }
     }
 
-   if(fSDigitsFile)
+   if(File(kSDigits))
     {
-      if (CheckReload(fSDigitsFile,fSDigitsFileName))
+      if (CheckReload(File(kSDigits),FileName(kSDigits)))
        {
          UnloadSDigits();
-         cout<<"AliLoader::SetEvent: Reloading new file for sdigits. file opt is "<<fSDigitsFileOption<<endl;
-         OpenSDigitsFile(fSDigitsFileOption);
+         cout<<"AliLoader::SetEvent: Reloading new file for sdigits. file opt is "<<FileOption(kSDigits)<<endl;
+         OpenSDigitsFile(FileOption(kSDigits));
        }
 
-      fSDigitsDir = ChangeDir(fSDigitsFile,evno);
-      if (fSDigitsDir == 0x0)
+      Directory(kSDigits) = ChangeDir(File(kSDigits),evno);
+      if (Directory(kSDigits) == 0x0)
         {
-          Error("SetEvent","Can not chage directory to file %s",fSDigitsFile->GetName());
+          Error("SetEvent","Can not chage directory to file %s",File(kSDigits)->GetName());
           return 1;
         }
     }
    
-   if(fDigitsFile)
+   if(File(kDigits))
     {
-      if (CheckReload(fDigitsFile,fDigitsFileName))
+      if (CheckReload(File(kDigits),FileName(kDigits)))
        {
          UnloadDigits();
-         OpenDigitsFile(fDigitsFileOption);
+         OpenDigitsFile(FileOption(kDigits));
        }
     
-      fDigitsDir = ChangeDir(fDigitsFile,evno);
-      if (fDigitsDir == 0x0)
+      Directory(kDigits) = ChangeDir(File(kDigits),evno);
+      if (Directory(kDigits) == 0x0)
         {
-          Error("SetEvent","Can not chage directory to file %s",fDigitsFile->GetName());
+          Error("SetEvent","Can not chage directory to file %s",File(kDigits)->GetName());
           return 1;
         }
     }
    
-   if(fRecPointsFile)
+   if(File(kRecPoints))
     {
-      if (CheckReload(fRecPointsFile,fRecPointsFileName))
+      if (CheckReload(File(kRecPoints),FileName(kRecPoints)))
        {
          UnloadRecPoints();
-         OpenRecPointsFile(fRecPointsFileOption);
+         OpenRecPointsFile(FileOption(kRecPoints));
        }
     
-      fRecPointsDir = ChangeDir(fRecPointsFile,evno);
-      if (fRecPointsDir == 0x0)
+      Directory(kRecPoints) = ChangeDir(File(kRecPoints),evno);
+      if (Directory(kRecPoints) == 0x0)
         {
-          Error("SetEvent","Can not chage directory to file %s",fRecPointsFile->GetName());
+          Error("SetEvent","Can not chage directory to file %s",File(kRecPoints)->GetName());
           return 1;
         }
     }
 
-   if(fTracksFile)
+   if(File(kTracks))
     {
-      if (CheckReload(fTracksFile,fTracksFileName))
+      if (CheckReload(File(kTracks),FileName(kTracks)))
        {
          UnloadTracks();
-         OpenTracksFile(fTracksFileOption);
+         OpenTracksFile(FileOption(kTracks));
        }
 
-      fTracksDir = ChangeDir(fTracksFile,evno);
-      if (fTracksDir == 0x0)
+      Directory(kTracks) = ChangeDir(File(kTracks),evno);
+      if (Directory(kTracks) == 0x0)
         {
-          Error("SetEvent","Can not chage directory to file %s",fTracksFile->GetName());
+          Error("SetEvent","Can not chage directory to file %s",File(kTracks)->GetName());
           return 1;
         }
     }
@@ -713,40 +488,34 @@ Int_t AliLoader::GetEvent()
       return 1;
     }
    
-   if(fHitsFile) PostHits();
-   if(fSDigitsFile) PostSDigits();
-   if(fDigitsFile) PostDigits();
-   if(fRecPointsFile) PostRecPoints();
-   if(fTracksFile) PostTracks();
+   if(File(kHits)) PostHits();
+   if(File(kSDigits)) PostSDigits();
+   if(File(kDigits)) PostDigits();
+   if(File(kRecPoints)) PostRecPoints();
+   if(File(kTracks)) PostTracks();
  
    return 0;
  
  }
 /******************************************************************/
-
-Int_t AliLoader::WriteHits(Option_t* opt)
+Int_t AliLoader::WriteData(EDataTypes dt,Option_t* opt)
 {
-  //writes hits from folder to file
-  //
-  //if option OVERWRITE overwrite existing data
-  //if object already exists in the file data are not written 
-  //in case OVERWRITE option is not specified
-  
-  //try to get hits from folder  
-  TTree *hits = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(fHitsContainerName));
-  if(hits == 0x0)
+//assumes that data is tree
+  TTree *data = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(ContainerName(dt)));
+  if(data == 0x0)
    {//did not get, nothing to write
-     Warning("WriteHits","Hits object named %s not found in folder %s.\nNothing to write. Returning",
-              fHitsContainerName.Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
+     Warning("WriteData","%s object named %s not found in folder %s.\nNothing to write. Returning",
+              DataName(dt).Data(),ContainerName(dt).Data(), 
+              GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
      return 0;
    }
   
   //check if file is opened
-  if (fHitsDir == 0x0)
+  if (Directory(dt) == 0x0)
    { 
      //if not open, try to open
-     SetHitsFileOption("UPDATE");
-     if (OpenHitsFile("UPDATE"))
+     SetFileOption(dt,"UPDATE");
+     if (OpenDataFile(dt,"UPDATE"))
       {  
         //oops, can not open the file, give an error message and return error code
         Error("WriteHits","Can not open hits file. HITS ARE NOT WRITTEN");
@@ -754,284 +523,42 @@ Int_t AliLoader::WriteHits(Option_t* opt)
       }
    }
 
-  if (fHitsFile->IsWritable() == kFALSE)
+  if (File(dt)->IsWritable() == kFALSE)
    {
-     Error("WriteHits","File %s is not writable",fHitsFile->GetName());
+     Error("WriteHits","File %s is not writable",File(dt)->GetName());
      return 2;
    }
   
-  fHitsDir->cd(); //set the proper directory active
+  Directory(dt)->cd(); //set the proper directory active
 
   //see if hits container already exists in this (root) directory
-  TObject* tree = fHitsDir->Get(fHitsContainerName);
-  if (tree)
+  TObject* obj = Directory(dt)->Get(ContainerName(dt));
+  if (obj)
    { //if they exist, see if option OVERWRITE is used
      const char *oOverWrite = strstr(opt,"OVERWRITE");
      if(!oOverWrite)
       {//if it is not used -  give an error message and return an error code
-        Error("WriteHits","Tree already exisists. Use option \"OVERWRITE\" to overwrite previous data");
+        Error("WriteData","Tree already exisists. Use option \"OVERWRITE\" to overwrite previous data");
         return 3;
       }
    }
   
-  cout<<GetName()<<"::WriteHits(opt="<<opt<<")  fHitsFile = "<<fHitsFile->GetName()
-                 <<" hits = "<<hits->GetName()<<endl;
+  cout<<GetName()<<"::WriteData("<<DataName(dt)<<",opt="<<opt
+                 <<") data object name = "<<data->GetName()
+                 <<"  File Name = "<<File(dt)->GetName()
+                 <<". Directory Name = "<<Directory(dt)->GetName()
+                 <<". Directory File Name = "<<Directory(dt)->GetFile()->GetName()
+                 <<endl;
 
-  hits->SetDirectory(fHitsDir); //forces setting the directory to this directory (we changed dir few lines above)
+  data->SetDirectory(Directory(dt)); //forces setting the directory to this directory (we changed dir few lines above)
   
   cout<<"Writing tree"<<endl;
-  hits->Write(0,TObject::kOverwrite);
-  cout<<"Writing Hits File"<<endl;
-  fHitsFile->Write(0,TObject::kOverwrite);
-  
+  data->Write(0,TObject::kOverwrite);
+  cout<<"Writing File"<<endl;
+  File(dt)->Write(0,TObject::kOverwrite);
   return 0;
+
 }
-/******************************************************************/
-Int_t AliLoader::WriteSDigits(Option_t* opt)
- {
-
-  //try to get sdigits from folder  
-  TTree *sdigits = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(fSDigitsContainerName));
-  if(sdigits == 0x0)
-   {//did not get, nothing to write
-     Warning("WriteSDigits","SDigits object named %s not found in folder %s.\nNothing to write. Returning",
-              fSDigitsContainerName.Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
-     return 0;
-   }
-  
-  //check if file is opened
-  if (fSDigitsDir == 0x0)
-   { 
-     //if not open, try to open
-     SetSDigitsFileOption("UPDATE");
-     if (OpenSDigitsFile("UPDATE"))
-      {  
-        //oops, can not open the file, give an error message and return error code
-        Error("WriteSDigits","Can not open sdigits file. SDIGITS ARE NOT WRITTEN");
-        return 1;
-      }
-   }
-
-  if (fSDigitsFile->IsWritable() == kFALSE)
-   {
-     Error("WriteSDigits","File %s is not writable",fSDigitsFile->GetName());
-     return 2;
-   }
-  
-  fSDigitsDir->cd(); //set the proper directory active
-
-  //see if sdigits container already exists in this (root) directory
-  TObject* tree = fSDigitsDir->Get(fSDigitsContainerName);
-  if (tree)
-   { //if they exist, see if option OVERWRITE is used
-     const char *oOverWrite = strstr(opt,"OVERWRITE");
-     if(!oOverWrite)
-      {//if it is not used -  give an error message and return an error code
-        Error("WriteSDigits","Tree already exisists. Use option \"OVERWRITE\" to overwrite previous data");
-        return 3;
-      }
-   }
-  
-  cout<<GetName()<<"::WriteSDigits(opt="<<opt<<")  fSDigitsFile = "<<fSDigitsFile->GetName()
-                 <<" sdigits = "<<sdigits->GetName()<<endl;
-
-  sdigits->SetDirectory(fSDigitsDir); //forces setting the directory to this directory (we changed dir few lines above)
-  
-  cout<<"Writing tree"<<endl;
-  sdigits->Write(0,TObject::kOverwrite);
-  cout<<"Writing SDigits File"<<endl;
-  fSDigitsFile->Write(0,TObject::kOverwrite);
-
-
-   return 0;
- }
-/*****************************************************************************/ 
-Int_t AliLoader::WriteDigits(Option_t* opt)
- {
-  //try to get digits from folder  
-  TObject * obj = GetDetectorDataFolder()->FindObject(fDigitsContainerName);
-  if(obj == 0x0)
-   {//did not get, nothing to write
-     Warning("WriteDigits","Digits object named %s not found in folder %s.\nNothing to write. Returning",
-              fDigitsContainerName.Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
-     return 0;
-   }
-
-  TTree *digits = dynamic_cast<TTree*>(obj);
-  if(digits == 0x0)
-   {//did not get, nothing to write
-     Warning("WriteDigits","Digits object named %s not found in folder %s.\nNothing to write. Returning",
-              fDigitsContainerName.Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
-     return 0;
-   }
-  
-  //check if file is opened
-  if (fDigitsDir == 0x0)
-   { 
-     //if not open, try to open
-     SetDigitsFileOption("UPDATE");
-     if (OpenDigitsFile("UPDATE"))
-      {  
-        //oops, can not open the file, give an error message and return error code
-        Error("WriteDigits","Can not open digits file. DIGITS ARE NOT WRITTEN");
-        return 1;
-      }
-   }
-
-  if (fDigitsFile->IsWritable() == kFALSE)
-   {
-     Error("WriteDigits","File %s is not writable",fDigitsFile->GetName());
-     return 2;
-   }
-  
-  fDigitsDir->cd(); //set the proper directory active
-
-  //see if digits container already exists in this (root) directory
-  TObject* tree = fDigitsDir->Get(fDigitsContainerName);
-  if (tree)
-   { //if they exist, see if option OVERWRITE is used
-     const char *oOverWrite = strstr(opt,"OVERWRITE");
-     if(!oOverWrite)
-      {//if it is not used -  give an error message and return an error code
-        Error("WriteDigits","Tree already exisists. Use option \"OVERWRITE\" to overwrite previous data");
-        return 3;
-      }
-   }
-  
-  cout<<GetName()<<"::WriteDigits(opt="<<opt<<")  fDigitsFile = "<<fDigitsFile->GetName()
-                 <<" digits = "<<digits->GetName()<<endl;
-
-  digits->SetDirectory(fDigitsDir); //forces setting the directory to this directory (we changed dir few lines above)
-  
-  cout<<"Writing tree"<<endl;
-  digits->Write(0,TObject::kOverwrite);
-  cout<<"Writing Digits File"<<endl;
-  fDigitsFile->Write(0,TObject::kOverwrite);
-  cout<<"Done"<<endl;
-  return 0;
- }
-/*****************************************************************************/ 
-Int_t AliLoader::WriteRecPoints(Option_t* opt)
- {
-  TTree *recpoints = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(fRecPointsContainerName));
-  if(recpoints == 0x0)
-   {//did not get, nothing to write
-     Warning("WriteRecPoints","RecPoints object named %s not found in folder %s.\nNothing to write. Returning",
-              fRecPointsContainerName.Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
-     return 0;
-   }
-  
-  //check if file is opened
-  if (fRecPointsDir == 0x0)
-   { 
-     //if not open, try to open
-     SetRecPointsFileOption("UPDATE");
-     if (OpenRecPointsFile("UPDATE"))
-      {  
-        //oops, can not open the file, give an error message and return error code
-        Error("WriteRecPoints","Can not open rec points file. HITS ARE NOT WRITTEN");
-        return 1;
-      }
-   }
-
-  if (fRecPointsFile->IsWritable() == kFALSE)
-   {
-     Error("WriteRecPoints","File %s is not writable",fRecPointsFile->GetName());
-     return 2;
-   }
-  
-  fRecPointsDir->cd(); //set the proper directory active
-
-  //see if rec points container already exists in this (root) directory
-  TObject* tree = fRecPointsDir->Get(fRecPointsContainerName);
-  if (tree)
-   { //if they exist, see if option OVERWRITE is used
-     const char *oOverWrite = strstr(opt,"OVERWRITE");
-     if(!oOverWrite)
-      {//if it is not used -  give an error message and return an error code
-        Error("WriteRecPoints","Tree already exisists. Use option \"OVERWRITE\" to overwrite previous data");
-        return 3;
-      }
-   }
-  
-  cout<<GetName()<<"::WriteRecPoints(opt="<<opt<<")  fRecPointsFile = "<<fRecPointsFile->GetName()
-                 <<" rec points = "<<recpoints->GetName()<<endl;
-
-  recpoints->SetDirectory(fRecPointsDir); //forces setting the directory to this directory (we changed dir few lines above)
-  
-  cout<<"Writing tree"<<endl;
-  recpoints->Write(0,TObject::kOverwrite);
-  cout<<"Writing RecPoints File"<<endl;
-  fRecPointsFile->Write(0,TObject::kOverwrite);
-
-   
-   return 0;
- }
-/*****************************************************************************/ 
-Int_t AliLoader::WriteTracks(Option_t* opt)
- {
-  TObject * obj = GetDetectorDataFolder()->FindObject(fTracksContainerName);
-  if(obj == 0x0)
-   {//did not get, nothing to write
-     Warning("WriteTracks","Tracks object named %s not found in folder %s.\nNothing to write. Returning",
-              fTracksContainerName.Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
-     return 0;
-   }
-  
-  TTree *tracks = dynamic_cast<TTree*>(obj);
-  if(tracks == 0x0)
-   {//did not get, nothing to write
-     Warning("WriteTracks","Tracks object named %s not found in folder %s.\nNothing to write. Returning",
-              fTracksContainerName.Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
-     return 0;
-   }
-  
-  //check if file is opened
-  if (fTracksDir == 0x0)
-   { 
-     //if not open, try to open
-     SetTracksFileOption("UPDATE");
-     if (OpenTracksFile("UPDATE"))
-      {  
-        //oops, can not open the file, give an error message and return error code
-        Error("WriteTracks","Can not open tracks file. HITS ARE NOT WRITTEN");
-        return 1;
-      }
-   }
-
-  if (fTracksFile->IsWritable() == kFALSE)
-   {
-     Error("WriteTracks","File %s is not writable",fTracksFile->GetName());
-     return 2;
-   }
-  
-  fTracksDir->cd(); //set the proper directory active
-
-  //see if tracks container already exists in this (root) directory
-  TObject* tree = fTracksDir->Get(fTracksContainerName);
-  if (tree)
-   { //if they exist, see if option OVERWRITE is used
-     const char *oOverWrite = strstr(opt,"OVERWRITE");
-     if(!oOverWrite)
-      {//if it is not used -  give an error message and return an error code
-        Error("WriteTracks","Tree already exisists. Use option \"OVERWRITE\" to overwrite previous data");
-        return 3;
-      }
-   }
-  
-  cout<<GetName()<<"::WriteTracks(opt="<<opt<<")  fTracksFile = "<<fTracksFile->GetName()
-                 <<" tracks = "<<tracks->GetName()<<endl;
-
-  tracks->SetDirectory(fTracksDir); //forces setting the directory to this directory (we changed dir few lines above)
-  
-  cout<<"Writing tree"<<endl;
-  tracks->Write(0,TObject::kOverwrite);
-  cout<<"Writing Tracks File"<<endl;
-  fTracksFile->Write(0,TObject::kOverwrite);
-
-   
-   return 0;
- }
 /*****************************************************************************/ 
 Int_t  AliLoader::WriteSDigitizer(Option_t* opt)
 {
@@ -1045,7 +572,7 @@ Int_t  AliLoader::WriteSDigitizer(Option_t* opt)
      Warning("WriteSDigitizer","Can not get SDigitizer. Nothing to write");
      return 0;
    }
-  if (fSDigitsDir == 0x0)
+  if (Directory(kSDigits) == 0x0)
    { 
      //if not open, try to open
      SetSDigitsFileOption("UPDATE");
@@ -1056,14 +583,14 @@ Int_t  AliLoader::WriteSDigitizer(Option_t* opt)
         return 1;
       }
    }
-  if (fSDigitsFile->IsWritable() == kFALSE)
+  if (File(kSDigits)->IsWritable() == kFALSE)
    {
-     Error("WriteSDigits","File %s is not writable",fSDigitsFile->GetName());
+     Error("WriteSDigits","File %s is not writable",File(kSDigits)->GetName());
      return 2;
    }
   TString name(fDetectorName + AliConfig::Instance()->GetSDigitizerTaskName());
 
-  TObject* task = fSDigitsDir->Get(name);
+  TObject* task = Directory(kSDigits)->Get(name);
   if (task)
    { //if they exist, see if option OVERWRITE is used
      const char *oOverWrite = strstr(opt,"OVERWRITE");
@@ -1074,10 +601,10 @@ Int_t  AliLoader::WriteSDigitizer(Option_t* opt)
       }
    }
 
-  cout<<GetName()<<"::WriteSDigitizer(opt="<<opt<<")  fSDigitsFile = "<<fSDigitsFile->GetName()
+  cout<<GetName()<<"::WriteSDigitizer(opt="<<opt<<")  File(kSDigits) = "<<File(kSDigits)->GetName()
                  <<" Sum. digitizer = "<<name<<endl;
 
-  fSDigitsDir->cd();
+  Directory(kSDigits)->cd();
   sder->Write(0,TObject::kOverwrite);
   return 0;
 }
@@ -1093,7 +620,7 @@ Int_t  AliLoader::WriteDigitizer(Option_t* opt)
      Warning("WriteDigitizer","Can not get Digitizer. Nothing to write");
      return 0;
    }
-  if (fDigitsDir == 0x0)
+  if (Directory(kDigits) == 0x0)
    { 
      //if not open, try to open
      SetDigitsFileOption("UPDATE");
@@ -1104,14 +631,14 @@ Int_t  AliLoader::WriteDigitizer(Option_t* opt)
         return 1;
       }
    }
-  if (fDigitsFile->IsWritable() == kFALSE)
+  if (File(kDigits)->IsWritable() == kFALSE)
    {
-     Error("WriteDigits","File %s is not writable",fDigitsFile->GetName());
+     Error("WriteDigits","File %s is not writable",File(kDigits)->GetName());
      return 2;
    }
   TString name(fDetectorName + AliConfig::Instance()->GetDigitizerTaskName());
 
-  TObject* task = fDigitsDir->Get(name);
+  TObject* task = Directory(kDigits)->Get(name);
   if (task)
    { //if they exist, see if option OVERWRITE is used
      const char *oOverWrite = strstr(opt,"OVERWRITE");
@@ -1121,10 +648,10 @@ Int_t  AliLoader::WriteDigitizer(Option_t* opt)
         return 3;
       }
    }
-  cout<<GetName()<<"::WriteDigitizer(opt="<<opt<<")  fDigitsFile = "<<fDigitsFile->GetName()
-                 <<" fDigitsDir = "<<fDigitsDir->GetName()<<" digitizer = "<<name<<endl;
+  cout<<GetName()<<"::WriteDigitizer(opt="<<opt<<")  File(kDigits) = "<<File(kDigits)->GetName()
+                 <<" Directory(kDigits) = "<<Directory(kDigits)->GetName()<<" digitizer = "<<name<<endl;
 
-  fDigitsDir->cd();
+  Directory(kDigits)->cd();
   sder->Write(0,TObject::kOverwrite);
   return 0;
 }
@@ -1141,7 +668,7 @@ Int_t  AliLoader::WriteReconstructioner(Option_t* opt)
      Warning("WriteReconstructioner","Can not get Reconstructioner. Nothing to write");
      return 0;
    }
-  if (fRecPointsDir == 0x0)
+  if (Directory(kRecPoints) == 0x0)
    { 
      //if not open, try to open
      SetRecPointsFileOption("UPDATE");
@@ -1152,14 +679,14 @@ Int_t  AliLoader::WriteReconstructioner(Option_t* opt)
         return 1;
       }
    }
-  if (fRecPointsFile->IsWritable() == kFALSE)
+  if (File(kRecPoints)->IsWritable() == kFALSE)
    {
-     Error("WriteReconstructioner","File %s is not writable",fRecPointsFile->GetName());
+     Error("WriteReconstructioner","File %s is not writable",File(kRecPoints)->GetName());
      return 2;
    }
   TString name(fDetectorName + AliConfig::Instance()->GetReconstructionerTaskName());
 
-  TObject* task = fRecPointsDir->Get(name);
+  TObject* task = Directory(kRecPoints)->Get(name);
   if (task)
    { //if they exist, see if option OVERWRITE is used
      const char *oOverWrite = strstr(opt,"OVERWRITE");
@@ -1169,10 +696,10 @@ Int_t  AliLoader::WriteReconstructioner(Option_t* opt)
         return 3;
       }
    }
-  cout<<GetName()<<"::WriteReconstructioner(opt="<<opt<<")  fRecPointsFile = "<<fRecPointsFile->GetName()
-                 <<" fRecPoints = "<<fRecPointsDir->GetName()<<" Reconstructioner = "<<name<<endl;
+  cout<<GetName()<<"::WriteReconstructioner(opt="<<opt<<")  File(kRecPoints) = "<<File(kRecPoints)->GetName()
+                 <<" fRecPoints = "<<Directory(kRecPoints)->GetName()<<" Reconstructioner = "<<name<<endl;
 
-  fRecPointsDir->cd();
+  Directory(kRecPoints)->cd();
   sder->Write(0,TObject::kOverwrite);
   return 0;
 }
@@ -1189,7 +716,7 @@ Int_t  AliLoader::WriteTracker(Option_t* opt)
      Warning("WriteTracker","Can not get Tracker. Nothing to write");
      return 0;
    }
-  if (fTracksDir == 0x0)
+  if (Directory(kTracks) == 0x0)
    { 
      //if not open, try to open
      SetTracksFileOption("UPDATE");
@@ -1200,14 +727,14 @@ Int_t  AliLoader::WriteTracker(Option_t* opt)
         return 1;
       }
    }
-  if (fTracksFile->IsWritable() == kFALSE)
+  if (File(kTracks)->IsWritable() == kFALSE)
    {
-     Error("WriteTracks","File %s is not writable",fTracksFile->GetName());
+     Error("WriteTracks","File %s is not writable",File(kTracks)->GetName());
      return 2;
    }
   TString name(fDetectorName + AliConfig::Instance()->GetTrackerTaskName());
 
-  TObject* task = fTracksDir->Get(name);
+  TObject* task = Directory(kTracks)->Get(name);
   if (task)
    { //if they exist, see if option OVERWRITE is used
      const char *oOverWrite = strstr(opt,"OVERWRITE");
@@ -1217,58 +744,12 @@ Int_t  AliLoader::WriteTracker(Option_t* opt)
         return 3;
       }
    }
-  cout<<GetName()<<"::WriteTracker(opt="<<opt<<")  fTracksFile = "<<fTracksFile->GetName()
-                 <<" fTracksDir = "<<fTracksDir->GetName()<<" Tracker = "<<sder->GetName()<<endl;
+  cout<<GetName()<<"::WriteTracker(opt="<<opt<<")  File(kTracks) = "<<File(kTracks)->GetName()
+                 <<" Directory(kTracks) = "<<Directory(kTracks)->GetName()<<" Tracker = "<<sder->GetName()<<endl;
 
-  fTracksDir->cd();
+  Directory(kTracks)->cd();
   sder->Write(0,TObject::kOverwrite);
   return 0;
-}
-/*****************************************************************************/ 
-
-Int_t AliLoader::OpenHitsFile(Option_t* opt)
-{
-//Opens hits file and jumps to directory cooresponding to current event.
-//If dir does not exists try to create it
-//opt is passed to TFile::Open
-  return OpenDataFile(SetFileOffset(fHitsFileName),fHitsFile,fHitsDir,opt);
-}
-/*****************************************************************************/
-
-Int_t AliLoader::OpenSDigitsFile(Option_t* opt)
-{
-//Opens  summable digits file and jumps to directory cooresponding to current event.
-//If dir does not exists try to create it
-//opt is passed to TFile::Open
-  return OpenDataFile(SetFileOffset(fSDigitsFileName),fSDigitsFile,fSDigitsDir,opt);
-}
-/*****************************************************************************/ 
-
-Int_t AliLoader::OpenDigitsFile(Option_t* opt)
-{
-//Opens digits file and jumps to directory cooresponding to current event.
-//If dir does not exists try to create it
-//opt is passed to TFile::Open
-  return OpenDataFile(SetFileOffset(fDigitsFileName),fDigitsFile,fDigitsDir,opt);
-
-}
-/*****************************************************************************/ 
-
-Int_t AliLoader::OpenRecPointsFile(Option_t* opt)
-{
-//Opens recontructed points file and jumps to directory cooresponding to current event.
-//If dir does not exists try to create it
-//opt is passed to TFile::Open
-  return OpenDataFile(SetFileOffset(fRecPointsFileName),fRecPointsFile,fRecPointsDir,opt);
-}
-/*****************************************************************************/ 
-
-Int_t AliLoader::OpenTracksFile(Option_t* opt)
-{
-//Opens tracks file and jumps to directory cooresponding to current event.
-//If dir does not exists try to create it
-//opt is passed to TFile::Open
-  return OpenDataFile(SetFileOffset(fTracksFileName),fTracksFile,fTracksDir,opt);
 }
 /*****************************************************************************/ 
 
@@ -1411,7 +892,7 @@ TFolder* AliLoader::GetModulesFolder()
      return 0x0;
     }
   }
-  return fModuleFolder;
+ return fModuleFolder;
    
 }
 /*****************************************************************************/ 
@@ -1614,22 +1095,27 @@ void AliLoader::MakeTree(Option_t *option)
     
  }
 /*****************************************************************************/ 
+void AliLoader::MakeTree(EDataTypes dt)
+{
+//this virtual method creates the tree for hits in the file
+  if (Tree(dt)) return;//tree already made 
+  cout<<GetName()<<"::MakeTree: Making "<<DataName(dt)<<" Tree named "<<ContainerName(dt)<<endl;
+   
+  TTree* tree = new TTree(ContainerName(dt), DataName(dt) + "Container"); //make a tree
+  if (tree == 0x0)
+   {
+     Error("MakeTree","Can not create %s Container for %s",DataName(dt).Data(),GetName());
+     return;
+   }
+  tree->SetAutoSave(1000000000); //no autosave
+  GetDetectorDataFolder()->Add(tree);
+  WriteData(dt,"OVERWRITE");//write tree to the file
+}
 
 void AliLoader::MakeHitsContainer()
 {
 //this virtual method creates the tree for hits in the file
-  if (TreeH()) return;//tree already made 
-  cout<<"AliLoader::MakeHitsContainer: Making hits cotainer for "<<GetName()<<endl;
-  TTree* treeH = new TTree(fHitsContainerName,"Hits Container"); //make a tree
-  if (treeH == 0x0)
-   {
-     Error("MakeHitsContainer","Can not create HitsContainer for %s",GetName());
-     return;
-   }
-  treeH->SetAutoSave(1000000000); //no autosave
-  GetDetectorDataFolder()->Add(treeH);
-  WriteHits("OVERWRITE");//write tree to the file
-  
+  MakeTree(kHits);
 }
 
 /*****************************************************************************/ 
@@ -1639,19 +1125,7 @@ void AliLoader::MakeSDigitsContainer()
 //Make standard container for Summable Dogits
 //if some detector needs other container - 
 //overload this method in detector specific loader i.e. AliTPCLoader
-  if (TreeS()) return;//tree alreadyt made 
-  cout<<"AliLoader::MakeSDigitsContainer: Making SDigits cotainer for "<<GetName()<<endl;
-  TTree* treeS = new TTree(fSDigitsContainerName,"Summable Digits Container"); //make a tree
-
-  if (treeS == 0x0)
-   {
-     Error("MakeSDigitsContainer","Can not create Summable Digits Container for %s",GetName());
-     return;
-   }
-  treeS->SetAutoSave(1000000000); //no autosave
-  GetDetectorDataFolder()->Add(treeS);
-  WriteSDigits("OVERWRITE");//write tree to the file (force file creation)
-
+  MakeTree(kSDigits);
  }
 
 /*****************************************************************************/ 
@@ -1663,17 +1137,7 @@ void AliLoader::MakeDigitsContainer()
 //overload this method in detector specific loader i.e. AliTPCLoader
 
 //this virtual method creates the tree for hits in the file
-  if (TreeD()) return;//tree already made 
-  cout<<"AliLoader::MakeDigitsContainer: Making digits cotainer for "<<GetName()<<endl;
-  TTree* treeD = new TTree(fDigitsContainerName,"Digits Container"); //make a tree
-  if (treeD == 0x0)
-   {
-     Error("MakeDigitsContainer","Can not create DigitsContainer for %s",GetName());
-     return;
-   }
-  treeD->SetAutoSave(1000000000); //no autosave
-  GetDetectorDataFolder()->Add(treeD);
-  WriteDigits("OVERWRITE");//write tree to the file
+  MakeTree(kDigits);
  }
 /*****************************************************************************/ 
 
@@ -1685,19 +1149,9 @@ void AliLoader::MakeRecPointsContainer()
 //Make standard container for digits
 //if some detector needs other container - 
 //overload this method in detector specific loader i.e. AliTPCLoader
-
 //this virtual method creates the tree for hits in the file
-  if (TreeR()) return;//tree alreadyt made 
-  cout<<"AliLoader::MakeRecPointsContainer: Making rec points cotainer for "<<GetName()<<endl;
-  TTree* treeR = new TTree(fRecPointsContainerName,"RecPoints Container"); //make a tree
-  if (treeR == 0x0)
-   {
-     Error("MakeRecPointsContainer","Can not create RecPointsContainer for %s",GetName());
-     return;
-   }
-  treeR->SetAutoSave(1000000000); //no autosave
-  GetDetectorDataFolder()->Add(treeR);
-  WriteRecPoints("OVERWRITE");//write tree to the file
+  MakeTree(kRecPoints);
+
  }
 /*****************************************************************************/ 
 
@@ -1706,178 +1160,64 @@ void AliLoader::MakeTracksContainer()
 //Make standard container for tracks
 //if some detector needs other container - 
 //overload this method in detector specific loader i.e. AliTPCLoader
-  if (TreeT()) return;//tree alreadyt made 
-  cout<<"AliLoader::MakeTracksContainer: Making tracks cotainer for "<<GetName()<<endl;
-  TTree* treeD = new TTree(fTracksContainerName,"Tracks Container"); //make a tree
-  if (treeD == 0x0)
-   {
-     Error("MakeTracksContainer","Can not create TracksContainer for %s",GetName());
-     return;
-   }
-  treeD->SetAutoSave(1000000000); //no autosave
-  GetDetectorDataFolder()->Add(treeD);
-  WriteTracks("OVERWRITE");//write tree to the file
+  MakeTree(kTracks);
  }
-
 /*****************************************************************************/ 
-Int_t AliLoader::PostSDigits()
+Int_t AliLoader::PostData(EDataTypes dt)
 {
 //Posts the SDigits container to proper folder
 //  Warning("PostSDigits","Called");
 
-  if (fSDigitsDir == 0x0)
+  TDirectory *dir = Directory(dt);
+  if ( dir == 0x0)
    {
-     Error("PostSDigits","SDigits Directory is NULL. LoadSDigits before.");
+     Error("PostData","%s Directory is NULL. Load %s before.",
+           DataName(dt).Data(),DataName(dt).Data());
      return 2; 
    }
 
-  TObject* tree = fSDigitsDir->Get(GetSDigitsContainerName());
+  TObject* tree = dir->Get(ContainerName(dt));
   if(tree)
    {
      //if such an obejct already exists - remove it first
-     TObject* obj = GetDetectorDataFolder()->FindObject(GetSDigitsContainerName());
+     TObject* obj = GetDetectorDataFolder()->FindObject(ContainerName(dt));
      if (obj)
       {
-        Warning("PostSDigits","Object named %s already exitsts in %s data folder. Removing it",
-                 GetSDigitsContainerName().Data(), fDetectorName.Data());
-        GetDetectorDataFolder()->Remove(obj);
-      }
-     
-     GetDetectorDataFolder()->Add(tree);
-     return 0;
-   }
-  else
-   {
-    Warning("PostSDigits","Can not find %s in file %s",
-            GetSDigitsContainerName().Data(),fSDigitsFile->GetName());
-   }
-  return 0;
-  
-}
-/*****************************************************************************/ 
-
-Int_t AliLoader::PostHits()
-{
-//takes the hits container from file and puts it in the folder
-  
-//  Warning("PostHits","Called");
-  
-  if (fHitsDir == 0x0)
-   {
-     Error("PostHits","Hits Directory is NULL. LoadHits before.");
-     return 2; 
-   }
-
-  TObject* tree = fHitsDir->Get(fHitsContainerName);
-  if(tree)
-   {
-     //if such an obejct already exists - remove it first
-     CleanHits();//clean folder - probobly redundant - but for security
-     GetDetectorDataFolder()->Add(tree);
-     return 0;
-   }
-  else
-   {
-    Warning("PostHits","Can not find Hits Contaioner object <%s> in file %s",
-             fHitsContainerName.Data(),fHitsFile->GetName());
-    return 1;
-   }
-}
-
-/******************************************************************/
-
-Int_t AliLoader::PostDigits()
-{
-  if (fDigitsDir == 0x0)
-   {
-     Error("PostDigits","File with tracks in not opened");
-     return 2;
-   }
-
-  TObject* tree = fDigitsDir->Get(GetDigitsContainerName());
-  if(tree)
-   { 
-     TObject* obj = GetDetectorDataFolder()->FindObject(GetDigitsContainerName());
-     if (obj)
-      {
-        Warning("PostSDigits","Object named %s already exitsts in %s data folder. Removing it",
-                 GetDigitsContainerName().Data(), fDetectorName.Data());
-        GetDetectorDataFolder()->Remove(obj);
+        Warning("PostData","Object named %s already exitsts in %s data folder. Removing it",
+                 ContainerName(dt).Data(), fDetectorName.Data());
+        Clean(dt);
       }
      GetDetectorDataFolder()->Add(tree);
      return 0;
    }
   else
    {
-     Warning("PostDigits","Can not find Digits Container in file %s",fDigitsFile->GetName());
-     return 0;//this is not error - if we open file in update
+   
+    Warning("PostData","Can not find %s in file %s",
+             ContainerName(dt).Data(),File(dt)->GetName());
    }
   return 0;
 }
-/*****************************************************************************/ 
 
-Int_t AliLoader::PostRecPoints()
-{
-  if (fRecPointsDir == 0x0)
-   {
-     Error("PostRecPoints","File with tracks in not opened");
-     return 2;
-   }
-
-  TObject* tree = fRecPointsDir->Get(GetRecPointsContainerName());
-  if(tree)
-   {
-     GetDetectorDataFolder()->Add(tree);
-     return 0;
-   }
-  else
-   {
-    Warning("PostRecPoints","Can not find TreeR in file %s",fRecPointsFile->GetName());
-    return 0;
-   }
-}
-/*****************************************************************************/ 
-Int_t AliLoader::PostTracks()
-{
-//retrives tracks container from file and posts it to proper folder
-  cout<<"####PostTracks####\n";
-  if (fTracksDir == 0x0)
-   {
-     Error("PostTracks","File with tracks in not opened");
-     return 2;
-   }
-  
-  TObject* tree = fTracksDir->Get(GetTracksContainerName()); //get the container
-  if(tree) //if got 
-   {
-     GetDetectorDataFolder()->Add(tree); //put in the folder
-     return 0;
-   }
-  else
-   {
-    Warning("PostTracks","Can not find Tree in file %s",fTracksFile->GetName());
-    return 0;
-   }
-}
 
 /*****************************************************************************/ 
 
 Int_t AliLoader::PostSDigitizer()
  {
- 
-   if (fSDigitsDir == 0x0)
+  
+   if (Directory(kSDigits) == 0x0)
     {
-     Error("PostSDigitizer","fSDigitsDir is Null. Probobly SDigits not loaded");
+     Error("PostSDigitizer","SDigitsDir is Null. Probobly SDigits not loaded");
      return 1;
     }
    
    TString name(fDetectorName + AliConfig::Instance()->GetSDigitizerTaskName());
-   TTask* sdigitizer = dynamic_cast<TTask*>(fSDigitsDir->Get(name));
+   TTask* sdigitizer = dynamic_cast<TTask*>(Directory(kSDigits)->Get(name));
    
    if (sdigitizer == 0x0)
     {
      Error("PostSDigitizer","Can not find SDigitizer named %s in file %s for event %d",
-           name.Data(),fSDigitsFile->GetName(),GetRunLoader()->GetEventNumber());
+           name.Data(),File(kSDigits)->GetName(),GetRunLoader()->GetEventNumber());
      return 2;
     }
   
@@ -1903,18 +1243,18 @@ Int_t AliLoader::PostSDigitizer(TTask* sdzer)
 
 Int_t AliLoader::PostDigitizer()
  {
-   if (fDigitsDir == 0x0)
+   if (Directory(kDigits) == 0x0)
     {
-     Error("PostDigitizer","fDigitsDir is Null. Probobly Digits not loaded");
+     Error("PostDigitizer","Directory(kDigits) is Null. Probobly Digits not loaded");
      return 1;
     }
    
    TString name(fDetectorName + AliConfig::Instance()->GetDigitizerTaskName());
-   TObject* obj = fDigitsDir->Get(name);
+   TObject* obj = Directory(kDigits)->Get(name);
    if (obj == 0x0)
     {
      Error("PostDigitizer","Can not find object named % in file %s for event %d",
-           name.Data(),fDigitsFile->GetName(),GetRunLoader()->GetEventNumber());
+           name.Data(),File(kSDigits)->GetName(),GetRunLoader()->GetEventNumber());
      return 2;
     }
 
@@ -1922,7 +1262,7 @@ Int_t AliLoader::PostDigitizer()
    if (digitizer == 0x0)
     {
      Error("PostDigitizer","Can not find Digitizer named % in file %s for event %d",
-           name.Data(),fDigitsFile->GetName(),GetRunLoader()->GetEventNumber());
+           name.Data(),File(kSDigits)->GetName(),GetRunLoader()->GetEventNumber());
      return 2;
     }
    return PostDigitizer(digitizer);
@@ -1945,19 +1285,19 @@ Int_t AliLoader::PostDigitizer(AliDigitizer* task)
 
 Int_t AliLoader::PostReconstructioner()
  {
-   if (fRecPointsDir == 0x0)
+   if ( Directory(kRecPoints) == 0x0)
     {
-     Error("PostReconstructioner","fRecPointsDir is Null. Probobly RecPoints not loaded");
+     Error("PostReconstructioner","RecPointsDir is Null. Probobly RecPoints not loaded");
      return 1;
     }
    
    TString name(fDetectorName + AliConfig::Instance()->GetReconstructionerTaskName());
-   TTask* task = dynamic_cast<TTask*>(fRecPointsDir->Get(name));
+   TTask* task = dynamic_cast<TTask*>(Directory(kRecPoints)->Get(name));
    
    if (task == 0x0)
     {
      Error("PostReconstructioner","Can not find Reconstructioner named %s in file %s for event %d",
-           name.Data(),fRecPointsFile->GetName(),GetRunLoader()->GetEventNumber());
+           name.Data(),File(kRecPoints)->GetName(),GetRunLoader()->GetEventNumber());
      return 2;
     }
   
@@ -1987,18 +1327,18 @@ Int_t AliLoader::PostReconstructioner(TTask* task)
 
 Int_t AliLoader::PostTracker()
  {
-   if (fTracksDir == 0x0)
+   if (Directory(kTracks) == 0x0)
     {
-     Error("PostTracker","fTracksDir is Null. Probobly Tracks or Tracker not loaded");
+     Error("PostTracker","Directory(kTracks) is Null. Probobly Tracks or Tracker not loaded");
      return 1;
     }
    
    TString name(fDetectorName + AliConfig::Instance()->GetTrackerTaskName());
-   TObject* obj = fTracksDir->Get(name);
+   TObject* obj = Directory(kTracks)->Get(name);
    if (obj == 0x0)
     {
      Error("PostTracker","Can not find object named %s in file %s for event %d",
-           name.Data(),fTracksFile->GetName(),GetRunLoader()->GetEventNumber());
+           name.Data(),File(kTracks)->GetName(),GetRunLoader()->GetEventNumber());
      return 2;
     }
 
@@ -2006,7 +1346,7 @@ Int_t AliLoader::PostTracker()
    if (task == 0x0)
     {
      Error("PostTracker","Can not find Tracker named %s in file %s for event %d",
-           name.Data(),fTracksFile->GetName(),GetRunLoader()->GetEventNumber());
+           name.Data(),File(kTracks)->GetName(),GetRunLoader()->GetEventNumber());
      return 2;
     }
 
@@ -2170,103 +1510,94 @@ void AliLoader::CleanTracker()
 
 }
 /*****************************************************************************/ 
-
-/*****************************************************************************/ 
-TTree* AliLoader::TreeH()
+TTree* AliLoader::Tree(EDataTypes dt)
 {
   //Get a hits container from the detector data folder
-  TObject* obj = GetDetectorDataFolder()->FindObject(GetHitsContainerName());
+  TObject* obj = GetDetectorDataFolder()->FindObject(ContainerName(dt));
   if (obj)
    return dynamic_cast<TTree*>(obj);
   else return 0x0;
+}
+
+/*****************************************************************************/ 
+
+TTree* AliLoader::TreeH()
+{
+  //Get a hits container from the detector data folder
+  return Tree(kHits);
 }
 /*****************************************************************************/ 
 TTree* AliLoader::TreeS()
 {
   //Get a hits container from the detector data folder
-  TObject* obj = GetDetectorDataFolder()->FindObject(GetSDigitsContainerName());
-  if (obj)
-   return dynamic_cast<TTree*>(obj);
-  else return 0x0;
+  return Tree(kSDigits);
 }
 /*****************************************************************************/ 
 TTree* AliLoader::TreeD()
 {
   //Get a hits container from the detector data folder
-  TObject* obj = GetDetectorDataFolder()->FindObject(GetDigitsContainerName());
-  if (obj)
-   return dynamic_cast<TTree*>(obj);
-  else return 0x0;
+  return Tree(kDigits);
 }
 /*****************************************************************************/ 
 TTree* AliLoader::TreeR()
 {
   //Get a hits container from the detector data folder
-  TObject* obj = GetDetectorDataFolder()->FindObject(GetRecPointsContainerName());
-  if (obj)
-   return dynamic_cast<TTree*>(obj);
-  else return 0x0;
+  return Tree(kRecPoints);
 }
 /*****************************************************************************/ 
 
 TTree* AliLoader::TreeT()
 {
   //Get a hits container from the detector data folder
-  TObject* obj = GetDetectorDataFolder()->FindObject(GetTracksContainerName());
-  if (obj)
-   return dynamic_cast<TTree*>(obj);
-  else return 0x0;
+  return Tree(kTracks);
 }
 /*****************************************************************************/ 
 
 void AliLoader::SetCompressionLevel(Int_t cl)
 {
 //Sets compression level in all opened files
- if (fHitsFile) fHitsFile->SetCompressionLevel(cl);
- if (fSDigitsFile) fSDigitsFile->SetCompressionLevel(cl);
- if (fDigitsFile) fDigitsFile->SetCompressionLevel(cl);
- if (fRecPointsFile) fRecPointsFile->SetCompressionLevel(cl);
- if (fTracksFile) fTracksFile->SetCompressionLevel(cl);
+ if (File(kHits)) File(kHits)->SetCompressionLevel(cl);
+ if (File(kSDigits)) File(kSDigits)->SetCompressionLevel(cl);
+ if (File(kDigits)) File(kDigits)->SetCompressionLevel(cl);
+ if (File(kRecPoints)) File(kRecPoints)->SetCompressionLevel(cl);
+ if (File(kTracks)) File(kTracks)->SetCompressionLevel(cl);
 }
+/*****************************************************************************/ 
+Int_t  AliLoader::ReloadData(EDataTypes dt)
+ {
+   if ( File(dt) == 0x0 ) return 0;
+   UnloadData(dt);
+   return LoadData(dt,FileOption(dt));
+ }
 /*****************************************************************************/ 
 
 Int_t  AliLoader::ReloadHits()
 {
- if (fHitsFile == 0x0) return 0;
- UnloadHits(); 
- return LoadHits(fHitsFileOption);
+ return ReloadData(kHits);
 }
 /*****************************************************************************/ 
 
 Int_t  AliLoader::ReloadSDigits()
 {
- if (fSDigitsFile == 0x0) return 0;
- UnloadSDigits(); 
- return LoadSDigits(fSDigitsFileOption);
+ return ReloadData(kSDigits);
 }
 /*****************************************************************************/ 
 
 Int_t  AliLoader::ReloadDigits()
 {
- if (fDigitsFile == 0x0) return 0;
- UnloadDigits(); 
- return LoadDigits(fDigitsFileOption);
+ return ReloadData(kDigits);
 }
 /*****************************************************************************/ 
 
 Int_t  AliLoader::ReloadRecPoints()
 {
- if (fRecPointsFile == 0x0) return 0;
- UnloadRecPoints(); 
- return LoadRecPoints(fRecPointsFileOption);
+ return ReloadData(kRecPoints);
 }
 /*****************************************************************************/ 
 
 Int_t  AliLoader::ReloadTracks()
 {
- if (fTracksFile == 0x0) return 0;
- UnloadTracks(); 
- return LoadTracks(fTracksFileOption);
+ return ReloadData(kTracks);
 }
 /*****************************************************************************/ 
 
@@ -2342,11 +1673,12 @@ Bool_t  AliLoader::TestFileOption(Option_t* opt)
 /*****************************************************************************/ 
 void  AliLoader::SetDirName(TString& dirname)
 {
-  fHitsFileName = dirname + "/" + fHitsFileName;
-  fSDigitsFileName = dirname + "/" + fSDigitsFileName;
-  fDigitsFileName = dirname + "/" + fDigitsFileName;
-  fRecPointsFileName = dirname + "/" + fRecPointsFileName;
-  fTracksFileName = dirname + "/" + fTracksFileName;
+  
+  FileName(kHits) = dirname + "/" + FileName(kHits);
+  FileName(kSDigits) = dirname + "/" + FileName(kSDigits);
+  FileName(kDigits) = dirname + "/" + FileName(kDigits);
+  FileName(kRecPoints) = dirname + "/" + FileName(kRecPoints);
+  FileName(kTracks) = dirname + "/" + FileName(kTracks);
 }
 
 /*****************************************************************************/ 
@@ -2375,11 +1707,11 @@ void AliLoader::SetDigitsFileNameSuffix(const TString& suffix)
   //e.g. TPC.Digits.root -> TPC.DigitsMerged.root
   //made on Jiri Chudoba demand
   cout<<"AliLoader::SetDigitsFileNameSuffix(\""<<suffix<<"\")\n";
-  cout<<"Digits File Name before: "<<fDigitsFileName<<endl;
+  cout<<"Digits File Name before: "<<FileName(kDigits)<<endl;
   TString dotroot(".root");
   const TString& suffixdotroot = suffix + dotroot;
-  fDigitsFileName = fDigitsFileName.ReplaceAll(dotroot,suffixdotroot);
-  cout<<"                 after: "<<fDigitsFileName<<endl;
+  FileName(kDigits) = FileName(kDigits).ReplaceAll(dotroot,suffixdotroot);
+  cout<<"                 after: "<<FileName(kDigits)<<endl;
 }
 /*****************************************************************************/ 
 
@@ -2393,75 +1725,46 @@ Bool_t AliLoader::CheckReload(const TFile* file, const TString& basefilename)
 }
 /*****************************************************************************/ 
 
+void AliLoader::SetFileOption(EDataTypes dt,Option_t* newopt)
+{
+  if (FileOption(dt).CompareTo(newopt) == 0) return;
+  FileOption(dt) = newopt;
+  ReloadData(dt);
+}
 void AliLoader::SetHitsFileOption(Option_t* newopt)
 {
 //Hits File Option in open
-  if (fHitsFileOption.CompareTo(newopt) == 0) return;
-  
-  fHitsFileOption = newopt;
-  if (fHitsFile)
-   {
-     UnloadHits();
-     LoadHits(fHitsFileOption);
-   }
+  SetFileOption(kHits,newopt);
 }
 /*****************************************************************************/ 
 
 void AliLoader::SetSDigitsFileOption(Option_t* newopt)
 {
 //SDigits File Option in open
-  if (fSDigitsFileOption.CompareTo(newopt) == 0) return;
-  
-  fSDigitsFileOption = newopt;
-  if (fSDigitsFile)
-   {
-     UnloadSDigits();
-     LoadSDigits(fSDigitsFileOption);
-   }
+  SetFileOption(kSDigits,newopt);
 }
 /*****************************************************************************/ 
 
 void AliLoader::SetDigitsFileOption(Option_t* newopt)
 {
 //Digits File Option in open
-  if (fDigitsFileOption.CompareTo(newopt) == 0) return;
-  
-  fDigitsFileOption = newopt;
-  if (fDigitsFile)
-   {
-     UnloadDigits();
-     LoadDigits(fDigitsFileOption);
-   }
-
+  SetFileOption(kDigits,newopt);
 }
 /*****************************************************************************/ 
 
 void AliLoader::SetRecPointsFileOption(Option_t* newopt)
 {
 //RecPoints File Option in open
-  if (fRecPointsFileOption.CompareTo(newopt) == 0) return;
-  
-  fRecPointsFileOption = newopt;
-  if (fRecPointsFile)
-   {
-     UnloadRecPoints();
-     LoadRecPoints(fRecPointsFileOption);
-   }
+  SetFileOption(kRecPoints,newopt);
 }
 /*****************************************************************************/ 
 
 void AliLoader::SetTracksFileOption(Option_t* newopt)
 {
 //Tracks File Option in open
-  if (fTracksFileOption.CompareTo(newopt) == 0) return;
-  
-  fTracksFileOption = newopt;
-  if (fTracksFile)
-   {
-     UnloadTracks();
-     LoadTracks(fTracksFileOption);
-   }
+  SetFileOption(kTracks,newopt);
 }
 /*****************************************************************************/ 
 
 
+ClassImp(AliLoaderDataInfo)

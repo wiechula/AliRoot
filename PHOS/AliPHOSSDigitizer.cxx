@@ -74,9 +74,9 @@
 #include "AliPHOSHit.h"
 #include "AliPHOSSDigitizer.h"
 
+
 ClassImp(AliPHOSSDigitizer)
 
-           
 //____________________________________________________________________________ 
   AliPHOSSDigitizer::AliPHOSSDigitizer():TTask("","") 
 {
@@ -160,7 +160,6 @@ void AliPHOSSDigitizer::Exec(Option_t *option)
      return;
    } 
    
-  if (gime->TreeS() == 0x0) gime->MakeSDigitsContainer();//create a TreeS in folder
 
   retval = gime->LoadHits("read");//load hits to folder
   if (retval)
@@ -183,6 +182,8 @@ void AliPHOSSDigitizer::Exec(Option_t *option)
        Error("Exec","Can not find TreeH for an event %d",ievent);
        return;
      }
+    if (gime->TreeS() == 0x0) gime->MakeSDigitsContainer();//create a TreeS in folder
+   
     const TClonesArray * hits = gime->Hits() ;
     TClonesArray * sdigits = gime->SDigits() ;
     sdigits->Clear();
@@ -299,12 +300,10 @@ void AliPHOSSDigitizer::SetSDigitsBranch(const char * title )
   
   cout << "AliPHOSSdigitizer::SetSDigitsBranch -> Changing SDigits file from " << GetName() << " to " << title << endl ;
 
-  SetName(title) ; 
-  
-
+//  SetName(title) ; 
   // Post to the WhiteBoard
-
-  gime->PostSDigits();
+  gime->SetBranchTitle(title);
+  gime->ReloadSDigits();
 }
 
 

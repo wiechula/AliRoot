@@ -143,14 +143,16 @@ void AliPHOSDigitizer::Digitize(TObjArray * sdigArray)
      Error("Digitize","Can not get PHOS Loader");
      return;
    }
-
+  
   TClonesArray * digits = gime->Digits();
   if (digits == 0x0)
    {
      gime->LoadDigits("update");
      digits = gime->Digits();
    }
+   
   if (digits == 0x0) Fatal("Digitize","Can not get array for digits from out RL");
+  
   if (gime->TreeD() == 0x0) gime->MakeDigitsContainer();
   
   digits->Clear() ;
@@ -189,6 +191,7 @@ void AliPHOSDigitizer::Digitize(TObjArray * sdigArray)
   Int_t nextSig = 200000 ; 
   Int_t i;
   Int_t input = sdigArray->GetEntries();
+  cout<<"AliPHOSDigitizer::Digitize: found "<<input<<" input SDigits arrays\n";
   for(i=0; i<input; i++) 
    {
     sdigits = (TClonesArray *)sdigArray->At(i) ;
@@ -325,9 +328,6 @@ void AliPHOSDigitizer::Digitize(TObjArray * sdigArray)
       
     }
   }
-  delete sdigArray ; //We should not delete its contents
-  
-  
   
   //remove digits below thresholds
   for(i = 0; i < nEMC ; i++){
@@ -467,8 +467,9 @@ void AliPHOSDigitizer::Exec(Option_t *option)
        Error("Exec","Can not get PHOS Loader");
        return;
      }
-    
+    outrl->GetEvent(0);
     nevents = outrl->GetNumberOfEvents();
+    if (outgime->TreeS() == 0x0) outgime->LoadSDigits("read"); //    gime->Event(ievent,"S");
   }
 
   cout<<"AliPHOSDigitizer::Exec: Existance check done\n";
@@ -482,7 +483,7 @@ void AliPHOSDigitizer::Exec(Option_t *option)
    {
     if(fManager)
      {
-      cout<<"     AliPHOSDigitizer::Exec: Reading from input "<<ievent<<" MANAGER mode\n";
+      cout<<"     AliPHOSDigitizer::Exec: Reading from event "<<ievent<<" MANAGER mode\n";
       Int_t input ;
       for(input = 0 ; input < fManager->GetNinputs(); input ++)
        {
@@ -511,9 +512,9 @@ void AliPHOSDigitizer::Exec(Option_t *option)
      }
     else
      {
-       cout<<"     AliPHOSDigitizer::Exec: Reading from input "<<ievent<<" NON manager mode\n";
-
-       outgime->LoadSDigits("read"); //    gime->Event(ievent,"S");
+       cout<<"     AliPHOSDigitizer::Exec: Reading event "<<ievent<<" NON manager mode\n";
+       
+       outrl->GetEvent(ievent);
        TClonesArray* sdigs =outgime->SDigits();
        if (sdigs == 0x0)
         {
@@ -535,7 +536,8 @@ void AliPHOSDigitizer::Exec(Option_t *option)
     if(strstr(option,"deb"))    PrintDigits(option);
     
     //increment the total number of Digits per run 
-    fDigitsInRun += outgime->Digits()->GetEntriesFast() ;  
+    fDigitsInRun += outgime->Digits()->GetEntriesFast();
+    sdigArray->Clear();
   }
   
   //unload data to free memory 

@@ -822,7 +822,7 @@ Int_t AliRunLoader::WriteKinematics(Option_t* opt)
   
   cout<<"Writing tree"<<endl;
   TreeK()->Write(0,TObject::kOverwrite);
-  cout<<"Writing Hits File"<<endl;
+  cout<<"Writing Kinematics File"<<endl;
   fKineFile->Write(0,TObject::kOverwrite);
 
   return 0;
@@ -876,7 +876,7 @@ Int_t AliRunLoader::WriteTrackRefs(Option_t* opt)
   
   cout<<"Writing tree"<<endl;
   TreeTR()->Write(0,TObject::kOverwrite);
-  cout<<"Writing Hits File"<<endl;
+  cout<<"Writing Track Referenced File"<<endl;
   fTrackRefsFile->Write(0,TObject::kOverwrite);
 
   return 0;
@@ -1464,7 +1464,7 @@ void AliRunLoader::UnloadgAlice()
 {
  if (gAlice == GetAliRun())
   {
-   cout<<"AliRunLoader::UnloadgAlice(): Set gAlice = 0x0";
+   cout<<"AliRunLoader::UnloadgAlice(): Set gAlice = 0x0\n";
    gAlice = 0x0;//if gAlice is the same that in folder (to be deleted by the way of folder)
   }
  AliRun* alirun = GetAliRun();

@@ -400,6 +400,7 @@ void  AliPHOSTrackSegmentMakerv1::Exec(Option_t * option)
      Error("Init","Could not obtain the Loader object !"); 
      return ;
    } 
+  runget->GetEvent(0);
   if (runget->TreeE() == 0x0) runget->LoadHeader();
   if (gime->TreeR() == 0x0) gime->LoadRecPoints("READ");
   //this causes some warnings because normally

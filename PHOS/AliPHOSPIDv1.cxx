@@ -621,18 +621,19 @@ void  AliPHOSPIDv1::Exec(Option_t * option)
    } 
 
   runget->GetEvent(0);
-
+  
+  gime->LoadRecPoints();
   gime->LoadRecParticles("update");//this loads Tracks autoamtically (because rec part are stored in track file)
-//  gime->LoadTracks();
+  //gime->LoadTracks();  
+  
 
-  if(gime->BranchExists("RecParticles"))
-    return ;
   Int_t nevents = runget->GetNumberOfEvents();       //(Int_t) gAlice->TreeE()->GetEntries() ;
   Int_t ievent ;
 
   for(ievent = 0; ievent < nevents; ievent++)
    {
     runget->GetEvent(ievent);
+    if(gime->BranchExists("RecParticles")) continue;
     MakeRecParticles() ;
     WriteRecParticles();
     if(strstr(option,"deb"))
