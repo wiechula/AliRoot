@@ -29,8 +29,8 @@
 //////////////////////////////////////////////////////////////
 
 #include "TMath.h"
-#include "TGeant3.h"
 #include "AliRun.h"
+#include "AliLego.h"
 #include "AliConst.h"
 
 ClassImp(AliLego)
@@ -192,7 +192,7 @@ void AliLego::Run()
          pMC->Gtrigi();
          pMC->Gtrigc();
          GenerateKinematics();
-         pMC->Gtreve();
+         pMC->Gtreve_root();
 
          thed = fCurTheta*kRaddeg;
          phid = fCurPhi*kRaddeg;

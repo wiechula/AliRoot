@@ -578,6 +578,7 @@ public:
    virtual  void  Gsxyz(); 
    virtual  void  Gtrack(); 
    virtual  void  Gtreve(); 
+   virtual  void  Gtreve_root(); 
    virtual  void  Grndm(Float_t *rvec, const Int_t len) const; 
    virtual  void  Grndmq(Int_t &is1, Int_t &is2, const Int_t iseq, const Text_t *chopt); 
  

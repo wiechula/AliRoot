@@ -57,6 +57,7 @@
 # define gsxyz   gsxyz_ 
 # define gtrack  gtrack_ 
 # define gtreve  gtreve_ 
+# define gtreve_root  gtreve_root_ 
 # define grndm   grndm_ 
 # define grndmq  grndmq_ 
 # define gdtom   gdtom_ 
@@ -146,7 +147,7 @@
 # define gsstak  GSSTAK 
 # define gsxyz   GSXYZ 
 # define gtrack  GTRACK 
-# define gtreve  GTREVE 
+# define gtreve_root  GTREVE_ROOT
 # define grndm   GRNDM
 # define grndmq  GRNDMQ
 # define gdtom   GDTOM 
@@ -267,6 +268,8 @@ extern "C"
   void type_of_call gtrack(); 
 
   void type_of_call gtreve(); 
+
+  void type_of_call gtreve_root(); 
 
   void type_of_call grndm(Float_t *, const Int_t &); 
 
@@ -1702,6 +1705,16 @@ void  TGeant3::Gtreve()
   //   Controls tracking of all particles belonging to the current event
   //
   gtreve(); 
+} 
+
+//_____________________________________________________________________________
+void  TGeant3::Gtreve_root() 
+{ 
+  //
+  //   Controls tracking of all particles belonging to the current event
+  //   for the root tracking
+  //
+  gtreve_root(); 
 } 
 
 //_____________________________________________________________________________

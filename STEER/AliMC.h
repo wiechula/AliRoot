@@ -108,6 +108,7 @@ public:
   virtual  void  Gphysi()=0;
   virtual  void  Gtrigi()=0;
   virtual  void  Gtreve()=0;
+  virtual  void  Gtreve_root()=0;
   virtual  void  Gtrigc()=0;
   virtual  void  Gtrig()=0;
   virtual  void  Gckmat(Int_t, char*)=0;
