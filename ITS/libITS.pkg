@@ -43,5 +43,5 @@ HDRS:=  $(SRCS:.cxx=.h)
 
 DHDR=ITSLinkDef.h
 
-EINCLUDE:=$(ALICE)/geant3/geant3mc TPC CONTAINERS
+EINCLUDE:=$(ALICE)/geant3/geant321/TGeant3 TPC CONTAINERS
 
