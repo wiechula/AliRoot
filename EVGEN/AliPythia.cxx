@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.24  2002/05/22 13:22:53  morsch
+Process kPyMbNonDiffr added.
+
 Revision 1.23  2002/05/06 07:17:29  morsch
 Pyr gives random number r in interval 0 < r < 1.
 
@@ -205,6 +208,12 @@ void AliPythia::ProcInit(Process_t process, Float_t energy, StrucFunc_t strucfun
  
 	break;
     case kPyJets:
+
+	printf("\n*************************************************\n");
+	printf("\nWARNING !\n");
+	printf("The kPyJet option uses simplified jet-production\n");
+	printf("without gluon radiation \n");
+	printf("\n*************************************************\n");
 	SetMSEL(1);
 // no initial state radiation   
 	SetMSTP(61,0);
