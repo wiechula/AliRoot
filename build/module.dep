@@ -30,4 +30,4 @@ LHC/module.mk:		LHC/libLHC.pkg
 THbtp/module.mk:	THbtp/libTHbtp.pkg
 HBTP/module.mk:		HBTP/libHBTP.pkg HBTP/libdummyHBTP.pkg
 HBTAN/module.mk:	HBTAN/libHBTAN.pkg
-AliGeant3/module.mk: AliGeant3/libAliGeant3.pkg
+MICROCERN/module.mk: MICROCERN/libmicrocern.pkg
