@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.60  2002/07/19 14:49:03  morsch
+Typo corrected.
+
 Revision 1.59  2002/07/19 14:35:36  morsch
 Count total number of trials. Print mean Q, x1, x2.
 
@@ -206,6 +209,8 @@ AliGenPythia::AliGenPythia()
   SetEventListRange();
   SetJetPhiRange();
   SetJetEtaRange();
+  SetGammaPhiRange();
+  SetGammaEtaRange();
 }
 
 AliGenPythia::AliGenPythia(Int_t npart)
@@ -236,6 +241,8 @@ AliGenPythia::AliGenPythia(Int_t npart)
     SetEventListRange();
     SetJetPhiRange();
     SetJetEtaRange();
+    SetGammaPhiRange();
+    SetGammaEtaRange();
     // Options determining what to keep in the stack (Heavy flavour generation)
     fStackFillOpt = kFlavorSelection; // Keep particle with selected flavor
     fFeedDownOpt = kTRUE;             // allow feed down from higher family
