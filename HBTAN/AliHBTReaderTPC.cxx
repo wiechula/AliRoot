@@ -1,7 +1,7 @@
 #include "AliHBTReaderTPC.h"
 
-#include <iostream.h>
-//#include <fstream.h>
+#include <Riostream.h>
+//#include <Riostream.h>
 #include <TTree.h>
 #include <TFile.h>
 #include <TParticle.h>
@@ -171,7 +171,8 @@ Int_t AliHBTReaderTPC::Read(AliHBTRun* particles, AliHBTRun *tracks)
     if( (i=OpenFiles(aTracksFile,aClustersFile,aGAliceFile,currentdir)) )
      {
        Error("Read","Exiting due to problems with opening files. Errorcode %d",i);
-       return i;
+       currentdir++;
+       continue;
      }
   
     
@@ -180,21 +181,27 @@ Int_t AliHBTReaderTPC::Read(AliHBTRun* particles, AliHBTRun *tracks)
       Nevents = (Int_t)gAlice->TreeE()->GetEntries();//if yes get number of events in gAlice
       cout<<"________________________________________________________\n";
       cout<<"Found "<<Nevents<<" event(s) in directory "<<GetDirName(currentdir)<<endl;
-      cout<<"Setting Magnetic Field. Factor is "<<gAlice->Field()->Factor()<<endl;
-      AliKalmanTrack::SetConvConst(100/0.299792458/0.2/gAlice->Field()->Factor());  
+      cout<<"Setting Magnetic Field: B="<<gAlice->Field()->SolenoidField()<<"T"<<endl;
+      AliKalmanTrack::SetConvConst(1000/0.299792458/gAlice->Field()->SolenoidField());
      }
     else
      {//if not return an error
        Error("Read","Can not find Header tree (TreeE) in gAlice");
-       return 1;
+       currentdir++;
+       continue;
      }
   
     aClustersFile->cd();//set cluster file active 
-    AliTPCParam *TPCParam= (AliTPCParam*)aClustersFile->Get("75x40_100x60");
+    AliTPCParam *TPCParam= (AliTPCParam*)aClustersFile->Get("75x40_100x60_150x60");
     if (!TPCParam) 
       { 
-       Error("Read","TPC parameters have not been found !\n");
-       return 1;
+       TPCParam= (AliTPCParam*)aClustersFile->Get("75x40_100x60");
+       if (!TPCParam) 
+        { 
+          Error("Read","TPC parameters have not been found !\n");
+          currentdir++;
+          continue;
+        }
       }
 
   
@@ -216,15 +223,14 @@ Int_t AliHBTReaderTPC::Read(AliHBTRun* particles, AliHBTRun *tracks)
          if (!tracktree) //check if we got the tree
           {//if not return with error
             Error("Read","Can't get a tree with TPC tracks !\n"); 
-            
-            return 1;
+            continue;
           }
    
          TBranch *trackbranch=tracktree->GetBranch("tracks");//get the branch with tracks
          if (!trackbranch) ////check if we got the branch
           {//if not return with error
             Error("Read","Can't get a branch with TPC tracks !\n"); 
-            return 2;
+            continue;
           }
          Int_t NTPCtracks=(Int_t)tracktree->GetEntries();//get number of TPC tracks 
          cout<<"Found "<<NTPCtracks<<" TPC tracks.\n";
@@ -237,7 +243,7 @@ Int_t AliHBTReaderTPC::Read(AliHBTRun* particles, AliHBTRun *tracks)
          if (!tracker) //check if it has created succeffuly
           {//if not return with error
             Error("Read","Can't get a tracker !\n"); 
-            return 3;
+            continue;
           }
          tracker->LoadInnerSectors();
          tracker->LoadOuterSectors();
@@ -279,8 +285,8 @@ Int_t AliHBTReaderTPC::Read(AliHBTRun* particles, AliHBTRun *tracks)
             
             TParticle *p = (TParticle*)gAlice->Particle(label);
             
-	    if(p == 0x0) continue; //if returned pointer is NULL
-	    if(p->GetPDG() == 0x0) continue; //if particle has crezy PDG code (not known to our database)
+            if(p == 0x0) continue; //if returned pointer is NULL
+            if(p->GetPDG() == 0x0) continue; //if particle has crezy PDG code (not known to our database)
 	    
             if(Pass(p->GetPdgCode())) continue; //check if we are intersted with particles of this type 
                                         //if not take next partilce
@@ -288,7 +294,6 @@ Int_t AliHBTReaderTPC::Read(AliHBTRun* particles, AliHBTRun *tracks)
             AliHBTParticle* part = new AliHBTParticle(*p);
             if(Pass(part)) { delete part; continue;}//check if meets all criteria of any of our cuts
                                                     //if it does not delete it and take next good track
-         
          
             iotrack->PropagateToVertex();
 
@@ -307,7 +312,7 @@ Int_t AliHBTReaderTPC::Read(AliHBTRun* particles, AliHBTRun *tracks)
             Double_t tEtot = TMath::Sqrt( tpx*tpx + tpy*tpy + tpz*tpz + mass*mass);//total energy of the track
             
             AliHBTParticle* track = new AliHBTParticle(p->GetPdgCode(), tpx, tpy , tpz, tEtot, 0., 0., 0., 0.);
-           if(Pass(track))//check if meets all criteria of any of our cuts
+            if(Pass(track))//check if meets all criteria of any of our cuts
                          //if it does not delete it and take next good track
              { 
                delete track;
