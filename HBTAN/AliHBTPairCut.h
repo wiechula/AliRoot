@@ -2,7 +2,7 @@
 //Class implemnts cut on the pair of particles
 //
 //more info: http://alisoft.cern.ch/people/skowron/analyzer/index.html
-
+ 
 #ifndef ALIHBTPAIRCUT_H
 #define ALIHBTPAIRCUT_H
 
@@ -16,6 +16,7 @@ enum AliHBTPairCutProperty
  {
   kHbtPairCutPropQInv, //Q invariant
   kHbtPairCutPropKt,
+  kHbtPairCutPropKStar,
   kHbtPairCutPropQSideCMSLC,
   kHbtPairCutPropQOutCMSLC,
   kHbtPairCutPropQLongCMSLC,
@@ -29,8 +30,10 @@ class AliHBTPairCut: public TObject
     AliHBTPairCut(const AliHBTPairCut&);
     
     virtual ~AliHBTPairCut();
-    virtual Bool_t Pass(AliHBTPair*);
-    
+    virtual Bool_t Pass(AliHBTPair* pair);
+    virtual Bool_t PassPairProp(AliHBTPair* pair);
+     
+    virtual Bool_t IsEmpty() {return kFALSE;}
     void SetFirstPartCut(AliHBTParticleCut*);  //sets the cut on the first particle
     void SetSecondPartCut(AliHBTParticleCut*); //sets the cut on the first particle
     
@@ -40,16 +43,17 @@ class AliHBTPairCut: public TObject
     
     void SetQInvRange(Double_t min, Double_t max);
     void SetKtRange(Double_t min, Double_t max);
+    void SetKStarRange(Double_t min, Double_t max);
     void SetQOutCMSLRange(Double_t min, Double_t max);
     void SetQSideCMSLRange(Double_t min, Double_t max);
     void SetQLongCMSLRange(Double_t min, Double_t max);
     
-    const AliHBTParticleCut* GetFirstPartCut() const {return fFirstPartCut;}
-    const AliHBTParticleCut* GetSecondPartCut() const {return fSecondPartCut;}
+    AliHBTParticleCut* GetFirstPartCut() const {return fFirstPartCut;}
+    AliHBTParticleCut* GetSecondPartCut() const {return fSecondPartCut;}
     
   protected:
-    AliHBTParticleCut*      fFirstPartCut;
-    AliHBTParticleCut*      fSecondPartCut;
+    AliHBTParticleCut*      fFirstPartCut;//cut on first particle in pair
+    AliHBTParticleCut*      fSecondPartCut;//cut on second particle in pair
 
     AliHbtBasePairCut** fCuts; //!
     Int_t fNCuts;
@@ -76,6 +80,7 @@ class AliHBTEmptyPairCut:  public AliHBTPairCut
     virtual ~AliHBTEmptyPairCut(){};
     
     Bool_t Pass(AliHBTPair*) {return kFALSE;} //accpept everything
+    Bool_t IsEmpty() {return kTRUE;}
 
     ClassDef(AliHBTEmptyPairCut,1)
  
@@ -160,6 +165,17 @@ class AliHBTKtCut: public AliHbtBasePairCut
      ClassDef(AliHBTKtCut,1)
  };
 
+class AliHBTKStarCut: public AliHbtBasePairCut
+ {
+   public:
+    AliHBTKStarCut(Double_t min = 0.0, Double_t max = 0.0):AliHbtBasePairCut(min,max,kHbtPairCutPropKStar){}
+    virtual ~AliHBTKStarCut(){}
+   protected:
+    virtual Double_t  GetValue(AliHBTPair* pair){return pair->GetKStar();}
+   private:
+   public:
+     ClassDef(AliHBTKStarCut,1)
+ };
 
 class AliHBTQSideCMSLCCut: public AliHbtBasePairCut
  {

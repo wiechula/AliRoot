@@ -11,17 +11,17 @@ PACKAGE = HBTAnalysis
 
 # C++ sources
 
-SRCS          = AliHBTAnalysis.cxx AliHBTFunction.cxx \
-                AliHBTEvent.cxx AliHBTRun.cxx \
-		AliHBTParticle.cxx AliHBTParticleCut.cxx \
-		AliHBTPair.cxx AliHBTPairCut.cxx\
-                AliHBTCorrelFctn.cxx \
-                AliHBTReader.cxx AliHBTReaderTPC.cxx\
-                AliHBTQResolutionFctns.cxx AliHBTReaderPPprod.cxx\
-		AliHBTReaderITSv1.cxx AliHBTReaderITSv2.cxx\
-		AliHBTReaderKineTree.cxx AliHBTReaderInternal.cxx\
-		AliHBTTwoTrackEffFctn.cxx \
-		AliHBTLLWeights.cxx AliHBTLLWeightFctn.cxx
+SRCS          = AliHBTAnalysis.cxx    AliHBTPair.cxx  AliHBTReaderPPprod.cxx \
+                AliHBTReader.cxx      AliHBTReaderTPC.cxx \
+                AliHBTCorrelFctn.cxx  AliHBTPairCut.cxx \
+                AliHBTEvent.cxx       AliHBTParticle.cxx       AliHBTRun.cxx \
+                AliHBTFunction.cxx    AliHBTMonitorFunction.cxx   AliHBTParticleCut.cxx  \
+                AliHBTReaderITSv1.cxx AliHBTReaderITSv2.cxx    AliHBTReaderKineTree.cxx \
+                AliHBTTwoTrackEffFctn.cxx       AliHBTReaderInternal.cxx\
+                AliHBTQResolutionFctns.cxx      AliHBTQDistributionFctns.cxx    \
+                AliHBTLLWeights.cxx             AliHBTLLWeightFctn.cxx\
+                AliHBTMonDistributionFctns.cxx     AliHBTMonResolutionFctns.cxx \
+                AliHBTLLWeightsPID.cxx AliHBTLLWeightTheorFctn.cxx
 
 # Fortran sources
 
@@ -69,9 +69,9 @@ ALIBRARY	= $(LIBDIR)/libHBTAN.a
 default:	$(SLIBRARY)
 
 
-$(LIBDIR)/libHBTAN.$(SL):		$(OBJS)
+$(LIBDIR)/libHBTAN.$(SL):  $(OBJS) $(FOBJS)
 
-$(DICT):			$(HDRS)
+$(DICT):  $(HDRS)
 
 DEPINC += -I$(ALICE_ROOT)/GEANT321
 
