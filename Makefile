@@ -187,7 +187,7 @@ debug:
 ifndef ALIQUIET
 	@echo "***** Entering DEBUG mode. *****"
 endif
-	@(export ALIDEBUG=YES && $(MAKE) -f Makefile.flat )
+	@(export ALIDEBUG=YES && $(MAKE))
 lib: 
 	@mkdir lib
 	@mkdir lib/tgt_$(ALICE_TARGET)
