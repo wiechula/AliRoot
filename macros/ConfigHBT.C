@@ -12,9 +12,17 @@ void Config()
 
     if (!gSystem->Getenv("CONFIG_FILE"))
     {
-        TFile  *rootfile = new TFile("galice.root", "recreate");
-
-        rootfile->SetCompressionLevel(2);
+        cout<<"Config.C: Creating Run Loader ..."<<endl;
+        AliRunLoader* rl = AliRunLoader::Open("galice.root",AliConfig::fgkDefaultEventFolderName,
+                                              "recreate");
+        if (rl == 0x0)
+         {
+           gAlice->Fatal("Config.C","Can not instatiate the Run Loader");
+           return;
+         }
+        rl->SetCompressionLevel(2);
+        rl->SetNumberOfEventsPerFile(6);        
+        gAlice->SetRunLoader(rl);
     }
 
     TGeant3 *geant3 = (TGeant3 *) gMC;
@@ -116,8 +124,8 @@ void Config()
     g3->SetSigma(0.0, 0.0, 0.0);
     //g3->SetEtaCutRange(-4,4);       
  
-    AliMevSimParticle *piPlus = new AliMevSimParticle(kPiPlus, 3000, 3, 0.2, 0.01, 3, 0.1, 0.0, 0.0);
-    AliMevSimParticle *piMinus = new AliMevSimParticle(kPiMinus, 3000, 3, 0.2, 0.01, 3, 0.1, 0.0, 0.0);
+    AliMevSimParticle *piPlus = new AliMevSimParticle(kPiPlus, 100, 3, 0.2, 0.01, 3, 0.1, 0.0, 0.0);
+    AliMevSimParticle *piMinus = new AliMevSimParticle(kPiMinus, 100, 3, 0.2, 0.01, 3, 0.1, 0.0, 0.0);
     //AliMevSimParticle *KPlus = new AliMevSimParticle(kKPlus, 10, 0, 0.25, 0.0, 2, 0.15, 0.0, 0.0 );
     //AliMevSimParticle *KMinus = new AliMevSimParticle(kKMinus, 10, 0, 0.25, 0.0, 2, 0.15, 0.0, 0.0 );
     //AliMevSimParticle *protonPlus = new AliMevSimParticle(kProton, 3, 0,  0.4, 0.0, 2, 0.15, 0.0, 0.0);
@@ -137,9 +145,9 @@ void Config()
     hbtp->SetRefControl(2);
     hbtp->SetSwitch1D(1);
     hbtp->SetSwitch3D(1);
-    hbtp->SetSwitchCoulomb(0);
+    hbtp->SetSwitchCoulomb(1);
     hbtp->SetSwitchCoherence(0);
-    hbtp->SetSwitchFermiBose(1);
+    hbtp->SetSwitchFermiBose(-1);
     hbtp->SetDeltap(0.1);
     hbtp->SetDelChi(0.1);
     hbtp->SetLambda(0.5);
@@ -153,7 +161,7 @@ void Config()
     hbtp->SetPtRange(0.1,0.98);
     hbtp->SetPIDs(211,-211); //pi+ pi-
     hbtp->SetSwitchType(3);  // fit both the like and unlike pair correl
-    
+    hbtp->SetMaxIterations(300);
     /***********************************************************************************/
     
    // gener->AddGenerator(g2,"HIJING PARAMETRIZATION",1);

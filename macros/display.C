@@ -9,7 +9,7 @@ void display (const char *filename="galice.root",Int_t nevent=0) {
    }
       
 // Connect the Root Galice file containing Geometry, Kine and Hits
-   AliRunLoader *rl;
+   AliRunLoader *rl = 0x0;
    TFile *file = (TFile*)gROOT->GetListOfFiles()->FindObject(filename);
    if(file){
      cout<<"galice.root is already open \n";
@@ -17,7 +17,12 @@ void display (const char *filename="galice.root",Int_t nevent=0) {
    else {
      rl = AliRunLoader::Open();
    }
-
+   
+   if (rl == 0x0)
+    {
+      cerr<<"Error <display.C()>: can not get Run Loader. Exiting"<<endl;
+      return;
+    }
 // Get AliRun object from file or create it if not on file
 
    rl->LoadgAlice();
