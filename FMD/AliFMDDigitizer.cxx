@@ -31,6 +31,8 @@
 
 #include "AliRun.h"
 #include "AliPDG.h"
+#include "AliLoader.h"
+#include "AliRunLoader.h"
 
 #include <stdlib.h>
 #include <iostream.h>
@@ -77,7 +79,11 @@ Bool_t AliFMDDigitizer::Init()
 void AliFMDDigitizer::Exec(Option_t* option)
 {
 
+  AliRunLoader *inRL, *outRL;//in and out Run Loaders
+  AliLoader *ingime, *outgime;// in and out ITSLoaders
 
+  outRL = AliRunLoader::GetRunLoader(fManager->GetOutputFolderName());
+  outgime = outRL->GetLoader("FMDLoader");
 
 #ifdef DEBUG
   cout<<"AliFMDDigitizer::>SDigits2Digits start...\n";
@@ -85,7 +91,7 @@ void AliFMDDigitizer::Exec(Option_t* option)
 
   //  cout<<" FMD "<<FMD<<endl;
 
-   Int_t volume, sector, ring, charge;
+  Int_t volume, sector, ring, charge;
   Float_t e;
   Float_t de[10][50][300];
   Int_t hit;
@@ -117,13 +123,20 @@ void AliFMDDigitizer::Exec(Option_t* option)
     if (fFMD)
     {
       TClonesArray *FMDhits = fFMD->Hits ();
-      TH = fManager->GetInputTreeH(inputFile);
+
+      inRL = AliRunLoader::GetRunLoader(fManager->GetInputFolderName(inputFile));
+      ingime = inRL->GetLoader("FMDLoader");
+      ingime->LoadHits("READ");//probably it is necessary to load them before
+
+
+
+      TH = ingime->TreeH();
       brHits = TH->GetBranch("FMD");
       if (brHits) {
-	fFMD->SetHitsAddressBranch(brHits);
+        fFMD->SetHitsAddressBranch(brHits);
       }else{
-	cerr<<"EXEC Branch FMD hit not found"<<endl;
-	exit(111);
+        cerr<<"EXEC Branch FMD hit not found"<<endl;
+        exit(111);
       } 
       Int_t ntracks    = (Int_t) TH->GetEntries();
 
@@ -149,34 +162,42 @@ void AliFMDDigitizer::Exec(Option_t* option)
  
   // Put noise and make ADC signal
    Float_t I = 1.664 * 0.04 * 2.33 / 22400;	// = 0.69e-6;
- for ( ivol=1; ivol<=5; ivol++){
-    for ( iSector=1; iSector<=NumberOfSectors[ivol-1]; iSector++){
-      for ( iRing=1; iRing<=NumberOfRings[ivol-1]; iRing++){
-	digit[0]=ivol;
-	digit[1]=iSector;
-	digit[2]=iRing;
-	charge = Int_t (de[ivol][iSector][iRing] / I);
-	digit[3]=PutNoise(charge);
-	if(digit[3]<= 500) digit[3]=500; 
+   for ( ivol=1; ivol<=5; ivol++){
+     for ( iSector=1; iSector<=NumberOfSectors[ivol-1]; iSector++){
+       for ( iRing=1; iRing<=NumberOfRings[ivol-1]; iRing++){
+         digit[0]=ivol;
+         digit[1]=iSector;
+         digit[2]=iRing;
+         charge = Int_t (de[ivol][iSector][iRing] / I);
+         digit[3]=PutNoise(charge);
+         if(digit[3]<= 500) digit[3]=500; 
     //dynamic range from MIP(0.155MeV) to 30MIP(4.65MeV)
     //1024 ADC channels 
-	Float_t channelWidth=(22400*50)/1024;
-	digit[4]=Int_t(digit[3]/channelWidth);
-	if (digit[4]>1024) digit[4]=1024; 
-	fFMD->AddDigit(digit);
-      } //ivol
-    } //iSector
-  } //iRing
+         Float_t channelWidth=(22400*50)/1024;
+         digit[4]=Int_t(digit[3]/channelWidth);
+         if (digit[4]>1024) digit[4]=1024; 
+         fFMD->AddDigit(digit);
+       } //ivol
+     } //iSector
+   } //iRing
 
-  TTree* treeD = fManager->GetTreeD();
-  treeD->Clear();
-  treeD->Reset();
-  fFMD->MakeBranchInTreeD(treeD);
-  treeD->Fill();
+   TTree* treeD = outgime->TreeD();
+   if (treeD == 0x0) {
+     outgime->MakeTree("D");
+     treeD = outgime->TreeD();
+   }
+   treeD->Clear();
+   treeD->Reset();
+   fFMD->MakeBranchInTreeD(treeD);
+   treeD->Fill();
  
-  fManager->GetTreeD()->Write(0,TObject::kOverwrite);
+   outgime->WriteDigits("OVERWRITE");
   
-  gAlice->ResetDigits();
+   gAlice->ResetDigits();
   }
 }
+
+
+
+
 
