@@ -39,6 +39,7 @@ public:
   
   virtual void MakeTree(char *file=0);              //Make tree with the name
   virtual void MakeTree(TTree* tree);              //Make tree with the name
+
   virtual Bool_t ConnectTree(const char * treeName); //connect tree from current directory 
   virtual Bool_t ConnectTree(TTree* tree); //connect tree from current directory 
   

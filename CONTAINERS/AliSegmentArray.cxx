@@ -15,6 +15,13 @@
 
 /*
 $Log$
+
+Revision 1.7.4.1  2002/05/31 09:37:54  hristov
+First set of changes done by Piotr
+
+Revision 1.8  2002/04/04 16:38:52  kowal2
+Digits and Sdigits go to separate files
+
 Revision 1.7  2001/10/21 18:22:54  hristov
 BranchOld replaced by Branch. It works correctly with Root 2.02.xx
 
@@ -66,6 +73,7 @@ New data structure handling
 #include "AliArrayI.h"
 #include "TError.h"
 #include "TClass.h"
+#include "TFile.h"
 
 #include "AliSegmentID.h"
 #include "AliSegmentArray.h"
@@ -298,6 +306,8 @@ void AliSegmentArray::MakeTree(char *file)
     }
   delete psegment;
 }              
+
+////////////////////////////////////////////////////////////////////////
 
 Bool_t  AliSegmentArray::MakeDictionary(Int_t size)
 {
