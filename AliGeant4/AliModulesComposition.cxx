@@ -7,19 +7,19 @@
 #include "AliModulesCompositionMessenger.h"
 #include "AliSingleModuleConstruction.h"
 #include "AliMoreModulesConstruction.h"
-#include "AliDetSwitch.h"
 #include "AliMagneticField.h"
 #include "AliGlobals.h"
 
-#include "TG4GeometryManager.h"
 #include "TG4XMLGeometryGenerator.h"
 
+#include <G4UniformMagField.hh>
+#include <G4FieldManager.hh>
+#include <G4TransportationManager.hh>
 #include <G4Material.hh>
-#include <G4VPhysicalVolume.hh>
 
 AliModulesComposition::AliModulesComposition()
   : fAllLVSensitive(false),
-    fForceAllLVSensitive(true),
+    fForceAllLVSensitive(false),
     fReadGeometry(false),
     fWriteGeometry(false),
     fMagneticField(0)    
@@ -133,11 +133,6 @@ void AliModulesComposition::ConstructModules()
     G4cout << "Dependent modules will be constructed now." << G4endl;
     fMoreModulesConstruction->Construct();
   }  
-    
-  // fill medium Id vector
-  TG4GeometryManager::Instance()->FillMediumIdVector();
-        // this step can be done only after the sensitive
-        // detectors have been created
 }  
 
 void AliModulesComposition::SetReadGeometryToModules(G4bool readGeometry)

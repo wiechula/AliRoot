@@ -4,7 +4,6 @@
 // See the class description in the header file.
 
 #include "AliColourStore.h"
-#include "AliColour.h"
 #include "AliGlobals.h"
 
 #include <G4Element.hh>

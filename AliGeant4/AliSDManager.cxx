@@ -8,12 +8,15 @@
 #include "AliSensitiveDetector.h"
 #include "AliLegoSensitiveDetector.h"
 #include "AliGlobals.h"
+#include "AliFiles.h"
 #include "AliRun.h"
 #include "AliModule.h"
 
-#include "TG4GeometryServices.h"
+#include "TG4GeometryManager.h"
 
+#include <G3SensVolVector.hh>
 #include <G4SDManager.hh>
+#include <G4UImanager.hh>
 #include <G4LogicalVolume.hh>
 #include <G4LogicalVolumeStore.hh>
 
@@ -70,14 +73,14 @@ void AliSDManager::CreateLegoSD(G4LogicalVolume* lv, AliLego* lego) const
 // with the lego sensitive detector.
 // ---
 
-  TG4GeometryServices* geometryServices = TG4GeometryServices::Instance();
+  TG4GeometryManager* pGeometryManager = TG4GeometryManager::Instance();
   G4SDManager* pSDManager = G4SDManager::GetSDMpointer();
 
   G4String lvName = lv->GetName(); 
   G4String sdName = "/Alice/lego/" + lvName;
 
   // cut copy number from sdName
-  geometryServices->G4ToG3VolumeName(sdName);
+  pGeometryManager->G4ToG3VolumeName(sdName);
   
   // retrieve the standard sensitive detector
   G4VSensitiveDetector* sd = lv->GetSensitiveDetector();
@@ -134,7 +137,7 @@ void AliSDManager::CreateSD(G4LogicalVolume* lv, AliModule* module) const
 // Creates/retrieves a sensitive detector for the logical volume.
 // ---
 
-  TG4GeometryServices* geometryServices = TG4GeometryServices::Instance();
+  TG4GeometryManager* pGeometryManager = TG4GeometryManager::Instance();
   G4SDManager* pSDManager = G4SDManager::GetSDMpointer();
 
   G4String lvName = lv->GetName(); 
@@ -143,7 +146,7 @@ void AliSDManager::CreateSD(G4LogicalVolume* lv, AliModule* module) const
   G4String sdName = "/Alice/" + moduleName + "/" + lvName;
 
   // cut copy number from sdName
-  geometryServices->G4ToG3VolumeName(sdName);
+  pGeometryManager->G4ToG3VolumeName(sdName);
   
   // create/retrieve the sensitive detector
   G4VSensitiveDetector* sd = 0; 
@@ -166,14 +169,14 @@ AliModule* AliSDManager::FindAliModule(G4LogicalVolume* lv) const
 // ---
 
   // geometry manager
-  TG4GeometryServices* geometryServices = TG4GeometryServices::Instance();
+  TG4GeometryManager* pGeometryManager = TG4GeometryManager::Instance();
 
   // get g3 volume name
   G4String g3Name = lv->GetName();
-  geometryServices->G4ToG3VolumeName(g3Name);
+  pGeometryManager->G4ToG3VolumeName(g3Name);
   
   // get module name from the map
-  G4String moduleName = geometryServices->GetMapSecond(g3Name);
+  G4String moduleName = pGeometryManager->GetMapSecond(g3Name);
   
   // find module from gAlice
   AliModule* module = gAlice->GetModule(moduleName);

@@ -59,7 +59,7 @@ void Config()
   // --- Specify event type to be tracked through the ALICE setup
   // --- All positions are in cm, angles in degrees, and P and E in GeV
 
-  AliGenHIJINGpara *gener = new AliGenHIJINGpara(500);
+  AliGenHIJINGpara *gener = new AliGenHIJINGpara(50);
   gener->SetMomentumRange(0,999);
   gener->SetPhiRange(0,360);
   gener->SetThetaRange(10,170);
@@ -113,9 +113,11 @@ Int_t iPMD=1;
 Int_t iSTART=0;
 
     // Exclude detectors that do not work with Geant4
+      iRICH=0; 
       iCASTOR=0;
     // Detectors with temporary problem
-      iZDC=0;
+      iMUON=0;
+      iFMD=0;
 
 // From G3 Config.C
 // Without any modification 
@@ -295,7 +297,7 @@ PMD->SetPadSize(0.8, 1.0, 1.0, 1.5);
 
 if(iSTART) {
 //=================== START parameters ============================
-AliSTART *START  = new AliSTARTv1("START","START Detector");
+AliSTART *START  = new AliSTARTv0("START","START Detector");
 }
 
 } // end (!isSetInteractively)

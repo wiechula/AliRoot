@@ -5,12 +5,11 @@
 # run with standard AliRoot generator (defined in Config.C).
 #
 
-/aliDet/switchOn RICH
+/aliDet/switchOn ALL
 
 # switch off detectors with errors
-/aliDet/switchOff RICH
 /aliDet/switchOff CASTOR
-/aliDet/switchOff ZDC
+/aliDet/switchOff RICH
 
 #/g4mc/setHadron true
 

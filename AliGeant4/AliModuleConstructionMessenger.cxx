@@ -14,6 +14,7 @@
 #include <G4UIcmdWithABool.hh>
 #include <G4UIcmdWithAString.hh>
 #include <G4UIcmdWithoutParameter.hh>
+#include <G4LogicalVolume.hh>
 
 AliModuleConstructionMessenger::AliModuleConstructionMessenger(
    AliModuleConstruction* moduleConstruction, G4String moduleName)

@@ -10,11 +10,11 @@
 
 #include <globals.hh>
 
+#include <TClonesArray.h>
+
 class AliTrackingActionMessenger;
 
 class G4Track;
-
-class TClonesArray;
 
 class AliTrackingAction : public TG4TrackingAction 
 {
@@ -31,7 +31,7 @@ class AliTrackingAction : public TG4TrackingAction
     void PrepareNewEvent();
     virtual void PreTrackingAction(const G4Track* aTrack);
     virtual void PostTrackingAction(const G4Track* aTrack);
-    void SaveParticle(const G4Track* track);
+    void SaveParticle(const G4Track* track, G4String processName);
     void SaveAndDestroyTrack();
 
     // set methods

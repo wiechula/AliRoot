@@ -8,10 +8,9 @@
 #define ALI_GUN_PARTICLE_H
 
 #include <G4ParticleMomentum.hh>
+#include <G4ParticleDefinition.hh>
 #include <G4ThreeVector.hh>
 #include <globals.hh>
-
-class G4ParticleDefinition;
 
 class AliGunParticle
 {

@@ -6,15 +6,16 @@
 #ifndef ALI_PARTICLE_GUN_H
 #define ALI_PARTICLE_GUN_H
 
+#include "AliGunParticle.h"
+
 #include <G4VPrimaryGenerator.hh>
+#include <G4PrimaryVertex.hh>
 #include <globals.hh>
 
 #include <g4rw/tpordvec.h>
 
-class AliGunParticle;
-class AliParticleGunMessenger;
-
 class G4Event;
+class AliParticleGunMessenger;
 
 class AliParticleGun : public G4VPrimaryGenerator
 {

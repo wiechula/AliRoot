@@ -6,7 +6,9 @@
 #include "AliMoreModulesConstruction.h"
 #include "AliSingleModuleConstruction.h"
 #include "AliSDManager.h"
+#include "AliSensitiveDetector.h"
 #include "AliModule.h"
+#include "AliRun.h"
 #include "AliGlobals.h"
 
 #include "TG4GeometryManager.h"
@@ -14,6 +16,9 @@
 #include <G4SDManager.hh>
 #include <G4LogicalVolume.hh>
 #include <G4LogicalVolumeStore.hh>
+
+#include <TROOT.h> 
+#include <TCint.h> 
 
 AliMoreModulesConstruction::AliMoreModulesConstruction() {
 //

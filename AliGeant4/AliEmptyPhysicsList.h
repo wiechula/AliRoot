@@ -7,6 +7,7 @@
 #define ALI_EMPTY_PHYSICS_LIST_H
 
 #include <G4VUserPhysicsList.hh>
+#include <globals.hh>
 
 class AliEmptyPhysicsList: public G4VUserPhysicsList
 {

@@ -12,7 +12,7 @@
 #include <G4Colour.hh>
 #include <G4VisAttributes.hh>
 #endif //ALICE_VISUALIZE
-#include <G4LogicalVolume.hh>
+#include <globals.hh>
 
 AliLVStructure::AliLVStructure(G4String path)
   : fPathName(path),

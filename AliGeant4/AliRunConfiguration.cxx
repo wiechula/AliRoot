@@ -5,8 +5,10 @@
 
 #include "AliRunConfiguration.h"
 #include "AliRunMessenger.h"
+#include "AliGlobals.h"
 
 #include "AliDetConstruction.h"
+#include "AliEmptyPhysicsList.h"
 #include "AliPrimaryGeneratorAction.h"
 #include "AliRunAction.h"
 #include "AliEventAction.h"
@@ -14,11 +16,7 @@
 #include "AliStackingAction.h"
 #include "AliSteppingAction.h"
 
-#ifdef ALICE_EMPTY_PHYSICS_LIST
-#include "AliEmptyPhysicsList.h"
-#else
 #include "TG4PhysicsList.h"
-#endif
 
 AliRunConfiguration::AliRunConfiguration(){
 //

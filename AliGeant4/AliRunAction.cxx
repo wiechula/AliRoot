@@ -19,6 +19,8 @@
 #include <G4Run.hh>
 #include <G4UImanager.hh>
 
+#include <TFile.h>
+
 AliRunAction::AliRunAction()
   : fRunID(-1),
     fVerboseLevel(0)

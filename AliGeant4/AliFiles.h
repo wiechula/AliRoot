@@ -10,6 +10,10 @@
 
 #include <globals.hh>
 
+#ifdef G4USE_STL
+#include <string>
+#endif
+
 class AliFiles
 {
   public:

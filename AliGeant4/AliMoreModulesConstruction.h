@@ -10,6 +10,7 @@
 
 #include "AliModuleType.h"
 
+#include <G3VolTable.hh>
 #include <globals.hh>
 
 #include <g4std/vector>

@@ -6,15 +6,12 @@
 #include "AliSensitiveDetector.h"
 #include "AliModule.h" 
 #include "AliRun.h"
-#include "AliMCQA.h"
 
 #include "TG3Units.h"
 
 AliSensitiveDetector::AliSensitiveDetector(G4String sdName, AliModule* module)
   : TG4VSensitiveDetector(sdName),
-    fModule(module),
-    fModuleID(0),
-    fMCQA(0)
+    fModule(module)
 {
 //
 }
@@ -22,9 +19,7 @@ AliSensitiveDetector::AliSensitiveDetector(G4String sdName, AliModule* module)
 AliSensitiveDetector::AliSensitiveDetector(G4String sdName, AliModule* module, 
                                            G4int id)
   : TG4VSensitiveDetector(sdName, id),
-    fModule(module),
-    fModuleID(0),
-    fMCQA(0)
+    fModule(module)
 {
 //
 }
@@ -62,17 +57,6 @@ AliSensitiveDetector::operator=(const AliSensitiveDetector& right)
           
 // public methods
 
-void AliSensitiveDetector::Initialize(G4HCofThisEvent*HCE) 
-{
-// This method is called by G4 kernel at the beginning of event action
-// before user defined BeginOfEventAction() method.
-// ---
-
-  fModuleID = gAlice->GetModuleID(fModule->GetName());
-  fMCQA = gAlice->GetMCQA();
-}  
-  
-  
 void AliSensitiveDetector::UserProcessHits(const G4Track* track, 
                                            const G4Step* step)
 {
@@ -84,8 +68,6 @@ void AliSensitiveDetector::UserProcessHits(const G4Track* track,
   if (step) 
     gAlice->AddEnergyDeposit(
       fID, step->GetTotalEnergyDeposit()/TG3Units::Energy());
-      
-  fMCQA->StepManager(fModuleID);   
 
   // let AliModule process the step
   fModule->StepManager();
