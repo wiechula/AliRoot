@@ -15,6 +15,9 @@
  
 /*
 $Log$
+Revision 1.2.2.1  2002/06/06 14:23:57  hristov
+Merged with v3-08-02
+
 Revision 1.2  2002/05/19 18:17:03  hristov
 Changes needed by ICC/IFC compiler (Intel)
 
@@ -103,7 +106,7 @@ Bool_t AliITSsDigitize::Init(){
     //   none.
     // Return:
     //    kTRUE if no errors initilizing this class occurse else kFALSE
-    Int_t nparticles;
+    //Int_t nparticles;
    
     fITS = (AliITS*) gAlice->GetDetector("ITS");
     if(!fITS){
