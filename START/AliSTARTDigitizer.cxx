@@ -31,6 +31,8 @@
 
 #include "AliRun.h"
 #include "AliPDG.h"
+#include "AliLoader.h"
+#include "AliRunLoader.h"
 
 #include <stdlib.h>
 #include <iostream.h>
@@ -81,6 +83,12 @@ void AliSTARTDigitizer::Exec(Option_t* option)
 {
 
 
+  AliRunLoader *inRL, *outRL;//in and out Run Loaders
+  AliLoader *ingime, *outgime;// in and out ITSLoaders
+
+  outRL = AliRunLoader::GetRunLoader(fManager->GetOutputFolderName());
+  outgime = outRL->GetLoader("STARTLoader");
+
 
 #ifdef DEBUG
   cout<<"AliSTARTDigitizer::>SDigits2Digits start...\n";
@@ -112,7 +120,12 @@ void AliSTARTDigitizer::Exec(Option_t* option)
     Int_t timeAv=0;
     TClonesArray *STARThits = START->Hits ();
 
-   TTree *th = fManager->GetInputTreeH(inputFile);
+    inRL = AliRunLoader::GetRunLoader(fManager->GetInputFolderName(inputFile));
+    ingime = inRL->GetLoader("STARTLoader");
+    ingime->LoadHits("READ");//probably it is necessary to load them before
+
+
+   TTree *th = ingime->TreeH();
     brHits = th->GetBranch("START");
     if (brHits) {
       START->SetHitsAddressBranch(brHits);
@@ -179,13 +192,18 @@ void AliSTARTDigitizer::Exec(Option_t* option)
       {timeAv=999999; timeDiff=99999;}
 
 // trick to find out output dir:
-    TTree *outTree = fManager->GetTreeD();
-    if (!outTree) {
+   TTree* treeD = outgime->TreeD();
+   if (treeD == 0x0) {
+     outgime->MakeTree("D");
+     treeD = outgime->TreeD();
+   }
+    if (!treeD) {
       cerr<<"something wrong with output...."<<endl;
       exit(111);
     }
+
     TDirectory *wd = gDirectory;
-    outTree->GetDirectory()->cd();
+    treeD->GetDirectory()->cd();
     fdigits->Write(nameDigits);
     wd->cd();
   }
