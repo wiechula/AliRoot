@@ -2,6 +2,12 @@
 * $Id$
 *
 * $Log$
+* Revision 1.2  2002/05/16 15:46:25  hristov
+* Dummy subroutines to avoid files with no code in
+*
+* Revision 1.1.1.1  1999/05/18 15:55:34  fca
+* AliRoot sources
+*
 * Revision 1.1.1.1  1996/04/01 15:01:54  mclareni
 * Mathlib gen
 *
@@ -123,5 +129,8 @@
 #endif
       RETURN
   101 FORMAT('ARGUMENT IS NEGATIVE = ',1P,E15.1)
+      END
+#else
+      SUBROUTINE GAMMA128_DUMMY
       END
 #endif

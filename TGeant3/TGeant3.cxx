@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.50  2002/05/14 08:53:30  hristov
+Correct cuts for elecrons and neutrons (V.Filippini)
+
+Revision 1.49  2001/04/06 14:04:25  morsch
+Anti e-neutrino added to g3 particle list.
+
 Revision 1.48  2001/04/04 11:47:56  morsch
 - muon and tau neutrinos added to g3 particle list (needed for D,B decays).
 - some (up to now harmless) bugs in Gspart calls corrected.
@@ -1233,9 +1239,9 @@ void    TGeant3::SetCut(const char* cutName, Float_t cutValue)
   //
   if(!strcmp(cutName,"CUTGAM")) 
     fGccuts->cutgam=cutValue; 
-  else if(!strcmp(cutName,"CUTGAM")) 
-    fGccuts->cutele=cutValue; 
   else if(!strcmp(cutName,"CUTELE")) 
+    fGccuts->cutele=cutValue; 
+  else if(!strcmp(cutName,"CUTNEU")) 
     fGccuts->cutneu=cutValue; 
   else if(!strcmp(cutName,"CUTHAD")) 
     fGccuts->cuthad=cutValue; 

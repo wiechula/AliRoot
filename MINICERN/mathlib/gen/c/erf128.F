@@ -2,6 +2,12 @@
 * $Id$
 *
 * $Log$
+* Revision 1.2  2002/05/16 15:46:25  hristov
+* Dummy subroutines to avoid files with no code in
+*
+* Revision 1.1.1.1  1999/05/18 15:55:34  fca
+* AliRoot sources
+*
 * Revision 1.1.1.1  1996/04/01 15:01:53  mclareni
 * Mathlib gen
 *
@@ -22,5 +28,8 @@ C
 C
       CALL MTLPRT(NAME,'C300.0','Not available on this machine')
       RETURN
+      END
+#else
+      SUBROUTINE ERF128_DUMMY
       END
 #endif

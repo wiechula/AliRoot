@@ -48,6 +48,9 @@ AliDetConstruction::AliDetConstruction()
   fDetSwitchVector.Add(new AliDetSwitch("TRD",    2, 1));
   fDetSwitchVector.Add(new AliDetSwitch("ZDC",    3, 2));
 
+  // update messenger
+  fDetSwitchVector.UpdateMessenger();
+
   // instantiate LVtree browser
   AliLVTree::Instance();
 }
@@ -118,7 +121,7 @@ void AliDetConstruction::BuildDetectors()
       fDetSwitchVector.SwitchDetOn(modName, modVersion);
  
     // all modules will be processed alltogether
-    AddModule(modName, modVersion);
+    AddModule(modName, modVersion, fDetSwitchVector.GetDetSwitch(modName)->GetType());
 
     if (VerboseLevel() > 0) {
       G4cout << "Created module construction for " 

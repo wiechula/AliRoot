@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.3  2002/03/19 09:36:17  morsch
+Unnecessary includes removes, one included. (Jacek M. Holeczek)
+
+Revision 1.2  2001/08/30 09:32:30  hristov
+The operator[] is replaced by At() or AddAt() in case of TObjArray.
+
 Revision 1.1  2001/07/09 11:43:01  morsch
 Class Responsible for G3 -> Root geometry conversion.
 
@@ -26,7 +32,6 @@ Class Responsible for G3 -> Root geometry conversion.
 #include "AliG3Medium.h"
 #include "AliG3Material.h"
 #include "AliNode.h"
-#include "AliRun.h"
 
 #include <TClonesArray.h>
 #include <TList.h>
