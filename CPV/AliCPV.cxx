@@ -1,3 +1,25 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.2  1999/09/29 09:24:08  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 ////////////////////////////////////////////////
 //  Manager and hits classes for set:CPV      //
 //                                            //
@@ -49,7 +71,7 @@ AliCPVExactHit::AliCPVExactHit(TLorentzVector p, Float_t *xy, Int_t ipart)
 
 //______________________________________________________________________________
 
-void AliCPVExactHit::Print()
+void AliCPVExactHit::Print(Option_t *)
 {
 // Print exact hit
 
@@ -79,7 +101,7 @@ AliCPVHit::AliCPVHit(Float_t *xy)
 
 //______________________________________________________________________________
 
-void AliCPVHit::Print()
+void AliCPVHit::Print(Option_t *)
 {
 // Print reconstructed hit
 
@@ -108,7 +130,7 @@ AliCPVCradle::AliCPVCradle(void) {
 
 //______________________________________________________________________________
 
-AliCPVCradle::AliCPVCradle(Int_t   Geometry  ,
+AliCPVCradle::AliCPVCradle(Int_t /*Geometry*/,
                            Float_t PadZSize  ,
                            Float_t PadPhiSize,
                            Float_t Radius    ,
@@ -145,7 +167,7 @@ AliCPVCradle::~AliCPVCradle(void)
 
 //______________________________________________________________________________
 
-void AliCPVCradle::Clear(Option_t *opt="")
+void AliCPVCradle::Clear(Option_t *opt)
 {
 // Clear hit information
 
@@ -195,7 +217,8 @@ void AliCPVCradle::Print(Option_t *opt)
 
 //______________________________________________________________________________
 
-void AliCPVCradle::Reconstruction(Float_t min_distance, Float_t min_signal)
+void AliCPVCradle::Reconstruction(Float_t /*min_distance*/, 
+				  Float_t /*min_signal*/)
 {
 // This function:
 // 1) Takes on input the array of generated (exact) hits in the CPV cradle,
@@ -208,13 +231,14 @@ void AliCPVCradle::Reconstruction(Float_t min_distance, Float_t min_signal)
   Float_t Xin[5000][2],
           Pin[5000][4],
           Xout[5000][2];
+  Int_t i;
   fHitReconstructed->Clear();   
   fNhitsReconstructed=0;
   if (fHitExact) {
     TIter next(fHitExact);
     AliCPVExactHit *hit;
     TClonesArray &lhits = *fHitReconstructed;
-    for(int i=0;i<fNhitsExact;i++) {
+    for(i=0;i<fNhitsExact;i++) {
       hit = (AliCPVExactHit*)next();
       Xin[i][0]=hit->fXYhit[0];
       Xin[i][1]=hit->fXYhit[1];
@@ -225,7 +249,7 @@ void AliCPVCradle::Reconstruction(Float_t min_distance, Float_t min_signal)
     }
     cpvrec_(&DzCPV,&DyCPV,&DxCPV,&fNhitsExact,&Xin[0][0],&Pin[0][0],
 	    &fNhitsReconstructed,&Xout[0][0]);
-    for(int i=0;i<fNhitsReconstructed;i++) new(lhits[i]) AliCPVHit(Xout[i]);
+    for(i=0;i<fNhitsReconstructed;i++) new(lhits[i]) AliCPVHit(Xout[i]);
   }
 }
 

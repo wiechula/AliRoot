@@ -1,3 +1,25 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.2  1999/09/29 09:24:08  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 /////////////////////////////////////////////////////////
 //  Manager and hits classes for set:CPV version 0     //
 //  Coarse geometry                                    //
@@ -87,6 +109,8 @@ void AliCPVv0::StepManager()
 //      cout << "AliCPVv0::StepManager() entered to CPV to the volume " 
 //           << VolumeName << "!\n";
 //    }
+
+  Int_t i;
   
   if( strcmp(gMC->CurrentVolName(),"CPV ")==0 && gMC->IsTrackEntering() )
   {
@@ -104,9 +128,9 @@ void AliCPVv0::StepManager()
     TLorentzVector xyzt;
     gMC -> TrackPosition(xyzt);
     Float_t xyzm[3], xyzd[3], xyd[2];
-    for (Int_t i=0; i<3; i++) xyzm[i] = xyzt[i];
+    for (i=0; i<3; i++) xyzm[i] = xyzt[i];
     gMC -> Gmtod (xyzm, xyzd, 1);
-    for (Int_t i=0; i<2; i++) xyd[i]  = xyzd[i];
+    for (i=0; i<2; i++) xyd[i]  = xyzd[i];
 
     // Current momentum of the hit's track in the MARS ref. system
     

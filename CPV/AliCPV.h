@@ -1,5 +1,10 @@
 #ifndef CPV_H
 #define CPV_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
 //  Manager and hits classes for set:CPV      //
 //                                            //
@@ -39,7 +44,7 @@ public:
   TLorentzVector GetMomentum()  {return  fMomentum; }
   Float_t        GetXY(Int_t i) {return  fXYhit[i]; }
   Int_t          GetIpart()     {return  fIpart;    }
-  void           Print();
+  void           Print(Option_t * =" ");
 
   ClassDef(AliCPVExactHit,1)  // Hits object for set:CPV
 };
@@ -59,7 +64,7 @@ public:
            AliCPVHit(Float_t *xy);
 
   Float_t  GetXY(Int_t i) {return  fXYhit[i]; }
-  void     Print();
+  void     Print(Option_t * =" ");
 
   ClassDef(AliCPVHit,1)  // Hits object for set:CPV
 };

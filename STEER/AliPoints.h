@@ -1,9 +1,13 @@
 #ifndef AliPoints_H
 #define AliPoints_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
 
 #include "TPolyMarker3D.h"
 #include "AliDetector.h"
-#include "GParticle.h"
+#include "TParticle.h"
 
 class AliPoints : public TPolyMarker3D {
 protected:
@@ -18,7 +22,7 @@ public:
   virtual void          ExecuteEvent(Int_t event, Int_t px, Int_t py);
   AliDetector          *GetDetector() {return fDetector;}
   Int_t                 GetIndex() {return fIndex;}
-  GParticle            *GetParticle() const;
+  TParticle            *GetParticle() const;
   virtual const Text_t *GetName() const;
   virtual void          InspectParticle(); // *MENU*
   virtual void          DumpParticle(); // *MENU*

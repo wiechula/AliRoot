@@ -1,5 +1,10 @@
 #ifndef ALISIMPLEGEN_H
 #define ALISIMPLEGEN_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ///////////////////////////////////////////////////////////
 //                                                       //
 //  Class to generate the particles for the MC           //
@@ -8,6 +13,7 @@
 ///////////////////////////////////////////////////////////
 
 #include "AliGenerator.h"
+#include "AliPDG.h"
 #include "TF1.h"
 
 

@@ -9,7 +9,9 @@ PACKAGE = TPC
 
 # C++ sources
 
-SRCS          = AliTPC.cxx  AliTPCv0.cxx    AliTPCv1.cxx      AliTPCv2.cxx  
+SRCS          = AliTPC.cxx  AliTPCv0.cxx    AliTPCv1.cxx      AliTPCv2.cxx  \
+		AliTPCD.cxx AliTPCPRF2D.cxx AliTPCRF1D.cxx AliTPCParam.cxx \
+		AliTPCv3.cxx
 
 # C++ Headers
 
@@ -19,7 +21,7 @@ HDRS          = $(SRCS:.cxx=.h) AliTPCSecGeo.h TPCLinkDef.h
 
 DICT          = TPCCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
@@ -31,7 +33,7 @@ COBJS         = $(CSRCS:.c=.o)
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -45,12 +47,11 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libTPC.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libTPC.a
+SLIBRARY	= $(LIBDIR)/libTPC.$(SL)
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libTPC.$(SL):  $(OBJS)
+$(LIBDIR)/libTPC.$(SL):  $(OBJS)
 
 $(DICT):		$(HDRS)
 
@@ -64,4 +65,19 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+### Target check creates violation reports (.viol), which depend on
+### stripped files (.ii), which in turn depend on preprocessed
+### files (.i). Dependences are in conf/GeneralDef.
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
+check:          $(CHECKS)
+
+
+
+
+
+
+

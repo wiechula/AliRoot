@@ -1,5 +1,10 @@
 #ifndef TOF_H
 #define TOF_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
 //  Manager and hits classes for set:TOF     //
 ////////////////////////////////////////////////
@@ -17,7 +22,9 @@ public:
   AliTOF();
   AliTOF(const char *name, const char *title);
   virtual        ~AliTOF() {}
-  virtual void    AddHit(Int_t, Int_t*, Float_t*);
+  virtual void    AddHit(Int_t, Int_t, Int_t, Int_t, Int_t, Float_t*);
+  virtual void    AddHit(Int_t track, Int_t *vol, Float_t*hits)
+  { AddHit(track, vol[0], vol[1], vol[2], vol[3], hits);}
   virtual void    BuildGeometry();
   virtual void    CreateGeometry();
   virtual void    CreateMaterials();
@@ -25,8 +32,8 @@ public:
   virtual Int_t   IsVersion() const =0;
   Int_t           DistancetoPrimitive(Int_t px, Int_t py);
   virtual void    StepManager()=0;
-  virtual void    TOFpc(Float_t, Float_t, Float_t, Float_t, Float_t) {}
-  virtual void    DrawDetector();
+  virtual void    TOFpc(Float_t, Float_t, Float_t, Float_t, Float_t,Float_t) {}
+  virtual void    DrawModule();
   
   ClassDef(AliTOF,1)  // Time Of Flight base class
 };
@@ -35,7 +42,10 @@ public:
  
 class AliTOFhit : public AliHit {
 public:
-  Int_t      fVolume[3];  //array of volumes
+  Int_t      fSector;  // number of sector 
+  Int_t      fPlate;   // number of plate
+  Int_t      fPad_x;   // number of pad along x
+  Int_t      fPad_z;   // number of pad along z
   Float_t    fPx;         // px in TOF
   Float_t    fPy;         // py in TOF
   Float_t    fPz;         // pz in TOF
@@ -44,7 +54,7 @@ public:
  
 public:
   AliTOFhit() {}
-  AliTOFhit(Int_t shunt, Int_t track, Int_t *vol, Float_t *hits);
+  AliTOFhit(Int_t shunt, Int_t track, Int_t sector, Int_t plate, Int_t pad_x, Int_t pad_z, Float_t *hits);
   virtual ~AliTOFhit() {}
  
   ClassDef(AliTOFhit,1)  // Hits for Time Of Flight

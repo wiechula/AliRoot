@@ -1,7 +1,12 @@
 #ifndef TOFv2_H
 #define TOFv2_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ///////////////////////////////////////////////////////
-//  Manager and hits classes for set:TOF  version 2  //
+//  Manager and hits classes for set:TOF  version 1  //
 ///////////////////////////////////////////////////////
  
 #include "AliTOF.h"
@@ -25,11 +30,11 @@ public:
   virtual void   CreateMaterials();
   virtual void   Init();
   virtual Int_t  IsVersion() const {return 2;}
-  virtual void   TOFpc(Float_t, Float_t, Float_t, Float_t, Float_t);
+  virtual void   TOFpc(Float_t,Float_t,Float_t,Float_t,Float_t,Float_t);
   virtual void   StepManager();
-  virtual void   DrawDetector();
+  virtual void   DrawModule();
  
    ClassDef(AliTOFv2,1)  //Time Of Flight version 2
-};
+   };
  
 #endif

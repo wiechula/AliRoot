@@ -1,5 +1,9 @@
 #ifndef _AliPythia_H
 #define _AliPythia_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
 
 #include <TPythia.h>
 #include "GenTypeDefs.h"
@@ -16,12 +20,12 @@ class AliPythia:public TPythia
     
  public:
     static Int_t fgInit;
-    AliPythia():TPythia(){}
-    virtual ~AliPythia(){}
+    AliPythia();
+    virtual ~AliPythia(){;}
     // convert to compressed code and print result (for debugging only)
     virtual Int_t CheckedLuComp(Int_t kf)
 	{
-	    Int_t kc=LuComp(kf);
+	    Int_t kc=Lucomp(kf);
 	    printf("\n Lucomp kf,kc %d %d",kf,kc);
 	    return kc;
 	}

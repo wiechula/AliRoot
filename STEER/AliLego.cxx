@@ -1,3 +1,25 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.7  1999/09/29 09:24:29  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 //                            
@@ -22,14 +44,14 @@
 //
 //Begin_Html
 /*
-<img src="gif/alilego.gif">
+<img src="picts/alilego.gif">
 */
 //End_Html
 //
 //////////////////////////////////////////////////////////////
 
 #include "TMath.h"
-#include "TGeant3.h"
+#include "AliLego.h"
 #include "AliRun.h"
 #include "AliConst.h"
 
@@ -70,7 +92,9 @@ void AliLego::GenerateKinematics()
 // Create a geantino with kinematics corresponding to the current
 // bins in theta and phi.
    
-   const Int_t mpart = 48;
+  //
+  // Rootinos are 0
+   const Int_t mpart = 0;
    Float_t orig[3], pmom[3];
    Float_t t, cost, sint, cosp, sinp;
    
@@ -183,16 +207,15 @@ Float_t AliLego::PropagateCylinder(Float_t *x, Float_t *v, Float_t r, Float_t z)
 void AliLego::Run()
 {
    // loop on phi,theta bins
-   AliMC* pMC=AliMC::GetMC();
-   pMC->InitLego();
+   gMC->InitLego();
    Float_t thed, phid, eta;
    for (fPhiBin=1; fPhiBin<=fNphi; fPhiBin++) {
       printf("AliLego Generating rays in phi bin:%d\n",fPhiBin);
       for (fThetaBin=1; fThetaBin<=fNtheta; fThetaBin++) {
-         pMC->Gtrigi();
-         pMC->Gtrigc();
+         gMC->Gtrigi();
+         gMC->Gtrigc();
          GenerateKinematics();
-         pMC->Gtreve();
+         gMC->Gtreve_root();
 
          thed = fCurTheta*kRaddeg;
          phid = fCurPhi*kRaddeg;
@@ -217,33 +240,39 @@ void AliLego::StepManager()
 {
 // called from AliRun::Stepmanager from gustep.
 // Accumulate the 3 parameters step by step
-  AliMC* pMC = AliMC::GetMC();
   
    Float_t t, tt;
    Float_t a,z,dens,radl,absl;
+   Int_t i;
    
-   Float_t step  = pMC->TrackStep();
+   Float_t step  = gMC->TrackStep();
        
-   Float_t vect[3], pmom[4];
-   pMC->TrackPosition(vect);  
-   pMC->TrackMomentum(pmom);
-   pMC->CurrentMaterial(a,z,dens,radl,absl);
+   Float_t vect[3], dir[3];
+   TLorentzVector pos, mom;
+
+   gMC->TrackPosition(pos);  
+   gMC->TrackMomentum(mom);
+   gMC->CurrentMaterial(a,z,dens,radl,absl);
    
    if (z < 1) return;
    
 // --- See if we have to stop now
-   if (TMath::Abs(vect[2]) > fZMax  || 
-       vect[0]*vect[0] +vect[1]*vect[1] > fRadMax*fRadMax) {
-       pMC->StopEvent();
-   } else {
+   if (TMath::Abs(pos[2]) > fZMax  || 
+       pos[0]*pos[0] +pos[1]*pos[1] > fRadMax*fRadMax) {
+     gMC->StopEvent();
+     return;
+   }
 
 // --- See how long we have to go
-      t  = PropagateCylinder(vect,pmom,fRadMax,fZMax);
-      tt = TMath::Min(step,t);
-
-      fTotAbso += tt/absl;
-      fTotRadl += tt/radl;
-      fTotGcm2 += tt*dens;
+   for(i=0;i<3;++i) {
+     vect[i]=pos[i];
+     dir[i]=mom[i];
    }
+   t  = PropagateCylinder(vect,dir,fRadMax,fZMax);
+   tt = TMath::Min(step,t);
+
+   fTotAbso += tt/absl;
+   fTotRadl += tt/radl;
+   fTotGcm2 += tt*dens;
 }
 

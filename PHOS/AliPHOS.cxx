@@ -1,3 +1,25 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.8  1999/09/29 09:24:23  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 ////////////////////////////////////////////////
 //  Manager and hits classes for set:PHOS     //
 ////////////////////////////////////////////////
@@ -9,17 +31,17 @@
 #include "TTree.h"
 #include "TBRIK.h"
 #include "TNode.h"
+#include "TMath.h"
 
 // --- Standard library ---
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <iostream.h>
 
 // --- galice header files ---
 #include "AliPHOS.h"
 #include "AliRun.h"
-#include "AliMC.h" 
-#include "TGeant3.h"
 
 //______________________________________________________________________________
 
@@ -30,6 +52,8 @@ ClassImp(AliPHOS)
 
 AliPHOS::~AliPHOS(void)
 {
+  delete fHits;			// 28.12.1998
+  delete fTreePHOS;		// 28.12.1998
   fCradles->Delete();
   delete fCradles;
 }
@@ -63,7 +87,7 @@ AliPHOS::AliPHOS(const char *name, const char *title)
 {
 //Begin_Html
 /*
-<img src="gif/aliphos.gif">
+<img src="picts/aliphos.gif">
 */
 //End_Html
  
@@ -109,15 +133,6 @@ void AliPHOS::DefPars()
       PHOSsize[1]=88;
       PHOSsize[2]=4;
       PHOScradlesA=0.;
-      PHOSCPV[0]=1.;
-      PHOSCPV[1]=2.;
-      PHOSCPV[2]=0.;
-      PHOSCPV[3]=0.;
-      PHOSCPV[4]=0.;
-      PHOSCPV[5]=0.;
-      PHOSCPV[6]=0.;
-      PHOSCPV[7]=0.;
-      PHOSCPV[8]=0.;
       PHOSextra[0]=0.001;
       PHOSextra[1]=6.95;
       PHOSextra[2]=4.;
@@ -191,7 +206,6 @@ void AliPHOS::CreateMaterials()
 // ORIGIN    : NICK VAN EIJNDHOVEN 
 
 
-  AliMC* pMC = AliMC::GetMC();
 
     Int_t   ISXFLD = gAlice->Field()->Integ();
     Float_t SXMGMX = gAlice->Field()->Max();
@@ -232,8 +246,7 @@ void AliPHOS::CreateMaterials()
     Float_t wtx[2] = { 1.,1. };
     Float_t dtx    = 1.83;
 
-    Int_t *idtmed = gAlice->Idtmed();
-    
+    Int_t *idtmed = fIdtmed->GetArray()-699;
 
     AliMixture(  0, "PbWO4$",          ax, zx, dx, -3, wx);
     AliMixture(  1, "Polystyrene$",    ap, zp, dp, -2, wp);
@@ -247,23 +260,22 @@ void AliPHOS::CreateMaterials()
     AliMixture(  8, "Textolit$",        atx, ztx, dtx, -2, wtx);
     AliMaterial(99, "Air$",             14.61, 7.3, .001205, 30420., 67500);
 
-    AliMedium(700, "PHOS Xtal    $", 0, 1, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(701, "CPV scint.   $", 1, 1, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(702, "Al parts     $", 2, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
-    AliMedium(703, "Tyvek wrapper$", 3, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
-    AliMedium(704, "Polyst. foam $", 4, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(705, "Steel cover  $", 5, 0, ISXFLD, SXMGMX, 10., .1, .1, 1e-4, 1e-4);
-    AliMedium(706, "Si PIN       $", 6, 0, ISXFLD, SXMGMX, 10., .1, .1, .01, .01);
-    AliMedium(707, "Thermo Insul.$", 7, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(708, "Textolit     $", 8, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(799, "Air          $",99, 0, ISXFLD, SXMGMX, 10., 1., .1, .1, 10);
+    AliMedium(0, "PHOS Xtal    $", 0, 1, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(2, "Al parts     $", 2, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
+    AliMedium(3, "Tyvek wrapper$", 3, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
+    AliMedium(4, "Polyst. foam $", 4, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(5, "Steel cover  $", 5, 0, ISXFLD, SXMGMX, 10., .1, .1, 1e-4, 1e-4);
+    AliMedium(6, "Si PIN       $", 6, 0, ISXFLD, SXMGMX, 10., .1, .1, .01, .01);
+    AliMedium(7, "Thermo Insul.$", 7, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(8, "Textolit     $", 8, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(99, "Air          $",99, 0, ISXFLD, SXMGMX, 10., 1., .1, .1, 10);
 
 // --- Generate explicitly delta rays in the steel cover --- 
-    pMC->Gstpar(idtmed[704], "LOSS", 3.);
-    pMC->Gstpar(idtmed[704], "DRAY", 1.);
+    gMC->Gstpar(idtmed[704], "LOSS", 3.);
+    gMC->Gstpar(idtmed[704], "DRAY", 1.);
 // --- and in aluminium parts --- 
-    pMC->Gstpar(idtmed[701], "LOSS", 3.);
-    pMC->Gstpar(idtmed[701], "DRAY", 1.);
+    gMC->Gstpar(idtmed[701], "LOSS", 3.);
+    gMC->Gstpar(idtmed[701], "DRAY", 1.);
 }
  
 //______________________________________________________________________________
@@ -282,8 +294,6 @@ void AliPHOS::AddPHOSCradles()
 				     GetPIN_SideSize       (),
 				     GetPIN_Length         (),
 				     GetRadius             (),
-				     GetCPV_Thickness      (),
-				     GetCPV_PHOS_Distance  (),
 				     GetNz                 (),
 				     GetNphi               (),
 				     GetCradleAngle        (i)));
@@ -388,7 +398,7 @@ void AliPHOS::SetTreeAddress(void)
 
   if( NULL==(fTreePHOS=(TTree*)gDirectory->Get((char*)(fTreeName.Data()))  ) )
   {
-    Error("Can not find Tree \"%s\"\n",fTreeName.Data());
+    Error("SetTreeAddress","Can not find Tree \"%s\"\n",fTreeName.Data());
     exit(1);
   }
 
@@ -404,7 +414,7 @@ void AliPHOS::SetTreeAddress(void)
 
 //______________________________________________________________________________
 
-AliPHOSCradle *AliPHOS::GetCradleOfTheParticle(const Hep3Vector &p,const Hep3Vector &v) const
+AliPHOSCradle *AliPHOS::GetCradleOfTheParticle(const TVector3 &p,const TVector3 &v) const
 {
 // For a given direction 'p' and source point 'v' returns pointer to AliPHOSCradle
 // in that direction or NULL if AliPHOSCradle was not found.
@@ -415,11 +425,11 @@ AliPHOSCradle *AliPHOS::GetCradleOfTheParticle(const Hep3Vector &p,const Hep3Vec
     AliPHOSCradle *cradle = (AliPHOSCradle *)PHOS->fCradles->operator[](m);
 
     float x,y,l;
-    const float d = cradle->GetRadius()-cradle->GetCPV_PHOS_Distance()-cradle->GetCPV_Thikness();
+    const float d = cradle->GetRadius();
     cradle->GetXY(p,v,d,x,y,l);
 
-    if( l>0 && fabs(x)<cradle->GetNz  ()*cradle->GetCellSideSize()/2 
-            && fabs(y)<cradle->GetNphi()*cradle->GetCellSideSize()/2 )
+    if( l>0 && TMath::Abs(x)<cradle->GetNz  ()*cradle->GetCellSideSize()/2 
+            && TMath::Abs(y)<cradle->GetNphi()*cradle->GetCellSideSize()/2 )
       return cradle;
   }
 
@@ -531,21 +541,6 @@ void AliPHOS::SetCradleA(Float_t angle)
 }
 
 //______________________________________________________________________________
-void AliPHOS::SetCPV(Float_t p1,Float_t p2,Float_t p3,Float_t p4,
-                     Float_t p5,Float_t p6,Float_t p7,Float_t p8,Float_t p9)
-{
-   PHOSCPV[0] = p1;
-   PHOSCPV[1] = p2;
-   PHOSCPV[2] = p3;
-   PHOSCPV[3] = p4;
-   PHOSCPV[4] = p5;
-   PHOSCPV[5] = p6;
-   PHOSCPV[6] = p7;
-   PHOSCPV[7] = p8;
-   PHOSCPV[8] = p9;
-}
-
-//______________________________________________________________________________
 void AliPHOS::SetExtra(Float_t p1,Float_t p2,Float_t p3,Float_t p4,
                        Float_t p5,Float_t p6,Float_t p7,Float_t p8,Float_t p9)
 {
@@ -601,16 +596,12 @@ AliPHOSCradle::AliPHOSCradle( int   Geometry           ,
                               float PIN_SideSize       ,
                               float PIN_Length         ,
                               float Radius             ,
-                              float CPV_Thickness      ,
-                              float CPV_PHOS_Distance  ,
                               int   Nz                 ,
                               int   Nphi               ,
                               float Angle              ) :
     fGeometry                   (Geometry),
 //  fCellEnergy                 (),
 //  fChargedTracksInPIN         (),
-//  fCPV_hitsX                  (),
-//  fCPV_hitsY                  (),
     fCrystalSideSize            (CrystalSideSize),
     fCrystalLength              (CrystalLength),
     fWrapThickness              (WrapThickness),
@@ -618,8 +609,6 @@ AliPHOSCradle::AliPHOSCradle( int   Geometry           ,
     fPIN_SideSize               (PIN_SideSize),
     fPIN_Length                 (PIN_Length),
     fRadius                     (Radius),
-    fCPV_PHOS_Distance          (CPV_PHOS_Distance),
-    fCPV_Thickness              (CPV_Thickness),
     fNz                         (Nz),
     fNphi                       (Nphi),
     fPhi                        (Angle)
@@ -628,6 +617,14 @@ AliPHOSCradle::AliPHOSCradle( int   Geometry           ,
         fCellEnergy           .SetDirectory(0);
         fChargedTracksInPIN = TH2S("PINCtracks","Amount of charged tracks in PIN",fNz,0,fNz,fNphi,0,fNphi);
         fChargedTracksInPIN   .SetDirectory(0);
+}
+
+//______________________________________________________________________________
+
+AliPHOSCradle::~AliPHOSCradle(void)        // 28.12.1998
+{
+  fGammasReconstructed.Delete();
+  fParticles          .Delete();
 }
 
 //______________________________________________________________________________
@@ -643,32 +640,11 @@ void AliPHOSCradle::Clear(Option_t *)
   GetGammasReconstructed() .Delete();
   GetGammasReconstructed() .Compress();
 
-  fCPV_hitsX.Set(0);
-  fCPV_hitsY.Set(0);
 }
 
 //______________________________________________________________________________
 
-void AliPHOSCradle::AddCPVHit(float x,float y)
-{
-// Add this hit to the hits list in CPV detector.
-
-  TArrayF a(fCPV_hitsX.GetSize()+1);
-  
-  memcpy(a.GetArray(),fCPV_hitsX.GetArray(),sizeof(Float_t)*fCPV_hitsX.GetSize());
-  a[fCPV_hitsX.GetSize()] = x;
-  fCPV_hitsX = a;
-
-  // It must be:   fCPV_hitsX.GetSize() == fCPV_hitsY.GetSize()
-
-  memcpy(a.GetArray(),fCPV_hitsY.GetArray(),sizeof(Float_t)*fCPV_hitsY.GetSize());
-  a[fCPV_hitsY.GetSize()] = y;
-  fCPV_hitsY = a;
-}
-
-//______________________________________________________________________________
-
-void AliPHOSCradle::GetXY(const Hep3Vector &p,const Hep3Vector &v,float R,float &x,float &y,float &l) const
+void AliPHOSCradle::GetXY(const TVector3 &p,const TVector3 &v,float R,float &x,float &y,float &l) const
 {
 // This function calculates hit position (x,y) in the CRADLE cells plain from particle in
 // the direction given by 'p' (not required to be normalized) and start point
@@ -681,11 +657,11 @@ void AliPHOSCradle::GetXY(const Hep3Vector &p,const Hep3Vector &v,float R,float 
 // 
 // Example:
 //   AliPHOSCradle cradle(......);
-//   Hep3Vector p(....), v(....);
+//   TVector3 p(....), v(....);
 //   Float_t x,y,l;
 //   cradle.GetXY(p,v,x,y,l);
-//   if( l<0 || fabs(x)>cradle.GetNz()  *cradle.GetCellSideSize()/2
-//           || fabs(y)>cradle.GetNphi()*cradle.GetCellSideSize()/2 )
+//   if( l<0 || TMath::Abs(x)>cradle.GetNz()  *cradle.GetCellSideSize()/2
+//           || TMath::Abs(y)>cradle.GetNphi()*cradle.GetCellSideSize()/2 )
 //     cout << "Outside the CRADLE.\n";
 
   // We have to create three vectors:
@@ -694,36 +670,36 @@ void AliPHOSCradle::GetXY(const Hep3Vector &p,const Hep3Vector &v,float R,float 
   //    n2 - second vector in CRADLE plain
   // This three vectors are orthonormalized.
 
-  double phi = fPhi/180*M_PI;
-  Hep3Vector      n1(   0        ,   0        , 1 ),   // Z direction (X)
+  double phi = fPhi/180*TMath::Pi();
+  TVector3        n1(   0.0      ,   0.0      , 1.0 ),   // Z direction (X)
                   n2(  -sin(phi) ,   cos(phi) , 0 ),   // around beam (Y)
                   s ( R*cos(phi) , R*sin(phi) , 0 );   // central point
 
   const double l1_min = 1e-2;
   double l1,
-         p_n1 = p.dot(n1),        // dot() - scalar product.
-         p_n2 = p.dot(n2),
-         v_n1 = v.dot(n1),
-         v_n2 = v.dot(n2),
-         s_n1 = s.dot(n1), // 0
-         s_n2 = s.dot(n2); // 0
+         p_n1 = p*n1,        // * - scalar product.
+         p_n2 = p*n2,
+         v_n1 = v*n1,
+         v_n2 = v*n2,
+         s_n1 = s*n1, // 0
+         s_n2 = s*n2; // 0
   
-  if      ( fabs(l1=p.x()-n1.x()*p_n1-n2.x()*p_n2)>l1_min )
-    { l = (-v.x()+s.x()+n1.x()*(v_n1-s_n1)+n2.x()*(v_n2-s_n2))/l1; }
-  else if ( fabs(l1=p.y()-n1.y()*p_n1-n2.y()*p_n2)>l1_min )
-    { l = (-v.y()+s.y()+n1.y()*(v_n1-s_n1)+n2.y()*(v_n2-s_n2))/l1; }
-  else if ( fabs(l1=p.z()-n1.z()*p_n1-n2.z()*p_n2)>l1_min )
-    { l = (-v.z()+s.z()+n1.z()*(v_n1-s_n1)+n2.z()*(v_n2-s_n2))/l1; }
+  if      ( TMath::Abs(l1=p.X()-n1.X()*p_n1-n2.X()*p_n2)>l1_min )
+    { l = (-v.X()+s.X()+n1.X()*(v_n1-s_n1)+n2.X()*(v_n2-s_n2))/l1; }
+  else if ( TMath::Abs(l1=p.Y()-n1.Y()*p_n1-n2.Y()*p_n2)>l1_min )
+    { l = (-v.Y()+s.Y()+n1.Y()*(v_n1-s_n1)+n2.Y()*(v_n2-s_n2))/l1; }
+  else if ( TMath::Abs(l1=p.Z()-n1.Z()*p_n1-n2.Z()*p_n2)>l1_min )
+    { l = (-v.Z()+s.Z()+n1.Z()*(v_n1-s_n1)+n2.Z()*(v_n2-s_n2))/l1; }
 
-//         double lx = (-v.x()+s.x()+n1.x()*(v.dot(n1)-s.dot(n1))+n2.x()*(v.dot(n2)-s.dot(n2)))/
-//                     (p.x()-n1.x()*p.dot(n1)-n2.x()*p.dot(n2)),
-//                ly = (-v.y()+s.y()+n1.y()*(v.dot(n1)-s.dot(n1))+n2.y()*(v.dot(n2)-s.dot(n2)))/
-//                     (p.y()-n1.y()*p.dot(n1)-n2.y()*p.dot(n2)),
-//                lz = (-v.z()+s.z()+n1.z()*(v.dot(n1)-s.dot(n1))+n2.z()*(v.dot(n2)-s.dot(n2)))/
-//                     (p.z()-n1.z()*p.dot(n1)-n2.z()*p.dot(n2));
-//         cout.form("x: %g %g %g %g\n",lx,-v.x()+s.x()+n1.x()*(v.dot(n1)-s.dot(n1))+n2.x()*(v.dot(n2)-s.dot(n2)),p.x()-n1.x()*p.dot(n1)-n2.x()*p.dot(n2));
-//         cout.form("y: %g %g %g %g\n",lx,-v.y()+s.y()+n1.y()*(v.dot(n1)-s.dot(n1))+n2.y()*(v.dot(n2)-s.dot(n2)),p.y()-n1.y()*p.dot(n1)-n2.y()*p.dot(n2));
-//         cout.form("z: %g %g %g %g\n",lx,-v.z()+s.z()+n1.z()*(v.dot(n1)-s.dot(n1))+n2.z()*(v.dot(n2)-s.dot(n2)),p.z()-n1.z()*p.dot(n1)-n2.z()*p.dot(n2));
+//         double lx = (-v.X()+s.X()+n1.X()*(v.dot(n1)-s.dot(n1))+n2.X()*(v.dot(n2)-s.dot(n2)))/
+//                     (p.X()-n1.X()*p.dot(n1)-n2.X()*p.dot(n2)),
+//                ly = (-v.Y()+s.Y()+n1.Y()*(v.dot(n1)-s.dot(n1))+n2.Y()*(v.dot(n2)-s.dot(n2)))/
+//                     (p.Y()-n1.Y()*p.dot(n1)-n2.Y()*p.dot(n2)),
+//                lz = (-v.Z()+s.Z()+n1.Z()*(v.dot(n1)-s.dot(n1))+n2.Z()*(v.dot(n2)-s.dot(n2)))/
+//                     (p.Z()-n1.Z()*p.dot(n1)-n2.Z()*p.dot(n2));
+//         cout.form("x: %g %g %g %g\n",lx,-v.X()+s.X()+n1.X()*(v.dot(n1)-s.dot(n1))+n2.X()*(v.dot(n2)-s.dot(n2)),p.X()-n1.X()*p.dot(n1)-n2.X()*p.dot(n2));
+//         cout.form("y: %g %g %g %g\n",lx,-v.Y()+s.Y()+n1.Y()*(v.dot(n1)-s.dot(n1))+n2.Y()*(v.dot(n2)-s.dot(n2)),p.Y()-n1.Y()*p.dot(n1)-n2.Y()*p.dot(n2));
+//         cout.form("z: %g %g %g %g\n",lx,-v.Z()+s.Z()+n1.Z()*(v.dot(n1)-s.dot(n1))+n2.Z()*(v.dot(n2)-s.dot(n2)),p.Z()-n1.Z()*p.dot(n1)-n2.Z()*p.dot(n2));
 //         cout.form("lx,ly,lz =   %g,%g,%g\n",lx,ly,lz);
 
   x = p_n1*l + v_n1 - s_n1;
@@ -742,8 +718,8 @@ void AliPHOSCradle::Print(Option_t *opt)
 
   AliPHOSCradle *cr = (AliPHOSCradle *)this;     // Removing 'const'...
 
-  printf("AliPHOSCradle:  Nz=%d  Nphi=%d, fPhi=%f, E=%g, CPV hits amount = %d\n",fNz,fNphi,fPhi,
-       cr->fCellEnergy.GetSumOfWeights(),fCPV_hitsX.GetSize());
+  printf("AliPHOSCradle:  Nz=%d  Nphi=%d, fPhi=%f, E=%g\n",fNz,fNphi,fPhi,
+       cr->fCellEnergy.GetSumOfWeights());
 
   if( NULL!=strchr(opt,'d') )
   {
@@ -1033,6 +1009,7 @@ void AliPHOSCradle::Reconstruction(Float_t signal_step, UInt_t min_signal_reject
 // signal_step=0.001  GeV (1MeV)
 // min_signal_reject = 15 or 30 MeV
 
+
   common_for_event_storing.event_number                       = 0;  // We do not know event number?
   common_for_event_storing.crystals_matrix_amount_PHOS        = 1;
   common_for_event_storing.crystal_matrix_type                = 1; // 1 - rectangular
@@ -1069,7 +1046,6 @@ void AliPHOSCradle::Reconstruction(Float_t signal_step, UInt_t min_signal_reject
   const float   stochastic_term   = 0.03,        // per cents over sqrt(E);  E in GeV
                 electronic_noise  = 0.01;        // GeV
   reconsfirst(stochastic_term,electronic_noise); // Call of reconstruction program.
-  
 
   for( int i=0; i<rcgamma.recons_gammas_amount; i++ )
   {
@@ -1089,16 +1065,13 @@ void AliPHOSCradle::Reconstruction(Float_t signal_step, UInt_t min_signal_reject
     Float_t thetta, alpha, betta, R=fRadius+rcgamma.Zgdev[i]/10;
 
     g.fX      = rcgamma.YW[i]/10;
-    g.fXsigma = 0.2;
     g.fY      = rcgamma.XW[i]/10;
-    g.fYsigma = 0.2;
     g.fE      = rcgamma.E [i];
-    g.fEsigma = 0.01*sqrt(rcgamma.E[i])+0.05;
 
     thetta      = atan(g.fX/R);
 
     alpha = atan(g.fY/R);
-    betta = fPhi/180*M_PI + alpha;
+    betta = fPhi/180*TMath::Pi() + alpha;
 
     g.fPx = g.fE * cos(thetta) * cos(betta);
     g.fPy = g.fE * cos(thetta) * sin(betta);
@@ -1125,8 +1098,8 @@ void AliPHOSgamma::Print(Option_t *)
   else
     mass = -sqrt(-mass);
 
-  printf("XY=(%+7.2f,%+7.2f)  (%+7.2f,%+7.2f,%+7.2f;%7.2f)  mass=%8.4f\n",
-          fX,fY,fPx,fPy,fPz,fE,mass);
+  printf("XY=(%+7.2f,%+7.2f)  (%+7.2f,%+7.2f,%+7.2f;%7.2f)  mass=%8.4f  Ipart=%2d\n",
+          fX,fY,fPx,fPy,fPz,fE,mass,fIpart);
 }
 
 //______________________________________________________________________________
@@ -1134,14 +1107,12 @@ void AliPHOSgamma::Print(Option_t *)
 AliPHOSgamma &AliPHOSgamma::operator=(const AliPHOSgamma &g)
 {
   fX           = g.fX;
-  fXsigma      = g.fXsigma;
   fY           = g.fY;
-  fYsigma      = g.fYsigma;
   fE           = g.fE;
-  fEsigma      = g.fEsigma;
   fPx          = g.fPx;
   fPy          = g.fPy;
   fPz          = g.fPz;
+  fIpart       = g.fIpart;
 
   return *this;
 }

@@ -1,25 +1,28 @@
 #ifndef SHIL_H
 #define SHIL_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
-//  Manager class for detector: SHIL          //
+//  Manager class for Module: SHIL          //
 ////////////////////////////////////////////////
  
-#include "AliDetector.h"
+#include "AliModule.h"
  
  
-class AliSHIL : public AliDetector {
+class AliSHIL : public AliModule {
   
 public:
   AliSHIL();
   AliSHIL(const char *name, const char *title);
   virtual      ~AliSHIL() {}
-  virtual void  BuildGeometry();
   virtual void  CreateGeometry();
   virtual void  CreateMaterials();
   virtual void  Init();
   virtual Int_t IsVersion() const {return 0;}
-  virtual void  StepManager();
-  virtual void  DrawDetector();
+  virtual void  DrawModule();
  
   ClassDef(AliSHIL,1)  // Muon Shield Class
 };

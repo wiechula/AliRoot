@@ -1,21 +1,34 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+*/
+
 ////////////////////////////////////////////////
 //  Beam pipe class                            /
 ////////////////////////////////////////////////
 
-#include <stdio.h> 
-#include <TMath.h>
-#include <TRandom.h>
-#include <TVector.h>
 #include "AliPIPEv0.h"
 #include "AliRun.h"
-#include "stdlib.h"
-#include "AliMC.h"
 #include "TSystem.h"
  
 ClassImp(AliPIPEv0)
  
 //_____________________________________________________________________________
-AliPIPEv0::AliPIPEv0() : AliPIPE()
+AliPIPEv0::AliPIPEv0()
 {
 }
 
@@ -32,14 +45,14 @@ void AliPIPEv0::CreateGeometry()
   printf("Create PIPEv0 geometry\n ");
 //Begin_Html
 /*
-<img src="gif/pipe.gif">
+<img src="picts/pipe.gif">
 */
 //End_Html
 
 
 //Begin_Html
 /*
-<img src="gif/tree_pipe.gif">
+<img src="picts/tree_pipe.gif">
 */
 //End_Html
 
@@ -51,8 +64,6 @@ void AliPIPEv0::CreateGeometry()
   
   Int_t idrotm[2099];
 
-  AliMC* pMC = AliMC::GetMC();
-  
 //
 // The peam pipe up to the Front Absorber
   filtmp=gSystem->ExpandPathName(pipename);
@@ -61,7 +72,7 @@ void AliPIPEv0::CreateGeometry()
   if(file) {
     fclose(file);
     printf(" Reading PIPE \n");
-    gAlice->ReadEuclid(pipename,20,topvol);
+    gAlice->ReadEuclid(pipename,this,topvol);
   } else {
     printf(" THE GEOM FILE %s DOES NOT EXIST !\n",pipename);
     exit(1);
@@ -74,7 +85,7 @@ void AliPIPEv0::CreateGeometry()
   if(file) {
     fclose(file);
     printf(" Reading PUMP \n");
-    gAlice->ReadEuclid(pumpname,20,topvol);
+    gAlice->ReadEuclid(pumpname,this,topvol);
   } else {
     printf(" THE GEOM FILE %s DOES NOT EXIST !\n",pumpname);
     exit(1);
@@ -85,20 +96,20 @@ void AliPIPEv0::CreateGeometry()
 // 
   AliMatrix(idrotm[2001],90.,0.,90.,90.,180.,0.);
   
-  pMC->Gspos("QBPM",1,"ALIC",0,0,0,idrotm[2001],"ONLY");
+  gMC->Gspos("QBPM",1,"ALIC",0,0,0,idrotm[2001],"ONLY");
 //
 //    PLACE ION PUMP (QIPM) AT Z=-385.
 //
-  pMC->Gspos("QIPM",1,"ALIC",0,0,-385,idrotm[2001],"ONLY");
+  gMC->Gspos("QIPM",1,"ALIC",0,0,-385,idrotm[2001],"ONLY");
 
-  pMC->Gsatt("QIPM", "SEEN", 0);
-  pMC->Gsatt("QBPM", "SEEN", 0);
-  pMC->Gsatt("QB20", "SEEN", 0);
+  gMC->Gsatt("QIPM", "SEEN", 0);
+  gMC->Gsatt("QBPM", "SEEN", 0);
+  gMC->Gsatt("QB20", "SEEN", 0);
 }
 
  
 //___________________________________________
-void AliPIPEv0::DrawDetector()
+void AliPIPEv0::DrawModule()
 {
 }
 
@@ -113,7 +124,7 @@ void AliPIPEv0::CreateMaterials()
   delete [] filtmp;
   if(file) {
     fclose(file);
-    gAlice->ReadEuclidMedia(name,20);
+    gAlice->ReadEuclidMedia(name,this);
   } else {
     printf(" THE MEDIA FILE %s DOES NOT EXIST !\n",name);
     exit(1);

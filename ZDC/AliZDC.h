@@ -1,5 +1,10 @@
 #ifndef ZDC_H
 #define ZDC_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
 //  Manager and hits classes for set:ZDC      //
 ////////////////////////////////////////////////
@@ -41,7 +46,7 @@ public:
   virtual void  CreateGeometry();
   virtual void  CreateMaterials();
   virtual Int_t IsVersion() const {return 1;}
-  virtual void  DrawDetector();
+  virtual void  DrawModule();
  
    ClassDef(AliZDCv1,1)  // Zero Degree Calorimeter version 1
 };

@@ -1,3 +1,22 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 //  Space Frame                                                              //
@@ -5,7 +24,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliFRAMEClass.gif">
+<img src="picts/AliFRAMEClass.gif">
 </pre>
 <br clear=left>
 <font size=+2 color=red>
@@ -20,7 +39,6 @@
 
 #include "AliFRAME.h"
 #include "AliRun.h"
-#include "AliMC.h"
  
 ClassImp(AliFRAME)
  
@@ -34,7 +52,7 @@ AliFRAME::AliFRAME()
  
 //_____________________________________________________________________________
 AliFRAME::AliFRAME(const char *name, const char *title)
-  : AliDetector(name,title)
+  : AliModule(name,title)
 {
   //
   // Standard constructor
@@ -45,20 +63,3 @@ AliFRAME::AliFRAME(const char *name, const char *title)
   SetMarkerSize(0.4);
 }
  
-//_____________________________________________________________________________
-void AliFRAME::BuildGeometry()
-{
-  //
-  // ROOT TNode geometry is built only for sensitive detectors
-  // and not for structural elements
-  //
-}
- 
-//_____________________________________________________________________________
-
-void AliFRAME::StepManager()
-{
-  //
-  // Called at every step in the space frame
-  //
-}

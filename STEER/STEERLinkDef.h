@@ -1,5 +1,9 @@
 #ifdef __CINT__
- 
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
@@ -8,11 +12,12 @@
 #pragma link C++ global gMC;
  
 #pragma link C++ enum VertexSmear_t;
+#pragma link C++ enum PDG_t;
 
 #pragma link C++ class  AliGenerator;
 #pragma link C++ class  AliRun-;
+#pragma link C++ class  AliModule-;
 #pragma link C++ class  AliDetector-;
-#pragma link C++ class  GParticle;
 #pragma link C++ class  AliDigit;
 #pragma link C++ class  AliHit;
 #pragma link C++ class  AliHeader;

@@ -1,5 +1,10 @@
 #ifndef ALIGENERATOR_H
 #define ALIGENERATOR_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ///////////////////////////////////////////////////////////
 //                                                       //
 //  Class to generate the particles for the MC           //
@@ -7,7 +12,7 @@
 //                                                       //
 ///////////////////////////////////////////////////////////
 
-#include "TNamed.h"
+#include "TLorentzVector.h"
 #include "TArrayF.h"
 #include "TGenerator.h"
 
@@ -33,9 +38,11 @@ protected:
     Int_t       fNpart;        //Maximum number of particles per event
     Float_t     fParentWeight; //Parent Weight
     Float_t     fChildWeight;  //ChildWeight
+    Int_t       fTrackit;      // Track the generated final state particle if 1
     Int_t       fAnalog;       //Flaf for anolog or pt-weighted generation
    //
     VertexSmear_t     fVertexSmear; //Vertex Smearing mode
+    Int_t       fTrackIt;    // if 1 Track final state particles 
     TArrayF     fOrigin;     //Origin of event
     TArrayF     fOsigma;     //Sigma of the Origin of event
 
@@ -46,6 +53,8 @@ protected:
     virtual void Init();
     virtual void SetOrigin(Float_t ox, Float_t oy, Float_t oz)
 	{fOrigin[0]=ox;fOrigin[1]=oy;fOrigin[2]=oz;}
+    virtual void SetOrigin(const TLorentzVector &o)
+	{fOrigin[0]=o[0];fOrigin[1]=o[1];fOrigin[2]=o[2];}
     virtual void SetSigma(Float_t sx, Float_t sy, Float_t sz)
 	{fOsigma[0]=sx;fOsigma[1]=sy;fOsigma[2]=sz;}
     virtual void SetMomentumRange(Float_t pmin=0, Float_t pmax=1.e10)
@@ -74,8 +83,18 @@ protected:
     virtual void SetChildWeight(Float_t wgt)  {fChildWeight=wgt;}    
     virtual void SetAnalog(Int_t flag=1) {fAnalog=flag;}	
     virtual void SetVertexSmear(VertexSmear_t smear) {fVertexSmear = smear;}
+    virtual void SetTrackingFlag(Int_t flag=1) {fTrackIt=flag;}
+ 	    
     virtual void SetMC(TGenerator *theMC) 
 	{if (!fgMCEvGen) fgMCEvGen =theMC;}
+
+  // Getters
+
+    virtual void GetOrigin(Float_t &ox, Float_t &oy, Float_t &oz)
+	{ox=fOrigin[0];oy=fOrigin[1];oz=fOrigin[2];}
+    virtual void GetOrigin(TLorentzVector &o)
+	{o[0]=fOrigin[0];o[1]=fOrigin[1];o[2]=fOrigin[2];o[3]=0;}
+
     ClassDef(AliGenerator,1)
 };
 

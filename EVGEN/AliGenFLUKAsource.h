@@ -1,5 +1,10 @@
 #ifndef AliGenFLUKAsource_H
 #define AliGenFLUKAsource_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 /////////////////////////////////////////////////////////
 //  Manager and hits classes for set:MUON version 0    //
 /////////////////////////////////////////////////////////
@@ -8,7 +13,7 @@
 #include "TF1.h"
 #include "TArrayF.h"
 #include "TTree.h"
-
+#include "TChain.h"
 // Read background particles from a FLUKA boundary source file
 
 class AliGenFLUKAsource : public AliGenerator
@@ -24,9 +29,10 @@ protected:
   Float_t     fAgeMax;        //Maximum age of particle
   Float_t     fAddWeight;     //Add weight for neutrons 
   Float_t     fZshift;        //Shift the Z of impact point by this quantity
-
-  const Text_t     *fFileName;          //Choose the file
-   
+  Float_t     fFrac;
+  
+  const Text_t    *fFileName;          //!Choose the file
+  TChain          *fTreeChain;
   TTree           *fTreeFluka;        //pointer to the TTree
 //Declaration of variables read from the file -- TTree type
    Float_t         Ip;
@@ -51,16 +57,27 @@ public:
   AliGenFLUKAsource();
   AliGenFLUKAsource(Int_t npart);
   virtual ~AliGenFLUKAsource();
-  virtual void Init() {} 
+  // Initialise 
+  virtual void Init() {}
+  // Initialise fluka data 
   virtual void FlukaInit();
+  // choose particle type
   virtual void SetPartFlag(Int_t ikine) {fIkine=ikine;}
+  // set time cut 
   virtual void SetAgeMax(Float_t agemax) {fAgeMax=agemax;}
+  // use additional weight on neutrals
   virtual void SetAddWeight(Float_t addwgt) {fAddWeight=addwgt;}
+  // z-shift of vertex
   virtual void SetZshift(Float_t zshift) {fZshift=zshift;}
+  // set file name of data file
   virtual void SetFileName(const Text_t *filname) {fFileName=filname;}
+  virtual void AddFile(const Text_t *filname) ;  
+  // read only fraction of data  
+  virtual void SetFraction(Float_t frac=1.){fFrac=frac;}
+  // generate event
   virtual void Generate();
 
-  ClassDef(AliGenFLUKAsource,1)
+  ClassDef(AliGenFLUKAsource,1) //Boundary source
 };
 #endif
 

@@ -1,45 +1,45 @@
+# $Id$
+ 
 ########################## General Macros #####################################
 
 $(SLIBRARY):
-		@echo "Generating $@ for $(PACKAGE)..."
+		@echo "Generating $@"
+		@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 		@rm -f $@
                 ifeq ($(PLATFORM),aix)
-		   @$(SHLD) -o $@ $(LIBS) -p 0 $^
+		   @cd tgt_$(ALICE_TARGET) ;\
+		   $(SHLD) -o $@ $(LIBS) -p 0 $(patsubst tgt_$(ALICE_TARGET)/%,%,$(filter-out dirs,$^))
                 else
-                   ifeq ($(PLATFORM),alpha)
-		      @$(SHLD) -msym -o $@ $^ -lcxxstd -lcxx -lexc -lots -lc
-                   else
-		      @$(LD) $(SOFLAGS) $(LDFLAGS) $^ $(SHLIB) -o $@
-                   endif
+		   @cd tgt_$(ALICE_TARGET) ;\
+		   $(SHLD) $(SOFLAGS) $(LDFLAGS) $(patsubst tgt_$(ALICE_TARGET)/%,%,$(filter-out dirs,$^)) $(SHLIB) -o $@
                 endif
 		@chmod 555 $@
-		@echo "$@ done"
 
 
-$(ALIBRARY):
-		@echo "Generating $@ for $(PACKAGE)..."
+$(ALIBRARY):	
+		@echo "Generating $@"
+		@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 		@rm -f $@
 		@ar rv $@ $^
-		@echo "$@ done"
  
-$(PROGRAM):
-		@echo "Generating $@ for $(PACKAGE)..."
+$(PROGRAM):	
+		@echo "Generating $@"
+		@[ -d $(dir $@) ] || mkdir $(dir $@)
 		@rm -f $@
 		@$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
-		@echo "$@ done"
  
 headers:	$(patsubst %,$(ALICE_ROOT)/include/%,$(HEADERS))
 
-$(patsubst %,$(ALICE_ROOT)/include/%,$(HEADERS)) : $(ALICE_ROOT)/include/% : %
-		@cp -p $^ $@
-
 $(DICT):
-		@echo "Generating $@ for $(PACKAGE)..."
+		@echo "Generating $@"
 		@rootcint -f $@ -c -I$(ALICE_ROOT)/include $^
-		@echo "$@ done"
  
 depend:
-		@$(MAKEDEPEND) -fMake-depend -- $(CXXFLAGS) $(DEPINC) -- $^
+		@$(MAKEDEPEND) -ftgt_$(ALICE_TARGET)/Make-depend -ptgt_$(ALICE_TARGET)/ -- $(CXXFLAGS) $(DEPINC) -- $^
+
+tgt_$(ALICE_TARGET)/Make-depend:
+		@[ -d $(dir $@) ] || mkdir $(dir $@)
+		@cp $(ALICE_ROOT)/conf/Makedepend $@
 
 macroclean:
 		@rm -f $(TOCLEAN) *~ \#*

@@ -11,8 +11,8 @@ PACKAGE = EVGEN
 
 SRCS          = AliSimpleGen.cxx AliGenCocktail.cxx AliGenFLUKAsource.cxx \
                 AliGenMUONlib.cxx AliGenParam.cxx AliGenPythia.cxx \
-                AliPythia.cxx DimuonCombinator.cxx AliGenHalo.cxx
-
+                AliPythia.cxx AliDimuCombinator.cxx AliGenHalo.cxx \
+                AliGenExtFile.cxx AliGenScan.cxx AliGenPHOSlib.cxx
 # C++ Headers
 
 HDRS          = $(SRCS:.cxx=.h) EVGENLinkDef.h
@@ -21,19 +21,19 @@ HDRS          = $(SRCS:.cxx=.h) EVGENLinkDef.h
 
 DICT          = EVGENCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.F=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -47,12 +47,12 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libEVGEN.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libEVGEN.a
+SLIBRARY	= $(LIBDIR)/libEVGEN.$(SL)
+ALIBRARY	= $(LIBDIR)/libEVGEN.a
 
-default:	$(SLIBRARY) headers
+default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libEVGEN.$(SL):		$(OBJS)
+$(LIBDIR)/libEVGEN.$(SL):		$(OBJS)
 
 $(DICT):				$(HDRS)
 
@@ -68,4 +68,19 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+### Target check creates violation reports (.viol), which depend on
+### stripped files (.ii), which in turn depend on preprocessed
+### files (.i). Dependences are in conf/GeneralDef.
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
+check:          $(CHECKS)
+
+
+
+
+
+
+

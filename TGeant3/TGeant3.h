@@ -1,5 +1,10 @@
 #ifndef TGeant3_H 
 #define TGeant3_H 
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 //////////////////////////////////////////////// 
 //  C++ interface to Geant3 basic routines    // 
 //////////////////////////////////////////////// 
@@ -19,6 +24,21 @@ typedef struct {
   Int_t    iquest[100]; 
 } Quest_t; 
  
+//----------GCBANK
+//      COMMON/GCBANK/NZEBRA,GVERSN,ZVERSN,IXSTOR,IXDIV,IXCONS,FENDQ(16)
+//     +             ,LMAIN,LR1,WS(KWBANK)
+typedef struct {
+  Int_t nzebra;
+  Float_t gversn;
+  Float_t zversn;
+  Int_t ixstor;
+  Int_t ixdiv;
+  Int_t ixcons;
+  Float_t fendq[16];
+  Int_t lmain;
+  Int_t lr1;
+} Gcbank_t;
+
 //----------GCLINK 
 //      COMMON/GCLINK/JDIGI ,JDRAW ,JHEAD ,JHITS ,JKINE ,JMATE ,JPART 
 //     +      ,JROTM ,JRUNG ,JSET  ,JSTAK ,JGSTAT,JTMED ,JTRACK,JVERTX 
@@ -375,6 +395,100 @@ typedef struct {
   Int_t   namec1[MAXME1]; 
 } Gctpol_t; 
 
+/************************************************************************
+ *                                                                      *
+ *      Commons for GEANE                                               *
+ *                                                                      *
+ ************************************************************************/
+
+//------------ERTRIO
+//    INTEGER          MXPRED
+//    PARAMETER (MXPRED = 10)
+//    DOUBLE PRECISION ERDTRP
+//    REAL             ERRIN, ERROUT, ERTRSP, ERXIN, ERXOUT, ERPIN,
+//   +                 ERPOUT
+//    INTEGER          NEPRED, INLIST, ILPRED, IEPRED
+//    COMMON /ERTRIO/  ERDTRP(5,5,MXPRED), ERRIN(15), ERROUT(15,MXPRED),
+//   +                 ERTRSP(5,5,MXPRED), ERXIN( 3), ERXOUT( 3,MXPRED),
+//   +                 ERPIN(3), ERPOUT(3,MXPRED), NEPRED,INLIST,ILPRED,
+//   +                 IEPRED(MXPRED)
+//
+
+#define MXPRED 10
+typedef struct {
+  Double_t erdtrp[MXPRED*5*5];
+  Float_t  errin[5];
+  Float_t  errout[MXPRED*15];
+  Float_t  ertrsp[MXPRED*5*5];
+  Float_t  erxin[3];
+  Float_t  erxout[MXPRED*3];
+  Float_t  erpin[3];
+  Float_t  erpout[MXPRED*3];
+  Int_t    nepred;
+  Int_t    inlist;
+  Int_t    ilpred;
+  Int_t    iepred;
+} Ertrio_t;
+
+//-----------EROTPS
+//    CHARACTER*8     CHOPTI
+//    LOGICAL         LEEXAC, LELENG, LEONLY, LEPLAN, LEPOIN, LEVOLU
+//    REAL            ERPLI, ERPLO, ERLENG
+//    INTEGER         NAMEER, NUMVER, IOVLER
+//    COMMON /EROPTS/ ERPLI(3,2), ERPLO(3,4,MXPRED), ERLENG(MXPRED),
+//   +                NAMEER(MXPRED), NUMVER(MXPRED), IOVLER(MXPRED),
+//   +                LEEXAC, LELENG, LEONLY, LEPLAN, LEPOIN, LEVOLU
+//    COMMON /EROPTC/CHOPTI
+
+typedef struct {
+  Float_t   erpli[3*2];
+  Float_t   erplo[MXPRED*3*4];
+  Float_t   erleng[MXPRED];
+  Int_t     nameer[MXPRED];
+  Int_t     numver[MXPRED];
+  Int_t     iovler[MXPRED];
+  Bool_t    leexac;
+  Bool_t    leleng;
+  Bool_t    leonly;
+  Bool_t    leplan;
+  Bool_t    lepoin;
+  Bool_t    levolu;
+} Eropts_t;
+
+typedef struct {
+  char chopti[8];
+} Eroptc_t;
+
+//-------ERWORK
+//    DOUBLE PRECISION EI, EF, ASDSC
+//    COMMON /ERWORK/ EI(15), EF(15), ASDSC(5,5),
+//   +                   XI(3), PPI(3), HI(9),
+//   +                   XF(3), PF(3),  HF(9),
+//   +                   CHTR, DEDX2, BACKTR, CUTEK, TLGCM2, TLRAD
+
+typedef struct {
+  Double_t  ei[15];
+  Double_t  ef[15];
+  Double_t  asdsc[5*5];
+  Float_t   xi[3];
+  Float_t   ppi[3];
+  Float_t   hi[9];
+  Float_t   xf[3];
+  Float_t   pf[3];
+  Float_t   hf[9];
+  Float_t   chtr;
+  Float_t   dedx2;
+  Float_t   backtr;
+  Float_t   cutek;
+  Float_t   tlgcm2;
+  Float_t   tlrad;
+} Erwork_t;
+
+/************************************************************************
+ *                                                                      *
+ *      Commons for GEANE                                               *
+ *                                                                      *
+ ************************************************************************/
 
 class TGeant3 : public AliMC { 
 
@@ -386,6 +500,7 @@ private:
   Float_t *fZq; 
 
   Quest_t  *fQuest; 
+  Gcbank_t *fGcbank;
   Gclink_t *fGclink; 
   Gccuts_t *fGccuts; 
   Gcmate_t *fGcmate; 
@@ -406,6 +521,17 @@ private:
   Gctrak_t *fGctrak; 
 
 
+  // commons for GEANE
+  Ertrio_t *fErtrio;
+  Eropts_t *fEropts;
+  Eroptc_t *fEroptc;
+  Erwork_t *fErwork;
+
+  enum {kMaxParticles = 100};
+
+  Int_t fNPDGCodes;
+
+  Int_t fPDGCode[kMaxParticles];
 
 public: 
   TGeant3(); 
@@ -425,30 +551,36 @@ public:
   void  GeomIter();
   Int_t CurrentMaterial(Float_t &a, Float_t &z, Float_t &dens, Float_t &radl, Float_t &absl) const;
   Int_t NextVolUp(Text_t *name, Int_t &copy);
-  Int_t CurrentVol(Text_t *name, Int_t &copy) const;
-  Int_t CurrentVolOff(Int_t off, Text_t *name, Int_t &copy) const;
+  Int_t CurrentVolID(Int_t &copy) const;
+  Int_t CurrentVolOffID(Int_t off, Int_t &copy) const;
+  const char* CurrentVolName() const;
+  const char *CurrentVolOffName(Int_t off) const;
   Int_t VolId(Text_t *name) const;
-  char* VolName(Int_t id) const;
-  void  TrackPosition(Float_t *xyz) const;
-  void  TrackMomentum(Float_t *xyz) const;  
-  Int_t Nvolumes() const;
+  Int_t IdFromPDG(Int_t pdg) const;
+  Int_t PDGFromId(Int_t pdg) const;
+  void  DefineParticles();
+  const char* VolName(Int_t id) const;
+  Float_t Xsec(char*, Float_t, Int_t, Int_t);
+  void  TrackPosition(TLorentzVector &xyz) const;
+  void  TrackMomentum(TLorentzVector &xyz) const;  
+  Int_t NofVolumes() const;
   Float_t TrackTime() const;  
   Float_t TrackCharge() const;
   Float_t TrackMass() const;
   Float_t TrackStep() const;
   Float_t TrackLength() const;
   Int_t   TrackPid() const;
-  Bool_t TrackInside() const;
-  Bool_t TrackEntering() const;
-  Bool_t TrackExiting() const;
-  Bool_t TrackOut() const;
-  Bool_t TrackDisappear() const;
-  Bool_t TrackStop() const;
-  Bool_t TrackAlive() const;
-  Int_t   NSecondaries() const;
-  Int_t   CurrentEvent() const;
-  void    ProdProcess(char*) const;
-  void    GetSecondary(Int_t, Int_t&, Float_t*, Float_t*);
+  Bool_t IsTrackInside() const;
+  Bool_t IsTrackEntering() const;
+  Bool_t IsTrackExiting() const;
+  Bool_t IsTrackOut() const;
+  Bool_t IsTrackDisappeared() const;
+  Bool_t IsTrackStop() const;
+  Bool_t IsTrackAlive() const;
+  Int_t  NSecondaries() const;
+  Int_t  CurrentEvent() const;
+  const char*  ProdProcess() const;
+  void   GetSecondary(Int_t, Int_t&, TLorentzVector&, TLorentzVector&);
   void   StopTrack();
   void   StopEvent();
   Float_t MaxStep() const;
@@ -456,7 +588,7 @@ public:
   void  SetMaxStep(Float_t maxstep);
   void  SetMaxNStep(Int_t maxnstp);
   Int_t GetMaxNStep() const;
-  void GetParticle(const Int_t ipart, char *name, Float_t &mass) const;
+  //  void GetParticle(const Int_t pdg, char *name, Float_t &mass) const;
   virtual Int_t GetMedium() const;
   virtual Float_t Edep() const;
   virtual Float_t Etot() const;
@@ -479,6 +611,7 @@ public:
   // access functions to commons
  
   virtual Quest_t* Quest() const {return fQuest;}
+  virtual Gcbank_t* Gcbank() const {return fGcbank;}
   virtual Gclink_t* Gclink() const {return fGclink;}
   virtual Gccuts_t* Gccuts() const {return fGccuts;}
   virtual Gcmate_t* Gcmate() const {return fGcmate;}
@@ -497,6 +630,18 @@ public:
   virtual Gckin2_t* Gckin2() const {return fGckin2;}
   virtual Gckin3_t* Gckin3() const {return fGckin3;}
   virtual Gctrak_t* Gctrak() const {return fGctrak;}
+  virtual Int_t* Iq() const {return fZiq;}
+  virtual Int_t* Lq() const {return fZlq;}
+  virtual Float_t* Q() const {return fZq;}
+
+
+  // Access to GEANE commons
+
+  virtual Ertrio_t* Ertrio() const {return fErtrio;}
+  virtual Eropts_t* Eropts() const {return fEropts;}
+  virtual Eroptc_t* Eroptc() const {return fEroptc;}
+  virtual Erwork_t* Erwork() const {return fErwork;}
+
 
 
       // functions from GBASE 
@@ -558,6 +703,7 @@ public:
    virtual  void  Gsxyz(); 
    virtual  void  Gtrack(); 
    virtual  void  Gtreve(); 
+   virtual  void  Gtreve_root(); 
    virtual  void  Grndm(Float_t *rvec, const Int_t len) const; 
    virtual  void  Grndmq(Int_t &is1, Int_t &is2, const Int_t iseq, const Text_t *chopt); 
  
@@ -643,10 +789,18 @@ public:
    virtual  void  SetRAYL(Int_t par=1);
    virtual  void  SetSWIT(Int_t sw, Int_t val=1);
    virtual  void  SetTRIG(Int_t nevents=1);
+   virtual  void  SetUserDecay(Int_t ipart);
 
    virtual  void  Vname(const char *name, char *vname);
 
    virtual  void  InitLego();
+
+  // Routines from GEANE
+
+    virtual void Ertrgo();
+    virtual void Ertrak(const Float_t *const x1, const Float_t *const p1, 
+			const Float_t *x2, const Float_t *p2,
+			Int_t ipa,  Option_t *chopt);
         
    ClassDef(TGeant3,1)  //C++ interface to Geant basic routines 
 }; 

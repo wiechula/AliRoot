@@ -9,33 +9,33 @@ PACKAGE = STEER
 
 # C++ sources
 
-SRCS          = AliDetector.cxx  AliHeader.cxx    AliMagF.cxx GParticle.cxx \
+SRCS          = AliDetector.cxx  AliHeader.cxx    AliMagF.cxx \
                 AliDigit.cxx     AliHit.cxx       AliPoints.cxx \
                 AliDisplay.cxx   AliMC.cxx        AliRun.cxx AliGenerator.cxx \
-		AliLego.cxx
+		AliLego.cxx AliModule.cxx
 
 
 # C++ Headers
 
-HDRS          = $(SRCS:.cxx=.h) STEERLinkDef.h
+HDRS          = $(SRCS:.cxx=.h) AliPDG.h STEERLinkDef.h
 
 # Library dictionary
 
 DICT          = STEERCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.f=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -49,18 +49,19 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libSTEER.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libSTEER.a
+SLIBRARY	= $(LIBDIR)/libSTEER.$(SL)
+ALIBRARY	= $(LIBDIR)/lib/libSTEER.a
 
-default:	$(SLIBRARY) headers
+default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libSTEER.$(SL):		$(OBJS)
+$(LIBDIR)/libSTEER.$(SL):		$(OBJS)
 
 $(DICT):				$(HDRS)
 
 depend:					$(SRCS)
 
-HEADERS =	$(filter-out %LinkDef.h,$(HDRS) AliConst.h AliCallf77.h)
+HEADERS =	$(filter-out %LinkDef.h,$(HDRS) AliConst.h AliCallf77.h \
+                  Copyright.h)
 
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
 
@@ -70,4 +71,26 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
+
+
+### Target check creates violation reports (.viol), which depend on
+### stripped files (.ii), which in turn depend on preprocessed
+### files (.i). Dependences are in conf/GeneralDef.
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
+check:          $(CHECKS)
+
+
+
+
+
+
+

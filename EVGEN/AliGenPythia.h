@@ -1,5 +1,10 @@
 #ifndef AliGenPythia_H
 #define AliGenPythia_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 /////////////////////////////////////////////////////////
 //  Manager and hits classes for set:MUON version 0    //
 /////////////////////////////////////////////////////////
@@ -10,7 +15,7 @@
 #include "TTree.h"
 #include "AliPythia.h"
 #include "TArrayI.h"
-#include "TMCParticle.h"
+#include "TParticle.h"
 
 class AliGenPythia : public AliGenerator
 {
@@ -34,7 +39,7 @@ class AliGenPythia : public AliGenerator
     // check if particle is selected as child particle
     Bool_t ChildSelected(Int_t ip);
     // all kinematic selection cuts go here 
-    Bool_t KinematicSelection(TMCParticle *particle);
+    Bool_t KinematicSelection(TParticle *particle);
     // adjust the weight from kinematic cuts
     void   AdjustWeights();
  public:
@@ -53,9 +58,12 @@ class AliGenPythia : public AliGenerator
     // set centre of mass energy
     virtual void    SetEnergyCMS(Float_t energy=5500) {fEnergyCMS=energy;}
     // force decay type
-    virtual void    ForceDecay(Decay_t decay=semimuonic) {fForceDecay=decay;}
+    virtual void    SetForceDecay(Decay_t decay=semimuonic) {fForceDecay=decay;}
     // get cross section of process
     virtual Float_t GetXsection() {return fXsection;}
+    // Check PDG code
+    virtual Int_t CheckPDGCode(Int_t pdgcode);
+
     ClassDef(AliGenPythia,1)
 };
 #endif

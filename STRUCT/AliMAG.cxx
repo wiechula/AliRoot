@@ -1,10 +1,29 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 //  L3 Magnet                                                                //
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliMAGClass.gif">
+<img src="picts/AliMAGClass.gif">
 </pre>
 <br clear=left>
 <font size=+2 color=red>
@@ -19,7 +38,6 @@
  
 #include "AliMAG.h"
 #include "AliRun.h"
-#include "TGeant3.h"
  
 ClassImp(AliMAG)
  
@@ -33,14 +51,14 @@ AliMAG::AliMAG()
  
 //_____________________________________________________________________________
 AliMAG::AliMAG(const char *name, const char *title)
-  : AliDetector(name,title)
+  : AliModule(name,title)
 {
   //
   // Standard constructor for L3 magnet
   //
   //Begin_Html
   /*
-    <img src="gif/aliMAG.gif">
+    <img src="picts/aliMAG.gif">
   */
   //End_Html
   
@@ -50,15 +68,6 @@ AliMAG::AliMAG(const char *name, const char *title)
 }
 
 //_____________________________________________________________________________
-void AliMAG::BuildGeometry()
-{
-  //
-  // Build ROOT TNode geometry for L3 magnet
-  // only for detectors
-  //
-}
- 
-//_____________________________________________________________________________
 void AliMAG::CreateGeometry()
 {
   //
@@ -66,18 +75,16 @@ void AliMAG::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/mag.gif">
+    <img src="picts/mag.gif">
   */
   //End_Html
   //Begin_Html
   /*
-    <img src="gif/tree_mag.gif">
+    <img src="picts/tree_mag.gif">
   */
   //End_Html
   
-  AliMC* pMC = AliMC::GetMC();
-  
-  Int_t *idtmed = gAlice->Idtmed();
+  Int_t *idtmed = fIdtmed->GetArray()-299;
   
   Float_t dpar[13];
   Int_t idrotm[399];
@@ -97,8 +104,8 @@ void AliMAG::CreateGeometry()
   par[7] = 600.;
   par[8] = 580.;
   par[9] = 790.;
-  pMC->Gsvolu("L3MO", "PGON", idtmed[334], par, 10);
-  pMC->Gspos("L3MO", 1, "ALIC", 0., -30., 0., 0, "ONLY");
+  gMC->Gsvolu("L3MO", "PGON", idtmed[334], par, 10);
+  gMC->Gspos("L3MO", 1, "ALIC", 0., -30., 0., 0, "ONLY");
   
   // Define coils 
   
@@ -106,15 +113,15 @@ void AliMAG::CreateGeometry()
   par[6] = 690.;
   par[8] = 585.;
   par[9] = 690.;
-  pMC->Gsvolu("L3CO", "PGON", idtmed[328], par, 10);
-  pMC->Gspos("L3CO", 1, "L3MO", 0., 0., 0., 0, "ONLY");
+  gMC->Gsvolu("L3CO", "PGON", idtmed[328], par, 10);
+  gMC->Gspos("L3CO", 1, "L3MO", 0., 0., 0., 0, "ONLY");
   
   par[5] = 580.;
   par[6] = 585.;
   par[8] = 580.;
   par[9] = 585.;
-  pMC->Gsvolu("L3C1", "PGON", idtmed[308], par, 10);
-  pMC->Gspos("L3C1", 1, "L3MO", 0., 0., 0., 0, "ONLY");
+  gMC->Gsvolu("L3C1", "PGON", idtmed[308], par, 10);
+  gMC->Gspos("L3C1", 1, "L3MO", 0., 0., 0., 0, "ONLY");
   
   // Define yoke 
   
@@ -122,8 +129,8 @@ void AliMAG::CreateGeometry()
   par[6] = 790.;
   par[8] = 690.;
   par[9] = 790.;
-  pMC->Gsvolu("L3YO", "PGON", idtmed[329], par, 10);
-  pMC->Gspos("L3YO", 1, "L3MO", 0., 0., 0., 0, "ONLY");
+  gMC->Gsvolu("L3YO", "PGON", idtmed[329], par, 10);
+  gMC->Gspos("L3YO", 1, "L3MO", 0., 0., 0., 0, "ONLY");
   
   // Define the return yoke of L3 (DOOR) 
   
@@ -133,7 +140,7 @@ void AliMAG::CreateGeometry()
   par[7] = 700.;
   par[8] = par[5];
   par[9] = par[6];
-  pMC->Gsvolu("L3DO", "PGON", idtmed[334], par, 10);
+  gMC->Gsvolu("L3DO", "PGON", idtmed[334], par, 10);
   
   par[4] = 610.;
   par[5] = 0.;
@@ -141,13 +148,13 @@ void AliMAG::CreateGeometry()
   par[7] = 700.;
   par[8] = par[5];
   par[9] = par[6];
-  pMC->Gsvolu("L3FR", "PGON", idtmed[329], par, 10);
+  gMC->Gsvolu("L3FR", "PGON", idtmed[329], par, 10);
   
   // INNER LAYER 
   
   par[4] = 600.;
   par[7] = 610.;
-  pMC->Gsvolu("L3IR", "PGON", idtmed[309], par, 10);
+  gMC->Gsvolu("L3IR", "PGON", idtmed[309], par, 10);
   
   //     DOOR OPENING 
   
@@ -164,28 +171,28 @@ void AliMAG::CreateGeometry()
   dpar[10] = 700.;
   dpar[11] = dpar[5];
   dpar[12] = dpar[6] + 50.;
-  pMC->Gsvolu("L3O1", "PGON", idtmed[314], dpar, 13);
+  gMC->Gsvolu("L3O1", "PGON", idtmed[314], dpar, 13);
   par[4] = 600.;
   par[5] = 0.;
   par[6] = 163.5;
   par[7] = 610.;
   par[8] = 0.;
   par[9] = 163.5;
-  pMC->Gsvolu("L3O2", "PGON", idtmed[314], par, 10);
+  gMC->Gsvolu("L3O2", "PGON", idtmed[314], par, 10);
   
   //     THE DOOR OPENING HAS TO BE PLACED WITH 'MANY' SINCE THE REGION 
   //     WILL CONTAIN A MUON CHAMBER, BEAM PIPE AND BEAM SHIELD 
   //     PLACED WITH 'ONLY'. 
   
-  pMC->Gspos("L3O1", 1, "L3FR", 0., 30., 0., 0, "MANY");
-  pMC->Gspos("L3O2", 1, "L3IR", 0., 30., 0., 0, "MANY");
+  gMC->Gspos("L3O1", 1, "L3FR", 0., 30., 0., 0, "MANY");
+  gMC->Gspos("L3O2", 1, "L3IR", 0., 30., 0., 0, "MANY");
   
-  pMC->Gspos("L3FR", 1, "L3DO", 0., 0., 0., 0, "MANY");
-  pMC->Gspos("L3IR", 1, "L3DO", 0., 0., 0., 0, "MANY");
+  gMC->Gspos("L3FR", 1, "L3DO", 0., 0., 0., 0, "MANY");
+  gMC->Gspos("L3IR", 1, "L3DO", 0., 0., 0., 0, "MANY");
   
-  pMC->Gspos("L3DO", 1, "ALIC", 0., -30., 0., 0, "MANY");
+  gMC->Gspos("L3DO", 1, "ALIC", 0., -30., 0., 0, "MANY");
   AliMatrix(idrotm[300], 90., 0., 90., 90., 180., 0.);
-  pMC->Gspos("L3DO", 2, "ALIC", 0., -30., 0., idrotm[300], "MANY");
+  gMC->Gspos("L3DO", 2, "ALIC", 0., -30., 0., idrotm[300], "MANY");
 }
 
 //_____________________________________________________________________________
@@ -226,22 +233,22 @@ void AliMAG::CreateMaterials()
   
   //    IRON 
   
-  AliMedium(310, "FE_C0             ", 10, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(330, "FE_C1             ", 30, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(10, "FE_C0             ", 10, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(30, "FE_C1             ", 30, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
   
   //     ALUMINUM 
 
-  AliMedium(309, "ALU_C0            ",  9, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(329, "ALU_C1            ", 29, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(9, "ALU_C0            ",  9, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(29, "ALU_C1            ", 29, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
   
   //     AIR 
   
-  AliMedium(315, "AIR_C0            ", 15, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(335, "AIR_C1            ", 35, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(15, "AIR_C0            ", 15, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(35, "AIR_C1            ", 35, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
 }
 
 //_____________________________________________________________________________
-void AliMAG::DrawDetector()
+void AliMAG::DrawModule()
 {
   //
   // Draw a shaded view of the L3 magnet
@@ -266,10 +273,3 @@ void AliMAG::Init()
   printf("\n");
 }
 
-//_____________________________________________________________________________
-void AliMAG::StepManager()
-{
-  //
-  // Called at every step in the L3 magnet
-  //
-}

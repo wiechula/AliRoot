@@ -1,5 +1,9 @@
 #ifndef AliDisplay_H
 #define AliDisplay_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
 
 //////////////////////////////////////////////////////////////////////////
 //                                                                      //
@@ -9,9 +13,7 @@
 //                                                                      //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef ROOT_TObject
 #include <TObject.h>
-#endif
 
 class TCanvas;
 class TPad;
@@ -24,7 +26,7 @@ const Int_t kMAXZOOMS = 20;
 
 class AliDisplay : public TObject {
 
-private:
+protected:
    Int_t             fZoomMode;             //=1 if in zoom mode
    Bool_t            fDrawAllViews;         //Flag True if AllViews selected
    Bool_t            fDrawParticles;        //Flag True if particles to be drawn

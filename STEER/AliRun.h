@@ -1,11 +1,18 @@
 #ifndef AliRun_H
 #define AliRun_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 #include <TROOT.h>
 #include <TBrowser.h>
 #include <TList.h>
 #include <TStopwatch.h>
 #include <TTree.h>
 #include <TGeometry.h>
+#include <TDatabasePDG.h>
+
 #include "AliDetector.h"
 #include "AliHeader.h"
 #include "AliMagF.h"
@@ -13,6 +20,7 @@
 #include "AliGenerator.h"
 #include "AliLego.h"
 
+enum {Keep_Bit=1, Daughters_Bit=2, Done_Bit=4};
 
 class AliDisplay;
 
@@ -31,22 +39,21 @@ protected:
   TTree        *fTreeH;        //Pointer to Tree for Hits
   TTree        *fTreeE;        //Pointer to Tree for Header
   TTree        *fTreeR;        //Pointer to Tree for Reconstructed Objects
-  TObjArray    *fDetectors;    //List of Detectors
+  TObjArray    *fModules;      //List of Detectors
   TClonesArray *fParticles;    //Pointer to list of particles
   TGeometry    *fGeometry;     //Pointer to geometry
   AliDisplay   *fDisplay;      //Pointer to event display
   TStopwatch    fTimer;        //Timer object
   AliMagF      *fField;        //Magnetic Field Map
   AliMC        *fMC;           //pointer to MonteCarlo object
-  char          fDnames[21][7];//Array of detector names
   TArrayI      *fImedia;       //Array of correspondence between media and detectors
   Int_t         fNdets;        //Number of detectors
   Float_t       fTrRmax;       //Maximum radius for tracking
   Float_t       fTrZmax;       //Maximu z for tracking
   AliGenerator *fGenerator;    //Generator used in the MC
-  Int_t        *fIdtmed;       //Array to contain media numbers
   Bool_t        fInitDone;     //true when initialisation done
   AliLego      *fLego;         //pointer to aliLego object if it exists
+  TDatabasePDG *fPDGDB;        //Particle factory object!
   
 public:
    // Creators - distructors
@@ -61,7 +68,8 @@ public:
    virtual  void  BuildSimpleGeometry();
    virtual  void  CleanDetectors();
    virtual  void  CleanParents();
-   TObjArray     *Detectors() const {return fDetectors;}
+   TObjArray     *Detectors() const {return fModules;}
+   TObjArray     *Modules() const {return fModules;}
    Int_t          CurrentTrack() const {return fCurrent;}
    AliDisplay    *Display() { return fDisplay;}
    virtual  Int_t DistancetoPrimitive(Int_t px, Int_t py);
@@ -75,10 +83,11 @@ public:
    virtual  void  FlagTrack(Int_t track);
    Int_t          GetEvNumber() const {return fEvent;}
    Int_t          GetRunNumber() const {return fRun;}
-  void           SetRunNumber(Int_t run) {fRun=run;}
+   void           SetRunNumber(Int_t run) {fRun=run;}
    Int_t          GetDebug() const {return fDebug;}
+   AliModule     *GetModule(const char *name);
    AliDetector   *GetDetector(const char *name);
-   Int_t          GetDetectorID(const char *name);
+   Int_t          GetModuleID(const char *name);
    virtual  Int_t GetEvent(Int_t event);
    TGeometry     *GetGeometry();
    AliHeader     *GetHeader() {return &fHeader;}
@@ -106,7 +115,7 @@ public:
    virtual  void  SetDisplay(AliDisplay *display) {fDisplay = display;}
    virtual  void  StepManager(Int_t id) const;
    virtual  void  SetField(Int_t type=2, Int_t version=1, Float_t scale=1, Float_t maxField=10, char*filename="$(ALICE_ROOT)/data/field01.dat");
-   virtual  void  SetTrack(Int_t done, Int_t parent, Int_t ipart, 
+   virtual  void  SetTrack(Int_t done, Int_t parent, Int_t pdg, 
   			       Float_t *pmom, Float_t *vpos, Float_t *polar, 
                                Float_t tof, const char *mecha, Int_t &ntr,
                                Float_t weight=1);
@@ -119,13 +128,13 @@ public:
    virtual  AliGenerator* Generator() {return fGenerator;}
    virtual  void SetGenerator(AliGenerator *generator);
    virtual  void EnergySummary();
-   virtual  Int_t* Idtmed() {return fIdtmed;}
+   virtual  const TDatabasePDG* PDGDB() const {return fPDGDB;}
 
   // Functions from GEOCAD
   //_______________________________________________________________________
   
-   virtual void ReadEuclid(const char*, Int_t, const char*);
-   virtual void ReadEuclidMedia(const char*, Int_t);
+   virtual void ReadEuclid(const char*, const AliModule*, char*);
+   virtual void ReadEuclidMedia(const char*, const AliModule*);
 
    TTree         *TreeD() {return fTreeD;}
    TTree         *TreeE() {return fTreeE;}
@@ -135,9 +144,9 @@ public:
 
   // --------------------------- commons -------------------------------------
 
-   ClassDef(AliRun,1)      //Supervisor class for all Alice detectors
+   ClassDef(AliRun,2)      //Supervisor class for all Alice detectors
 };
  
-EXTERN  AliRun *gAlice;
+R__EXTERN  AliRun *gAlice;
  
 #endif

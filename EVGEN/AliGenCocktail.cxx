@@ -1,6 +1,24 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+*/
+
 #include "AliGenerator.h"
 #include "AliGenCocktail.h"
-#include "TGeant3.h"
 #include "AliRun.h"
 #include <TDirectory.h>
 #include <TFile.h>
@@ -44,6 +62,8 @@ AddGenerator(AliGenerator *Generator, TString Name, Float_t RateExp)
 	SetOrigin(fOrigin[0], fOrigin[1], fOrigin[2]);
     Generator->
 	SetSigma(fOsigma[0], fOsigma[1], fOsigma[2]);
+    Generator->SetVertexSmear(fVertexSmear);
+    Generator->SetTrackingFlag(fTrackIt);    
 //
 //  Add generator to list   
     AliGenCocktailEntry *Entry = 

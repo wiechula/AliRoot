@@ -1,5 +1,10 @@
 #ifndef ALIGENCOCKTAIL_H
 #define ALIGENCOCKTAIL_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ///////////////////////////////////////////////////////////
 //                                                       //
 //  Class to generate the particles for the MC           //
@@ -7,12 +12,13 @@
 //                                                       //
 ///////////////////////////////////////////////////////////
 
-#include "TNamed.h"
-#include "TF1.h"
-#include "TArrayF.h"
-#include "TTree.h"
 #include "AliGenerator.h"
+
 #include <TClass.h>
+#include <TNamed.h>
+#include <TF1.h>
+#include <TArrayF.h>
+#include <TTree.h>
 
 class AliGenCocktailEntry : public TObject
 {

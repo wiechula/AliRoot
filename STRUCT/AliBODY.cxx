@@ -1,3 +1,22 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 //  Alice external volume                                                    //
@@ -5,7 +24,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliBODYClass.gif">
+<img src="picts/AliBODYClass.gif">
 </pre>
 <br clear=left>
 <font size=+2 color=red>
@@ -19,16 +38,13 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "AliMC.h"
-#include "AliBODY.h"
-#include <TNode.h>
-#include <TBRIK.h>
 #include "AliRun.h"
+#include "AliBODY.h"
 
 ClassImp(AliBODY)
  
 //_____________________________________________________________________________
-  AliBODY::AliBODY() : AliDetector()
+AliBODY::AliBODY()
 {
   //
   // Default constructor
@@ -37,7 +53,7 @@ ClassImp(AliBODY)
  
 //_____________________________________________________________________________
 AliBODY::AliBODY(const char *name, const char *title)
-       : AliDetector(name,title)
+       : AliModule(name,title)
 {
   //
   // Standard constructor of the Alice external volume
@@ -48,14 +64,6 @@ AliBODY::AliBODY(const char *name, const char *title)
 }
  
 //_____________________________________________________________________________
-void AliBODY::BuildGeometry()
-{
-  //
-  // Build the ROOT TNode geometry. Only for detectors
-  //
-}
- 
-//_____________________________________________________________________________
 void AliBODY::CreateGeometry()
 {
   //
@@ -63,7 +71,7 @@ void AliBODY::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliBODYTree.gif">
+    <img src="picts/AliBODYTree.gif">
   */
   //End_Html
   //
@@ -72,7 +80,7 @@ void AliBODY::CreateGeometry()
   //  
   //Begin_Html
   /*
-    <img src="gif/AliBODYLarge.gif">
+    <img src="picts/AliBODYLarge.gif">
   */
   //End_Html
   //
@@ -80,15 +88,14 @@ void AliBODY::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliBODYSmall.gif">
+    <img src="picts/AliBODYSmall.gif">
   */
   //End_Html
 
   Float_t DALIC[10];
-  Int_t *idtmed = gAlice->Idtmed();
-  AliMC *pMC = AliMC::GetMC();
+  Int_t *idtmed = fIdtmed->GetArray()+1;
   //
-  if(gAlice->GetDetector("ZDC")) {
+  if(gAlice->GetModule("ZDC")) {
     //
     // If the ZDC is present we have an asymmetric box
     // made by a four sides polygone
@@ -103,7 +110,7 @@ void AliBODY::CreateGeometry()
     DALIC[7]=15000;
     DALIC[8]=0;
     DALIC[9]=2000;
-    pMC->Gsvolu("ALIC","PGON",idtmed[1],DALIC,10);
+    gMC->Gsvolu("ALIC","PGON",idtmed[1],DALIC,10);
   } else {
     //
     // If the ZDC is not present make just a BOX
@@ -111,7 +118,7 @@ void AliBODY::CreateGeometry()
     DALIC[0]=2000;
     DALIC[1]=2000;
     DALIC[2]=3000;
-    pMC->Gsvolu("ALIC","BOX ",idtmed[1],DALIC,3);
+    gMC->Gsvolu("ALIC","BOX ",idtmed[1],DALIC,3);
   }
 }
  
@@ -131,43 +138,35 @@ void AliBODY::CreateMaterials()
 }
  
 //_____________________________________________________________________________
-void AliBODY::DrawDetector()
+void AliBODY::DrawModule()
 {
   //
   // Draw a view of the Alice outside box
   //
-  AliMC* pMC = AliMC::GetMC();
-  
   // Set everything unseen
-  pMC->Gsatt("*", "seen", -1);
+  gMC->Gsatt("*", "seen", -1);
   // 
   // Set ALIC mother visible
-  pMC->Gsatt("ALIC","SEEN",1);
+  gMC->Gsatt("ALIC","SEEN",1);
   //
   // Set the volumes visible
   //
-  pMC->Gdopt("hide","off");
-  if(gAlice->GetDetector("ZDC")) {
+  gMC->Gdopt("hide","off");
+  if(gAlice->GetModule("ZDC")) {
     //
     // ZDC is present
     //
-    pMC->DefaultRange();
-    pMC->Gdraw("alic", 40, 30, 0, 15, 10, .0014, .0014);
-    pMC->Gdhead(1111, "Aice Main body with Zero Degree Calorimeter");
+    gMC->DefaultRange();
+    gMC->Gdraw("alic", 40, 30, 0, 15, 10, .0014, .0014);
+    gMC->Gdhead(1111, "Aice Main body with Zero Degree Calorimeter");
   } else {
     //
     // ZDC is not present
     //
-    pMC->Gdraw("alic", 40, 30, 0, 10, 9, .0027, .0027);
-    pMC->Gdhead(1111, "Aice Main body");
+    gMC->Gdraw("alic", 40, 30, 0, 10, 9, .0027, .0027);
+    gMC->Gdhead(1111, "Aice Main body");
   }
-  pMC->Gdman(18, 4, "MAN");
+  gMC->Gdman(18, 4, "MAN");
 }
  
-//_____________________________________________________________________________
-void AliBODY::StepManager()
-{
-  //
-  // Called at every step in the Alice Body
-  //
-}
+

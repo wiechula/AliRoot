@@ -1,10 +1,38 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.16  1999/11/03 13:17:08  fca
+Have ProdProcess return const char*
+
+Revision 1.15  1999/10/26 06:04:50  fca
+Introduce TLorentzVector in AliMC::GetSecondary. Thanks to I.Hrivnacova
+
+Revision 1.14  1999/09/29 09:24:30  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 //  Interface Class to the Geant3.21 MonteCarlo                              //
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/TGeant3Class.gif">
+<img src="picts/TGeant3Class.gif">
 */
 //End_Html
 //                                                                           //
@@ -15,6 +43,7 @@
 #include "TROOT.h" 
 #include "THIGZ.h" 
 #include "ctype.h" 
+#include <TDatabasePDG.h>
 #include "AliCallf77.h" 
  
 #ifndef WIN32 
@@ -57,6 +86,7 @@
 # define gsxyz   gsxyz_ 
 # define gtrack  gtrack_ 
 # define gtreve  gtreve_ 
+# define gtreve_root  gtreve_root_ 
 # define grndm   grndm_ 
 # define grndmq  grndmq_ 
 # define gdtom   gdtom_ 
@@ -101,6 +131,10 @@
 # define gckpar  gckpar_
 # define gckmat  gckmat_
 # define geditv  geditv_
+# define mzdrop  mzdrop_
+
+# define ertrak  ertrak_
+# define ertrgo  ertrgo_
  
 # define setbomb setbomb_
 # define setclip setclip_
@@ -146,6 +180,7 @@
 # define gsxyz   GSXYZ 
 # define gtrack  GTRACK 
 # define gtreve  GTREVE 
+# define gtreve_root  GTREVE_ROOT
 # define grndm   GRNDM
 # define grndmq  GRNDMQ
 # define gdtom   GDTOM 
@@ -191,10 +226,14 @@
 # define gckpar  GCKPAR
 # define gckmat  GCKMAT
 # define geditv  GEDITV
+# define mzdrop  MZDROP 
 
+# define ertrak  ERTRAK
+# define ertrgo  ERTRGO
+ 
 # define setbomb SETBOMB
 # define setclip SETCLIP
-# define gcomad GCOMAD
+# define gcomad  GCOMAD
  
 #endif 
 
@@ -265,6 +304,8 @@ extern "C"
   void type_of_call gtrack(); 
 
   void type_of_call gtreve(); 
+
+  void type_of_call gtreve_root(); 
 
   void type_of_call grndm(Float_t *, const Int_t &); 
 
@@ -396,10 +437,18 @@ extern "C"
 			   const int&, const int&, const int& DEFCHARL
 			   DEFCHARL); 
 
+  void type_of_call mzdrop(Int_t&, Int_t&, DEFCHARD DEFCHARL);
+
   void type_of_call setbomb(Float_t &);
   void type_of_call setclip(DEFCHARD, Float_t &,Float_t &,Float_t &,Float_t &,
 			    Float_t &, Float_t & DEFCHARL); 
   void type_of_call gcomad(DEFCHARD, Int_t*& DEFCHARL); 
+
+  void type_of_call ertrak(const Float_t *const x1, const Float_t *const p1,
+			   const Float_t *x2, const Float_t *p2,
+			   const Int_t &ipa, DEFCHARD DEFCHARL);
+
+  void type_of_call ertrgo();
 }
 
 //
@@ -410,7 +459,7 @@ static Int_t defSize = 600;
 ClassImp(TGeant3) 
  
 //____________________________________________________________________________ 
-TGeant3::TGeant3() : AliMC()
+TGeant3::TGeant3()
 { 
   //
   // Default constructor
@@ -435,6 +484,9 @@ TGeant3::TGeant3(const char *title, Int_t nwgeant)
   //
   // Load Address of Geant3 commons    
   LoadAddress(); 
+  //
+  // Zero number of particles
+  fNPDGCodes=0;
 } 
 
 //____________________________________________________________________________ 
@@ -486,6 +538,7 @@ void TGeant3::LoadAddress()
   //
   Int_t *addr;
   gcomad(PASSCHARD("QUEST"), (int*&) fQuest PASSCHARL("QUEST"));
+  gcomad(PASSCHARD("GCBANK"),(int*&) fGcbank  PASSCHARL("GCBANK"));
   gcomad(PASSCHARD("GCLINK"),(int*&) fGclink  PASSCHARL("GCLINK"));
   gcomad(PASSCHARD("GCCUTS"),(int*&) fGccuts  PASSCHARL("GCCUTS"));
   gcomad(PASSCHARD("GCFLAG"),(int*&) fGcflag  PASSCHARL("GCFLAG"));
@@ -505,6 +558,13 @@ void TGeant3::LoadAddress()
   gcomad(PASSCHARD("GCTLIT"),(int*&) fGctlit  PASSCHARL("GCTLIT"));
   gcomad(PASSCHARD("GCVDMA"),(int*&) fGcvdma  PASSCHARL("GCVDMA"));
 
+  // Commons for GEANE
+  gcomad(PASSCHARD("ERTRIO"),(int*&) fErtrio  PASSCHARL("ERTRIO"));
+  gcomad(PASSCHARD("EROPTS"),(int*&) fEropts  PASSCHARL("EROPTS"));
+  gcomad(PASSCHARD("EROPTC"),(int*&) fEroptc  PASSCHARL("EROPTC"));
+  gcomad(PASSCHARD("ERWORK"),(int*&) fErwork  PASSCHARL("ERWORK"));
+
+  // Variables for ZEBRA store
   gcomad(PASSCHARD("IQ"), addr  PASSCHARL("IQ"));
   fZiq = addr;
   gcomad(PASSCHARD("LQ"), addr  PASSCHARL("LQ"));
@@ -544,31 +604,69 @@ Int_t TGeant3::NextVolUp(Text_t *name, Int_t &copy)
 }
 
 //_____________________________________________________________________________
-Int_t TGeant3::CurrentVol(Text_t *name, Int_t &copy) const
+Int_t TGeant3::CurrentVolID(Int_t &copy) const
 {
   //
-  // Returns the current volume ID, name and copy number
-  // if name=0 no name is returned
+  // Returns the current volume ID and copy number
   //
   Int_t i, gname;
   if( (i=fGcvolu->nlevel-1) < 0 ) {
-    printf("CurrentVol: stack depth %d\n",fGcvolu->nlevel);
+    Warning("CurrentVolID","Stack depth only %d\n",fGcvolu->nlevel);
   } else {
     gname=fGcvolu->names[i];
-    if(name) {
-      strncpy(name,(char *) &gname, 4);
-      name[4]='\0';
-    }
     copy=fGcvolu->number[i];
     i=fGcvolu->lvolum[i];   
     if(gname == fZiq[fGclink->jvolum+i]) return i;
-    else printf("CurrentVol: Volume %s not found in bank\n",name);
+    else Warning("CurrentVolID","Volume %4s not found\n",(char*)&gname);
   }
   return 0;
 }
 
 //_____________________________________________________________________________
-Int_t TGeant3::CurrentVolOff(Int_t off, Text_t *name, Int_t &copy) const
+Int_t TGeant3::CurrentVolOffID(Int_t off, Int_t &copy) const
+{
+  //
+  // Return the current volume "off" upward in the geometrical tree 
+  // ID and copy number
+  //
+  Int_t i, gname;
+  if( (i=fGcvolu->nlevel-off-1) < 0 ) {
+    Warning("CurrentVolOffID","Offset requested %d but stack depth %d\n",
+	    off,fGcvolu->nlevel);
+  } else {
+    gname=fGcvolu->names[i];
+    copy=fGcvolu->number[i];          
+    i=fGcvolu->lvolum[i];    
+    if(gname == fZiq[fGclink->jvolum+i]) return i;
+    else Warning("CurrentVolOffID","Volume %4s not found\n",(char*)&gname);
+  }
+  return 0;
+}
+
+//_____________________________________________________________________________
+const char* TGeant3::CurrentVolName() const
+{
+  //
+  // Returns the current volume name
+  //
+  Int_t i, gname;
+  char *name;
+  if( (i=fGcvolu->nlevel-1) < 0 ) {
+    Warning("CurrentVolName","Stack depth %d\n",fGcvolu->nlevel);
+  } else {
+    gname=fGcvolu->names[i];
+    name = new char[5];
+    strncpy(name,(char *) &gname, 4);
+    name[4]='\0';
+    i=fGcvolu->lvolum[i];   
+    if(gname == fZiq[fGclink->jvolum+i]) return name;
+    else Warning("CurrentVolName","Volume %4s not found\n",name);
+  }
+  return 0;
+}
+
+//_____________________________________________________________________________
+const char* TGeant3::CurrentVolOffName(Int_t off) const
 {
   //
   // Return the current volume "off" upward in the geometrical tree 
@@ -576,20 +674,296 @@ Int_t TGeant3::CurrentVolOff(Int_t off, Text_t *name, Int_t &copy) const
   // if name=0 no name is returned
   //
   Int_t i, gname;
+  char *name;
   if( (i=fGcvolu->nlevel-off-1) < 0 ) {
-    printf("CurrentVolOff: Offset requested %d but stack depth %d\n",off,fGcvolu->nlevel);
+    Warning("CurrentVolOffName",
+	    "Offset requested %d but stack depth %d\n",off,fGcvolu->nlevel);
   } else {
     gname=fGcvolu->names[i];
-    if(name) {
-      strncpy(name,(char *) &gname, 4);
-      name[4]='\0';
-    }
-    copy=fGcvolu->number[i];          
+    name = new char[5];
+    strncpy(name,(char *) &gname, 4);
+    name[4]='\0';
     i=fGcvolu->lvolum[i];    
-    if(gname == fZiq[fGclink->jvolum+i]) return i;
-    else printf("CurrentVolOff: Volume %s not found in bank\n",name);
+    if(gname == fZiq[fGclink->jvolum+i]) return name;
+    else Warning("CurrentVolOffName","Volume %4s not found\n",name);
   }
   return 0;
+}
+
+//_____________________________________________________________________________
+Int_t TGeant3::IdFromPDG(Int_t pdg) const 
+{
+  //
+  // Return Geant3 code from PDG and pseudo ENDF code
+
+  for(Int_t i=0;i<fNPDGCodes;++i)
+    if(pdg==fPDGCode[i]) return i;
+  return -1;
+}
+
+//_____________________________________________________________________________
+Int_t TGeant3::PDGFromId(Int_t id) const 
+{
+  if(id>0 && id<fNPDGCodes) return fPDGCode[id];
+  else return -1;
+}
+
+//_____________________________________________________________________________
+void TGeant3::DefineParticles() 
+{
+  //
+  // Define standard Geant 3 particles
+  Gpart();
+  //
+  // Load standard numbers for GEANT particles and PDG conversion
+  fPDGCode[fNPDGCodes++]=-99;   //  0 = unused location
+  fPDGCode[fNPDGCodes++]=22;    //  1 = photon
+  fPDGCode[fNPDGCodes++]=-11;   //  2 = positron
+  fPDGCode[fNPDGCodes++]=11;    //  3 = electron
+  fPDGCode[fNPDGCodes++]=12;    //  4 = neutrino e
+  fPDGCode[fNPDGCodes++]=-13;   //  5 = muon +
+  fPDGCode[fNPDGCodes++]=13;    //  6 = muon -
+  fPDGCode[fNPDGCodes++]=111;   //  7 = pi0
+  fPDGCode[fNPDGCodes++]=211;   //  8 = pi+
+  fPDGCode[fNPDGCodes++]=-211;  //  9 = pi-
+  fPDGCode[fNPDGCodes++]=130;   // 10 = Kaon Long
+  fPDGCode[fNPDGCodes++]=321;   // 11 = Kaon +
+  fPDGCode[fNPDGCodes++]=-321;  // 12 = Kaon -
+  fPDGCode[fNPDGCodes++]=2112;  // 13 = Neutron
+  fPDGCode[fNPDGCodes++]=2212;  // 14 = Proton
+  fPDGCode[fNPDGCodes++]=-2212; // 15 = Anti Proton
+  fPDGCode[fNPDGCodes++]=310;   // 16 = Kaon Short
+  fPDGCode[fNPDGCodes++]=221;   // 17 = Eta
+  fPDGCode[fNPDGCodes++]=3122;  // 18 = Lambda
+  fPDGCode[fNPDGCodes++]=3222;  // 19 = Sigma +
+  fPDGCode[fNPDGCodes++]=3212;  // 20 = Sigma 0
+  fPDGCode[fNPDGCodes++]=3112;  // 21 = Sigma -
+  fPDGCode[fNPDGCodes++]=3322;  // 22 = Xi0
+  fPDGCode[fNPDGCodes++]=3312;  // 23 = Xi-
+  fPDGCode[fNPDGCodes++]=3334;  // 24 = Omega-
+  fPDGCode[fNPDGCodes++]=-2112; // 25 = Anti Proton
+  fPDGCode[fNPDGCodes++]=-3122; // 26 = Anti Proton
+  fPDGCode[fNPDGCodes++]=-3222; // 27 = Anti Sigma -
+  fPDGCode[fNPDGCodes++]=-3212; // 28 = Anti Sigma 0
+  fPDGCode[fNPDGCodes++]=-3112; // 29 = Anti Sigma 0
+  fPDGCode[fNPDGCodes++]=-3322; // 30 = Anti Xi 0
+  fPDGCode[fNPDGCodes++]=-3312; // 31 = Anti Xi +
+  fPDGCode[fNPDGCodes++]=-3334; // 32 = Anti Omega +
+
+
+  Int_t mode[6];
+  Int_t kz, ipa;
+  Float_t bratio[6];
+
+  /* --- Define additional particles */
+  Gspart(33, "OMEGA(782)", 3, 0.782, 0., 7.836e-23);
+  fPDGCode[fNPDGCodes++]=223;   // 33 = Omega(782)
+  
+  Gspart(34, "PHI(1020)", 3, 1.019, 0., 1.486e-22);
+  fPDGCode[fNPDGCodes++]=333;   // 34 = PHI (1020)
+
+  Gspart(35, "D +", 4, 1.87, 1., 1.066e-12);
+  fPDGCode[fNPDGCodes++]=411;   // 35 = D+
+
+  Gspart(36, "D -", 4, 1.87, -1., 1.066e-12);
+  fPDGCode[fNPDGCodes++]=-411;  // 36 = D-
+
+  Gspart(37, "D 0", 3, 1.865, 0., 4.2e-13);
+  fPDGCode[fNPDGCodes++]=421;   // 37 = D0
+
+  Gspart(38, "ANTI D 0", 3, 1.865, 0., 4.2e-13);
+  fPDGCode[fNPDGCodes++]=-421;  // 38 = D0 bar
+
+  fPDGCode[fNPDGCodes++]=-99;  // 39 = unassigned
+
+  fPDGCode[fNPDGCodes++]=-99;  // 40 = unassigned
+
+  fPDGCode[fNPDGCodes++]=-99;  // 41 = unassigned
+
+  Gspart(42, "RHO +", 4, 0.768, 1., 4.353e-24);
+  fPDGCode[fNPDGCodes++]=213;   // 42 = RHO+
+
+  Gspart(43, "RHO -", 4, 0.768, -1., 4.353e-24);
+  fPDGCode[fNPDGCodes++]=-213;   // 40 = RHO-
+
+  Gspart(44, "RHO 0", 3, 0.768, 0., 4.353e-24);
+  fPDGCode[fNPDGCodes++]=113;   // 37 = D0
+
+  //
+  // Use ENDF-6 mapping for ions = 10000*z+10*a+iso
+  // and add 1 000 000
+  // and numbers above 5 000 000 for special applications
+  //
+
+  const Int_t kion=10000000;
+
+  const Int_t kspe=50000000;
+
+  TDatabasePDG *pdgDB = TDatabasePDG::Instance();
+
+  const Double_t autogev=0.9314943228;
+  const Double_t hslash = 1.0545726663e-27;
+  const Double_t erggev = 1/1.6021773349e-3;
+  const Double_t hshgev = hslash*erggev;
+  const Double_t yearstosec = 3600*24*365.25;
+
+
+  pdgDB->AddParticle("Deuteron","Deuteron",2*autogev+8.071e-3,kTRUE,
+		     0,1,"Ion",kion+10020);
+  fPDGCode[fNPDGCodes++]=kion+10020;   // 45 = Deuteron
+
+  pdgDB->AddParticle("Triton","Triton",3*autogev+14.931e-3,kFALSE,
+		     hshgev/(12.33*yearstosec),1,"Ion",kion+10030);
+  fPDGCode[fNPDGCodes++]=kion+10030;   // 46 = Triton
+
+  pdgDB->AddParticle("Alpha","Alpha",4*autogev+2.424e-3,kTRUE,
+		     hshgev/(12.33*yearstosec),2,"Ion",kion+20040);
+  fPDGCode[fNPDGCodes++]=kion+20040;   // 47 = Alpha
+
+  fPDGCode[fNPDGCodes++]=0;   // 48 = geantino mapped to rootino
+
+  pdgDB->AddParticle("HE3","HE3",3*autogev+14.931e-3,kFALSE,
+		     0,2,"Ion",kion+20030);
+  fPDGCode[fNPDGCodes++]=kion+20030;   // 49 = HE3
+
+  pdgDB->AddParticle("Cherenkov","Cherenkov",0,kFALSE,
+		     0,0,"Special",kspe+50);
+  fPDGCode[fNPDGCodes++]=kspe+50;   // 50 = Cherenkov
+
+/* --- Define additional decay modes --- */
+/* --- omega(783) --- */
+    for (kz = 0; kz < 6; ++kz) {
+	bratio[kz] = 0.;
+	mode[kz] = 0;
+    }
+    ipa = 33;
+    bratio[0] = 89.;
+    bratio[1] = 8.5;
+    bratio[2] = 2.5;
+    mode[0] = 70809;
+    mode[1] = 107;
+    mode[2] = 908;
+    Gsdk(ipa, bratio, mode);
+/* --- phi(1020) --- */
+    for (kz = 0; kz < 6; ++kz) {
+	bratio[kz] = 0.;
+	mode[kz] = 0;
+    }
+    ipa = 34;
+    bratio[0] = 49.;
+    bratio[1] = 34.4;
+    bratio[2] = 12.9;
+    bratio[3] = 2.4;
+    bratio[4] = 1.3;
+    mode[0] = 1112;
+    mode[1] = 1610;
+    mode[2] = 4407;
+    mode[3] = 90807;
+    mode[4] = 1701;
+    Gsdk(ipa, bratio, mode);
+/* --- D+ --- */
+    for (kz = 0; kz < 6; ++kz) {
+	bratio[kz] = 0.;
+	mode[kz] = 0;
+    }
+    ipa = 35;
+    bratio[0] = 25.;
+    bratio[1] = 25.;
+    bratio[2] = 25.;
+    bratio[3] = 25.;
+    mode[0] = 80809;
+    mode[1] = 120808;
+    mode[2] = 111208;
+    mode[3] = 110809;
+    Gsdk(ipa, bratio, mode);
+/* --- D- --- */
+    for (kz = 0; kz < 6; ++kz) {
+	bratio[kz] = 0.;
+	mode[kz] = 0;
+    }
+    ipa = 36;
+    bratio[0] = 25.;
+    bratio[1] = 25.;
+    bratio[2] = 25.;
+    bratio[3] = 25.;
+    mode[0] = 90908;
+    mode[1] = 110909;
+    mode[2] = 121109;
+    mode[3] = 120908;
+    Gsdk(ipa, bratio, mode);
+/* --- D0 --- */
+    for (kz = 0; kz < 6; ++kz) {
+	bratio[kz] = 0.;
+	mode[kz] = 0;
+    }
+    ipa = 37;
+    bratio[0] = 33.;
+    bratio[1] = 33.;
+    bratio[2] = 33.;
+    mode[0] = 809;
+    mode[1] = 1208;
+    mode[2] = 1112;
+    Gsdk(ipa, bratio, mode);
+/* --- Anti D0 --- */
+    for (kz = 0; kz < 6; ++kz) {
+	bratio[kz] = 0.;
+	mode[kz] = 0;
+    }
+    ipa = 38;
+    bratio[0] = 33.;
+    bratio[1] = 33.;
+    bratio[2] = 33.;
+    mode[0] = 809;
+    mode[1] = 1109;
+    mode[2] = 1112;
+    Gsdk(ipa, bratio, mode);
+/* --- rho+ --- */
+    for (kz = 0; kz < 6; ++kz) {
+	bratio[kz] = 0.;
+	mode[kz] = 0;
+    }
+    ipa = 42;
+    bratio[0] = 100.;
+    mode[0] = 807;
+    Gsdk(ipa, bratio, mode);
+/* --- rho- --- */
+    for (kz = 0; kz < 6; ++kz) {
+	bratio[kz] = 0.;
+	mode[kz] = 0;
+    }
+    ipa = 43;
+    bratio[0] = 100.;
+    mode[0] = 907;
+    Gsdk(ipa, bratio, mode);
+/* --- rho0 --- */
+    for (kz = 0; kz < 6; ++kz) {
+	bratio[kz] = 0.;
+	mode[kz] = 0;
+    }
+    ipa = 44;
+    bratio[0] = 100.;
+    mode[0] = 707;
+    Gsdk(ipa, bratio, mode);
+    /*
+// --- jpsi ---
+    for (kz = 0; kz < 6; ++kz) {
+	bratio[kz] = 0.;
+	mode[kz] = 0;
+    }
+    ipa = 113;
+    bratio[0] = 50.;
+    bratio[1] = 50.;
+    mode[0] = 506;
+    mode[1] = 605;
+    Gsdk(ipa, bratio, mode);
+// --- upsilon --- 
+    ipa = 114;
+    Gsdk(ipa, bratio, mode);
+// --- phi --- 
+    ipa = 115;
+    Gsdk(ipa, bratio, mode);
+    */
+
 }
 
 //_____________________________________________________________________________
@@ -607,7 +981,7 @@ Int_t TGeant3::VolId(Text_t *name) const
 }
 
 //_____________________________________________________________________________
-Int_t TGeant3::Nvolumes() const 
+Int_t TGeant3::NofVolumes() const 
 {
   //
   // Return total number of volumes in the geometry
@@ -616,7 +990,7 @@ Int_t TGeant3::Nvolumes() const
 }
 
 //_____________________________________________________________________________
-char* TGeant3::VolName(Int_t id) const
+const char* TGeant3::VolName(Int_t id) const
 {
   //
   // Return the volume name given the volume identifier
@@ -631,7 +1005,20 @@ char* TGeant3::VolName(Int_t id) const
 }
 
 //_____________________________________________________________________________
-void TGeant3::TrackPosition(Float_t *xyz) const
+Float_t TGeant3::Xsec(char* reac, Float_t energy, Int_t part, Int_t mate)
+{
+  Int_t gpart = IdFromPDG(part);
+  if(!strcmp(reac,"PHOT"))
+  {
+    if(part!=22) {
+      Error("Xsec","Can calculate photoelectric only for photons\n");
+    }
+  }
+  return 0;
+}
+
+//_____________________________________________________________________________
+void TGeant3::TrackPosition(TLorentzVector &xyz) const
 {
   //
   // Return the current position in the master reference frame of the
@@ -640,6 +1027,7 @@ void TGeant3::TrackPosition(Float_t *xyz) const
   xyz[0]=fGctrak->vect[0];
   xyz[1]=fGctrak->vect[1];
   xyz[2]=fGctrak->vect[2];
+  xyz[3]=fGctrak->tofg;
 }
 
 //_____________________________________________________________________________
@@ -652,16 +1040,17 @@ Float_t TGeant3::TrackTime() const
 }
 
 //_____________________________________________________________________________
-void TGeant3::TrackMomentum(Float_t *xyz) const
+void TGeant3::TrackMomentum(TLorentzVector &xyz) const
 {
   //
   // Return the direction and the momentum (GeV/c) of the track
   // currently being transported
   //
-  xyz[0]=fGctrak->vect[3];
-  xyz[1]=fGctrak->vect[4];
-  xyz[2]=fGctrak->vect[5];
-  xyz[3]=fGctrak->vect[6];  
+  Double_t ptot=fGctrak->vect[6];
+  xyz[0]=fGctrak->vect[3]*ptot;
+  xyz[1]=fGctrak->vect[4]*ptot;
+  xyz[2]=fGctrak->vect[5]*ptot;
+  xyz[3]=fGctrak->getot;
 }
 
 //_____________________________________________________________________________
@@ -688,7 +1077,7 @@ Int_t TGeant3::TrackPid() const
   //
   // Return the id of the particle transported
   //
-  return fGckine->ipart;
+  return PDGFromId(fGckine->ipart);
 }
 
 //_____________________________________________________________________________
@@ -710,7 +1099,7 @@ Float_t TGeant3::TrackLength() const
 }
 
 //_____________________________________________________________________________
-Bool_t TGeant3::TrackInside() const
+Bool_t TGeant3::IsTrackInside() const
 {
   //
   // True if the track is not at the boundary of the current volume
@@ -719,7 +1108,7 @@ Bool_t TGeant3::TrackInside() const
 }
 
 //_____________________________________________________________________________
-Bool_t TGeant3::TrackEntering() const
+Bool_t TGeant3::IsTrackEntering() const
 {
   //
   // True if this is the first step of the track in the current volume
@@ -728,7 +1117,7 @@ Bool_t TGeant3::TrackEntering() const
 }
 
 //_____________________________________________________________________________
-Bool_t TGeant3::TrackExiting() const
+Bool_t TGeant3::IsTrackExiting() const
 {
   //
   // True if this is the last step of the track in the current volume
@@ -737,7 +1126,7 @@ Bool_t TGeant3::TrackExiting() const
 }
 
 //_____________________________________________________________________________
-Bool_t TGeant3::TrackOut() const
+Bool_t TGeant3::IsTrackOut() const
 {
   //
   // True if the track is out of the setup
@@ -746,7 +1135,7 @@ Bool_t TGeant3::TrackOut() const
 }
 
 //_____________________________________________________________________________
-Bool_t TGeant3::TrackStop() const
+Bool_t TGeant3::IsTrackStop() const
 {
   //
   // True if the track energy has fallen below the threshold 
@@ -773,12 +1162,13 @@ Int_t   TGeant3::CurrentEvent() const
 }
 
 //_____________________________________________________________________________
-void    TGeant3::ProdProcess(char* proc) const
+const char* TGeant3::ProdProcess() const
 {
   //
   // Name of the process that has produced the secondary particles
   // in the current step
   //
+  static char proc[5];
   const Int_t ipmec[13] = { 5,6,7,8,9,10,11,12,21,23,25,105,108 };
   Int_t mec, km, im;
   //
@@ -793,16 +1183,18 @@ void    TGeant3::ProdProcess(char* proc) const
 	    strncpy(proc,(char *)&fGctpol->namec1[mec - 101],4);
 	  }
 	  proc[4]='\0';
-	  return;
+	  return proc;
 	}
       }
     }
     strcpy(proc,"UNKN");
   } else strcpy(proc,"NONE");
+  return proc;
 }
 
 //_____________________________________________________________________________
-void    TGeant3::GetSecondary(Int_t isec, Int_t& ipart, Float_t* x, Float_t* p)
+void    TGeant3::GetSecondary(Int_t isec, Int_t& ipart, 
+			      TLorentzVector &x, TLorentzVector &p)
 {
   //
   // Get the parameters of the secondary track number isec produced
@@ -832,7 +1224,7 @@ void TGeant3::InitLego()
 }
 
 //_____________________________________________________________________________
-Bool_t TGeant3::TrackDisappear() const
+Bool_t TGeant3::IsTrackDisappeared() const
 {
   //
   // True if the current particle has disappered
@@ -843,7 +1235,7 @@ Bool_t TGeant3::TrackDisappear() const
 }
 
 //_____________________________________________________________________________
-Bool_t TGeant3::TrackAlive() const
+Bool_t TGeant3::IsTrackAlive() const
 {
   //
   // True if the current particle is alive and will continue to be
@@ -1083,23 +1475,6 @@ void TGeant3::Matrix(Int_t& krot, Float_t thex, Float_t phix, Float_t they,
 }
 
 //_____________________________________________________________________________
-void TGeant3::GetParticle(const Int_t ipart, char *name, Float_t &mass) const
-{
-  //
-  // Return name and mass of particle code ipart
-  // Geant321 conventions
-  //
-  Int_t hname[6];
-  Int_t jpart=fGclink->jpart;
-  Int_t jpa=fZlq[jpart-ipart];
-  //
-  for(Int_t i=1; i<6; i++) hname[i-1]=fZiq[jpa+i];
-  hname[5]=0;
-  strncpy(name,(char *)hname, 21);
-  mass=fZq[jpa+7];
-}
-
-//_____________________________________________________________________________
 Int_t TGeant3::GetMedium() const
 {
   //
@@ -1308,7 +1683,8 @@ void  TGeant3::Gfpart(Int_t ipart, char *name, Int_t &itrtyp,
   //
   Float_t *ubuf=0; 
   Int_t   nbuf; 
-  gfpart(ipart, PASSCHARD(name), itrtyp, amass, charge, tlife, ubuf, nbuf
+  Int_t igpart = IdFromPDG(ipart);
+  gfpart(igpart, PASSCHARD(name), itrtyp, amass, charge, tlife, ubuf, nbuf
 	 PASSCHARL(name)); 
 } 
  
@@ -1697,6 +2073,15 @@ void  TGeant3::Gtreve()
   //   Controls tracking of all particles belonging to the current event
   //
   gtreve(); 
+} 
+
+//_____________________________________________________________________________
+void  TGeant3::Gtreve_root() 
+{ 
+  //
+  //   Controls tracking of all particles belonging to the current event
+  //
+  gtreve_root(); 
 } 
 
 //_____________________________________________________________________________
@@ -2951,6 +3336,32 @@ void TGeant3::SetTRIG(Int_t nevents)
   fGcflag->nevent = nevents;
 }
  
+//_____________________________________________________________________________
+void TGeant3::SetUserDecay(Int_t pdg)
+{
+  //
+  // Force the decays of particles to be done with Pythia
+  // and not with the Geant routines. 
+  // just kill pointers doing mzdrop
+  //
+  Int_t ipart = IdFromPDG(pdg);
+  if(ipart<0) {
+    printf("Particle %d not in geant\n",pdg);
+    return;
+  }
+  Int_t jpart=fGclink->jpart;
+  Int_t jpa=fZlq[jpart-ipart];
+  //
+  if(jpart && jpa) {
+    Int_t jpa1=fZlq[jpa-1];
+    if(jpa1)
+      mzdrop(fGcbank->ixcons,jpa1,PASSCHARD(" ") PASSCHARL(" "));
+    Int_t jpa2=fZlq[jpa-2];
+    if(jpa2)
+      mzdrop(fGcbank->ixcons,jpa2,PASSCHARD(" ") PASSCHARL(" "));
+  }
+}
+
 //______________________________________________________________________________
 void TGeant3::Vname(const char *name, char *vname)
 {
@@ -2965,6 +3376,20 @@ void TGeant3::Vname(const char *name, char *vname)
   vname[4] = 0;      
 }
  
+//______________________________________________________________________________
+void TGeant3::Ertrgo()
+{
+  ertrgo();
+}
+
+//______________________________________________________________________________
+void TGeant3::Ertrak(const Float_t *const x1, const Float_t *const p1, 
+			const Float_t *x2, const Float_t *p2,
+			Int_t ipa,  Option_t *chopt)
+{
+  ertrak(x1,p1,x2,p2,ipa,PASSCHARD(chopt) PASSCHARL(chopt));
+}
+        
 //_____________________________________________________________________________
 void TGeant3::WriteEuclid(const char* filnam, const char* topvol,
 			  Int_t number, Int_t nlevel)
@@ -3030,8 +3455,8 @@ void TGeant3::WriteEuclid(const char* filnam, const char* topvol,
     end=i;
     break;
   }
-  filext=new char[end+4];
-  filetme=new char[end+4];
+  filext=new char[end+5];
+  filetme=new char[end+5];
   strncpy(filext,filnam,end);
   strncpy(filetme,filnam,end);
   //
@@ -3436,10 +3861,14 @@ void TGeant3::Streamer(TBuffer &R__b)
     Version_t R__v = R__b.ReadVersion(); if (R__v) { }
     AliMC::Streamer(R__b);
     R__b >> fNextVol;
+    R__b >> fNPDGCodes;
+    R__b.ReadStaticArray(fPDGCode);
   } else {
     R__b.WriteVersion(TGeant3::IsA());
     AliMC::Streamer(R__b);
     R__b << fNextVol;
+    R__b << fNPDGCodes;
+    R__b.WriteArray(fPDGCode, fNPDGCodes);
   }
 }
 

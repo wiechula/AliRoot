@@ -1,5 +1,10 @@
 #ifndef ITSv3_H
 #define ITSv3_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 /////////////////////////////////////////////////////////
 //  Manager and hits classes for set: ITS version 3    //
 /////////////////////////////////////////////////////////
@@ -8,18 +13,23 @@
  
 class AliITSv3 : public AliITS {
 
+private:
+    Int_t fId3N; // The number of layers for geometry version 5
+    // The name of the layers as defined in the Geant tree.
+    char  **fId3Name;
+
 protected:
-  Int_t fMinorVersion;  //Minor version identifier
+  Int_t fMinorVersionV3;  //Minor version identifier
  
 public:
    AliITSv3();
    AliITSv3(const char *name, const char *title);
-   virtual       ~AliITSv3() {}
+   virtual       ~AliITSv3() ;
    virtual void   CreateGeometry();
    virtual void   CreateMaterials();
    virtual void   Init();   
    virtual Int_t  IsVersion() const {return 3;}
-   virtual inline void   SetMinorVersion(Int_t version) {fMinorVersion=version;}
+   virtual void   SetMinorVersion(Int_t version) {fMinorVersionV3=version;}
    virtual void   StepManager();
    
    ClassDef(AliITSv3,1)  //Hits manager for set:ITS version 3

@@ -1,10 +1,29 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 //  This class contains the points for the ALICE event display               //
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliPointsClass.gif">
+<img src="picts/AliPointsClass.gif">
 */
 //End_Html
 //                                                                           //
@@ -77,7 +96,7 @@ void AliPoints::DumpParticle()
   //
   //   Dump particle corresponding to this point
   //
-  GParticle *particle = GetParticle();
+  TParticle *particle = GetParticle();
   if (particle) particle->Dump();
 }
 
@@ -106,7 +125,7 @@ const Text_t *AliPoints::GetName() const
   //
   // Return name of the Geant3 particle corresponding to this point
   //
-  GParticle *particle = GetParticle();
+  TParticle *particle = GetParticle();
   if (!particle) return "Particle";
   return particle->GetName();
 }
@@ -125,7 +144,7 @@ Text_t *AliPoints::GetObjectInfo(Int_t, Int_t)
 }
 
 //_____________________________________________________________________________
-GParticle *AliPoints::GetParticle() const
+TParticle *AliPoints::GetParticle() const
 {
   //
   //   Returns pointer to particle index in AliRun::fParticles
@@ -133,7 +152,7 @@ GParticle *AliPoints::GetParticle() const
   TClonesArray *particles = gAlice->Particles();
   Int_t nparticles = particles->GetEntriesFast();
   if (fIndex < 0 || fIndex >= nparticles) return 0;
-  return (GParticle*)particles->UncheckedAt(fIndex);
+  return (TParticle*)particles->UncheckedAt(fIndex);
 }
 
 //_____________________________________________________________________________
@@ -142,7 +161,7 @@ void AliPoints::InspectParticle()
   //
   //   Inspect particle corresponding to this point
   //
-  GParticle *particle = GetParticle();
+  TParticle *particle = GetParticle();
   if (particle) particle->Inspect();
 }
 

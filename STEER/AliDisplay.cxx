@@ -1,3 +1,25 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.5  1999/09/29 09:24:29  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 
 //////////////////////////////////////////////////////////////////////////
 //                                                                      //
@@ -24,7 +46,7 @@
 #include <TSlider.h>
 #include <TSliderBox.h>
 #include <TGaxis.h>
-#include <TGXW.h>
+#include <TVirtualX.h>
 #include <TMath.h>
 #include <X3DBuffer.h>
 
@@ -32,7 +54,7 @@
 #include "AliDetector.h"
 #include "AliDisplay.h"
 #include "AliPoints.h"
-#include "GParticle.h"
+#include "TParticle.h"
 
 const Float_t ptcutmax  = 2;
 const Float_t etacutmax = 1.5;
@@ -115,7 +137,7 @@ AliDisplay::AliDisplay(Int_t size)
 //   If you are lost, you can click on HELP in any Root canvas or browser.
 //Begin_Html
 /*
-<img src="gif/alidisplay.gif">
+<img src="picts/alidisplay.gif">
 */
 //End_Html
    
@@ -142,7 +164,7 @@ AliDisplay::AliDisplay(Int_t size)
    if (ysize < 100) ysize = 750;
    Int_t xsize = Int_t(size*830./ysize);
    fCanvas = new TCanvas("Canvas", "ALICE Event Display",14,47,xsize,ysize);
-   fCanvas->SetEditable(kIsNotEditable);
+   fCanvas->SetEditable(kFALSE);
    fCanvas->ToggleEventStatus();
    
    // Create main display pad
@@ -245,7 +267,7 @@ void AliDisplay::Clear(Option_t *)
 
 //----------------------------------------------------------------------------
 void AliDisplay::ShowTrack(Int_t idx) {
-   AliDetector *TPC=(AliDetector*)gAlice->GetDetector("TPC");
+   AliDetector *TPC=(AliDetector*)gAlice->GetModule("TPC");
    TObjArray *points=TPC->Points();
    int ntracks=points->GetEntriesFast();
    for (int track=0;track<ntracks;track++) {
@@ -258,12 +280,12 @@ void AliDisplay::ShowTrack(Int_t idx) {
 //       fPad->Update();
 //       fPad->Modified();
          TClonesArray *particles=gAlice->Particles();
-         GParticle *p = (GParticle*)particles->UncheckedAt(idx);
+         TParticle *p = (TParticle*)particles->UncheckedAt(idx);
          printf("\nTrack index %d\n",idx);
-         printf("Particle ID %d\n",p->GetKF());
-         printf("Parent %d\n",p->GetParent());
-         printf("First child %d\n",p->GetFirstChild());
-         printf("Px,Py,Pz %f %f %f\n",p->GetPx(),p->GetPy(),p->GetPz());
+         printf("Particle ID %d\n",p->GetPdgCode());
+         printf("Parent %d\n",p->GetFirstMother());
+         printf("First child %d\n",p->GetFirstDaughter());
+         printf("Px,Py,Pz %f %f %f\n",p->Px(),p->Py(),p->Pz());
          return;
       }
    }
@@ -271,7 +293,7 @@ void AliDisplay::ShowTrack(Int_t idx) {
 
 //----------------------------------------------------------------------------
 void AliDisplay::HideTrack(Int_t idx) {
-   AliDetector *TPC=(AliDetector*)gAlice->GetDetector("TPC");
+   AliDetector *TPC=(AliDetector*)gAlice->GetModule("TPC");
    TObjArray *points=TPC->Points();
    int ntracks=points->GetEntriesFast();
    for (int track=0;track<ntracks;track++) {
@@ -293,9 +315,9 @@ void AliDisplay::DisableDetector(const char *name)
 {
 //    Disable detector name from graphics views
    
-   AliDetector *detector = (AliDetector*)gAlice->Detectors()->FindObject(name);
-   if (!detector) return;
-   detector->Disable();
+   AliModule *module = (AliModule*)gAlice->Modules()->FindObject(name);
+   if (!module) return;
+   module->Disable();
    Draw();
 }
 
@@ -463,7 +485,7 @@ void AliDisplay::DrawHits()
    Float_t cutmin, cutmax, etamin, etamax, pmom, smin, smax, eta, theta, r;
    Float_t *pxyz;
    Int_t ntracks,track;
-   GParticle *particle;
+   TParticle *particle;
    TObjArray *points;
    AliPoints *pm;
       
@@ -482,12 +504,12 @@ void AliDisplay::DrawHits()
    if (smin < 0.02) etamin = -1000;
    if (smax > 0.98) etamax =  1000;
       
-   TIter next(gAlice->Detectors());
-   AliDetector *detector;
+   TIter next(gAlice->Modules());
+   AliModule *module;
    fHitsCuts = 0;
-   while((detector = (AliDetector*)next())) {
-      if (!detector->IsActive()) continue;
-      points = detector->Points();
+   while((module = (AliModule*)next())) {
+      if (!module->IsActive()) continue;
+      points = module->Points();
       if (!points) continue;
       ntracks = points->GetEntriesFast();
       for (track=0;track<ntracks;track++) {
@@ -495,7 +517,7 @@ void AliDisplay::DrawHits()
          if (!pm) continue;
          particle = pm->GetParticle();
          if (!particle) continue;
-         pmom = particle->GetMomentum();
+         pmom = particle->P();
          if (pmom < cutmin) continue;
          if (pmom > cutmax) continue;
          // as a first approximation, take eta of first point
@@ -602,9 +624,9 @@ void AliDisplay::EnableDetector(const char *name)
 {
 //    Enable detector name in graphics views
    
-   AliDetector *detector = (AliDetector*)gAlice->Detectors()->FindObject(name);
-   if (!detector) return;
-   detector->Enable();
+   AliModule *module = (AliModule*)gAlice->Modules()->FindObject(name);
+   if (!module) return;
+   module->Enable();
    Draw();
 }
 
@@ -638,7 +660,7 @@ void AliDisplay::ExecuteEvent(Int_t event, Int_t px, Int_t py)
    switch (event) {
 
    case kButton1Down:
-      gGXW->SetLineColor(-1);
+      gVirtualX->SetLineColor(-1);
       gPad->TAttLine::Modify();  //Change line attributes only if necessary
       x0 = gPad->AbsPixeltoX(px);
       y0 = gPad->AbsPixeltoY(py);
@@ -648,11 +670,11 @@ void AliDisplay::ExecuteEvent(Int_t event, Int_t px, Int_t py)
       return;
 
    case kButton1Motion:
-      if (linedrawn) gGXW->DrawBox(px0, py0, pxold, pyold, TGXW::kHollow);
+      if (linedrawn) gVirtualX->DrawBox(px0, py0, pxold, pyold, TVirtualX::kHollow);
       pxold = px;
       pyold = py;
       linedrawn = 1;
-      gGXW->DrawBox(px0, py0, pxold, pyold, TGXW::kHollow);
+      gVirtualX->DrawBox(px0, py0, pxold, pyold, TVirtualX::kHollow);
       return;
 
    case kButton1Up:
@@ -685,14 +707,14 @@ void AliDisplay::LoadPoints()
 // Loop on all detectors
  
    gAlice->ResetPoints();
-   TIter next(gAlice->Detectors());
-   AliDetector *detector;
+   TIter next(gAlice->Modules());
+   AliModule *module;
    Int_t ntracks = gAlice->GetNtrack();
    for (Int_t track=0; track<ntracks;track++) {
       gAlice->ResetHits();
       gAlice->TreeH()->GetEvent(track);
-      while((detector = (AliDetector*)next())) {
-         detector->LoadPoints(track);
+      while((module = (AliModule*)next())) {
+         module->LoadPoints(track);
       }
       next.Reset();
    }

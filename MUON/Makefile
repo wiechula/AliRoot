@@ -9,8 +9,12 @@ PACKAGE = MUON
 
 # C++ sources
 
-SRCS          = AliMUON.cxx AliMUONdisplay.cxx AliMUONpoints.cxx \
-                AliMUONsegmentv1.cxx AliMUONv0.cxx AliMUONv01.cxx
+SRCS          = AliMUONchamber.cxx AliMUONSegResV0.cxx AliMUONSegResV01.cxx \
+               AliMUONSegResV02.cxx AliMUONSegResV04.cxx AliMUONSegResV05.cxx\
+               AliMUONSegResV1.cxx AliMUON.cxx AliMUONv0.cxx \
+               AliMUONdisplay.cxx AliMUONpoints.cxx \
+               AliMUONClusterFinder.cxx  AliMUONClusterFinderv0.cxx \
+               AliMUONHitMap.cxx AliMUONTUBE.cxx
 
 # C++ Headers
 
@@ -20,23 +24,23 @@ HDRS          = $(SRCS:.cxx=.h) AliMUONConst.h MUONLinkDef.h
 
 DICT          = MUONCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # Fortran sources
 
-FSRCS	      = algo.F
+FSRCS	      = algo.F reco_muon.F
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.F=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -50,12 +54,12 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libMUON.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libMUON.a
+SLIBRARY	= $(LIBDIR)/libMUON.$(SL)
+ALIBRARY	= $(LIBDIR)/libMUON.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libMUON.$(SL):	$(OBJS) $(FOBJS)
+$(LIBDIR)/libMUON.$(SL):	$(OBJS) $(FOBJS)
 
 $(DICT):			$(HDRS)
 
@@ -69,5 +73,14 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
  
+
+### Target check creates violation reports (.viol), which depend on
+### stripped files (.ii), which in turn depend on preprocessed
+### files (.i). Dependences are in conf/GeneralDef.
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
+check:          $(CHECKS)
+

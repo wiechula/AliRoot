@@ -1,5 +1,10 @@
 #ifndef AliGenHalo_H
 #define AliGenHalo_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 /////////////////////////////////////////////////////////
 //  Manager and hits classes for set:MUON version 0    //
 /////////////////////////////////////////////////////////
@@ -15,8 +20,8 @@ class AliGenHalo : public AliGenerator
 {
  
 protected:
-    FILE *fp;
-    const Text_t     *fFileName;          //Choose the file
+  FILE *fp;                             //! Pointer to file
+  const Text_t     *fFileName;          //!Choose the file
   
 public:
     AliGenHalo();

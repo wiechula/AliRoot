@@ -1,3 +1,22 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+*/
+
 ///////////////////////////////////////////////////////////////////
 //                                                               //
 //    Generate the final state of the interaction as the input   //
@@ -5,7 +24,7 @@
 //
 //Begin_Html
 /*
-<img src="gif/AliGeneratorClass.gif">
+<img src="picts/AliGeneratorClass.gif">
 </pre>
 <br clear=left>
 <font size=+2 color=red>
@@ -28,6 +47,8 @@ TGenerator* AliGenerator::fgMCEvGen=0;
 //____________________________________________________________
 AliGenerator::AliGenerator()
 {
+    printf("\n Initialising AliGenerator\n\n");
+    
     gAlice->SetGenerator(this);
     SetThetaRange();
     SetPhiRange();
@@ -35,6 +56,7 @@ AliGenerator::AliGenerator()
     SetPtRange();
     SetYRange();
     SetNumberParticles();
+    SetTrackingFlag();
   //
   //  fName="Default";
   //  fTitle="Base Generator Class";
@@ -49,6 +71,7 @@ AliGenerator::AliGenerator()
 AliGenerator::AliGenerator(Int_t npart)
     : TNamed(" "," ")
 {
+    printf("\n Initialising AliGenerator\n\n");
     gAlice->SetGenerator(this);
     SetThetaRange();
     SetPhiRange();
@@ -56,6 +79,7 @@ AliGenerator::AliGenerator(Int_t npart)
     SetPtRange();
     SetYRange();
     SetNumberParticles(npart);
+    SetTrackingFlag();
   //
   //  fName="Default";
   //  fTitle="Base Generator Class";

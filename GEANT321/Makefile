@@ -9,7 +9,7 @@ PACKAGE = GEANT321
 
 GDIRS = gbase gcons gdraw geocad ggeom gheisha ghits ghrout ghutils giface \
         giopa gkine gparal gphys gscan gstrag gtrak matx55 miface miguti \
-        neutron peanut fiface cgpack fluka block comad
+        neutron peanut fiface cgpack fluka block comad erdecks erpremc
 
 XDIRS = gxint cdf
 
@@ -23,17 +23,17 @@ GCSRC	= $(wildcard $(patsubst %,%/*.c,$(GDIRS)))
 GCXXSRC	= $(wildcard $(patsubst %,%/*.cxx,$(GDIRS))) 
 
 GSRC	= $(GFSRC) $(GCSRC)
-GFOBJ	= $(GFSRC:.F=.o)
-GCOBJ	= $(GCSRC:.c=.o)
-GCXXOBJ	= $(GCXXSRC:.cxx=.o)
+GFOBJ	= $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(GFSRC))
+GCOBJ	= $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(GCSRC))
+GCXXOBJ	= $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(GCXXSRC))
 GOBJ	= $(GFOBJ) $(GCOBJ) $(GCXXOBJ)
 
 XFSRC	= $(wildcard $(patsubst %,%/*.F,$(XDIRS))) 
 XCSRC	= $(wildcard $(patsubst %,%/*.c,$(XDIRS))) 
 
 XSRC	= $(XFSRC) $(XCSRC) $(XCXXSRC)
-XFOBJ	= $(XFSRC:.F=.o)
-XCOBJ	= $(XCSRC:.c=.o)
+XFOBJ	= $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(XFSRC))
+XCOBJ	= $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(XCSRC))
 XOBJ	= $(XFOBJ) $(XCOBJ) $(XCXXOBJ)
 
 SRCS	= $(GSRC) $(XSRC)
@@ -60,13 +60,17 @@ FFLAGS      = $(FOPT) $(CLIBFOPT) $(CLIBDEFS) -I.
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libgeant321.$(SL) $(ALICE_ROOT)/lib/libgxint321.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libgeant321.a $(ALICE_ROOT)/lib/libgxint321.a
+SLIBRARY	= $(LIBDIR)/libgeant321.$(SL) $(LIBDIR)/libgxint321.$(SL)
+ALIBRARY	= $(LIBDIR)/libgeant321.a $(LIBDIR)/libgxint321.a
 
-default:	$(SLIBRARY)
+ifeq ($(PLATFORM),alpha)
+        default:	$(ALIBRARY)
+else
+        default:	$(SLIBRARY)
+endif
 
-$(ALICE_ROOT)/lib/libgeant321.$(SL):  $(GOBJ)
-$(ALICE_ROOT)/lib/libgxint321.$(SL):  $(XOBJ)
+$(LIBDIR)/libgeant321.$(SL) $(LIBDIR)/libgeant321.a:  $(GOBJ)
+$(LIBDIR)/libgxint321.$(SL) $(LIBDIR)/libgxint321.$(SL):  $(XOBJ)
 
 depend:			$(SRCS)
 
@@ -78,4 +82,4 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 

@@ -1,3 +1,31 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.13  1999/11/03 13:17:08  fca
+Have ProdProcess return const char*
+
+Revision 1.12  1999/11/02 17:05:06  fca
+Update GetSecondary arguments
+
+Revision 1.11  1999/09/29 09:24:31  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 //////////////////////////////////////////////////////
 //  C++ dummy interface to Geant3 basic routines    //
 //////////////////////////////////////////////////////
@@ -28,27 +56,33 @@ void    TGeant3::Gfile(const char*, const char*) {}
 void    TGeant3::GeomIter() {}
 Int_t   TGeant3::CurrentMaterial(Float_t &, Float_t &, Float_t &, Float_t &, Float_t &) const {return 0;}
 Int_t   TGeant3::NextVolUp(Text_t*, Int_t&) {return 0;}
-Int_t   TGeant3::CurrentVol(Text_t*, Int_t&) const {return 0;}
-Int_t   TGeant3::Nvolumes() const {return 0;}
-Int_t   TGeant3::CurrentVolOff(Int_t, Text_t*, Int_t&) const {return 0;}
-void    TGeant3::TrackPosition(Float_t*) const {}
-void    TGeant3::TrackMomentum(Float_t*) const {}
+Int_t   TGeant3::CurrentVolID(Int_t&) const {return 0;}
+const char*  TGeant3::CurrentVolName() const {return 0;}
+Float_t TGeant3::Xsec(char*, Float_t, Int_t, Int_t) {return 0;}
+Int_t   TGeant3::NofVolumes() const {return 0;}
+Int_t   TGeant3::CurrentVolOffID(Int_t, Int_t&) const {return 0;}
+const char *TGeant3::CurrentVolOffName(Int_t) const {return 0;}
+void    TGeant3::TrackPosition(TLorentzVector&) const {}
+void    TGeant3::TrackMomentum(TLorentzVector&) const {}
+Int_t   TGeant3::IdFromPDG(Int_t) const {return -1;}
+Int_t   TGeant3::PDGFromId(Int_t) const {return -1;}
+void    TGeant3::DefineParticles() {}
 Int_t   TGeant3::VolId(Text_t*) const {return 0;}
-char*   TGeant3::VolName(Int_t ) const {return 0;}
+const char*   TGeant3::VolName(Int_t ) const {return 0;}
 Float_t TGeant3::TrackCharge() const {return 0;}
 Float_t TGeant3::TrackMass() const {return 0;}
-Bool_t  TGeant3::TrackInside() const {return 0;}
-Bool_t  TGeant3::TrackEntering() const {return 0;}
-Bool_t  TGeant3::TrackExiting() const {return 0;}
-Bool_t  TGeant3::TrackOut() const {return 0;}
-Bool_t  TGeant3::TrackDisappear() const {return 0;}
-Bool_t  TGeant3::TrackStop() const {return 0;}
+Bool_t  TGeant3::IsTrackInside() const {return 0;}
+Bool_t  TGeant3::IsTrackEntering() const {return 0;}
+Bool_t  TGeant3::IsTrackExiting() const {return 0;}
+Bool_t  TGeant3::IsTrackOut() const {return 0;}
+Bool_t  TGeant3::IsTrackDisappeared() const {return 0;}
+Bool_t  TGeant3::IsTrackStop() const {return 0;}
 Int_t   TGeant3::NSecondaries() const {return 0;}
-void    TGeant3::ProdProcess(char*) const {}
-void    TGeant3::GetSecondary(Int_t, Int_t&, Float_t*, Float_t*){}
+const char* TGeant3::ProdProcess() const {return 0;}
+void    TGeant3::GetSecondary(Int_t, Int_t&, 
+			      TLorentzVector&, TLorentzVector&){}
 Float_t TGeant3::MaxStep() const {return 0;}
 void    TGeant3::SetMaxStep(Float_t ) {}
-void    TGeant3::GetParticle(const Int_t, char*, Float_t&) const {}
 Int_t   TGeant3::CurrentEvent() const {return 0;}
 Int_t   TGeant3::GetMedium() const {return 0;}
 Float_t TGeant3::Edep() const {return 0;}
@@ -58,7 +92,7 @@ Float_t TGeant3::TrackStep() const {return 0;}
 Float_t TGeant3::TrackLength() const {return 0;}
 Float_t TGeant3::TrackTime() const {return 0;}
 Int_t   TGeant3::TrackPid() const {return 0;}
-Bool_t  TGeant3::TrackAlive() const {return 0;}
+Bool_t  TGeant3::IsTrackAlive() const {return 0;}
 void    TGeant3::StopTrack() {}
 void    TGeant3::StopEvent() {}
 void    TGeant3::SetMaxNStep(Int_t) {}
@@ -135,6 +169,7 @@ void  TGeant3::Gsstak(Int_t) {}
 void  TGeant3::Gsxyz() {}
 void  TGeant3::Gtrack() {}
 void  TGeant3::Gtreve() {}
+void  TGeant3::Gtreve_root() {}
 void  TGeant3::Grndm(Float_t*, const Int_t) const {}
 void  TGeant3::Grndmq(Int_t&, Int_t&, const Int_t, const Text_t*) {}
 
@@ -232,8 +267,15 @@ void TGeant3::SetPHOT(Int_t)  {}
 void TGeant3::SetRAYL(Int_t)  {}
 void TGeant3::SetSWIT(Int_t , Int_t)  {}
 void TGeant3::SetTRIG(Int_t)  {}
+void TGeant3::SetUserDecay(Int_t) {}
 void TGeant3::Vname(const char *, char *) {}
 void TGeant3::InitLego() {}
+void TGeant3::Ertrgo() {}
+void TGeant3::Ertrak(const Float_t *const , const Float_t *const , 
+		     const Float_t *, const Float_t *,
+		     Int_t ,  Option_t *) {}
+
+        
 
 
 #include "AliCallf77.h"

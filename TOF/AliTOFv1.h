@@ -1,5 +1,10 @@
 #ifndef TOFv1_H
 #define TOFv1_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ///////////////////////////////////////////////////////
 //  Manager and hits classes for set:TOF  version 1  //
 ///////////////////////////////////////////////////////
@@ -9,10 +14,13 @@
  
  
 class AliTOFv1 : public AliTOF {
- 
-protected:
-  Int_t fIdFBT2; // First sensitive element identifier
-  Int_t fIdFBT3; // Second sensitive element identifier
+
+private:
+  Int_t fIdFTO2; // First sensitive volume identifier
+  Int_t fIdFTO3; // Second sensitive volume identifier
+  Int_t fIdFLT1; // Third sensitive volume identifier
+  Int_t fIdFLT2; // Fourth sensitive volume identifier
+  Int_t fIdFLT3; // Fifth sensitive volume identifier
  
 public:
   AliTOFv1();
@@ -22,10 +30,11 @@ public:
   virtual void   CreateMaterials();
   virtual void   Init();
   virtual Int_t  IsVersion() const {return 1;}
+  virtual void   TOFpc(Float_t,Float_t,Float_t,Float_t,Float_t,Float_t);
   virtual void   StepManager();
-  virtual void   DrawDetector();
-  
-  ClassDef(AliTOFv1,1)  // Time Of Flight version 1
+  virtual void   DrawModule();
+ 
+   ClassDef(AliTOFv1,1)  //Time Of Flight version 1
 };
  
 #endif

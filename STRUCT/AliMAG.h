@@ -1,25 +1,28 @@
 #ifndef MAG_H
 #define MAG_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
 //  Manager class for detector: MAG           //
 ////////////////////////////////////////////////
  
-#include "AliDetector.h"
+#include "AliModule.h"
  
  
-class AliMAG : public AliDetector {
+class AliMAG : public AliModule {
  
 public:
    AliMAG();
    AliMAG(const char *name, const char *title);
    virtual      ~AliMAG() {}
-   virtual void  BuildGeometry();
    virtual void  CreateGeometry();
    virtual void  CreateMaterials();
    virtual void  Init();
    virtual Int_t IsVersion() const {return 0;}
-   virtual void  DrawDetector();
-   virtual void  StepManager();
+   virtual void  DrawModule();
  
    ClassDef(AliMAG,1)  //Class manager for detector:MAG
 };

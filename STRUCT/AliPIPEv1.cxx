@@ -1,10 +1,29 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 //  Beam pipe class                                                          //
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliPIPEClass.gif">
+<img src="picts/AliPIPEClass.gif">
 */
 //End_Html
 //                                                                           //
@@ -17,7 +36,7 @@
 ClassImp(AliPIPEv1)
  
 //_____________________________________________________________________________
-AliPIPEv1::AliPIPEv1() : AliPIPE()
+AliPIPEv1::AliPIPEv1()
 {
   //
   // Default constructor for beam pipe
@@ -41,23 +60,21 @@ void AliPIPEv1::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliPIPE.gif">
+    <img src="picts/AliPIPE.gif">
   */
   //End_Html
   //Begin_Html
   /*
-    <img src="gif/AliPIPETree.gif">
+    <img src="picts/AliPIPETree.gif">
   */
   //End_Html
 
-  AliMC* pMC = AliMC::GetMC();
-  
   Float_t tpar[3], dzmo, zpos, abs_d, abs_l;
   Float_t r2, dr;
 
   const Double_t z_flange = 150;
   
-  Int_t *idtmed = gAlice->Idtmed();
+  Int_t *idtmed = fIdtmed->GetArray()-1999;
   
   
   abs_d   = 90.;  // DEFINES DRIFT LENGTH 
@@ -111,8 +128,8 @@ void AliPIPEv1::CreateGeometry()
   tpar[1] = 3.;
   tpar[2] = (abs_d + 700.) / 2.;
   dzmo = tpar[2] - abs_d;
-  pMC->Gsvolu("QQMO", "TUBE", idtmed[2015], tpar, 3);
-  pMC->Gspos("QQMO", 1, "ALIC", 0., 0., -dzmo, 0, "ONLY");
+  gMC->Gsvolu("QQMO", "TUBE", idtmed[2015], tpar, 3);
+  gMC->Gspos("QQMO", 1, "ALIC", 0., 0., -dzmo, 0, "ONLY");
   
   //       BEAM PIPE IN DRIFT SPACE 
   
@@ -120,24 +137,24 @@ void AliPIPEv1::CreateGeometry()
   tpar[0] = 0.;
   tpar[1] = 3.;
   tpar[2] = 30;
-  pMC->Gsvolu("QDT1", "TUBE", idtmed[2015], tpar, 3);
+  gMC->Gsvolu("QDT1", "TUBE", idtmed[2015], tpar, 3);
   
   tpar[0] = 2.9;
-  pMC->Gsvolu("QTB1", "TUBE", idtmed[2004], tpar, 3);
-  pMC->Gspos("QTB1", 1, "QDT1", 0., 0., 0., 0, "ONLY");
-  pMC->Gspos("QDT1", 1, "QQMO", 0., 0., dzmo, 0, "ONLY");
+  gMC->Gsvolu("QTB1", "TUBE", idtmed[2004], tpar, 3);
+  gMC->Gspos("QTB1", 1, "QDT1", 0., 0., 0., 0, "ONLY");
+  gMC->Gspos("QDT1", 1, "QQMO", 0., 0., dzmo, 0, "ONLY");
   
   
   //     30-90 
   tpar[0] = 0.;
   tpar[1] = 3.;
   tpar[2] = 30.;
-  pMC->Gsvolu("QDT2", "TUBE", idtmed[2015], tpar, 3);
+  gMC->Gsvolu("QDT2", "TUBE", idtmed[2015], tpar, 3);
   
   tpar[0] = 2.9;
-  pMC->Gsvolu("QTB2", "TUBE", idtmed[2004], tpar, 3);
-  pMC->Gspos("QTB2", 1, "QDT2", 0., 0., 0.,   0, "ONLY");
-  pMC->Gspos("QDT2", 1, "QQMO", 0., 0., dzmo, 0, "ONLY");
+  gMC->Gsvolu("QTB2", "TUBE", idtmed[2004], tpar, 3);
+  gMC->Gspos("QTB2", 1, "QDT2", 0., 0., 0.,   0, "ONLY");
+  gMC->Gspos("QDT2", 1, "QQMO", 0., 0., dzmo, 0, "ONLY");
   
   //       beam pipe outside absorber on the left side 
   
@@ -147,13 +164,13 @@ void AliPIPEv1::CreateGeometry()
   tpar[0] = 0.;
   tpar[1] = 3.;
   tpar[2] = (z_flange - 30)/2;
-  pMC->Gsvolu("QDT5", "TUBE", idtmed[2015], tpar, 3);
+  gMC->Gsvolu("QDT5", "TUBE", idtmed[2015], tpar, 3);
   
   tpar[0] = 2.9;
   zpos    = -30. - tpar[2] + dzmo;
-  pMC->Gsvolu("QTB5", "TUBE", idtmed[2004], tpar, 3);
-  pMC->Gspos("QTB5", 1, "QDT5", 0., 0., 0.,   0, "ONLY");
-  pMC->Gspos("QDT5", 1, "QQMO", 0., 0., zpos, 0, "ONLY");
+  gMC->Gsvolu("QTB5", "TUBE", idtmed[2004], tpar, 3);
+  gMC->Gspos("QTB5", 1, "QDT5", 0., 0., 0.,   0, "ONLY");
+  gMC->Gspos("QDT5", 1, "QQMO", 0., 0., zpos, 0, "ONLY");
   
   //     STRAIGHT STEEL PIECE 
   
@@ -163,103 +180,101 @@ void AliPIPEv1::CreateGeometry()
   tpar[0] = 0.;
   tpar[1] = r2 + dr;
   tpar[2] = (zpos + 700.) / 2.;
-  pMC->Gsvolu("QDT7", "TUBE", idtmed[2015], tpar, 3);
+  gMC->Gsvolu("QDT7", "TUBE", idtmed[2015], tpar, 3);
   tpar[0] = r2;
-  pMC->Gsvolu("QTB7", "TUBE", idtmed[2018], tpar, 3);
-  pMC->Gspos("QTB7", 1, "QDT7", 0., 0., 0.,   0, "ONLY");
+  gMC->Gsvolu("QTB7", "TUBE", idtmed[2018], tpar, 3);
+  gMC->Gspos("QTB7", 1, "QDT7", 0., 0., 0.,   0, "ONLY");
   zpos = zpos - tpar[2] + dzmo;
-  pMC->Gspos("QDT7", 1, "QQMO", 0., 0., zpos, 0, "ONLY");
+  gMC->Gspos("QDT7", 1, "QQMO", 0., 0., zpos, 0, "ONLY");
   
   //     flange dn 63 
   
   tpar[0] = 3.;
   tpar[1] = 5.7;
   tpar[2] = 2.;
-  pMC->Gsvolu("QN63", "TUBE", idtmed[2018], tpar, 3);
+  gMC->Gsvolu("QN63", "TUBE", idtmed[2018], tpar, 3);
   zpos = tpar[2] - z_flange;
-  pMC->Gspos("QN63", 1, "ALIC", 0., 0., zpos, 0, "ONLY");
+  gMC->Gspos("QN63", 1, "ALIC", 0., 0., zpos, 0, "ONLY");
   
   
   //     Replace Absorber or Shield by Beam-Pipe 
   //     in case they are not selected 
   
-  if (gAlice->GetDetector("ABSO") == 0) {
+  if (gAlice->GetModule("ABSO") == 0) {
     
-    pMC->Gspos("QN63", 2, "ALIC", 0., 0., z_flange, 0, "ONLY");
+    gMC->Gspos("QN63", 2, "ALIC", 0., 0., z_flange, 0, "ONLY");
     r2      = 2.9;
     dr      = .1;
     tpar[0] = 0.;
     tpar[1] = r2 + dr;
     tpar[2] = (z_flange - abs_d) / 2.;
-    pMC->Gsvolu("QDT8", "TUBE", idtmed[2015], tpar, 3);
+    gMC->Gsvolu("QDT8", "TUBE", idtmed[2015], tpar, 3);
     tpar[0] = r2;
-    pMC->Gsvolu("QTB8", "TUBE", idtmed[2004], tpar, 3);
-    pMC->Gspos("QTB8", 1, "QDT8", 0., 0., 0., 0, "ONLY");
+    gMC->Gsvolu("QTB8", "TUBE", idtmed[2004], tpar, 3);
+    gMC->Gspos("QTB8", 1, "QDT8", 0., 0., 0., 0, "ONLY");
     zpos    = abs_d + tpar[2];
-    pMC->Gspos("QDT8", 1, "ALIC", 0., 0., zpos, 0, "ONLY");
+    gMC->Gspos("QDT8", 1, "ALIC", 0., 0., zpos, 0, "ONLY");
     dr      = .015;
     tpar[0] = 0.;
     tpar[1] = r2 + dr;
     tpar[2] = (abs_l - z_flange) / 2.;
-    pMC->Gsvolu("QDTS", "TUBE", idtmed[2015], tpar, 3);
+    gMC->Gsvolu("QDTS", "TUBE", idtmed[2015], tpar, 3);
     tpar[0] = r2;
-    pMC->Gsvolu("QTBS", "TUBE", idtmed[2018], tpar, 3);
-    pMC->Gspos("QTBS", 1, "QDTS", 0., 0., 0., 0, "ONLY");
+    gMC->Gsvolu("QTBS", "TUBE", idtmed[2018], tpar, 3);
+    gMC->Gspos("QTBS", 1, "QDTS", 0., 0., 0., 0, "ONLY");
     zpos = tpar[2] + z_flange;
-    pMC->Gspos("QDTS", 1, "ALIC", 0., 0., zpos, 0, "ONLY");
+    gMC->Gspos("QDTS", 1, "ALIC", 0., 0., zpos, 0, "ONLY");
   }
-  if (gAlice->GetDetector("SHIL") == 0) {
+  if (gAlice->GetModule("SHIL") == 0) {
     r2      = 2.9;
     dr      = .015;
     tpar[0] = 0.;
     tpar[1] = r2 + dr;
     tpar[2] = (700. - abs_l) / 2.;
-    pMC->Gsvolu("QDT9", "TUBE", idtmed[2015], tpar, 3);
+    gMC->Gsvolu("QDT9", "TUBE", idtmed[2015], tpar, 3);
     tpar[0] = r2;
-    pMC->Gsvolu("QTB9", "TUBE", idtmed[2018], tpar, 3);
-    pMC->Gspos("QTB9", 1, "QDT9", 0., 0., 0., 0, "ONLY");
+    gMC->Gsvolu("QTB9", "TUBE", idtmed[2018], tpar, 3);
+    gMC->Gspos("QTB9", 1, "QDT9", 0., 0., 0., 0, "ONLY");
     zpos = abs_l + tpar[2];
-    pMC->Gspos("QDT9", 1, "ALIC", 0., 0., zpos, 0, "ONLY");
+    gMC->Gspos("QDT9", 1, "ALIC", 0., 0., zpos, 0, "ONLY");
   }
 }
 
 //_____________________________________________________________________________
-void AliPIPEv1::DrawDetector()
+void AliPIPEv1::DrawModule()
 {
   //
   // Draw a shaded view of the Beam Pipe
   //
 
-  AliMC* pMC = AliMC::GetMC();
-
   // Set everything unseen
-  pMC->Gsatt("*", "seen", -1);
+  gMC->Gsatt("*", "seen", -1);
   // 
   // Set ALIC mother transparent
-  pMC->Gsatt("ALIC","SEEN",0);
+  gMC->Gsatt("ALIC","SEEN",0);
   //
   // Set the volumes visible
-  pMC->Gsatt("QQMO","seen",1);
-  pMC->Gsatt("QDT1","seen",1);
-  pMC->Gsatt("QTB1","seen",1);
-  pMC->Gsatt("QDT2","seen",1);
-  pMC->Gsatt("QTB2","seen",1);
-  pMC->Gsatt("QDT5","seen",1);
-  pMC->Gsatt("QTB5","seen",1);
-  pMC->Gsatt("QDT7","seen",1);
-  pMC->Gsatt("QTB7","seen",1);
-  pMC->Gsatt("QN63","seen",1);
+  gMC->Gsatt("QQMO","seen",1);
+  gMC->Gsatt("QDT1","seen",1);
+  gMC->Gsatt("QTB1","seen",1);
+  gMC->Gsatt("QDT2","seen",1);
+  gMC->Gsatt("QTB2","seen",1);
+  gMC->Gsatt("QDT5","seen",1);
+  gMC->Gsatt("QTB5","seen",1);
+  gMC->Gsatt("QDT7","seen",1);
+  gMC->Gsatt("QTB7","seen",1);
+  gMC->Gsatt("QN63","seen",1);
   //
-  pMC->Gdopt("hide", "on");
-  pMC->Gdopt("shad", "on");
-  pMC->Gsatt("*", "fill", 7);
-  pMC->SetClipBox(".");
-  pMC->SetClipBox("*", 0, 3000, -3000, 3000, -6000, 6000);
-  pMC->DefaultRange();
-  pMC->Gdraw("alic", 40, 30, 0, 3, 5, .04, .04);
-  pMC->Gdhead(1111, "Beam Pipe");
-  pMC->Gdman(16, 6, "MAN");
-  pMC->Gdopt("hide","off");
+  gMC->Gdopt("hide", "on");
+  gMC->Gdopt("shad", "on");
+  gMC->Gsatt("*", "fill", 7);
+  gMC->SetClipBox(".");
+  gMC->SetClipBox("*", 0, 3000, -3000, 3000, -6000, 6000);
+  gMC->DefaultRange();
+  gMC->Gdraw("alic", 40, 30, 0, 3, 5, .04, .04);
+  gMC->Gdhead(1111, "Beam Pipe");
+  gMC->Gdman(16, 6, "MAN");
+  gMC->Gdopt("hide","off");
 }
 
 //_____________________________________________________________________________
@@ -299,18 +314,18 @@ void AliPIPEv1::CreateMaterials()
   
   //    Air 
   
-  AliMedium(2015, "AIR_L3_US", 15, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(15, "AIR_L3_US", 15, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
   
   //    Beryllium 
   
-  AliMedium(2005, "BE_L3_US", 5, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(5, "BE_L3_US", 5, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
   
   //    Vacuum 
   
-  AliMedium(2016, "VA_L3_US", 16, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(16, "VA_L3_US", 16, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
   
   //    Steel 
   
-  AliMedium(2019, "ST_L3_US", 19, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(19, "ST_L3_US", 19, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
 }
 
