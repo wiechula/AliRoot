@@ -13,7 +13,10 @@
  
 #pragma link C++ enum VertexSmear_t;
 #pragma link C++ enum VertexSource_t;
-#pragma link C++ enum PDG_t;
+
+#pragma link C++ typedef AliMC;
+#pragma link C++ typedef AliMCProcess;
+#pragma link C++ typedef AliPDG;
 
 #pragma link C++ class  AliGenerator+;
 #pragma link C++ class  AliRun-;
@@ -29,7 +32,6 @@
 #pragma link C++ class  AliMagFCM+;
 #pragma link C++ class  AliMagFMaps+;
 #pragma link C++ class  AliMagFDM+;
-#pragma link C++ class  AliMC+;
 #pragma link C++ class  AliLego+;
 #pragma link C++ class  AliLegoGenerator+;
 #pragma link C++ class  AliLegoGeneratorXYZ+;
@@ -45,7 +47,6 @@
 #pragma link C++ class  AliTracker+;
 #pragma link C++ class  AliRndm+;
 #pragma link C++ class  AliMCQA+;
-#pragma link C++ class  AliPDG+;
 #pragma link C++ class  AliDebugVolume+;
 #pragma link C++ class  AliStack+;
 #pragma link C++ class  AliConfig+;
@@ -56,6 +57,10 @@
 #pragma link C++ class  AliMergeCombi+;
 #pragma link C++ class  AliFieldMap-;
 #pragma link C++ class  AliGausCorr+;
+#pragma link C++ class  AliTrackReference+;
+#pragma link C++ class  AliESD+;
+#pragma link C++ class  AliESDTrack+;
+#pragma link C++ class  AliESDVertex+;
 
 #endif
 

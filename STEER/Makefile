@@ -11,24 +11,23 @@ PACKAGE = STEER
 
 SRCS          = AliDetector.cxx	AliHeader.cxx	AliMagF.cxx \
                 AliDigit.cxx	AliHit.cxx	AliPoints.cxx \
-                AliDisplay.cxx	AliMC.cxx	AliRun.cxx AliGenerator.cxx \
+                AliDisplay.cxx	AliRun.cxx      AliGenerator.cxx \
 		AliLego.cxx	AliModule.cxx	AliDigitNew.cxx \
 		AliGeometry.cxx	AliRecPoint.cxx	AliSegmentation.cxx \
 	        AliHitMap.cxx	AliMagFC.cxx	AliMagFCM.cxx \
 		AliMagFDM.cxx	AliLegoGenerator.cxx AliLegoGeneratorXYZ.cxx\
                 AliLegoGeneratorPhiZ.cxx AliLegoGeneratorEta.cxx \
-                AliRndm.cxx \
 		AliKalmanTrack.cxx AliCluster.cxx AliTracker.cxx\
-		AliMCQA.cxx AliPDG.cxx AliDebugVolume.cxx \
+		AliRndm.cxx     AliMCQA.cxx AliDebugVolume.cxx \
 		AliGenEventHeader.cxx AliStack.cxx AliConfig.cxx \
 		AliRunDigitizer.cxx AliDigitizer.cxx\
 		AliStream.cxx AliMergeCombi.cxx \
 		AliMagFMaps.cxx AliFieldMap.cxx \
-        AliGausCorr.cxx
+        AliGausCorr.cxx AliTrackReference.cxx AliESD.cxx
 
 # C++ Headers
 
-HDRS          = $(SRCS:.cxx=.h) AliPDG.h $(ROOTSYS)/include/TH2.h \
+HDRS          = $(SRCS:.cxx=.h) $(ROOTSYS)/include/TH2.h \
 				$(ROOTSYS)/include/TRandom.h STEERLinkDef.h 
 
 # Library dictionary
@@ -51,7 +50,7 @@ OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
-CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include/
+CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include/ 
  
 # FORTRAN compilation flags
 
@@ -72,7 +71,7 @@ $(DICT):				$(HDRS)
 
 depend:					$(SRCS)
 
-HEADERS 	= $(SRCS:.cxx=.h) AliPDG.h AliConst.h AliCallf77.h AliMCProcess.h AliConfig.h AliGenEventHeader.h AliGausCorr.h
+HEADERS 	= $(SRCS:.cxx=.h) AliMC.h AliRndm.h AliPDG.h AliConst.h AliCallf77.h AliMCProcess.h AliConfig.h AliGenEventHeader.h AliGausCorr.h
 
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
 

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.28  2001/10/21 18:38:44  hristov
+Several pointers were set to zero in the default constructors to avoid memory management problems
+
 Revision 1.27  2001/07/20 09:32:18  morsch
 Protection against uncomplete backward stepping in dumping added.
 
@@ -124,7 +127,7 @@ Introduction of the Copyright and cvs Log
 #include "AliConst.h"
 #include "AliMC.h"
 #include "TH2.h"
-#include "../TGeant3/TGeant3.h"
+//#include "../geant3/TGeant3.h"
 #include "TString.h"
 #include "TClonesArray.h"
 

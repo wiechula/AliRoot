@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.21  2002/05/28 14:24:57  hristov
+Correct warning messages
+
+Revision 1.20  2002/04/30 11:47:30  morsch
+KeepPhysics method called by PurifyKine added (N. Carrer, A.M.)
+
+Revision 1.19  2002/03/12 11:06:03  morsch
+Add particle status code to argument list of SetTrack(..).
+
 Revision 1.18  2002/02/20 16:14:41  hristov
 fParticleBuffer points to object which doesn't belong to AliStack, do not delete it (J.Chudoba)
 
@@ -84,12 +93,12 @@ New files for folders and Stack
 #include "AliRun.h"
 #include "AliModule.h"
 #include "AliHit.h"
-//#include "ETrackBits.h"
 
 ClassImp(AliStack)
 
 //_____________________________________________________________________________
 AliStack::AliStack(Int_t size)
+  : TVirtualMCStack()
 {
   //
   //  Constructor
@@ -109,6 +118,7 @@ AliStack::AliStack(Int_t size)
 
 //_____________________________________________________________________________
 AliStack::AliStack()
+  : TVirtualMCStack()
 {
   //
   //  Default constructor
@@ -165,9 +175,6 @@ void AliStack::SetTrack(Int_t done, Int_t parent, Int_t pdg, Float_t *pmom,
   // ntr      on output the number of the track stored
   //
 
-  Float_t mass;
-  const Int_t kfirstdaughter=-1;
-  const Int_t klastdaughter=-1;
   //  const Float_t tlife=0;
   
   //
@@ -177,49 +184,17 @@ void AliStack::SetTrack(Int_t done, Int_t parent, Int_t pdg, Float_t *pmom,
   // also, this method is potentially dangerous if the mass
   // used in the MC is not the same of the PDG database
   //
-  mass = TDatabasePDG::Instance()->GetParticle(pdg)->Mass();
+  Float_t mass = TDatabasePDG::Instance()->GetParticle(pdg)->Mass();
   Float_t e=TMath::Sqrt(mass*mass+pmom[0]*pmom[0]+
 			pmom[1]*pmom[1]+pmom[2]*pmom[2]);
   
 //    printf("Loading  mass %f ene %f No %d ip %d parent %d done %d pos %f %f %f mom %f %f %f kS %d m \n",
 //	   mass,e,fNtrack,pdg,parent,done,vpos[0],vpos[1],vpos[2],pmom[0],pmom[1],pmom[2],kS);
   
-  TClonesArray &particles = *fParticles;
-  TParticle* particle
-   = new(particles[fLoadPoint++]) 
-     TParticle(pdg, is, parent, -1, kfirstdaughter, klastdaughter,
-               pmom[0], pmom[1], pmom[2], e, vpos[0], vpos[1], vpos[2], tof);
-  particle->SetPolarisation(TVector3(polar[0],polar[1],polar[2]));
-  particle->SetWeight(weight);
-  particle->SetUniqueID(mech);
-  if(!done) particle->SetBit(kDoneBit);
-  
-  
-  //  Declare that the daughter information is valid
-  particle->SetBit(kDaughtersBit);
-  //  Add the particle to the stack
-  fParticleMap->AddAtAndExpand(particle, fNtrack);
 
-  if(parent>=0) {
-    particle = (TParticle*) fParticleMap->At(parent);
-    if (particle) {
-      particle->SetLastDaughter(fNtrack);
-      if(particle->GetFirstDaughter()<0) particle->SetFirstDaughter(fNtrack);
-    }
-    else {
-      printf("Error in AliStack::SetTrack: Parent %d does not exist\n",parent);
-    }
-  } 
-  else { 
-    //
-    // This is a primary track. Set high water mark for this event
-    fHgwmk = fNtrack;
-    //
-    // Set also number if primary tracks
-    fNprimary = fHgwmk+1;
-    fCurrentPrimary++;
-  }
-  ntr = fNtrack++;
+  SetTrack(done, parent, pdg, pmom[0], pmom[1], pmom[2], e,
+           vpos[0], vpos[1], vpos[2], tof, polar[0], polar[1], polar[2],
+           mech, ntr, weight, is);
 }
 
 //_____________________________________________________________________________
@@ -227,7 +202,7 @@ void AliStack::SetTrack(Int_t done, Int_t parent, Int_t pdg,
   	              Double_t px, Double_t py, Double_t pz, Double_t e,
   		      Double_t vx, Double_t vy, Double_t vz, Double_t tof,
 		      Double_t polx, Double_t poly, Double_t polz,
-		      AliMCProcess mech, Int_t &ntr, Float_t weight, Int_t is)
+		      AliMCProcess mech, Int_t &ntr, Double_t weight, Int_t is)
 { 
   //
   // Load a track on the stack
@@ -294,9 +269,31 @@ void AliStack::SetTrack(Int_t done, Int_t parent, Int_t pdg,
 }
 
 //_____________________________________________________________________________
-void AliStack::GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
-			  Float_t &e, Float_t *vpos, Float_t *polar,
-			  Float_t &tof)
+TParticle*  AliStack::GetNextTrack(Int_t& itrack)
+{
+  //
+  // Returns next track from stack of particles
+  //
+  
+
+  TParticle* track = GetNextParticle();
+
+  if (track) {
+    itrack = fCurrent;
+    track->SetBit(kDoneBit);
+  }
+  else 
+    itrack = -1;
+
+  return track;
+}
+
+/*
+//_____________________________________________________________________________
+void  AliStack::GetNextTrack(Int_t& itrack, Int_t& pdg,     
+  	                     Double_t& px, Double_t& py, Double_t& pz, Double_t& e,
+  		             Double_t& vx, Double_t& vy, Double_t& vz, Double_t& tof,
+		             Double_t& polx, Double_t& poly, Double_t& polz) 
 {
   //
   // Return next track from stack of particles
@@ -306,27 +303,27 @@ void AliStack::GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
   TParticle* track = GetNextParticle();
 //    cout << "GetNextTrack():" << fCurrent << fNprimary << endl;
 
-  if(track) {
-    mtrack=fCurrent;
-    ipart=track->GetPdgCode();
-    pmom[0]=track->Px();
-    pmom[1]=track->Py(); 
-    pmom[2]=track->Pz();
-    e      =track->Energy();
-    vpos[0]=track->Vx();
-    vpos[1]=track->Vy();
-    vpos[2]=track->Vz();
+  if (track) {
+    itrack = fCurrent;
+    pdg = track->GetPdgCode();
+    px = track->Px();
+    py = track->Py(); 
+    pz = track->Pz();
+    e  = track->Energy();
+    vx = track->Vx();
+    vy = track->Vy();
+    vz = track->Vz();
+    tof = track->T();
     TVector3 pol;
     track->GetPolarisation(pol);
-    polar[0]=pol.X();
-    polar[1]=pol.Y();
-    polar[2]=pol.Z();
-    tof=track->T();
+    polx = pol.X();
+    poly = pol.Y();
+    polz = pol.Z();
     track->SetBit(kDoneBit);
 //      cout << "Filled params" << endl;
   }
   else 
-    mtrack=-1;
+    itrack = -1;
 
   //
   // stop and start timer when we start a primary track
@@ -339,6 +336,23 @@ void AliStack::GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
   }
   fTimer.Start();
 }
+
+*/
+//_____________________________________________________________________________
+TParticle*  AliStack::GetPrimaryForTracking(Int_t i)
+{
+  //
+  // Returns i-th primary particle if it is flagged to be tracked,
+  // 0 otherwise
+  //
+  
+  TParticle* particle = Particle(i);
+  
+  if (!particle->TestBit(kDoneBit))
+    return particle;
+  else
+    return 0;
+}      
 
 
 //_____________________________________________________________________________
@@ -365,7 +379,11 @@ void AliStack::PurifyKine()
     if(i<=fHgwmk) map[i]=i ; 
     else {
       map[i] = -99;
-      if((part=(TParticle*) particles.At(i))) { 
+      if((part=(TParticle*) particles.At(i))) {
+//
+//        Check of this track should be kept for physics reasons 
+	  if (KeepPhysics(part)) KeepTrack(i);
+//
           part->ResetBit(kDaughtersBit);
           part->SetFirstDaughter(-1);
           part->SetLastDaughter(-1);
@@ -459,6 +477,34 @@ void AliStack::PurifyKine()
    fNtrack=nkeep;
    fHgwmk=nkeep-1;
    //   delete [] map;
+}
+
+Bool_t AliStack::KeepPhysics(TParticle* part)
+{
+    //
+    // Some particles have to kept on the stack for reasons motivated
+    // by physics analysis. Decision is put here.
+    //
+    Bool_t keep = kFALSE;
+    //
+    // Keep first-generation daughter from primaries with heavy flavor 
+    //
+    Int_t parent = part->GetFirstMother();
+    if (parent >= 0 && parent <= fHgwmk) {
+	TParticle* father = (TParticle*) Particles()->At(parent);
+	Int_t kf = father->GetPdgCode();
+	kf = TMath::Abs(kf);
+	Int_t kfl = kf;
+	// meson ?
+	if  (kfl > 10) kfl/=100;
+	// baryon
+	if (kfl > 10) kfl/=10;
+	if (kfl > 10) kfl/=10;
+	if (kfl >= 4) {
+	    keep = kTRUE;
+	}
+    }
+    return keep;
 }
 
 //_____________________________________________________________________________
@@ -785,7 +831,6 @@ void AliStack::MakeTree(Int_t event, const char *file)
   TBranch *branch=0;
   // Make Kinematics Tree
   char hname[30];
-//    printf("\n MakeTree called %d", event);
   if (!fTreeK) {
     sprintf(hname,"TreeK%d",event);
     fTreeK = new TTree(hname,"Kinematics");
@@ -821,7 +866,6 @@ void AliStack::FinishRun()
     }
 }
 
-//_____________________________________________________________________________
 Bool_t AliStack::GetEvent(Int_t event)
 {
 //
@@ -838,7 +882,8 @@ Bool_t AliStack::GetEvent(Int_t event)
     if (fTreeK) 
       fTreeK->SetBranchAddress("Particles", &fParticleBuffer);
     else {
-      Error("GetEvent","cannot find Kine Tree for event:%d\n",event);
+      //      Error("GetEvent","cannot find Kine Tree for event:%d\n",event);
+      Warning("GetEvent","cannot find Kine Tree for event:%d\n",event);
       return kFALSE;
     }
 //      printf("\n primaries %d", fNprimary);
@@ -848,5 +893,3 @@ Bool_t AliStack::GetEvent(Int_t event)
     ResetArrays(size);
     return kTRUE;
 }
-
-//----------------------------------------------------------------------
