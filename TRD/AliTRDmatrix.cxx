@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.11  2002/03/28 14:59:07  cblume
+Coding conventions
+
+Revision 1.10  2000/11/20 08:56:51  cblume
+Fix the binning of the histograms
+
 Revision 1.9  2000/11/01 14:53:21  cblume
 Merge with TRD-develop
 
@@ -59,6 +65,7 @@ Introduction of the Copyright and cvs Log
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 //  Contains the pixel information for one TRD chamber                       //
+//                                                                           //
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -525,6 +532,9 @@ Int_t AliTRDmatrix::GetTrack(Int_t iRow, Int_t iCol, Int_t iTime
 //_____________________________________________________________________________
 Int_t AliTRDmatrix::GetIndex(Int_t iRow, Int_t iCol, Int_t iTime) const
 {
+  //
+  // Get the index of a given pixel
+  //
 
   if ((iRow  >= 0) && (iRow  < fRow ) &&
       (iCol  >= 0) && (iCol  < fCol ) &&
@@ -540,6 +550,9 @@ Int_t AliTRDmatrix::GetIndex(Int_t iRow, Int_t iCol, Int_t iTime) const
 //_____________________________________________________________________________
 AliTRDpixel *AliTRDmatrix::GetPixel(Int_t iRow, Int_t iCol, Int_t iTime) const
 {
+  //
+  // Get one pixel
+  //
 
   Int_t iPixel = GetIndex(iRow,iCol,iTime);
   if (iPixel < 0) {

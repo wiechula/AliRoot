@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.17  2002/04/05 13:20:12  cblume
+Remove const for CreateGeometry
+
+Revision 1.16  2002/03/28 14:59:07  cblume
+Coding conventions
+
+Revision 1.15  2002/02/11 14:21:16  cblume
+Update of the geometry. Get rid of MANY
+
 Revision 1.14  2001/11/06 17:19:41  cblume
 Add detailed geometry and simple simulator
 

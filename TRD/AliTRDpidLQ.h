@@ -5,6 +5,18 @@
 
 /* $Id$ */
 
+
+///////////////////////////////////////////////////////////////////////////////
+//                                                                           //
+//   The TRD particle identification class                                   //
+//                                                                           //
+//   Its main purposes are:                                                  //
+//      - Creation and bookkeeping of the propability distributions          //
+//      - Assignment of a e/pi propability to a given track based on         //
+//        the LQ method                                                      //
+//                                                                           //
+///////////////////////////////////////////////////////////////////////////////
+
 #include "AliTRDpid.h"
 
 class AliTRDpidLQ : public AliTRDpid {

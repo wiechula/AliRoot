@@ -15,6 +15,16 @@
 
 /*
 $Log$
+
+Revision 1.36.4.1  2002/05/31 09:38:00  hristov
+First set of changes done by Piotr
+
+Revision 1.38  2002/03/28 14:59:07  cblume
+Coding conventions
+
+Revision 1.37  2002/03/25 20:01:49  cblume
+Introduce parameter class
+
 Revision 1.36  2002/02/11 14:25:27  cblume
 Geometry update, compressed hit structure
 
@@ -323,8 +333,8 @@ void AliTRD::AddCluster(Float_t *pos, Int_t *digits, Int_t det, Float_t amp
   c->SetQ(amp);
 
   c->SetLocalTimeBin(((Int_t) pos[2]));
-  c->SetY(- (col0 + padCol * colSize));
-  c->SetZ(   row0 + padRow * rowSize);
+  c->SetY(col0 + padCol * colSize);
+  c->SetZ(row0 + padRow * rowSize);
   
   c->SetSigmaY2((sigmaY2 + 1./12.) * colSize*colSize);   
   c->SetSigmaZ2(rowSize * rowSize / 12.);
@@ -361,10 +371,6 @@ void AliTRD::Hits2Digits()
   AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer"
                                                   ,"TRD digitizer class");
   digitizer->SetDebug(GetDebug());
-
-  // Set the parameter
-  digitizer->SetDiffusion();
-  digitizer->SetExB();
   digitizer->SetEvent(gAlice->GetEvNumber());
 
   // Initialization
@@ -398,10 +404,6 @@ void AliTRD::Hits2SDigits()
 
   // For the summable digits
   digitizer->SetSDigits(kTRUE);
-
-  // Set the parameter
-  digitizer->SetDiffusion();
-  digitizer->SetExB();
   digitizer->SetEvent(gAlice->GetEvNumber());
 
   // Initialization
@@ -833,7 +835,7 @@ void AliTRD::CreateMaterials()
 }
 
 //_____________________________________________________________________________
-void AliTRD::DrawModule()
+void AliTRD::DrawModule() const
 {
   //
   // Draw a shaded view of the Transition Radiation Detector version 0
@@ -892,7 +894,7 @@ void AliTRD::DrawModule()
 }
 
 //_____________________________________________________________________________
-Int_t AliTRD::DistancetoPrimitive(Int_t , Int_t )
+Int_t AliTRD::DistancetoPrimitive(Int_t , Int_t ) const
 {
   //
   // Distance between the mouse and the TRD detector on the screen
@@ -1295,7 +1297,7 @@ AliHit* AliTRD::NextHit()
 }
 
 //_____________________________________________________________________________
-AliHit* AliTRD::FirstHit2(Int_t track)
+AliHit* AliTRD::FirstHit2(Int_t track) 
 {
   //
   // Initializes the hit iterator.
@@ -1358,7 +1360,6 @@ void AliTRD::MakeBranch2(Option_t *option, const char *file)
   if (!fTrackHits) {
     fTrackHits = new AliTRDtrackHits();
   }
-
   if (fTrackHits && TreeH() && cH) 
    {
     TreeH()->Branch(branchname,"AliTRDtrackHits",&fTrackHits,fBufferSize,99);
