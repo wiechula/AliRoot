@@ -24,7 +24,7 @@
 
 // --- Standard library ---
 
-#include "iostream.h"
+#include <iostream>
 
 // --- AliRoot header files ---
 
@@ -63,23 +63,33 @@ void AliPHOSEmcRecPoint::AddDigit(AliDigitNew & digit, Float_t Energy)
   // and accumulates the total amplitude and the multiplicity 
   
   if ( fMulDigit >= fMaxDigit ) { // increase the size of the lists 
-    int * tempo = new ( int[fMaxDigit*=2] ) ; 
-    Float_t * tempoE =  new ( Float_t[fMaxDigit*=2] ) ;
-    Int_t index ; 
-    
+    fMaxDigit*=2 ; 
+    int * tempo = new ( int[fMaxDigit] ) ; 
+    Float_t * tempoE =  new ( Float_t[fMaxDigit] ) ;
+
+    Int_t index ;     
     for ( index = 0 ; index < fMulDigit ; index++ ){
       tempo[index] = fDigitsList[index] ;
       tempoE[index] = fEnergyList[index] ; 
     }
     
-    delete fDigitsList ; 
-    delete fEnergyList ;
-    fDigitsList = tempo ;
-    fEnergyList = tempoE ; 
-  }
+    delete [] fDigitsList ; 
+    fDigitsList =  new ( int[fMaxDigit] ) ;
+ 
+    delete [] fEnergyList ;
+    fEnergyList =  new ( Float_t[fMaxDigit] ) ;
+
+    for ( index = 0 ; index < fMulDigit ; index++ ){
+      fDigitsList[index] = tempo[index] ;
+      fEnergyList[index] = tempoE[index] ; 
+    }
+ 
+    delete [] tempo ;
+    delete [] tempoE ; 
+  } // if
   
-  fDigitsList[fMulDigit]  =  (int) &digit  ; 
-  fEnergyList[fMulDigit++]= Energy ;
+  fDigitsList[fMulDigit]   =  (int) &digit  ; 
+  fEnergyList[fMulDigit++] = Energy ;
   fAmp += Energy ; 
 }
 
@@ -257,18 +267,18 @@ Int_t  AliPHOSEmcRecPoint::GetNumberOfLocalMax(int *  maxAt, Float_t * maxAtEner
   Int_t iDigitN ;
   Int_t iDigit ;
 
-  for(iDigit=0; iDigit<fMulDigit; iDigit++) {
+  for(iDigit=0; iDigit<fMulDigit; iDigit++){
     maxAt[iDigit] = fDigitsList[iDigit] ;
   }
   
   for(iDigit=0 ; iDigit<fMulDigit; iDigit++) {   
-    if(maxAt[iDigit]!= -1) {
-      digit = (AliPHOSDigit *) maxAt[iDigit];
+    if(maxAt[iDigit] != -1) {
+      digit = (AliPHOSDigit *) maxAt[iDigit] ;
          
       for(iDigitN=0; iDigitN<fMulDigit; iDigitN++) {	
-	digitN = (AliPHOSDigit *) fDigitsList[iDigitN]; 
+	digitN = (AliPHOSDigit *) fDigitsList[iDigitN] ; 
 	
-	if ( AreNeighbours(digit,digitN) ) {
+	if ( AreNeighbours(digit, digitN) ) {
 	  if (fEnergyList[iDigit] > fEnergyList[iDigitN] ) {    
 	    maxAt[iDigitN] = -1 ;
 	    //but may be digit is not local max too ?
@@ -290,7 +300,8 @@ Int_t  AliPHOSEmcRecPoint::GetNumberOfLocalMax(int *  maxAt, Float_t * maxAtEner
   for(iDigit=0; iDigit<fMulDigit; iDigit++) { 
     if(maxAt[iDigit] != -1){
       maxAt[iDigitN] = maxAt[iDigit] ;
-      maxAtEnergy[iDigitN++] = fEnergyList[iDigit] ;
+      maxAtEnergy[iDigitN] = fEnergyList[iDigit] ;
+      iDigitN++ ; 
     }
   }
   return iDigitN ;

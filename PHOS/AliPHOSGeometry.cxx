@@ -25,8 +25,8 @@
 
 // --- Standard library ---
 
-#include <iostream.h>
-#include "assert.h"
+#include <iostream>
+#include <cassert>
 
 // --- AliRoot header files ---
 
@@ -292,7 +292,6 @@ void AliPHOSGeometry::InitPPSD(void)
 //____________________________________________________________________________
 AliPHOSGeometry *  AliPHOSGeometry::GetInstance() 
 { 
-  assert(fGeom!=0) ; 
   return (AliPHOSGeometry *) fGeom ; 
 }
 

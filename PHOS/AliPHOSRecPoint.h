@@ -16,7 +16,7 @@
 
 // --- Standard library ---
 
-#include "assert.h"
+#include <cassert>
 
 // --- AliRoot header files ---
 

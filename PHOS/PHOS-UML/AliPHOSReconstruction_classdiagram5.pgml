@@ -120,7 +120,6 @@ public void MakeClusters()</text>
   </group>
   <group name="Fig2"
        description="uci.uml.visual.FigInterface[208, 200, 176, 64]"
-       href="S.100566"
        fill="1"
        fillcolor="-56"
        stroke="1"
@@ -168,7 +167,7 @@ public void MakeClusters()</text>
       strokecolor="-256"
       font="Dialog"
       textsize="9"
-    >AliPHOSSubTracker</text>
+    >AliPHOSTrackSegmentMaker</text>
     <text name="Fig2.4"
       x="208"
       y="227"
@@ -294,7 +293,6 @@ public void MakeSubTracks()</text>
   </group>
   <group name="Fig6"
        description="uci.uml.visual.FigAssociation"
-       href="S.100994"
        stroke="1"
        strokecolor="-16777216"
   >
