@@ -15,6 +15,7 @@
 #define ALI_DET_CONSTRUCTION_H
 
 #include "AliModulesComposition.h"
+#include "AliDetSwitchVector.h"
 
 #include <globals.hh>
 
@@ -30,9 +31,7 @@ class AliDetConstruction : public AliModulesComposition
 
     // methods
     virtual G4VPhysicalVolume* Construct();
-
-    // set methods
-    void SetTopVolumeName(G4String name);
+    virtual void GenerateXMLGeometry() const;
     
   protected:
     AliDetConstruction(const AliDetConstruction& right);
@@ -44,16 +43,12 @@ class AliDetConstruction : public AliModulesComposition
     // methods
     void BuildDetectors();
     void CreateDetectors();
+    void CheckDependence(const G4String& master, const G4String& slave);
     void CheckDetDependencies();
   
     // data members
-    G4String  fTopVolumeName;  //top volume name
+    AliDetSwitchVector  fDetSwitchVector; //vector of AliDetSwitch
 };
-
-// inline methods
-
-inline void AliDetConstruction::SetTopVolumeName(G4String name)
-{ fTopVolumeName = name; }
 
 #endif //ALI_DET_CONSTRUCTION_H
 

@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.16  2001/10/16 08:45:37  morsch
-All vertex truncation and event vertex moved here.
-
 Revision 1.15  2001/07/28 10:43:41  hristov
 Default argument initialised once
 

@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.7  2001/10/21 18:22:54  hristov
-BranchOld replaced by Branch. It works correctly with Root 2.02.xx
-
 Revision 1.6  2001/08/30 09:25:24  hristov
 The operator[] is replaced by At() or AddAt() in case of TObjArray. A temporary replacement of Branch with BranchOld is introduced
 

@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.16  2001/10/12 11:13:59  morsch
-Missing break statements added (thanks to Nicola Carrer)
-
 Revision 1.15  2001/03/27 10:54:50  morsch
 Add ResetDecayTable() and SsetDecayTable() methods.
 

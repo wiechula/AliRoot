@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.3  2001/10/16 07:44:38  morsch
-Initialize  fVertex in all constructors.
-
 Revision 1.2  2001/09/25 11:28:48  morsch
 Possibility to store and retrieve primary vertex position added.
 

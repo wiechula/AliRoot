@@ -15,11 +15,6 @@
 
 /*
 $Log$
-Revision 1.12  2001/10/12 22:07:20  nilsen
-A patch for C++ io manipulation functions so that they will work both
-with GNU gcc 2.96 and GNU gcc 3.01 compilers. Needs to be tested with
-other platforms.
-
 Revision 1.11  2001/09/04 14:54:31  hristov
 Const multidimentional arrays cause problems in the CINT dictionary on HP, const removed
 

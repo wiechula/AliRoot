@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.3  2001/10/15 17:31:56  jchudoba
-Bug correction
-
 Revision 1.2  2001/10/04 15:58:52  jchudoba
 Option to open the stream in READ or UPDATE mode
 

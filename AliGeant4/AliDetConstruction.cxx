@@ -8,60 +8,48 @@
 // See the class description in the header file.
 
 #include "AliDetConstruction.h"
-#include "AliSingleModuleConstruction.h"
 #include "AliDetSwitch.h"
+#include "AliLVTree.h"
 #include "AliGlobals.h"
+#include "AliFiles.h"
 #include "AliRun.h"
 #include "AliModule.h"
 
+#include "TG4XMLGeometryGenerator.h"
+#include "TG4GeometryServices.h"
+
+#include <G4VPhysicalVolume.hh>
+
 //_____________________________________________________________________________
 AliDetConstruction::AliDetConstruction()
-  : fTopVolumeName("ALIC")
+  : AliModulesComposition()
 {
   // initialize det switch vector: 
-  // moduleName nofVersions defaultVersion [type isStandalone]     
-        // det switch objects are deleted in
-	// the base class (AliModulesCompositions) destructor
+  // moduleName nofVersions defaultVersion [type]
+        // det switch objects are deleted in fDetSwitchVector destructor
 
-  AliDetSwitch* detSwitch;
-  detSwitch = new AliDetSwitch("ABSO",   1, 0, kStructure);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("DIPO",   3, 2, kStructure, false);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("FRAME",  3, 2, kStructure, false);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("HALL",   1, 0, kStructure);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("MAG",    1, 0, kStructure);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("PIPE",   5, 0, kStructure);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("SHIL",   1, 0, kStructure);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("CASTOR", 2, 1);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("FMD",    2, 1);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("ITS",    7, 5);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("MUON",   2, 1, kDetector, false);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("PHOS",   2, 1);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("PMD",    3, 1);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("RICH",   3, 1);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("START",  2, 1);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("TOF",    5, 2, kDetector, false);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("TPC",    4, 2);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("TRD",    2, 1, kDetector, false);
-  AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("ZDC",    3, 2, kDetector, false);
-  AddDetSwitch(detSwitch);  
+  fDetSwitchVector.Add(new AliDetSwitch("ABSO",   1, 0, kStructure));
+  fDetSwitchVector.Add(new AliDetSwitch("DIPO",   3, 2, kStructure));
+  fDetSwitchVector.Add(new AliDetSwitch("FRAME",  3, 2, kStructure));
+  fDetSwitchVector.Add(new AliDetSwitch("HALL",   1, 0, kStructure));
+  fDetSwitchVector.Add(new AliDetSwitch("MAG",    1, 0, kStructure));
+  fDetSwitchVector.Add(new AliDetSwitch("PIPE",   5, 0, kStructure));
+  fDetSwitchVector.Add(new AliDetSwitch("SHIL",   1, 0, kStructure));
+  fDetSwitchVector.Add(new AliDetSwitch("CASTOR", 2, 1));
+  fDetSwitchVector.Add(new AliDetSwitch("FMD",    2, 1));
+  fDetSwitchVector.Add(new AliDetSwitch("ITS",    7, 5));
+  fDetSwitchVector.Add(new AliDetSwitch("MUON",   2, 1));
+  fDetSwitchVector.Add(new AliDetSwitch("PHOS",   2, 1));
+  fDetSwitchVector.Add(new AliDetSwitch("PMD",    3, 1));
+  fDetSwitchVector.Add(new AliDetSwitch("RICH",   3, 1));
+  fDetSwitchVector.Add(new AliDetSwitch("START",  2, 1));
+  fDetSwitchVector.Add(new AliDetSwitch("TOF",    5, 2));
+  fDetSwitchVector.Add(new AliDetSwitch("TPC",    4, 2));
+  fDetSwitchVector.Add(new AliDetSwitch("TRD",    2, 1));
+  fDetSwitchVector.Add(new AliDetSwitch("ZDC",    3, 2));
+
+  // instantiate LVtree browser
+  AliLVTree::Instance();
 }
 
 //_____________________________________________________________________________
@@ -72,8 +60,10 @@ AliDetConstruction::AliDetConstruction(const AliDetConstruction& right)
 }  
 
 //_____________________________________________________________________________
-AliDetConstruction::~AliDetConstruction() {
-//
+AliDetConstruction::~AliDetConstruction() 
+{
+  // delete LVtree browser
+  delete AliLVTree::Instance();
 }
 
 // operators
@@ -112,22 +102,23 @@ void AliDetConstruction::BuildDetectors()
     text = text + module->GetName() + " has been found.";
     AliGlobals::Exception(text);
   }  
-  AddSingleModuleConstruction("BODY", 0, kStructure);
+  AddModule("BODY", 0, kStructure);
 
   G4bool first = true;
   while ((module = (AliModule*)next())) {
+  
     // register moduleConstruction in fDetSwitchVector
-    // in order to keep availability of /AlDet/list command
+    // in order to keep availability of /aliDet/list command
     G4String modName = module->GetName();
     G4int modVersion = module->IsVersion();
     if (first)
       // skip registering of the top volume 
       first = false;
     else 
-      SwitchDetOn(modName, modVersion);
+      fDetSwitchVector.SwitchDetOn(modName, modVersion);
  
     // all modules will be processed alltogether
-    AddMoreModuleConstruction(modName, modVersion);
+    AddModule(modName, modVersion);
 
     G4cout << "Created module construction for " 
            << modName << "v" << modVersion << "." << G4endl;   
@@ -146,101 +137,59 @@ void AliDetConstruction::CreateDetectors()
 // ---
 
   // add top volume (AliBODY) construction first
-  AddSingleModuleConstruction("BODY", 0, kStructure);
+  AddModule("BODY", 0, kStructure);
 
   // add modules constructions
-  for (G4int id=0; id<fDetSwitchVector.size(); id++)
+  for (G4int i=0; i<fDetSwitchVector.GetSize(); i++)
   {
-    G4String detName = fDetSwitchVector[id]->GetDetName();
-    G4int version = fDetSwitchVector[id]->GetSwitchedVersion();
-    G4bool isStandalone = fDetSwitchVector[id]->IsStandalone();
-    AliModuleType type = fDetSwitchVector[id]->GetType();
+    AliDetSwitch* detSwitch = fDetSwitchVector.GetDetSwitch(i);
+    G4String detName = detSwitch->GetDetName();
+    G4int version = detSwitch->GetSwitchedVersion();
+    AliModuleType type = detSwitch->GetType();
     
     if (version > -1)
-      if (isStandalone)
-        AddSingleModuleConstruction(detName, version, type);
-      else
-        AddMoreModuleConstruction(detName, version, type);
+      AddModule(detName, version, type);
   }    
 }
 
 //_____________________________________________________________________________
+void AliDetConstruction::CheckDependence(const G4String& master, 
+                                         const G4String& slave)
+{
+// Checks modules dependence.
+// If master is switch on and slave off, the default version
+// of slave is switched on and a  warning is issued.
+// ---
+
+  AliDetSwitch* masterSwitch = fDetSwitchVector.GetDetSwitch(master);
+  AliDetSwitch* slaveSwitch = fDetSwitchVector.GetDetSwitch(slave);
+
+  if ( masterSwitch->GetSwitchedVersion() > -1 && 
+       slaveSwitch->GetSwitchedVersion() < 0 ) {
+     
+    slaveSwitch->SwitchOnDefault();
+    
+    // warning
+    G4String text = "AliDetConstruction::CheckDetDependence: \n";
+    text = text + "    Switched " + master + " requires " + slave + ".\n"; 
+    text = text + "    The det switch for " + slave + " has been changed."; 
+    AliGlobals::Warning(text);
+  }
+}  
+  
+//_____________________________________________________________________________
 void AliDetConstruction::CheckDetDependencies()
 {
 // Checks modules dependencies.
-// Dependent modules FRAME, TOF, TRD 
-// TOF always requires FRAMEv1
-// TRD can be built with both (??)
-// ZDC requires DIPO
 // ---
 
-  // get switched versions of dependent modules
-  G4int verMUON = GetDetSwitch("MUON")->GetSwitchedVersion(); 
-  G4int verTOF = GetDetSwitch("TOF")->GetSwitchedVersion(); 
-  G4int verTRD = GetDetSwitch("TRD")->GetSwitchedVersion(); 
-  G4int verZDC = GetDetSwitch("ZDC")->GetSwitchedVersion(); 
-  G4int verFRAME = GetDetSwitch("FRAME")->GetSwitchedVersion(); 
-  
-  // check dependencies  
-  if (verMUON > -1) {
-    // MUON requires DIPO
-    if(GetDetSwitch("DIPO")->GetSwitchedVersion()<0) {
-      GetDetSwitch("DIPO")->SwitchOnDefault();
-      G4String text = "AliDetConstruction::CheckDetDependencies: \n";
-      text = text + "    Switched MUON requires DIPO.\n"; 
-      text = text + "    The det switch for DIPO has been changed."; 
-      AliGlobals::Warning(text);
-    }  
-  }
-  if (verTOF > -1) {
-    // TOF requires FRAMEv1 - obsolete? 
-    if (verFRAME != 2) {
-      GetDetSwitch("FRAME")->SwitchOn(2);
-      G4String text = "AliDetConstruction::CheckDetDependencies: \n";
-      text = text + "    Switched TOF requires FRAME v1.\n"; 
-      text = text + "    The det switch for FRAME has been changed."; 
-      AliGlobals::Warning(text);
-    }  
-  }
-  if (verTRD > -1) {
-    // TRD requires FRAME
-    verFRAME = GetDetSwitch("FRAME")->GetSwitchedVersion(); 
-    if (verFRAME < 0) {
-      GetDetSwitch("FRAME")->SwitchOnDefault();
-      G4String text = "AliDetConstruction::CheckDetDependencies: \n";
-      text = text + "    Switched TRD requires FRAME.\n"; 
-      text = text + "    The det switch for FRAME has been changed."; 
-      AliGlobals::Warning(text);
-    }  
-  }  
-  if (verZDC > -1) {
-    // ZDC requires PIPE, ABSO, DIPO, SHIL 
-    G4int verPIPE = GetDetSwitch("PIPE")->GetSwitchedVersion(); 
-    G4int verABSO = GetDetSwitch("ABSO")->GetSwitchedVersion(); 
-    G4int verDIPO = GetDetSwitch("DIPO")->GetSwitchedVersion(); 
-    G4int verSHIL = GetDetSwitch("SHIL")->GetSwitchedVersion(); 
-    if ( verPIPE != 1 || verABSO !=0 || verDIPO == -1 || verSHIL == -1) {
-      G4String text = "AliDetConstruction::CheckDetDependencies: \n";
-      text = text + "    Switched ZDC requires PIPE, ABSO, DIPO and SHIL.\n"; 
-      if (verPIPE == -1) {
-        GetDetSwitch("PIPE")->SwitchOnDefault();
-        text = text + "    The det switch for PIPE has been changed.\n"; 
-      }  
-      if (verABSO == -1) {
-        GetDetSwitch("ABSO")->SwitchOnDefault();
-        text = text + "    The det switch for ABSO has been changed.\n"; 
-      }  
-      if (verDIPO == -1) {
-        GetDetSwitch("DIPO")->SwitchOnDefault();
-        text = text + "    The det switch for DIPO has been changed.\n"; 
-      }  
-      if (verSHIL == -1) {
-        GetDetSwitch("SHIL")->SwitchOnDefault();
-        text = text + "    The det switch for SHIL has been changed."; 
-      }  
-      AliGlobals::Warning(text);
-    }  
-  }    
+  CheckDependence("MUON", "DIPO");
+  CheckDependence("TOF", "FRAME");
+  CheckDependence("TRD", "FRAME");
+  CheckDependence("ZDC", "PIPE");
+  CheckDependence("ZDC", "ABSO");
+  CheckDependence("ZDC", "DIPO");
+  CheckDependence("ZDC", "SHIL");
 }  
 
 // public methods
@@ -266,6 +215,55 @@ G4VPhysicalVolume* AliDetConstruction::Construct()
   // construct modules geometry
   ConstructModules();
 
-  return AliSingleModuleConstruction::GetWorld();      
+  return TG4GeometryServices::Instance()->GetWorld();      
 }
+
+//_____________________________________________________________________________
+void AliDetConstruction::GenerateXMLGeometry() const 
+{
+// Generates XML geometry file from the top volume.
+// The file name is set according the last switched detector
+// registered in the det switch vector.
+// ---
+
+  G4VPhysicalVolume* world = TG4GeometryServices::Instance()->GetWorld();
+
+  // XML filename
+  // according to last switched detector
+  G4String detName;
+  G4String detVersion = "";
+  G4int version = -1;
+  for (G4int i=fDetSwitchVector.GetSize()-1; i>=0; i--) {
+    version = fDetSwitchVector.GetDetSwitch(i)->GetSwitchedVersion();
+    if (version > -1) {
+      detName = fDetSwitchVector.GetDetSwitch(i)->GetDetName();
+      AliGlobals::AppendNumberToString(detVersion,version); 
+      break;
+    }  
+  }  
+  G4String filePath 
+    = AliFiles::Instance()->GetXMLFilePath(detName, version);
+  
+  // set top volume name
+  G4String topName = world->GetName() + "_comp";
+  
+  // generate XML
+  
+  TG4XMLGeometryGenerator xml;
+  xml.OpenFile(filePath);
+
+  // generate materials 
+  // not implemented
+  // xml.GenerateMaterials(version, "today", "Generated from G4",
+  //                       "v4", world->GetLogicalVolume());
+
+  // generate volumes tree
+  xml.GenerateSection(detName, detVersion, "today", "Generated from Geant4",
+                      topName, world->GetLogicalVolume());
+  xml.CloseFile();
+  
+  // set verbose
+  G4cout << "File " << detName << "v" << version << ".xml has been generated." 
+         << G4endl;
+}  
 

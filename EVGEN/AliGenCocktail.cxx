@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.13  2001/10/21 18:35:56  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.12  2001/06/18 13:07:30  morsch
 Forward kinematic ranges to entries only if not set by user.
 

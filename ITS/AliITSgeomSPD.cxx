@@ -15,10 +15,6 @@
 
 /*
 $Log$
-Revision 1.14  2001/10/19 21:32:35  nilsen
-Minor changes to remove compliation warning on gcc 2.92.2 compiler, and
-cleanded up a little bit of code.
-
 Revision 1.13  2001/10/12 22:07:20  nilsen
 A patch for C++ io manipulation functions so that they will work both
 with GNU gcc 2.96 and GNU gcc 3.01 compilers. Needs to be tested with
@@ -253,10 +249,6 @@ istream &operator>>(istream &is,AliITSgeomSPD &r){
 
 /*
 $Log$
-Revision 1.14  2001/10/19 21:32:35  nilsen
-Minor changes to remove compliation warning on gcc 2.92.2 compiler, and
-cleanded up a little bit of code.
-
 Revision 1.13  2001/10/12 22:07:20  nilsen
 A patch for C++ io manipulation functions so that they will work both
 with GNU gcc 2.96 and GNU gcc 3.01 compilers. Needs to be tested with
@@ -366,10 +358,6 @@ istream &operator>>(istream &is,AliITSgeomSPD300 &r){
 //=====================================================================
 /*
 $Log$
-Revision 1.14  2001/10/19 21:32:35  nilsen
-Minor changes to remove compliation warning on gcc 2.92.2 compiler, and
-cleanded up a little bit of code.
-
 Revision 1.13  2001/10/12 22:07:20  nilsen
 A patch for C++ io manipulation functions so that they will work both
 with GNU gcc 2.96 and GNU gcc 3.01 compilers. Needs to be tested with
@@ -509,10 +497,6 @@ istream &operator>>(istream &is,AliITSgeomSPD425Short &r){
 
 /*
 $Log$
-Revision 1.14  2001/10/19 21:32:35  nilsen
-Minor changes to remove compliation warning on gcc 2.92.2 compiler, and
-cleanded up a little bit of code.
-
 Revision 1.13  2001/10/12 22:07:20  nilsen
 A patch for C++ io manipulation functions so that they will work both
 with GNU gcc 2.96 and GNU gcc 3.01 compilers. Needs to be tested with

@@ -14,9 +14,6 @@
  **************************************************************************/
 /*
 $Log$
-Revision 1.6  2001/10/19 05:29:38  alla
-bug in meduim fixed
-
 Revision 1.5  2001/07/27 13:03:12  hristov
 Default Branch split level set to 99
 

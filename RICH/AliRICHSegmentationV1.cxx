@@ -15,6 +15,13 @@
 
 /*
   $Log$
+  Revision 1.8  2001/11/08 19:30:43  dibari
+  initialising of pad size added to ctor
+
+  Revision 1.7  2001/02/13 20:13:20  jbarbosa
+  Moved setting of variables to constructor. Init is now responsible for calculating padplane dimensions.
+  Corrected all calculations for padplane definition.
+
   Revision 1.6  2001/01/24 21:00:29  jbarbosa
   Redefinition of sectors and pad coordinates/real coordinates transformations.
 
@@ -37,39 +44,32 @@
 
 #include "AliRICHSegmentationV1.h"
 
-
-//--------------------------------------------------------
 ClassImp(AliRICHSegmentationV1)
 
-//________________________________________________________________________________
 AliRICHSegmentationV1::AliRICHSegmentationV1()
 { 
 
 // Default constructor for AliRICHSegmantionV1 (with dead zones)
 
-  fNpx=144;
-  fNpy=160;
-  //fNpx=80;
-  //fNpy=48;
-  fDeadZone=2.6;
-  fSector=-1;
+   fNpx=144;      // number of pads along X direction 
+   fNpy=160;      // number of pads along Y direction 
+   fDeadZone=3.0; // space between CsI photocathods in cm
+   fDpx=0.84;     // pad width in cm
+   fDpy=0.80;     // pad heights in cm
+   fWireD=0.84/2;	 
+   fSector=-1;
+   Init(0);       // ??? remove 0
 }
 
 void AliRICHSegmentationV1::Init(Int_t id)
 {
+// Recalculates all the values after some of them have been changed
 
-// Initialisation of chambers
+   Float_t csi_length = fNpy*fDpy + fDeadZone;
+   Float_t csi_width = fNpx*fDpx + 2*fDeadZone;
 
-  //printf("*            Initialising SegmentationV1 (dead zones) in chamber %d              *\n",id+1);
-
-  // parametrised definition
-
-  Float_t csi_length = fNpy*fDpy + fDeadZone;
-  Float_t csi_width = fNpx*fDpx + 2*fDeadZone;
-
-  fPadPlane_Width = (csi_width - 2*fDeadZone)/3;
-  fPadPlane_Length = (csi_length - fDeadZone)/2;
-
+   fPadPlane_Width = (csi_width - 2*fDeadZone)/3;
+   fPadPlane_Length = (csi_length - fDeadZone)/2;
 }
 
 // calculate sector from x-y coordinates

@@ -1,4 +1,5 @@
-void slowDigitsAna() {
+void anaDigits() 
+{
 
 /////////////////////////////////////////////////////////////////////////
 //
@@ -20,13 +21,13 @@ void slowDigitsAna() {
   Int_t   nEvent  = 0;
 
   // Define the objects
-  AliTRDv1       *TRD;
-  AliTRDgeometry *TRDgeometry;
-  AliTRDdigit    *Digit;
+  AliTRDv1       *trd;
+  AliTRDgeometry *geo;
+  AliTRDdigit    *digit;
 
   Int_t           track;
 
-  // Connect the AliRoot file containing Geometry, Kine, Hits, and Digits
+  // Connect the AliRoot file containing Geometry, Kine, Hits, and digits
   TFile *gafl = (TFile*) gROOT->GetListOfFiles()->FindObject(alifile);
   if (!gafl) {
     cout << "Open the ALIROOT-file " << alifile << endl;
@@ -48,11 +49,11 @@ void slowDigitsAna() {
   if (nparticles <= 0) break;
   
   // Get the pointer to the detector object
-  TRD = (AliTRDv1*) gAlice->GetDetector("TRD");
+  trd = (AliTRDv1*) gAlice->GetDetector("TRD");
 
   // Get the pointer to the geometry object
-  if (TRD) {
-    TRDgeometry = TRD->GetGeometry();
+  if (trd) {
+    geo = trd->GetGeometry();
   }
   else {
     cout << "Cannot find the geometry" << endl;
@@ -60,25 +61,27 @@ void slowDigitsAna() {
   }
 
   // Create the digits manager
-  AliTRDdigitsManager *DigitsManager = new AliTRDdigitsManager();
+  AliTRDdigitsManager *digitsManager = new AliTRDdigitsManager();
+  digitsManager->SetVerbose(1);
 
   // Read the digits from the file
-  DigitsManager->ReadDigits();
+  digitsManager->Open(alifile);
+  digitsManager->ReadDigits();
 
   // Define the detector matrix for one chamber
   const Int_t iSec = 11;
   const Int_t iCha = 2;
   const Int_t iPla = 0;
-  Int_t  rowMax = TRDgeometry->GetRowMax(iPla,iCha,iSec);
-  Int_t  colMax = TRDgeometry->GetColMax(iPla);
-  Int_t timeMax = TRDgeometry->GetTimeMax();
+  Int_t  rowMax = geo->GetRowMax(iPla,iCha,iSec);
+  Int_t  colMax = geo->GetColMax(iPla);
+  Int_t timeMax = geo->GetTimeMax();
   cout << "Geometry: rowMax = "  <<  rowMax
                 << " colMax = "  <<  colMax
                 << " timeMax = " << timeMax << endl;
-  AliTRDmatrix *TRDmatrix = new AliTRDmatrix(rowMax,colMax,timeMax,iSec,iCha,iPla);
+  AliTRDmatrix *matrix = new AliTRDmatrix(rowMax,colMax,timeMax,iSec,iCha,iPla);
 
   // Get the detector number
-  Int_t iDet = TRDgeometry->GetDetector(iPla,iCha,iSec); 
+  Int_t iDet = geo->GetDetector(iPla,iCha,iSec); 
   cout << " iDet = " << iDet << endl;
 
   // Loop through the detector pixel
@@ -86,24 +89,24 @@ void slowDigitsAna() {
     for (Int_t  col = 0;  col <  colMax;  col++) {
       for (Int_t  row = 0;  row <  rowMax;  row++) {
 
-        Digit = DigitsManager->GetDigit(row,col,time,iDet);
-        track = DigitsManager->GetTrack(0,row,col,time,iDet);
+        digit = digitsManager->GetDigit(row,col,time,iDet);
+        track = digitsManager->GetTrack(0,row,col,time,iDet);
         
-        TRDmatrix->SetSignal(row,col,time,Digit->GetAmp());
+        matrix->SetSignal(row,col,time,digit->GetAmp());
 
-        delete Digit;
+        delete digit;
 
       }
     }
   }
 
   // Display the detector matrix
-  TRDmatrix->Draw();
-  //TRDmatrix->DrawRow(18);
-  //TRDmatrix->DrawCol(58);
-  //TRDmatrix->DrawTime(20);
-  TRDmatrix->ProjRow();
-  TRDmatrix->ProjCol();
-  TRDmatrix->ProjTime();
+  matrix->Draw();
+  //matrix->DrawRow(18);
+  //matrix->DrawCol(58);
+  //matrix->DrawTime(20);
+  matrix->ProjRow();
+  matrix->ProjCol();
+  matrix->ProjTime();
 
 }

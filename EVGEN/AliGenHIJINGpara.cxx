@@ -15,10 +15,6 @@
 
 /*
 $Log$
-Revision 1.10  2001/10/15 16:44:46  morsch
-- Possibility for vertex distribution truncation.
-- Write mc header with vertex position.
-
 Revision 1.9  2001/07/27 17:09:36  morsch
 Use local SetTrack, KeepTrack and SetHighWaterMark methods
 to delegate either to local stack or to stack owned by AliRun.

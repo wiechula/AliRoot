@@ -42,7 +42,7 @@ ClassImp(AliTRDtimeBin)
   AliTRDtimeBin::AliTRDtimeBin() {
   //default constructor
     fN=0;
-    for (Int_t i=0; i<kMAX_CLUSTER_PER_TIME_BIN; i++) 
+    for (UInt_t i=0; i<kMAX_CLUSTER_PER_TIME_BIN; i++) 
       fClusters[i]=0;
   }
 //______________________________________________________

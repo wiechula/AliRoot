@@ -1,4 +1,5 @@
-void slowClusterCreate() {
+void digits2cluster() 
+{
 
 ///////////////////////////////////////////////////////////////////////// 
 //
@@ -18,29 +19,29 @@ void slowClusterCreate() {
   Char_t *outfile = "TRDclusters.root";
 
   // Create the clusterizer
-  AliTRDclusterizerV1 *Clusterizer = 
-    new AliTRDclusterizerV1("clusterizer","slow clusterizer class"); 
+  AliTRDclusterizerV1 *clusterizer = 
+    new AliTRDclusterizerV1("clusterizer","Clusterizer class"); 
 
   // Set the parameter
-  Clusterizer->SetClusMaxThresh(0);
-  Clusterizer->SetClusSigThresh(0);
-  //Clusterizer->SetVerbose(1);
-  Clusterizer->Dump();
+  clusterizer->SetClusMaxThresh(0);
+  clusterizer->SetClusSigThresh(0);
+  //clusterizer->SetVerbose(1);
+  clusterizer->Dump();
 
   // Open the AliRoot file 
-  Clusterizer->Open(infile,0);
-  //Clusterizer->Open(infile,outfile,0);
+  clusterizer->Open(infile,0);
+  //clusterizer->Open(infile,outfile,0);
 
   // Load the digits
-  Clusterizer->ReadDigits();
+  clusterizer->ReadDigits();
  
   // Find the cluster
-  Clusterizer->MakeClusters();
+  clusterizer->MakeClusters();
 
   // Write the cluster tree into file AliTRDclusters.root
-  Clusterizer->WriteClusters(-1);
+  clusterizer->WriteClusters(-1);
 
   // Save the clusterizer class in the AliROOT file
-  // Clusterizer->Write();
+  // clusterizer->Write();
 
 }

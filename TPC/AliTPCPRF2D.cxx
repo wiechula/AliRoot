@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.8  2001/10/21 19:07:24  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.7  2001/01/30 09:23:15  hristov
 Streamers removed (R.Brun)
 

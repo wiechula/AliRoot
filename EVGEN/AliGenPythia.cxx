@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.43  2001/10/21 18:35:56  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.42  2001/10/15 08:21:55  morsch
 Vertex truncation settings moved to AliGenMC.
 

@@ -13,6 +13,7 @@
 #include <TObject.h>
 
 class TFile;
+class TTree;
 
 class AliTRDsegmentArray;
 class AliTRDdataArrayI;
@@ -29,12 +30,17 @@ class AliTRDdigitsManager : public TObject {
   virtual ~AliTRDdigitsManager();
   AliTRDdigitsManager &operator=(const AliTRDdigitsManager &m);
 
+  virtual void                CreateArrays();
   virtual void                Copy(TObject &m);
-  virtual Bool_t              MakeBranch(char *file=0);
+  virtual Bool_t              Open(const Char_t *name);
+  virtual Bool_t              MakeBranch(const Char_t *file = 0);
   virtual Bool_t              ReadDigits();
   virtual Bool_t              WriteDigits();
 
   virtual void                SetRaw();
+  virtual void                SetEvent(Int_t evt)          { fEvent   = evt; };
+  virtual void                SetVerbose(Int_t v = 1)      { fVerbose = v;   };
+  virtual void                SetSDigits(Int_t v = 1)      { fSDigits = v;   };
 
   virtual Bool_t              IsRaw() const                { return fIsRaw;         };
   static  Int_t               NDict()                      { return fgkNDict;       }; 
@@ -49,17 +55,25 @@ class AliTRDdigitsManager : public TObject {
           AliTRDdataArrayI   *GetDigits(Int_t det) const;
           AliTRDdataArrayI   *GetDictionary(Int_t det, Int_t i) const;
           Int_t               GetTrack(Int_t track, AliTRDdigit *Digit) const;
+          Short_t             GetDigitAmp(Int_t row, Int_t col, Int_t time, Int_t det) const;
 
  protected:
 
   static const Int_t  fgkNDict;            //  Number of track dictionary arrays
 
-  AliTRDsegmentArray *fDigits;             //! Digits data Array
+  Int_t               fEvent;              //  Event number
+
+  TFile              *fFile;               //! File containing the TRD digits tree
+  TTree              *fTree;               //! Tree for the digits arrays
+
+  AliTRDsegmentArray *fDigits;             //! Digits data array
   AliTRDsegmentArray *fDictionary[kNDict]; //! Track dictionary data array
 
   Bool_t              fIsRaw;              //  Flag indicating raw digits
+  Bool_t              fSDigits;            //  Switch for the summable digits
+  Int_t               fVerbose;            //  Verbose flag
 
-  ClassDef(AliTRDdigitsManager,1)          //  Manages the TRD digits
+  ClassDef(AliTRDdigitsManager,3)          //  Manages the TRD digits
 
 };
 

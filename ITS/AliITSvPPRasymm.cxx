@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.52  2001/10/22 11:00:54  hristov
-New naming schema of the rotation matrices in BuildGeometry() to avoid redefinition in other detectors (R.Barbera)
-
 Revision 1.51  2001/10/19 10:18:49  barbera
 A typo corrected.
 

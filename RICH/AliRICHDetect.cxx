@@ -15,9 +15,6 @@
 
 /*
   $Log$
-  Revision 1.16  2001/10/23 13:03:35  hristov
-  The access to several data members was changed from public to protected. The digitisation was adapted to the multi-event case (J.Chudoba)
-
   Revision 1.15  2001/10/21 18:31:23  hristov
   Several pointers were set to zero in the default constructors to avoid memory management problems
 

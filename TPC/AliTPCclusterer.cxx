@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.7  2001/10/21 19:04:55  hristov
-Several patches were done to adapt the barel reconstruction to the multi-event case. Some memory leaks were corrected. (Yu.Belikov)
-
 Revision 1.6  2001/08/30 09:28:48  hristov
 TTree names are explicitly set via SetName(name) and then Write() is called
 

@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.8  2001/10/21 18:38:43  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.7  2001/10/04 15:56:07  jchudoba
 TTask inheritance
 

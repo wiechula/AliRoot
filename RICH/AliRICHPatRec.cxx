@@ -15,9 +15,6 @@
 
 /*
   $Log$
-  Revision 1.13  2001/10/23 13:03:35  hristov
-  The access to several data members was changed from public to protected. The digitisation was adapted to the multi-event case (J.Chudoba)
-
   Revision 1.12  2001/05/10 12:34:23  jbarbosa
   Changed drwaing routines.
 

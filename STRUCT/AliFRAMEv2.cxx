@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.8  2001/10/18 14:11:35  morsch
-Some changes/bug corrections for SetHole(1) option.
-
 Revision 1.7  2001/10/16 14:50:59  morsch
 ... or better use modified IsVersion() method.
 

@@ -232,9 +232,11 @@ Bool_t AliTRDclusterizer::OpenOutput(const Char_t *name)
   }
 
   // Create a tree for the cluster
-  fClusterTree = new TTree("ClusterTree","Tree with TRDcluster");
+  Char_t treeName[12];
+  sprintf(treeName,"TreeR%d_TRD",fEvent);
+  fClusterTree = new TTree(treeName,"TRD cluster");
   TObjArray *ioArray = 0;
-  fClusterTree->Branch("TRDcluster","TObjArray",&ioArray,32000,0);
+  fClusterTree->BranchOld("TRDcluster","TObjArray",&ioArray,32000,0);
 
   if (savedir) {
     savedir->cd();

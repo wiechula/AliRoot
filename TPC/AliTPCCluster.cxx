@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.3  2001/10/21 19:07:24  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.2  2000/04/17 09:37:33  kowal2
 removed obsolete AliTPCDigitsDisplay.C
 

@@ -7,5 +7,6 @@
 #pragma link C++ class AliEMCAL+;
 #pragma link C++ class AliEMCALGeometry+; 
 #pragma link C++ class AliEMCALv0+;
-
+#pragma link C++ class AliEMCALv1+;
+#pragma link C++ class AliEMCALHit+;
 #endif

@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.33  2001/10/21 18:35:56  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.32  2001/07/27 17:09:36  morsch
 Use local SetTrack, KeepTrack and SetHighWaterMark methods
 to delegate either to local stack or to stack owned by AliRun.

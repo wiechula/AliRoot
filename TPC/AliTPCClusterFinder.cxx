@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.6  2001/10/21 19:07:24  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.5  2001/01/26 19:57:22  hristov
 Major upgrade of AliRoot code
 

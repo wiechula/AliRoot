@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.30  2001/10/21 18:30:39  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.29  2001/10/17 14:19:24  hristov
 delete replaced by delete []
 

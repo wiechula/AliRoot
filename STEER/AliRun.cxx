@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.80  2001/10/21 18:22:55  hristov
-BranchOld replaced by Branch. It works correctly with Root 2.02.xx
-
 Revision 1.79  2001/10/09 18:00:35  hristov
 Temporary fix to provide unique event number in the simulation (J.Chudoba)
 

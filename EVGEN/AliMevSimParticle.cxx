@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.3  2001/10/21 18:35:56  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.2  2001/03/24 10:08:30  morsch
 Log tag and copyright notice added.
 

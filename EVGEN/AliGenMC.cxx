@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.3  2001/10/16 08:48:56  morsch
-Common vertex related code moved to base class AliGenerator.
-
 Revision 1.2  2001/10/15 08:15:51  morsch
 Event vertex and vertex truncation setting moved into AliMC.
 

@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.34  2001/11/14 10:50:45  cblume
+Changes in digits IO. Add merging of summable digits
+
+Revision 1.33  2001/11/06 17:19:41  cblume
+Add detailed geometry and simple simulator
+
+Revision 1.32  2001/10/08 06:57:33  hristov
+Branches for  TRD digits are created only during the digitisation
+
 Revision 1.31  2001/08/30 09:30:30  hristov
 The split level of branches is set to 99
 
@@ -132,6 +141,8 @@ Introduction of the Copyright and cvs Log
 #include <TGeometry.h>
 #include <TTree.h>                                                              
 #include <TPGON.h> 
+#include <TFile.h>
+#include <TROOT.h>
 
 #include "AliRun.h"
 #include "AliConst.h"
@@ -150,8 +161,6 @@ Introduction of the Copyright and cvs Log
 #include "AliTRDrecPoint.h"
 #include "AliTRDcluster.h"
 #include "AliTRDdigitsManager.h"
-#include "AliTRDdataArrayI.h"
-#include "AliTRDsegmentArray.h"
 
 ClassImp(AliTRD)
  
@@ -177,11 +186,6 @@ AliTRD::AliTRD()
 
   fDrawTR        = 0;
   fDisplayType   = 0; 
-
-  fDigitsArray   = 0; 
-  for (Int_t iDict = 0; iDict < AliTRDdigitsManager::NDict(); iDict++) {
-    fDictionaryArray[iDict] = 0; 
-  }
 
 }
  
@@ -235,11 +239,6 @@ AliTRD::AliTRD(const char *name, const char *title)
   fDrawTR        = 0;
   fDisplayType   = 0;
 
-  fDigitsArray   = 0; 
-  for (Int_t iDict = 0; iDict < AliTRDdigitsManager::NDict(); iDict++) {
-    fDictionaryArray[iDict] = 0; 
-  }
-
   SetMarkerColor(kWhite);   
 
 }
@@ -264,12 +263,14 @@ AliTRD::~AliTRD()
 
   fIshunt = 0;
 
-  delete fGeometry;
-  delete fHits;
-  delete fRecPoints;
-  if (fDigitsArray) delete fDigitsArray;
-  for (Int_t iDict = 0; iDict < AliTRDdigitsManager::NDict(); iDict++) {
-    if (fDictionaryArray[iDict]) delete fDictionaryArray[iDict];
+  if (fGeometry) {
+    delete fGeometry;
+  }
+  if (fHits) {
+    delete fHits;
+  }
+  if (fRecPoints) {
+    delete fRecPoints;
   }
 
 }
@@ -338,11 +339,13 @@ void AliTRD::Hits2Digits()
 
   AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer"
                                                   ,"TRD digitizer class");
+  digitizer->SetVerbose(GetDebug());
 
   // Set the parameter
   digitizer->SetDiffusion();
   digitizer->SetExB();
   digitizer->SetEvent(gAlice->GetEvNumber());
+
   // Initialization
   digitizer->InitDetector();
     
@@ -350,7 +353,7 @@ void AliTRD::Hits2Digits()
   digitizer->MakeDigits();
   
   // Write the digits into the input file
-  if (digitizer->Digits()->MakeBranch(fDigitsFile)) {
+  if (digitizer->MakeBranch(fDigitsFile)) {
 
     digitizer->WriteDigits();
 
@@ -370,6 +373,7 @@ void AliTRD::Hits2SDigits()
 
   AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer"
                                                   ,"TRD digitizer class");
+  digitizer->SetVerbose(GetDebug());
 
   // For the summable digits
   digitizer->SetSDigits(kTRUE);
@@ -382,11 +386,11 @@ void AliTRD::Hits2SDigits()
   // Initialization
   digitizer->InitDetector();
     
-  // Create the digits
+  // Create the TRD s-digits branch
   digitizer->MakeDigits();
   
   // Write the digits into the input file
-  if (digitizer->Digits()->MakeBranch(fDigitsFile)) {
+  if (digitizer->MakeBranch(fDigitsFile)) {
 
     digitizer->WriteDigits();
 
@@ -404,17 +408,39 @@ void AliTRD::SDigits2Digits()
   // Create final digits from summable digits
   //
 
-}
+   // Create the TRD digitizer
+  AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer"
+                                                  ,"TRD digitizer class");  
+  digitizer->SetVerbose(GetDebug());
 
-//_____________________________________________________________________________
-void AliTRD::AddDigit(Int_t *digits, Int_t *amp)
-{
-  //
-  // Add a digit for the TRD
-  //
+  // Set the parameter
+  digitizer->SetEvent(gAlice->GetEvNumber());
 
-  TClonesArray &ldigits = *fDigits;
-  new(ldigits[fNdigits++]) AliTRDdigit(kFALSE,digits,amp);
+  // Initialization
+  digitizer->InitDetector();
+
+  // Read the s-digits via digits manager
+  AliTRDdigitsManager *sdigitsManager = new AliTRDdigitsManager();
+  sdigitsManager->SetVerbose(GetDebug());
+  sdigitsManager->SetSDigits(kTRUE);
+  if (fDigitsFile) {
+    sdigitsManager->Open(fDigitsFile);
+  }
+  sdigitsManager->CreateArrays();
+  sdigitsManager->ReadDigits();
+
+  // Add the s-digits to the input list 
+  digitizer->AddSDigitsManager(sdigitsManager);
+
+  // Convert the s-digits to normal digits
+  digitizer->SDigits2Digits();
+
+  // Store the digits
+  if (digitizer->MakeBranch(fDigitsFile)) {
+
+    digitizer->WriteDigits();
+
+  }
 
 }
 
@@ -641,12 +667,15 @@ void AliTRD::CreateMaterials()
   //     Define Materials 
   //////////////////////////////////////////////////////////////////////////
 
-  AliMaterial( 1, "Al ",  26.98, 13.0, 2.7     ,     8.9 ,    37.2);
-  AliMaterial( 2, "Air",  14.61,  7.3, 0.001205, 30420.0 , 67500.0);
-  AliMaterial( 4, "Xe ", 131.29, 54.0, dxe     ,  1447.59,     0.0);
-  AliMaterial( 5, "Cu ",  63.54, 29.0, 8.96    ,     1.43,    14.8);
-  AliMaterial( 6, "C  ",  12.01,  6.0, 2.265   ,    18.8 ,    74.4);
-  AliMaterial(12, "G10",  20.00, 10.0, 1.7     ,    19.4 ,   999.0);
+  AliMaterial( 1, "Al"   ,  26.98, 13.0, 2.7     ,     8.9 ,    37.2);
+  AliMaterial( 2, "Air"  ,  14.61,  7.3, 0.001205, 30420.0 , 67500.0);
+  AliMaterial( 4, "Xe"   , 131.29, 54.0, dxe     ,  1447.59,     0.0);
+  AliMaterial( 5, "Cu"   ,  63.54, 29.0, 8.96    ,     1.43,    14.8);
+  AliMaterial( 6, "C"    ,  12.01,  6.0, 2.265   ,    18.8 ,    74.4);
+  AliMaterial(12, "G10"  ,  20.00, 10.0, 1.7     ,    19.4 ,   999.0);
+  AliMaterial(15, "Sn"   , 118.71, 50.0, 7.31    ,     1.21,    14.8);
+  AliMaterial(16, "Si"   ,  28.09, 14.0, 2.33    ,     9.36,    37.2);
+  AliMaterial(17, "Epoxy",  17.75,  8.9, 1.8     ,    21.82,   999.0);
 
   // Mixtures 
   AliMixture(3, "Polyethilene",   ape, zpe, dpe, -2, wpe);
@@ -734,6 +763,33 @@ void AliTRD::CreateMaterials()
                 , tmaxfd, stemax, deemax, epsil, stmin);
   // Rohacell (plexiglas) for the radiator
   AliMedium(15, "Rohacell",  14, 0, isxfld, sxmgmx
+                , tmaxfd, stemax, deemax, epsil, stmin);
+  // Al layer in MCMs
+  AliMedium(16, "MCM-Al"  ,   1, 0, isxfld, sxmgmx
+                , tmaxfd, stemax, deemax, epsil, stmin);
+  // Sn layer in MCMs
+  AliMedium(17, "MCM-Sn"  ,  15, 0, isxfld, sxmgmx
+                , tmaxfd, stemax, deemax, epsil, stmin);
+  // Cu layer in MCMs
+  AliMedium(18, "MCM-Cu"  ,   5, 0, isxfld, sxmgmx
+                , tmaxfd, stemax, deemax, epsil, stmin);
+  // G10 layer in MCMs
+  AliMedium(19, "MCM-G10" ,  12, 0, isxfld, sxmgmx
+                , tmaxfd, stemax, deemax, epsil, stmin);
+  // Si in readout chips
+  AliMedium(20, "Chip-Si" ,  16, 0, isxfld, sxmgmx
+                , tmaxfd, stemax, deemax, epsil, stmin);
+  // Epoxy in readout chips
+  AliMedium(21, "Chip-Ep" ,  17, 0, isxfld, sxmgmx
+                , tmaxfd, stemax, deemax, epsil, stmin);
+  // PE in connectors
+  AliMedium(22, "Conn-PE" ,   3, 0, isxfld, sxmgmx
+                , tmaxfd, stemax, deemax, epsil, stmin);
+  // Cu in connectors
+  AliMedium(23, "Chip-Cu" ,   5, 0, isxfld, sxmgmx
+                , tmaxfd, stemax, deemax, epsil, stmin);
+  // Al of cooling pipes
+  AliMedium(24, "Cooling" ,   1, 0, isxfld, sxmgmx
                 , tmaxfd, stemax, deemax, epsil, stmin);
 
   // Save the density values for the TRD absorbtion
@@ -824,7 +880,7 @@ void AliTRD::Init()
 
   Int_t i;
 
-  if(fDebug) {
+  if (fDebug) {
     printf("\n%s: ",ClassName());
     for (i = 0; i < 35; i++) printf("*");
     printf(" TRD_INIT ");
@@ -843,10 +899,12 @@ void AliTRD::Init()
       printf("%s: Leave space in front of RICH free\n",ClassName());
   }
   
-  if (fGasMix == 1)
+  if (fGasMix == 1) {
     printf("%s: Gas Mixture: 85%% Xe + 15%% CO2\n",ClassName());
-  else
+  }
+  else {
     printf("%s: Gas Mixture: 97%% Xe + 3%% Isobutane\n",ClassName());
+  }
 
 }
 
@@ -990,55 +1048,32 @@ void AliTRD::LoadPoints(Int_t track)
 void AliTRD::MakeBranch(Option_t* option, const char *file)
 {
   //
-  // Create Tree branches for the TRD digits and cluster.
+  // Create Tree branches for the TRD digits.
   //
 
-  //Int_t  buffersize = 4000;
-  //Char_t branchname[15];
+  Int_t  buffersize = 4000;
+  Char_t branchname[15];
+  sprintf(branchname,"%s",GetName());
 
   const char *cD = strstr(option,"D");
 
   AliDetector::MakeBranch(option,file);
 
-  Int_t buffersize = 64000;
+  if (fDigits && gAlice->TreeD() && cD) {
+    MakeBranchInTree(gAlice->TreeD(),branchname,&fDigits,buffersize,file);
+  }	
 
-  if (cD) {
-    fDigitsArray = new AliTRDdataArrayI();
-    MakeBranchInTree(gAlice->TreeD() 
-                   ,"TRDdigits", fDigitsArray->IsA()->GetName()
-                   ,&fDigitsArray,buffersize,99,file);
-
-    for (Int_t iDict = 0; iDict < AliTRDdigitsManager::NDict(); iDict++) {
-      Char_t branchname[15];
-      sprintf(branchname,"TRDdictionary%d",iDict);
-      fDictionaryArray[iDict] = new AliTRDdataArrayI();
-      MakeBranchInTree(gAlice->TreeD() 
-                       ,branchname,fDictionaryArray[iDict]->IsA()->GetName()
-                       ,&fDictionaryArray[iDict],buffersize,99,file);
-    }
-  }
 }
 
 //_____________________________________________________________________________
 void AliTRD::ResetDigits()
 {
   //
-  // Resets the digits
+  // Reset number of digits and the digits array for this detector
   //
 
-  if (gAlice->TreeD()) {
-    TBranch *branch;
-    branch = gAlice->TreeD()->GetBranch("TRDdigits");
-    if (branch) {
-      branch->Reset();
-      for (Int_t iDict = 0; iDict < AliTRDdigitsManager::NDict(); iDict++) {
-        Char_t branchname[15];
-        sprintf(branchname,"TRDdictionary%d",iDict);
-        branch = gAlice->TreeD()->GetBranch(branchname);
-        branch->Reset();
-      }
-    }
-  }
+  fNdigits = 0;
+  if (fDigits) fDigits->Clear();
 
 }
 
@@ -1134,3 +1169,345 @@ AliTRD &AliTRD::operator=(const AliTRD &trd)
   return *this;
 
 } 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

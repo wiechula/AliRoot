@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.27  2001/10/21 18:27:45  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.26  2001/10/04 14:30:28  coppedis
 Event merging for ZDC
 

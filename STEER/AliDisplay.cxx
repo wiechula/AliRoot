@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.17  2001/10/21 18:38:44  hristov
-Several pointers were set to zero in the default constructors to avoid memory management problems
-
 Revision 1.16  2001/07/25 15:23:50  hristov
 Changes needed to run with Root 3.01 (R.Brun)
 

@@ -1,8 +1,9 @@
-void slowDigitsCreate() {
+void hits2digits() 
+{
 
 /////////////////////////////////////////////////////////////////////////
 //
-// Creates the digits from the hit information. 
+// Creates digits from the hit information. 
 //
 /////////////////////////////////////////////////////////////////////////
 
@@ -17,26 +18,21 @@ void slowDigitsCreate() {
   Char_t *alifile = "galice.root"; 
 
   // Create the TRD digitzer 
-  AliTRDdigitizer *Digitizer = new AliTRDdigitizer("digitizer","Digitizer class");
-
-  // Open the AliRoot file
-  Digitizer->Open(alifile);
+  AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer","Digitizer class");
 
   // Set the parameter
-  Digitizer->SetDiffusion(0);
-  Digitizer->SetVerbose(1);
-  //Digitizer->SetTimeResponse(0);
-  //Digitizer->SetExB();
-  //Digitizer->SetElAttach();
-  //Digitizer->SetAttachProb();
+  digitizer->SetVerbose(1);
+
+  // Open the AliRoot file
+  digitizer->Open(alifile);
 
   // Create the digits
-  Digitizer->MakeDigits();
+  digitizer->MakeDigits();
 
   // Write the digits into the input file
-  Digitizer->WriteDigits();
+  digitizer->WriteDigits();
 
   // Save the digitizer class in the AliROOT file
-  Digitizer->Write();
+  digitizer->Write();
 
 }
