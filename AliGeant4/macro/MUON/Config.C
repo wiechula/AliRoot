@@ -1,6 +1,6 @@
 void Config(Int_t version)
 {
-  gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libminicern");
+  gSystem->Load("$(G3INSTALL)/lib/tgt_$(ALICE_TARGET)/libminicern");
   gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libMUON");
 
   AliMUON *MUON = 0;

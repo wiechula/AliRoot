@@ -4,6 +4,7 @@
 # Alice Geant4 based prototype
 # Options: -g     verbose mode
 #          local  recomended local configuration
+#          silent no output
 #   
 # by I. Hrivnacova, 18.8.1998
 #
@@ -25,8 +26,8 @@
 #
 # ====== AG4_VISUALIZE
 # Set/Unset to get/avoid Geant4 visualisation.
-export AG4_VISUALIZE=1
-#unset AG4_VISUALIZE
+#export AG4_VISUALIZE=1
+unset  AG4_VISUALIZE
 
 #
 # ====== AG4_OPACS
@@ -55,7 +56,6 @@ do
     silent) SILENT="YES"; shift 1;;
   esac
 done
-
 
 
 #
@@ -101,23 +101,23 @@ else
 
   # ====== ALICE_BASE
   # ALICE base directory
-  ALICE_BASE=$HOME/dev
+  ALICE_BASE=$ALICE_INSTALL
 
   # ====== G4_BASE
   # Geant4 base directory
-  G4_BASE=$HOME/dev
+  G4_BASE=$ALICE_BASE
 
   # ====== LHCXX_BASE
   # LHC++ base directory
-  LHCXX_BASE=$HOME/dev
+  LHCXX_BASE=$ALICE_BASE
 
   # ====== ROOT_BASE
   # Root base directory  
-  ROOT_BASE=$HOME/dev/root
+  ROOT_BASE=$ALICE_BASE
 
   # ====== IRST_BASE
   # IRST code check tool base directory
-  export IRST_BASE=$HOME/dev/tools/IRST
+  #export IRST_BASE=$HOME/dev/tools/IRST
 
 fi
 
@@ -295,7 +295,9 @@ if [ $AG4_VISUALIZE ]; then
     echo "* Fukui Renderer (DAWN)..."
   fi
   export G4VIS_BUILD_DAWN_DRIVER=1
+  export G4VIS_BUILD_DAWNFILE_DRIVER=1
   export G4VIS_USE_DAWN=1
+  export G4VIS_USE_DAWNFILE=1
   #export G4DAWNFILE_VIEWER=david
   export DAWN_HOME=${G4_BASE}/tools/bin
   if [ "`echo ${PATH} | grep ${DAWN_HOME} `" = "" ]; then
@@ -309,6 +311,9 @@ if [ $AG4_VISUALIZE ]; then
   if [ "$VERBOSE" = "YES" ]; then
     if [ $G4VIS_USE_DAWN ]; then
       echo "  Dawn driver activated"
+    fi
+    if [ $G4VIS_USE_DAWNFILE ]; then
+      echo "  Dawn file driver activated"
     fi
     if [ $G4DAWNFILE_VIEWER ]; then
       echo "  Dawn file viewer set to ${G4DAWNFILE_VIEWER}"
@@ -426,7 +431,9 @@ if [ $AG4_VISUALIZE ]; then
     echo "* VRML..."
   fi
   export G4VIS_BUILD_VRML_DRIVER=1    
+  export G4VIS_BUILD_VRMLFILE_DRIVER=1
   export G4VIS_USE_VRML=1
+  export G4VIS_USE_VRMLFILE=1
   #Set preferred vrml viewer to be invoked in this mode
   export G4VRMLFILE_VIEWER=vrweb
   #Set host name for VRML1 visualization.... the g4vrmlview machine!
@@ -439,6 +446,24 @@ if [ $AG4_VISUALIZE ]; then
       echo "  VRML driver activated"
       echo "  Host Name for remote visualization is ${G4VRML_HOST_NAME}"
     fi
+    if [ $G4VIS_USE_VRMLFILE ]; then
+      echo "  VRML file driver activated"
+      echo "  VRML viewer set to ${G4VRMLFILE_VIEWER}"
+    fi
+  fi
+
+  #
+  # Ray Tracer
+  #
+  if [ "$VERBOSE" = "YES" ]; then
+    echo "* Ray Tracer..."
+  fi
+  #export G4VIS_BUILD_RAYTRACER_DRIVER=1
+  #export G4VIS_USE_RAYTRACER=1
+  if [ "$VERBOSE" = "YES" ]; then
+    if [ $G4VIS_USE_RAYTRACER ]; then
+      echo "  Ray tracing driver activated"
+    fi
   fi
 
   #
@@ -447,6 +472,7 @@ if [ $AG4_VISUALIZE ]; then
   if [ "$VERBOSE" = "YES" ]; then
     echo "* Geant Adaptative GUI (GAG)..."
   fi
+  export G4UI_BUILD_GAG_SESSION=1
   export G4UI_USE_GAG=1
   export MOMOPATH=${G4_BASE}/tools/GAG/tcltk
   if [ "`echo ${PATH} | grep ${MOMOPATH} `" = "" ]; then
@@ -484,7 +510,9 @@ else
 
   # Dawn
   unset G4VIS_BUILD_DAWN_DRIVER
+  unset G4VIS_BUILD_DAWNFILE_DRIVER
   unset G4VIS_USE_DAWN
+  unset G4VIS_USE_DAWNFILE
   unset G4DAWNFILE_VIEWER
   unset DAWN_HOME
   unset G4DAWN_MULTI_WINDOW
@@ -514,11 +542,14 @@ else
 
   # VRML1
   unset G4VIS_BUILD_VRML_DRIVER
+  unset G4VIS_BUILD_VRMLFILE_DRIVER
   unset G4VIS_USE_VRML
+  unset G4VIS_USE_VRMLFILE 
   unset G4VRMLFILE_VIEWER
   unset G4VRML_HOST_NAME
 
   # GAG
+  unset G4UI_BUILD_GAG_SESSION
   unset G4UI_USE_GAG
   unset MOMOPATH
 

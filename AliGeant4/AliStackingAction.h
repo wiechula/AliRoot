@@ -15,7 +15,7 @@
 #include <G4UserStackingAction.hh>
 #include <globals.hh>
 
-class AliTrackingAction;
+class TG4TrackingAction;
 
 class G4Track;
 class G4TrackStack;
@@ -42,10 +42,9 @@ class AliStackingAction : public G4UserStackingAction,
 
   private:
     // data members
-    G4int                        fStage;          //stage number
-    G4bool                       fSavePrimaries;  //control of saving primaries
-    G4TrackStack*                fPrimaryStack;   //stack of primary tracks
-    AliTrackingAction*           fTrackingAction; //AliTrackingAction
+    G4int               fStage;          //stage number
+    G4TrackStack*       fPrimaryStack;   //stack of primary tracks
+    TG4TrackingAction*  fTrackingAction; //AliTrackingAction
 };
 
 #endif //ALI_STACKING_ACTION_H

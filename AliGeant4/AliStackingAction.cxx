@@ -8,8 +8,9 @@
 // See the class description in the header file.
 
 #include "AliStackingAction.h"
-#include "AliTrackingAction.h"
 #include "AliGlobals.h"
+
+#include "TG4TrackingAction.h"
 
 #include <G4Track.hh>
 #include <G4TrackStack.hh>
@@ -26,7 +27,6 @@
 AliStackingAction::AliStackingAction()
   : AliVerbose("stackingAction"),
     fStage(0), 
-    fSavePrimaries(true),
     fTrackingAction(0)
 {
 // 
@@ -80,8 +80,8 @@ AliStackingAction::ClassifyNewTrack(const G4Track* track)
     // save primary particle info
     // (secondary particles are stored 
     //  by AlTrackingAction::PreUserTrackingAction() method)
-    if (fSavePrimaries)
-      fTrackingAction->SaveTrack(track);
+    if (fTrackingAction->GetSavePrimaries())
+      fTrackingAction->TrackToStack(track);
   }  
   else {
      // exclude neutrinos
@@ -143,13 +143,9 @@ void AliStackingAction::PrepareNewEvent()
 // ---
 
   fStage = 0;
+  fTrackingAction = TG4TrackingAction::Instance();
   //stackManager->ClearPostponeStack();
   stackManager->ResetPostponeStack();
-  fTrackingAction = AliTrackingAction::Instance();
-  if (fTrackingAction)
-    fSavePrimaries = fTrackingAction->GetSavePrimaries();
-  else   
-    fSavePrimaries = false;
 }
 
 

@@ -10,12 +10,12 @@
 #include "AliRunConfiguration.h"
 #include "AliRunMessenger.h"
 #include "AliDetConstruction.h"
-#include "AliSDConstruction.h"
+#include "TG4SDConstruction.h"
 #include "AliPrimaryGeneratorAction.h"
-#include "AliRunAction.h"
-#include "AliEventAction.h"
-#include "AliTrackingAction.h"
-#include "AliSteppingAction.h"
+#include "TG4RunAction.h"
+#include "TG4EventAction.h"
+#include "TG4TrackingAction.h"
+#include "TG4SteppingAction.h"
 #include "AliStackingAction.h"
 #include "AliFiles.h"
 
@@ -74,17 +74,19 @@ void AliRunConfiguration::CreateUserConfiguration()
 // the other user action classes. 
 // ---
 
+  cout << "AliRunConfiguration::CreateUserConfiguration()" << endl;
+
   // create mandatory Geant4 classes
   fDetectorConstruction = new AliDetConstruction();
-  fSDConstruction = new AliSDConstruction();
+  fSDConstruction = new TG4SDConstruction();
   fPhysicsList = new TG4ModularPhysicsList();
   fPrimaryGenerator = new AliPrimaryGeneratorAction();
 
   // create the other user action classes
-  fRunAction = new AliRunAction();
-  fEventAction = new AliEventAction();
-  fTrackingAction = new AliTrackingAction();
-  fSteppingAction = new AliSteppingAction();
+  fRunAction  = new TG4RunAction();
+  fEventAction  = new TG4EventAction();
+  fTrackingAction = new TG4TrackingAction();
+  fSteppingAction = new TG4SteppingAction();
   fStackingAction = new AliStackingAction();
 }
 

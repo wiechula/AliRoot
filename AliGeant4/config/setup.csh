@@ -101,23 +101,23 @@ else
 
   # ====== ALICE_BASE
   # ALICE base directory
-  set ALICE_BASE = $HOME/dev
+  set ALICE_BASE = $ALICE_INSTALL/$ALICE_LEVEL
 
   # ====== G4_BASE
   # Geant4 base directory
-  set G4_BASE = $HOME/dev
+  set G4_BASE = $ALICE_BASE
 
   # ====== LHCXX_BASE
   # LHC++ base directory
-  set LHCXX_BASE = $HOME/dev
+  set LHCXX_BASE = $ALICE_BASE
 
   # ====== ROOT_BASE
   # Root base directory  
-  set ROOT_BASE = $HOME/dev/root
+  set ROOT_BASE = $ALICE_BASE
 
   # ====== IRST_BASE
   # IRST code check tool base directory
-  setenv IRST_BASE $HOME/dev/tools/IRST
+  #setenv IRST_BASE $HOME/dev/tools/IRST
 
 endif
 
@@ -199,6 +199,7 @@ if ( "$VERBOSE" == "YES" ) then
   echo "Geant4 env. variables..."
   echo "============================"
 endif
+
 if ("$?AG4_VERSION" == 0) then
   setenv G4INSTALL ${G4_BASE}/geant4
 else
@@ -297,7 +298,7 @@ if ( "$?AG4_VISUALIZE" == 1 ) then
   setenv G4VIS_BUILD_DAWN_DRIVER     1
   setenv G4VIS_USE_DAWN              1
   #setenv G4DAWNFILE_VIEWER   david
-  setenv DAWN_HOME ${G4_BASE}/tools/bin
+  setenv DAWN_HOME ${G4_BASE}/../tools/bin
   if ( "`echo ${PATH} | grep ${DAWN_HOME} `" == "" ) then
     setenv PATH "${PATH}:${DAWN_HOME}"
     rehash
@@ -372,8 +373,10 @@ if ( "$?AG4_VISUALIZE" == 1 ) then
   setenv G4VIS_BUILD_OPENGLXM_DRIVER 1
   setenv G4VIS_USE_OPENGLX           1
   setenv G4VIS_USE_OPENGLXM          1
-  setenv OGLHOME /usr/local
-  setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
+  #setenv OGLHOME /usr/local
+  setenv OGLHOME /export/alice/tools
+  #setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
+  setenv OGLLIBS "-L$OGLHOME/lib -lGLU -lGL"
   if ( $SYSTEM == "HP-UX" ) then
     setenv OGLLIBS "-L/usr/lib ${OGLLIBS}"
   endif
@@ -447,20 +450,20 @@ if ( "$?AG4_VISUALIZE" == 1 ) then
   if ( "$VERBOSE" == "YES" ) then
     echo "* Geant Adaptative GUI (GAG)..."
   endif
-  setenv G4UI_USE_GAG           1
-  setenv MOMOPATH     ${G4_BASE}/tools/GAG/tcltk
-  if ( "`echo ${PATH} | grep ${MOMOPATH} `" == "" ) then
-    setenv PATH "${PATH}:${MOMOPATH}"
-    rehash
-  endif
-  set    NCLASSPATH = ".:${G4_BASE}/tools/swing-1.0.3/swingall.jar:${G4_BASE}/tools/GAG/java/GAG.jar"
-  if ("$?CLASSPATH" == 0) then
-    setenv CLASSPATH $NCLASSPATH
-  else
-    if ( "`echo ${CLASSPATH} | grep ${NCLASSPATH} `" == "" ) then
-      setenv CLASSPATH "${CLASSPATH}:${NCLASSPATH}"
-    endif
-  endif
+  #setenv G4UI_USE_GAG                   1
+  #setenv MOMOPATH     ${G4_BASE}/tools/GAG/tcltk
+  #if ( "`echo ${PATH} | grep ${MOMOPATH} `" == "" ) then
+  #  setenv PATH "${PATH}:${MOMOPATH}"
+  #  rehash
+  #endif
+  #set    NCLASSPATH = ".:${G4_BASE}/tools/swing-1.0.3/swingall.jar:${G4_BASE}/tools/GAG/java/GAG.jar"
+  #if ("$?CLASSPATH" == 0) then
+  #  setenv CLASSPATH $NCLASSPATH
+  #else
+  #  if ( "`echo ${CLASSPATH} | grep ${NCLASSPATH} `" == "" ) then
+  #    setenv CLASSPATH "${CLASSPATH}:${NCLASSPATH}"
+  #  endif
+  #endif
 
   if ( "$VERBOSE" == "YES" ) then
     if ("$?G4UI_USE_GAG" == 1) then

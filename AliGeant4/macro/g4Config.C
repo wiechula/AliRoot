@@ -99,7 +99,7 @@ void Config()
   // Magnetic field
   // ============================= 
 
-  //xx gAlice->SetField(-999,2);    //Specify maximum magnetic field in Tesla (neg. ==> default field)
+  gAlice->SetField(-999,2);    //Specify maximum magnetic field in Tesla (neg. ==> default field)
 
   // ============================= 
   // Alice modules

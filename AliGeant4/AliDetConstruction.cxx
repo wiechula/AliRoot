@@ -9,7 +9,6 @@
 
 #include "AliDetConstruction.h"
 #include "AliDetSwitch.h"
-#include "AliLVTree.h"
 #include "AliGlobals.h"
 #include "AliFiles.h"
 #include "AliRun.h"
@@ -17,6 +16,7 @@
 
 #include "TG4XMLGeometryGenerator.h"
 #include "TG4GeometryServices.h"
+#include "TG4LVTree.h"
 
 #include <G4VPhysicalVolume.hh>
 
@@ -49,7 +49,7 @@ AliDetConstruction::AliDetConstruction()
   fDetSwitchVector.Add(new AliDetSwitch("ZDC",    3, 2));
 
   // instantiate LVtree browser
-  AliLVTree::Instance();
+  TG4LVTree::Instance();
 }
 
 //_____________________________________________________________________________
@@ -63,7 +63,7 @@ AliDetConstruction::AliDetConstruction(const AliDetConstruction& right)
 AliDetConstruction::~AliDetConstruction() 
 {
   // delete LVtree browser
-  delete AliLVTree::Instance();
+  delete TG4LVTree::Instance();
 }
 
 // operators

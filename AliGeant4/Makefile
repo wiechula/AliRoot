@@ -50,7 +50,7 @@ POBJ          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(PSRC))
 # C++ compilation flags
 
 CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include \
-	        -I$(ALICE_ROOT)/TGeant4       
+	        -I$(MCINSTALL)/include
 
 ##### TARGETS #####
  
@@ -78,11 +78,15 @@ clean: macroclean
 
 # filter-out Geant3 dependent libraries (ZDC requires symbols from G3)
 # and add Geant4 dependent ones
-ALILIBS := $(filter-out -lTGeant3,$(ALILIBS))
+ALILIBS := $(filter-out -lgeant321,$(ALILIBS))
+ALILIBS := $(filter-out -lgeant3,$(ALILIBS))
 ALILIBS := $(filter-out -lZDC,$(ALILIBS))
 ALILIBS := $(filter-out -lITS,$(ALILIBS))
-ALILIBS += -lAliGeant4 -lTGeant4
+ALILIBS += -lAliGeant4 -L$(MCINSTALL)/lib/Linux-g++ -lgeant4mc
 
+#LIBS = $(ALILIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia6 -lpythia6 -lpdf \
+#	-lTHijing -lhijing  -lTMevSim -lmevsim  \
+#	$(G4LDLIBS)
 LIBS = $(ALILIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia6 -lpythia6 -lpdf \
 	-lTHijing -lhijing  -lTMevSim -lmevsim  -lTHbtp -lHBTP \
 	$(G4LDLIBS)
