@@ -51,7 +51,7 @@ ClassImp(AliFMDDigitizer)
 AliFMDDigitizer::AliFMDDigitizer(AliRunDigitizer* manager) 
     :AliDigitizer(manager) 
 {
-	cout<<"AliFMDDigitizer::AliFMDDigitizer"<<endl;
+     cout<<"AliFMDDigitizer::AliFMDDigitizer"<<endl;
 // ctor which should be used
 //  fDebug =0;
  // if (GetDebug()>2)
@@ -100,7 +100,7 @@ void AliFMDDigitizer::Exec(Option_t* option)
   for (Int_t i=0; i<10; i++)
     for(Int_t j=0; j<50; j++)
       for(Int_t ij=0; ij<300; ij++)
-	de[i][j][ij]=0;
+     de[i][j][ij]=0;
   Int_t NumberOfRings[5]=
   {256,128,256,128,256};
   Int_t NumberOfSectors[5]=
@@ -110,9 +110,10 @@ void AliFMDDigitizer::Exec(Option_t* option)
   TTree *TH=0;
   TBranch *brHits=0;
   // fHits = new TClonesArray ("AliFMDhit", 1000);
-
+  
   if (gAlice == 0x0)
-   {
+   {   
+      cout<<"AliFMDDigitizer::Exec gAlice is Null. Loading from input 0.\n";
       inRL = AliRunLoader::GetRunLoader(fManager->GetInputFolderName(0));
       if (inRL == 0x0)
        {
@@ -122,17 +123,20 @@ void AliFMDDigitizer::Exec(Option_t* option)
       inRL->LoadgAlice();
       gAlice = inRL->GetAliRun();
    }  
-  AliFMD * fFMD = (AliFMD *) gAlice->GetDetector("FMD") ;
-
+  AliFMD * fFMD = (AliFMD *) gAlice->GetDetector("FMD");
+  if (fFMD == 0x0)
+   {
+     Error("Exec","Can not get FMD from gAlice");
+     return;
+   }
 // Loop over files to digitize
 
   Int_t nFiles=GetManager()->GetNinputs();
-  for (Int_t inputFile=0; inputFile<nFiles;
-       inputFile++) {
-
+  for (Int_t inputFile=0; inputFile<nFiles;inputFile++) 
+   {
     cout<<" event "<<fManager->GetOutputEventNr()<<endl;
     if (fFMD)
-    {
+     {
       TClonesArray *FMDhits = fFMD->Hits ();
 
       inRL = AliRunLoader::GetRunLoader(fManager->GetInputFolderName(inputFile));
@@ -156,27 +160,27 @@ void AliFMDDigitizer::Exec(Option_t* option)
       Int_t ntracks    = (Int_t) TH->GetEntries();
 
         for (Int_t track = 0; track < ntracks; track++)
-	{
-	  brHits->GetEntry(track);
-	  Int_t nhits = FMDhits->GetEntries ();
+     {
+       brHits->GetEntry(track);
+       Int_t nhits = FMDhits->GetEntries ();
 
-	  for (hit = 0; hit < nhits; hit++)
-	    {
-	      fmdHit = (AliFMDhit *) FMDhits->UncheckedAt (hit);
-	      
-	      volume = fmdHit->Volume ();
-	      sector = fmdHit->NumberOfSector ();
-	      ring = fmdHit->NumberOfRing ();
-	      e = fmdHit->Edep ();
-	      de[volume][sector][ring] += e;
-	      
-	    }		//hit loop
-	}			//track loop
-    }			//if FMD
+       for (hit = 0; hit < nhits; hit++)
+         {
+           fmdHit = (AliFMDhit *) FMDhits->UncheckedAt (hit);
+           
+           volume = fmdHit->Volume ();
+           sector = fmdHit->NumberOfSector ();
+           ring = fmdHit->NumberOfRing ();
+           e = fmdHit->Edep ();
+           de[volume][sector][ring] += e;
+           
+         }          //hit loop
+     }               //track loop
+    }               //if FMD
 
  
   // Put noise and make ADC signal
-   Float_t I = 1.664 * 0.04 * 2.33 / 22400;	// = 0.69e-6;
+   Float_t I = 1.664 * 0.04 * 2.33 / 22400;     // = 0.69e-6;
    for ( ivol=1; ivol<=5; ivol++){
      for ( iSector=1; iSector<=NumberOfSectors[ivol-1]; iSector++){
        for ( iRing=1; iRing<=NumberOfRings[ivol-1]; iRing++){
