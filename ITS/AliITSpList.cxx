@@ -53,7 +53,6 @@ AliITSpList::AliITSpList(Int_t imax,Int_t jmax){
 
     fNi = imax;
     fNj = jmax;
-    fEnteries = 0;
     fa  = new TObjArray(fNi*fNj); // elements are zeroed by 
                                   // TObjArray creator
 }
@@ -75,7 +74,6 @@ AliITSpList::~AliITSpList(){
     fNj = 0;
     delete fa;
     fa  = 0;
-    fEnteries = 0;
 }
 //______________________________________________________________________
 void AliITSpList::ClearMap(){
@@ -87,12 +85,10 @@ void AliITSpList::ClearMap(){
     // Return:
     //    A zeroed AliITSpList class.
 
-    fa->Delete();
-//    for(Int_t i=0;i<GetMaxIndex();i++) if(fa->At(i)!=0){
-//        delete fa->At(i);
-//        fa->AddAt(0,i); // zero content
-//    } // end for i && if
-    fEnteries = 0;
+    for(Int_t i=0;i<GetMaxIndex();i++) if(fa->At(i)!=0){
+        delete fa->At(i);
+        fa->AddAt(0,i); // zero content
+    } // end for i && if
 }
 //______________________________________________________________________
 void AliITSpList::DeleteHit(Int_t i,Int_t j){
@@ -110,7 +106,6 @@ void AliITSpList::DeleteHit(Int_t i,Int_t j){
         delete fa->At(k);
         fa->AddAt(0,k); // zero content
     } // end for i && if
-    if(k==fEnteries-1) fEnteries--;
 }
 //______________________________________________________________________
 AliITSpList& AliITSpList::operator=(const AliITSpList &source){
@@ -134,7 +129,6 @@ AliITSpList& AliITSpList::operator=(const AliITSpList &source){
     this->fNi = source.fNi;
     this->fNj = source.fNj;
     this->fa = new TObjArray(*(source.fa));
-    this->fEnteries = source.fEnteries;
 
     return *this;
 }
@@ -168,8 +162,7 @@ void AliITSpList::AddItemTo(Int_t fileIndex, AliITSpListItem *pl) {
         fa->AddAt(new AliITSpListItem(-2,-1,pl->GetModule(),index,0.0),index);
     } // end if
  
-    ((AliITSpListItem*)(fa->At(index)))->AddTo(fileIndex,pl);
-    if(index>=fEnteries) fEnteries = index +1;
+    ((AliITSpListItem*)(fa->At( index )))->AddTo( fileIndex, pl );
 }
 //______________________________________________________________________
 void AliITSpList::AddSignal(Int_t i,Int_t j,Int_t trk,Int_t ht,Int_t mod,
@@ -187,14 +180,13 @@ void AliITSpList::AddSignal(Int_t i,Int_t j,Int_t trk,Int_t ht,Int_t mod,
     //    none.
     // Return:
     //    none.
-    Int_t index = GetIndex(i,j);
 
-    if(GetpListItem(index)==0){ // most create AliITSpListItem
-        fa->AddAt(new AliITSpListItem(trk,ht,mod,GetIndex(i,j),signal),index);
+    if(GetpListItem(i,j)==0){ // most create AliITSpListItem
+        fa->AddAt(new AliITSpListItem(trk,ht,mod,GetIndex(i,j),signal),
+                  GetIndex(i,j));
     }else{ // AliITSpListItem exists, just add signal to it.
-        GetpListItem(index)->AddSignal(trk,ht,mod,index,signal);
+        GetpListItem(i,j)->AddSignal(trk,ht,mod,GetIndex(i,j),signal);
     } // end if
-    if(index>=fEnteries) fEnteries = index +1;
 }
 //______________________________________________________________________
 void AliITSpList::AddNoise(Int_t i,Int_t j,Int_t mod,Double_t noise){
@@ -208,14 +200,13 @@ void AliITSpList::AddNoise(Int_t i,Int_t j,Int_t mod,Double_t noise){
     //    none.
     // Return:
     //    none.
-    Int_t index = GetIndex(i,j);
 
-    if(GetpListItem(index)==0){ // most create AliITSpListItem
-        fa->AddAt(new AliITSpListItem(mod,index,noise),index);
+    if(GetpListItem(i,j)==0){ // most create AliITSpListItem
+        fa->AddAt(new AliITSpListItem(mod,GetIndex(i,j),noise),
+                  GetIndex(i,j));
     }else{ // AliITSpListItem exists, just add signal to it.
-        GetpListItem(index)->AddNoise(mod,index,noise);
+        GetpListItem(i,j)->AddNoise(mod,GetIndex(i,j),noise);
     } // end if
-    if(index>=fEnteries) fEnteries = index +1;
 }
 //______________________________________________________________________
 

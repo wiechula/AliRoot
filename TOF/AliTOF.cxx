@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.34  2002/02/20 13:41:38  hristov
-Default arguments set only in the header file
-
 Revision 1.33  2002/02/19 10:39:38  vicinanz
 t0 classes added and material update (steel added)
 
@@ -159,15 +156,15 @@ AliTOF::AliTOF()
   //
   // Default constructor
   //
-  fFGeom = 0x0;
-  fDTask = 0x0;
-  fReTask = 0x0;
+  fFGeom = 0;
+  fDTask = 0;
+  fReTask = 0;
   fIshunt   = 0;
   fSDigits       = 0 ;
   fDigits        = 0 ;
-  fReconParticles = 0x0;
+  fReconParticles = 0;
   fName="TOF";
-  fMerger = 0x0;
+  fMerger = 0;
 /* fp
   CreateTOFFolders();
 */
@@ -195,13 +192,6 @@ AliTOF::AliTOF(const char *name, const char *title, Option_t *option)
   fIshunt  = 0;
   fSDigits       = new TClonesArray("AliTOFSDigit",  1000);
   fDigits        = new TClonesArray("AliTOFdigit",  1000);
-
-  fFGeom = 0x0;
-  fDTask = 0x0;
-  fReTask = 0x0;
-  fReconParticles = 0x0;
-  fMerger = 0x0;
-
   //
   // Digitization parameters
   //

@@ -38,7 +38,7 @@ class AliGenerator : public TNamed, public AliRndm
     virtual void SetOrigin(const TLorentzVector &o);
     virtual void SetSigma(Float_t sx, Float_t sy, Float_t sz);
     virtual void SetMomentumRange(Float_t pmin=0, Float_t pmax=1.e10);
-    virtual void SetPtRange(Float_t ptmin=0, Float_t ptmax=1.e10);
+    virtual void SetPtRange(Float_t ptmin=0, Float_t ptmax=100);
     virtual void SetPhiRange(Float_t phimin=-180., Float_t phimax=180);
     virtual void SetYRange(Float_t ymin=-100, Float_t ymax=100);
     virtual void SetVRange(Float_t vxmin, Float_t vxmax,
@@ -79,17 +79,17 @@ class AliGenerator : public TNamed, public AliRndm
     virtual  void  SetTrack(Int_t done, Int_t parent, Int_t pdg,
                                Float_t *pmom, Float_t *vpos, Float_t *polar,
                                Float_t tof, AliMCProcess mech, Int_t &ntr,
-                               Float_t weight = 1, Int_t is = 0);
+                               Float_t weight=1);
     virtual  void  SetTrack(Int_t done, Int_t parent, Int_t pdg,
                       Double_t px, Double_t py, Double_t pz, Double_t e,
                       Double_t vx, Double_t vy, Double_t vz, Double_t tof,
                       Double_t polx, Double_t poly, Double_t polz,
-                      AliMCProcess mech, Int_t &ntr, Float_t weight = 1, Int_t is = 0);
+                      AliMCProcess mech, Int_t &ntr, Float_t weight=1);
     virtual void   KeepTrack(Int_t itrack); 
     virtual void   SetHighWaterMark(Int_t nt);
     
  protected:
-    static  TGenerator* fgMCEvGen; //Pointer to the generator
+    static  TGenerator* fgMCEvGen; // Pointer to the generator
     Float_t     fThetaMin;     //Minimum theta of generation in radians
     Float_t     fThetaMax;     //Maximum theta of generation in radians
     Float_t     fPhiMin;       //Minimum phi of generation in radians

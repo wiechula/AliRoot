@@ -15,10 +15,6 @@
 
 /*
 $Log$
-Revision 1.17  2001/09/03 14:54:55  gosset
-Corrections for suppressing "segmentation violation" errors
-when using buttons "Chamber +", "Chamber -", "Cathode <>"
-
 Revision 1.16  2001/08/31 08:18:43  jchudoba
 Changes needed to run with Root 3.01
 

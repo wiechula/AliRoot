@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.20  2001/10/03 10:19:13  morsch
-gudcay(): previous problem fixed by correct checking of indices.
-
 Revision 1.19  2001/10/03 08:39:03  morsch
 Bug in user decay routine leading to segmentation violation corrected.
 
@@ -84,7 +81,6 @@ ReadEuclid moved from AliRun to AliModule
 
 #include <TParticle.h>
 #include <TStopwatch.h>
-#include <TClonesArray.h> 
 
 #include "AliDecayer.h"
 #include "AliGeant3.h"

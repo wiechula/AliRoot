@@ -15,10 +15,6 @@
 
 /*
 $Log$
-Revision 1.4  2001/11/27 13:13:07  morsch
-Maximum lifetime for long-lived particles to be put on the stack is parameter.
-It can be set via SetMaximumLifetime(..).
-
 Revision 1.3  2001/10/16 08:48:56  morsch
 Common vertex related code moved to base class AliGenerator.
 
@@ -136,29 +132,14 @@ Bool_t AliGenMC::KinematicSelection(TParticle *particle, Int_t flag)
     Float_t pt    = particle->Pt();
     Float_t p     = particle->P();
     Float_t theta = particle->Theta();
-    Float_t mass  = particle->GetMass();
-    Float_t mt2   = pt * pt + mass * mass;
-    
     Float_t phi   = Float_t(TMath::ATan2(Double_t(py),Double_t(px)));
-    Double_t y, y0;
-
-    if (TMath::Abs(pz) != e) {
-	y = 0.5*TMath::Log((e+pz)/(e-pz));
-    } else {
-	y = 1.e10;
-    }
+    Float_t y;
     
-    if (mt2) {
-	y0 = 0.5*TMath::Log((e+TMath::Abs(pz))*(e+TMath::Abs(pz))/mt2);
+    if ( (e-pz)<=0 || (e+pz)<=0 ) {
+	return kFALSE;
     } else {
-	if (TMath::Abs(y) < 1.e10) {
-	    y0 = y;
-	} else {
-	    y0 = 1.e10;
-	}
+      y = 0.5*TMath::Log((e+pz)/(e-pz));
     }
-      
-    y = (pz < 0) ? -y0 : y0;
     
     if (flag == 0) {
 //

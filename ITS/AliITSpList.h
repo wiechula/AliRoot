@@ -59,8 +59,6 @@ class AliITSpListItem: public TObject {
     void Print(ostream *os);
     // Standard ascii class read function
     void Read(istream *is);
-    // Returns max size of array for for Tracks, Hits, and signals.
-    static Int_t GetMaxKept() {return fkSize;};
 
  private:
     static const Int_t fkSize = 10; // Array sizes
@@ -114,19 +112,12 @@ class AliITSpList: public AliITSMap {
     void GetMaxMapIndex(Int_t &ni,Int_t &nj){ni=fNi;nj=fNj;return;}
     // returns the max index value.
     Int_t GetMaxIndex(){return fNi*fNj;}
-    // returns the largest non-zero entry kept in the array fa.
-    Int_t GetEntries(){return fEnteries;}
     // returns the max number of track/hit entries per cell.
-    Int_t GetNEnteries(){return AliITSpListItem::GetMaxKept();}
+    Int_t GetNEnteries(){return 5;}
     // for a give TObjArray index it returns the corresponding map index
     void  GetMapIndex(Int_t index,Int_t &i,Int_t &j){
 	i = index/fNj;j = index - fNj*i;
 	if(i<0||i>=fNi || j<0||j>=fNj){i=-1;j=-1; return;}
-    }
-    // Returns the signal+noise for a give map coordinate
-    Double_t GetSignal(Int_t index){
-	if(GetpListItem(index)==0) return 0.0;
-	return GetpListItem(index)->GetSumSignal();
     }
     // Returns the signal+noise for a give map coordinate
     Double_t GetSignal(Int_t i,Int_t j){
@@ -190,13 +181,10 @@ class AliITSpList: public AliITSMap {
     // Returns the pointer to the TObjArray of pList Items
     TObjArray * GetpListItems(){return fa;}
     // returns the pList Item stored in the TObject array
-    AliITSpListItem* GetpListItem(Int_t index){
-	if(fa!=0)return (AliITSpListItem*) (fa->At(index));
-	else return 0;}
-    // returns the pList Item stored in the TObject array
     AliITSpListItem* GetpListItem(Int_t i,Int_t j){
 	if(fa!=0)return (AliITSpListItem*) (fa->At(GetIndex(i,j)));
-	else return 0;}
+	else return 0;
+    }
 
     // Fill pList from digits. Not functional yet
     void FillMap(){;}
@@ -210,9 +198,8 @@ class AliITSpList: public AliITSMap {
  private:
     Int_t     fNi,fNj;   // The max index in i,j.
     TObjArray *fa;       // array of pList items
-    Int_t     fEnteries; // keepts track of the number of non-zero entries.
 
-    ClassDef(AliITSpList,2) // list of signals and track numbers
+    ClassDef(AliITSpList,1) // list of signals and track numbers
 };	
 // Input and output functions for standard C++ input/output.
 ostream & operator<<(ostream &os,AliITSpList &source);

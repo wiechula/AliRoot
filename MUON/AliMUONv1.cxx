@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.29  2001/06/21 14:54:37  morsch
-Put volumes of station 3 into DIPO if present. (A. de Falco)
-
 Revision 1.28  2001/05/16 14:57:17  alibrary
 New files for folders and Stack
 

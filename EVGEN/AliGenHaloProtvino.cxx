@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.7  2002/02/21 16:09:45  morsch
-Move SetHighwaterMark() after last possible SetTrack()
-
 Revision 1.6  2002/02/01 15:28:22  morsch
 Fastidious print statements removed.
 
@@ -161,12 +158,13 @@ void AliGenHaloProtvino::Init()
     }
 
 
-    Float_t sum = 0.;
+    Float_t sum;
     
     for (Int_t i = 0; i < 250; i++) {
 	Float_t z = 20.+i*1.;
 	z*=100;
 	Float_t wgt = GassPressureWeight(z);
+//	printf("\n %f %f", z, wgt);
 	sum+=wgt;
     }
     sum/=250.;

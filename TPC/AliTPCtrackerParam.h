@@ -26,23 +26,23 @@ class AliTPCtrackerParam {
  
   
   AliTPCtrack* BuildTrack(Double_t alpha,Double_t x,Double_t y,Double_t z,
-			  Double_t px,Double_t py,Double_t pz,Double_t pt,
-			  Int_t ch,Int_t lab) const ;
+			  Double_t Px,Double_t Py,Double_t Pz,Double_t Pt,
+			  Int_t ch,Int_t lab);
   
-  Bool_t SelectedTrack(Int_t pdg, Double_t pt, Double_t eta) const;
+  Bool_t SelectedTrack(Int_t pdg, Double_t pt, Double_t eta);
   
-  Int_t GetBin(Double_t pt,Double_t eta) const;
+  Int_t GetBin(Double_t pt,Double_t eta);
   
-  TMatrixD GetSmearingMatrix(Double_t* cc, Double_t pt,Double_t eta) const;
+  TMatrixD GetSmearingMatrix(Double_t* cc, Double_t pt,Double_t eta);
   
-  void SmearTrack(Double_t* xx,Double_t* xxsm,TMatrixD cov) const;
+  void SmearTrack(Double_t* xx,Double_t* xxsm,TMatrixD cov);
 
-  Double_t LinearInterpolation(Int_t ptBins,Double_t *value,Double_t pt,Double_t eta) const;
+  Double_t LinearInterpolation(Int_t ptBins,Double_t *value,Double_t pt,Double_t eta);
   
-  void CookTracks(TObjArray& tarray,TObjArray& newtarray) const;
+  void CookTracks(TObjArray& tarray,TObjArray& newtarray);
   
   
-  ClassDef(AliTPCtrackerParam,1) // TPC tracking parameterization class
+  ClassDef(AliTPCtrackerParam,1)
 };
 
 #endif

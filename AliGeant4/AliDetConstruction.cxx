@@ -118,7 +118,7 @@ void AliDetConstruction::BuildDetectors()
       fDetSwitchVector.SwitchDetOn(modName, modVersion);
  
     // all modules will be processed alltogether
-    AddModule(modName, modVersion, fDetSwitchVector.GetDetSwitch(modName)->GetType());
+    AddModule(modName, modVersion);
 
     if (VerboseLevel() > 0) {
       G4cout << "Created module construction for " 

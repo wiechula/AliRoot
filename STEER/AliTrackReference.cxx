@@ -13,32 +13,17 @@
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
 
-#include "AliITSsimulation.h"
 
-ClassImp(AliITSsimulation)	
+#include "AliTrackReference.h"
+#include "TParticle.h"
+#include "AliRun.h"
 
-AliITSsimulation::AliITSsimulation() 
+ClassImp(AliTrackReference)
+
+AliTrackReference::AliTrackReference()
 {
-  // constructor
-    fSegmentation=0;
-    fResponse=0;
-}
-
-//__________________________________________________________________________
-AliITSsimulation::AliITSsimulation(const AliITSsimulation &source){
-  //     Copy Constructor 
-  if(&source == this) return;
-  this->fResponse = source.fResponse;
-  this->fSegmentation = source.fSegmentation;
-  return;
-}
-
-//_________________________________________________________________________
-AliITSsimulation& 
-  AliITSsimulation::operator=(const AliITSsimulation &source) {
-  //    Assignment operator
-  if(&source == this) return *this;
-  this->fResponse = source.fResponse; 
-  this->fSegmentation = source.fSegmentation;
-  return *this;
+  //
+  // Default constructor
+  //
+  fTrack=0;	
 }

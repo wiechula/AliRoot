@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.5  2001/10/31 16:40:07  jchudoba
-change preprocessor constant to C++ constant
-
 Revision 1.4  2001/10/18 14:44:09  jchudoba
 Define constant MAXTRACKS for maximum number of tracks associated with 1 digit
 

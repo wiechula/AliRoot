@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.8  2002/02/13 09:03:24  jchudoba
-Remove some deletes from dtor, those objects are deleted earlier in Exec() method (where they are created)
-
 Revision 1.7  2001/11/22 11:15:41  jchudoba
 Proper deletion of arrays (thanks to Rene Brun)
 

@@ -21,7 +21,7 @@ SRCS          =  AliEMCAL.cxx  AliEMCALGeometry.cxx AliEMCALv0.cxx \
 
 # FORTRAN sources
 
-FSRCS	     = jet_finder_ua1.F sgpdge.F
+FSRCS	     = jet_finder_ua1.F
 
 # C++ Headers
 
@@ -73,4 +73,10 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 ############################ Dependencies #####################################
 
 -include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
 

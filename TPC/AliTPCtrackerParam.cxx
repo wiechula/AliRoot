@@ -21,10 +21,7 @@
  * smeared according to this covariance matrix.                           *
  * Output file contains sorted tracks, ready for matching with ITS        *
  *                                                                        *
- * For details:                                                           *
- * http://www.pd.infn.it/alipd/talks/soft/adIII02/TPCtrackingParam.htm    *
- *                                                                        *
- * Test macro is: AliBarrelRec_TPCparam.C                                 *   
+ * Test macro is: AliBarrelRec_TPCparam.C                                 * 
  *                                                                        *
  *  Origin: Andrea Dainese, Padova - e-mail: andrea.dainese@pd.infn.it    * 
  *                                                                        *
@@ -39,15 +36,13 @@
 #include "AliGausCorr.h"
 
 
+
+
 ClassImp(AliTPCtrackerParam)
 
 //-----------------------------------------------------------------
 AliTPCtrackerParam::AliTPCtrackerParam(const Int_t coll,const Double_t Bz) 
 {
-//-----------------------------------------------------------------
-// This is the class conctructor 
-//-----------------------------------------------------------------
-
   fColl = coll; // collision code (0: PbPb6000)
   fBz = Bz;     // value of the z component of L3 field (Tesla)
   
@@ -59,10 +54,7 @@ AliTPCtrackerParam::~AliTPCtrackerParam()
 
 Int_t AliTPCtrackerParam::BuildTPCtracks(const TFile *inp, TFile *out, Int_t n)
 {
-//----------------------------------------------------------------- 
-// This function creates the TPC parameterized tracks
-//-----------------------------------------------------------------
-
+ 
   if(fColl!=0) { 
     cerr<<"AliTPCtrackerParam::BuildTPCtracks:  Invalid collision!\n";
     cerr<<"      Available:  0   ->   PbPb6000"<<endl; return 0; 
@@ -131,11 +123,11 @@ Int_t AliTPCtrackerParam::BuildTPCtracks(const TFile *inp, TFile *out, Int_t n)
     TParticle* Part;
     AliTPChit* tpcHit;
     Double_t hPx,hPy,hPz,hPt,xg,yg,zg,xl,yl,zl;
-    Double_t alpha;
+    Double_t Alpha;
     Float_t cosAlpha,sinAlpha;
-    Int_t label,pdg,charge,bin;
+    Int_t label,Pdg,charge,bin;
     Int_t tracks=0;
-    //Int_t nSel=0,nAcc=0;
+    //Int_t N1=0,N2=0;
 
     // loop over entries in TreeH
     for(Int_t i=0; i<ntracks; i++) {
@@ -158,9 +150,9 @@ Int_t AliTPCtrackerParam::BuildTPCtracks(const TFile *inp, TFile *out, Int_t n)
 	if(done[label]) continue;
 	// electric charge
 	Part = gAlice->Particle(label);
-	pdg = Part->GetPdgCode();
-	if(pdg>200 || pdg==-11 || pdg==-13) { charge=1; }
-	else if(pdg<-200 || pdg==11 || pdg==13) { charge=-1; }
+	Pdg = Part->GetPdgCode();
+	if(Pdg>200 || Pdg==-11 || Pdg==-13) { charge=1; }
+	else if(Pdg<-200 || Pdg==11 || Pdg==13) { charge=-1; }
 	else continue;
 
 
@@ -173,7 +165,7 @@ Int_t AliTPCtrackerParam::BuildTPCtracks(const TFile *inp, TFile *out, Int_t n)
 	// Get TPC sector, Alpha angle and local coordinates
 	// printf("Sector %d\n",tpcHit->fSector);
 	digp->AdjustCosSin(tpcHit->fSector,cosAlpha,sinAlpha);
-	alpha = TMath::ATan2(sinAlpha,cosAlpha);
+	Alpha = TMath::ATan2(sinAlpha,cosAlpha);
 	xl = xg*cosAlpha + yg*sinAlpha;
 	yl =-xg*sinAlpha + yg*cosAlpha;
 	zl = zg;
@@ -186,15 +178,15 @@ Int_t AliTPCtrackerParam::BuildTPCtracks(const TFile *inp, TFile *out, Int_t n)
 	bin = GetBin(hPt,Part->Eta());
 
 	// Apply selection according to TPC efficiency
-	//if(TMath::Abs(pdg)==211) nAcc++;
-	if(!SelectedTrack(pdg,hPt,Part->Eta())) continue; 
-	//if(TMath::Abs(pdg)==211) nSel++;
+	//if(abs(Pdg)==211) N1++;
+	if(!SelectedTrack(Pdg,hPt,Part->Eta())) continue; 
+	//if(abs(Pdg)==211) N2++;
 
 	// Mark track as "done"
 	done[label]=kTRUE; tracks++;
  
 	// create AliTPCtrack object
-	tpctrack = BuildTrack(alpha,xl,yl,zl,hPx,hPy,hPz,hPt,charge,label);
+	tpctrack = BuildTrack(Alpha,xl,yl,zl,hPx,hPy,hPz,hPt,charge,label);
 
 	// put track in array
 	tarray.AddLast(tpctrack);
@@ -226,7 +218,7 @@ Int_t AliTPCtrackerParam::BuildTPCtracks(const TFile *inp, TFile *out, Int_t n)
     delete tracktree;
 
     printf("\n\n+++\n+++ Number of TPC tracks: %d\n+++\n",tracks);
-    //printf("Average Eff: %f\n",(Float_t)nSel/nAcc);
+    //printf("Average Eff: %f\n",(Float_t)N2/N1);
 
   } // loop on events
 
@@ -235,39 +227,36 @@ Int_t AliTPCtrackerParam::BuildTPCtracks(const TFile *inp, TFile *out, Int_t n)
 
 //-----------------------------------------------------------------
 AliTPCtrack* AliTPCtrackerParam::BuildTrack(Double_t alpha,Double_t x,
-					    Double_t y,Double_t z,Double_t px,
-					    Double_t py,Double_t pz,Double_t pt,
-					    Int_t ch,Int_t lab) const
+					    Double_t y,Double_t z,Double_t Px,
+					    Double_t Py,Double_t Pz,Double_t Pt,
+					    Int_t ch,Int_t lab) 
 {  
-//-----------------------------------------------------------------
-// This function uses GEANT info to set true track parameters
-//-----------------------------------------------------------------
   Double_t xref = x;
   Double_t xx[5],cc[15];
   cc[0]=cc[2]=cc[5]=cc[9]=cc[14]=10.;
   cc[1]=cc[3]=cc[4]=cc[6]=cc[7]=cc[8]=cc[10]=cc[11]=cc[12]=cc[13]=0.;
   
   // Magnetic field
-  TVector3 bfield(0.,0.,fBz);
+  TVector3 Bfield(0.,0.,fBz);
   
   
   // radius [cm] of track projection in (x,y) 
-  Double_t rho = pt*100./0.299792458/bfield.Z();
+  Double_t rho = Pt*100/0.299792458/Bfield.Z();
   // center of track projection in local reference frame
-  TVector3 hmom,hpos;
+  TVector3 MomH,PosH;
 
 
   // position (local) and momentum (local) at the hit
   // in the bending plane (z=0)
-  hpos.SetXYZ(x,y,0.);
-  hmom.SetXYZ(px*TMath::Cos(alpha)+py*TMath::Sin(alpha),-px*TMath::Sin(alpha)+py*TMath::Cos(alpha),0.);
-  TVector3 vrho = hmom.Cross(bfield);
-  vrho *= ch;
-  vrho.SetMag(rho);
+  PosH.SetXYZ(x,y,0.);
+  MomH.SetXYZ(Px*TMath::Cos(alpha)+Py*TMath::Sin(alpha),-Px*TMath::Sin(alpha)+Py*TMath::Cos(alpha),0.);
+  TVector3 Vrho = MomH.Cross(Bfield);
+  Vrho *= ch;
+  Vrho.SetMag(rho);
 
-  TVector3 vcenter = hpos+vrho;
+  TVector3 Vcenter = PosH+Vrho;
 
-  Double_t x0 = vcenter.X();
+  Double_t x0 = Vcenter.X();
 
   // fX     = xref         X-coordinate of this track (reference plane)
   // fAlpha = Alpha        Rotation angle the local (TPC sector) 
@@ -278,7 +267,7 @@ AliTPCtrack* AliTPCtrackerParam::BuildTrack(Double_t alpha,Double_t x,
   // fP4    = C            track curvature
   xx[0] = y;
   xx[1] = z;
-  xx[3] = pz/pt;
+  xx[3] = Pz/Pt;
   xx[4] = -ch/rho;
   xx[2] = xx[4]*x0;
 
@@ -292,11 +281,7 @@ AliTPCtrack* AliTPCtrackerParam::BuildTrack(Double_t alpha,Double_t x,
 
 //-----------------------------------------------------------------
 Bool_t AliTPCtrackerParam::SelectedTrack(Int_t pdg,Double_t pt,Double_t eta) 
- const {
-//-----------------------------------------------------------------
-// This function makes a selection according to TPC tracking efficiency
-//-----------------------------------------------------------------
-
+{
   Double_t eff=0.;
   
   //eff computed with | zl+(244-xl)*pz/pt | < 252
@@ -320,44 +305,39 @@ Bool_t AliTPCtrackerParam::SelectedTrack(Int_t pdg,Double_t pt,Double_t eta)
 
 //-----------------------------------------------------------------
 Double_t AliTPCtrackerParam::LinearInterpolation(Int_t ptBins,Double_t *value,
-						 Double_t trkPt,Double_t trkEta) const
+						 Double_t pt,Double_t eta) 
 {
-//-----------------------------------------------------------------
-// This function makes a linear interpolation
-//-----------------------------------------------------------------
-  Double_t intValue=0,intValue1=0,intValue2=0;
-  Int_t etaSide = (TMath::Abs(trkEta)<.45 ? 0 : 1);
-  Double_t eta[3]={0.15,0.45,0.75};
-  Double_t pt[9]={0.244,0.390,0.676,1.190,2.36,4.,6.,10.,20.};
-  if(ptBins==6) pt[5]=10.;
+  Double_t kValue=0,kValue1=0,kValue2=0;
+  Int_t kEtaSide = (TMath::Abs(eta)<.45 ? 0 : 1);
+  Double_t kEta[3]={0.15,0.45,0.75};
+  Double_t kPt[9]={0.244,0.390,0.676,1.190,2.36,4.,6.,10.,20.};
+  if(ptBins==6) kPt[5]=10.;
 
   for(Int_t i=0; i<ptBins; i++) {
-    if(trkPt<pt[i]) {
+    if(pt<kPt[i]) {
       if(i==0) i=1;
-      intValue1 = value[3*i-3+etaSide]+(value[3*i-3+etaSide]-value[3*i+etaSide])/(pt[i-1]-pt[i])*(trkPt-pt[i-1]);
-      intValue2 = value[3*i-3+etaSide+1]+(value[3*i-3+etaSide+1]-value[3*i+etaSide+1])/(pt[i-1]-pt[i])*(trkPt-pt[i-1]);
+      kValue1 = value[3*i-3+kEtaSide]+(value[3*i-3+kEtaSide]-value[3*i+kEtaSide])/(kPt[i-1]-kPt[i])*(pt-kPt[i-1]);
+      kValue2 = value[3*i-3+kEtaSide+1]+(value[3*i-3+kEtaSide+1]-value[3*i+kEtaSide+1])/(kPt[i-1]-kPt[i])*(pt-kPt[i-1]);
 
-      intValue = intValue1+(intValue1-intValue2)/(eta[etaSide]-eta[etaSide+1])*(trkEta-eta[etaSide]);
+      kValue = kValue1+(kValue1-kValue2)/(kEta[kEtaSide]-kEta[kEtaSide+1])*(eta-kEta[kEtaSide]);
       break;
     }
     if(i==ptBins-1) { 
       i=ptBins-2;
-      intValue1 = value[3*i-3+etaSide]+(value[3*i-3+etaSide]-value[3*i+etaSide])/(pt[i-1]-pt[i])*(trkPt-pt[i-1]);
-      intValue2 = value[3*i-3+etaSide+1]+(value[3*i-3+etaSide+1]-value[3*i+etaSide+1])/(pt[i-1]-pt[i])*(trkPt-pt[i-1]);
+      kValue1 = value[3*i-3+kEtaSide]+(value[3*i-3+kEtaSide]-value[3*i+kEtaSide])/(kPt[i-1]-kPt[i])*(pt-kPt[i-1]);
+      kValue2 = value[3*i-3+kEtaSide+1]+(value[3*i-3+kEtaSide+1]-value[3*i+kEtaSide+1])/(kPt[i-1]-kPt[i])*(pt-kPt[i-1]);
 
-      intValue = intValue1+(intValue1-intValue2)/(eta[etaSide]-eta[etaSide+1])*(trkEta-eta[etaSide]);
+      kValue = kValue1+(kValue1-kValue2)/(kEta[kEtaSide]-kEta[kEtaSide+1])*(eta-kEta[kEtaSide]);
       break;
     }
   }
 
-  return intValue;
+  return kValue;
 }
 
 //-----------------------------------------------------------------
-Int_t AliTPCtrackerParam::GetBin(Double_t pt,Double_t eta) const {
-//-----------------------------------------------------------------
-// This function tells bin number in a grid (pT,eta) 
-//-----------------------------------------------------------------
+Int_t AliTPCtrackerParam::GetBin(Double_t pt,Double_t eta) {
+
   if(TMath::Abs(eta)<0.3) {
     if(pt<0.3)            return 0;
     if(pt>=0.3 && pt<0.5) return 3;
@@ -397,33 +377,31 @@ Int_t AliTPCtrackerParam::GetBin(Double_t pt,Double_t eta) const {
 }
 
 //-----------------------------------------------------------------
-TMatrixD AliTPCtrackerParam::GetSmearingMatrix(Double_t* cc,Double_t pt,Double_t eta) const
+
+TMatrixD AliTPCtrackerParam::GetSmearingMatrix(Double_t* cc,Double_t pt,Double_t eta) 
 {
-//-----------------------------------------------------------------
-// This function stretches the covariance matrix according to the pulls
-//-----------------------------------------------------------------
-  TMatrixD covMat(5,5);
+  TMatrixD CovMat(5,5);
 
-  covMat(0,0)=cc[0];
-  covMat(1,0)=cc[1];  covMat(0,1)=covMat(1,0);
-  covMat(1,1)=cc[2];
-  covMat(2,0)=cc[3];  covMat(0,2)=covMat(2,0);
-  covMat(2,1)=cc[4];  covMat(1,2)=covMat(2,1);
-  covMat(2,2)=cc[5];
-  covMat(3,0)=cc[6];  covMat(0,3)=covMat(3,0);
-  covMat(3,1)=cc[7];  covMat(1,3)=covMat(3,1);
-  covMat(3,2)=cc[8];  covMat(2,3)=covMat(3,2);
-  covMat(3,3)=cc[9];
-  covMat(4,0)=cc[10]; covMat(0,4)=covMat(4,0);
-  covMat(4,1)=cc[11]; covMat(1,4)=covMat(4,1);
-  covMat(4,2)=cc[12]; covMat(2,4)=covMat(4,2);
-  covMat(4,3)=cc[13]; covMat(3,4)=covMat(4,3);
-  covMat(4,4)=cc[14];
+  CovMat(0,0)=cc[0];
+  CovMat(1,0)=cc[1];  CovMat(0,1)=CovMat(1,0);
+  CovMat(1,1)=cc[2];
+  CovMat(2,0)=cc[3];  CovMat(0,2)=CovMat(2,0);
+  CovMat(2,1)=cc[4];  CovMat(1,2)=CovMat(2,1);
+  CovMat(2,2)=cc[5];
+  CovMat(3,0)=cc[6];  CovMat(0,3)=CovMat(3,0);
+  CovMat(3,1)=cc[7];  CovMat(1,3)=CovMat(3,1);
+  CovMat(3,2)=cc[8];  CovMat(2,3)=CovMat(3,2);
+  CovMat(3,3)=cc[9];
+  CovMat(4,0)=cc[10]; CovMat(0,4)=CovMat(4,0);
+  CovMat(4,1)=cc[11]; CovMat(1,4)=CovMat(4,1);
+  CovMat(4,2)=cc[12]; CovMat(2,4)=CovMat(4,2);
+  CovMat(4,3)=cc[13]; CovMat(3,4)=CovMat(4,3);
+  CovMat(4,4)=cc[14];
 
-  TMatrixD stretchMat(5,5);
+  TMatrixD ScaleMat(5,5);
   for(Int_t k=0;k<5;k++) {
     for(Int_t l=0;l<5;l++) {
-      stretchMat(k,l)=0.;
+      ScaleMat(k,l)=0.;
     }
   }
 
@@ -435,24 +413,22 @@ TMatrixD AliTPCtrackerParam::GetSmearingMatrix(Double_t* cc,Double_t pt,Double_t
   Double_t s44[27]={1.1104,1.0789,1.0479,1.1597,1.1234,1.0728,1.2087,1.1602,1.1041,1.1942,1.1428,1.0831,1.1572,1.1036,1.0431,1.1296,1.0498,0.9844,1.1145,1.0266,0.9489,1.0959,1.0450,0.9875,1.0775,1.0266,0.9406};
 
 
-  stretchMat(0,0) = LinearInterpolation(9,s00,pt,eta); 
-  stretchMat(1,1) = LinearInterpolation(9,s11,pt,eta); 
-  stretchMat(2,2) = LinearInterpolation(9,s22,pt,eta); 
-  stretchMat(3,3) = LinearInterpolation(9,s33,pt,eta); 
-  stretchMat(4,4) = LinearInterpolation(9,s44,pt,eta); 
+  ScaleMat(0,0) = LinearInterpolation(9,s00,pt,eta); 
+  ScaleMat(1,1) = LinearInterpolation(9,s11,pt,eta); 
+  ScaleMat(2,2) = LinearInterpolation(9,s22,pt,eta); 
+  ScaleMat(3,3) = LinearInterpolation(9,s33,pt,eta); 
+  ScaleMat(4,4) = LinearInterpolation(9,s44,pt,eta); 
 
-  TMatrixD mat(stretchMat,TMatrixD::kMult,covMat);
-  TMatrixD covMatSmear(mat,TMatrixD::kMult,stretchMat);
+  TMatrixD Mat(ScaleMat,TMatrixD::kMult,CovMat);
+  TMatrixD CovMatSmear(Mat,TMatrixD::kMult,ScaleMat);
 
 
-  return covMatSmear;
+  return CovMatSmear;
 }
 
 //-----------------------------------------------------------------
-void AliTPCtrackerParam::SmearTrack(Double_t* xx,Double_t* xxsm,TMatrixD cov)  const {
-//-----------------------------------------------------------------
-// This function smears track parameters according to streched cov. matrix
-//-----------------------------------------------------------------
+void AliTPCtrackerParam::SmearTrack(Double_t* xx,Double_t* xxsm,TMatrixD cov) {
+
   AliGausCorr *corgen = new AliGausCorr(cov,5);
   TArrayD corr(5);
   corgen->GetGaussN(corr);
@@ -468,21 +444,17 @@ void AliTPCtrackerParam::SmearTrack(Double_t* xx,Double_t* xxsm,TMatrixD cov)  c
 
 //-----------------------------------------------------------------
 void AliTPCtrackerParam::CookTracks(TObjArray& tarray,TObjArray& newtarray) 
-const {
-//-----------------------------------------------------------------
-// This function deals with covariance matrix and smearing
-//-----------------------------------------------------------------
-
-  TString s("$ALICE_ROOT/TPC/CovMatrixDB_");
-  if(fColl==0) s.Append("PbPb6000");
-  if(fBz==0.4) s.Append("_B0.4T.root");  
+{
+  TString* s = new TString("$ALICE_ROOT/TPC/CovMatrixDB_");
+  if(fColl==0) s->Append("PbPb6000");
+  if(fBz==0.4) s->Append("_B0.4T.root");  
   // open file with matrixes DB
-  TFile* fileDB = TFile::Open(s.Data());  
+  TFile* DBfile = new TFile(s->Data());  
 
   AliTPCtrack* track = 0;
-  Int_t arrayEntries = (Int_t)tarray.GetEntriesFast();
+  Int_t entr = (Int_t)tarray.GetEntriesFast();
 
-  for(Int_t k=0; k<arrayEntries; k++) {
+  for(Int_t k=0; k<entr; k++) {
     track=(AliTPCtrack*)tarray.UncheckedAt(k);  
 
     Double_t pt = 1/TMath::Abs(track->Get1Pt());
@@ -495,40 +467,40 @@ const {
     str+=bin;
  
     // get the right tree
-    TTree* covTree = (TTree*)fileDB->Get(str.Data());
+    TTree* CovTree = (TTree*)DBfile->Get(str.Data());
     TArrayF* matrix = new TArrayF; 
-    covTree->SetBranchAddress("matrixes",&matrix);
+    CovTree->SetBranchAddress("matrixes",&matrix);
 
     // get random entry from the tree
-    Int_t treeEntries = (Int_t)covTree->GetEntries();
-    covTree->GetEvent(gRandom->Integer(treeEntries));
+    Int_t Entries = (Int_t)CovTree->GetEntries();
+    CovTree->GetEvent(gRandom->Integer(Entries));
 
     Double_t xref,alpha,xx[5],xxsm[5],cc[15];
     Int_t lab;
     // get P and Cosl from track
-    Double_t cosl = TMath::Cos(TMath::ATan(track->GetTgl()));
-    Double_t p = 1/TMath::Abs(track->Get1Pt())/cosl;
+    Double_t Cosl = TMath::Cos(TMath::ATan(track->GetTgl()));
+    Double_t P = 1/TMath::Abs(track->Get1Pt())/Cosl;
     
     // get covariance matrix from regularized matrix
-    cc[0]=matrix->At(0)*(1.588e-3+1.911e-4/TMath::Power(p,1.5));
+    cc[0]=matrix->At(0)*(1.588e-3+1.911e-4/TMath::Power(P,1.5));
     cc[1]=matrix->At(1);
-    cc[2]=matrix->At(2)*(1.195e-3+0.8102e-3/p);
-    cc[3]=matrix->At(3)*(7.275e-5+1.181e-5/TMath::Power(p,1.5));
+    cc[2]=matrix->At(2)*(1.195e-3+0.8102e-3/P);
+    cc[3]=matrix->At(3)*(7.275e-5+1.181e-5/TMath::Power(P,1.5));
     cc[4]=matrix->At(4);
-    cc[5]=matrix->At(5)*(5.163e-6+1.138e-6/TMath::Power(p,2.)/cosl);
+    cc[5]=matrix->At(5)*(5.163e-6+1.138e-6/TMath::Power(P,2.)/Cosl);
     cc[6]=matrix->At(6);
-    cc[7]=matrix->At(7)*(1.176e-5+1.175e-5/TMath::Power(p,1.5)/cosl/cosl/cosl);
+    cc[7]=matrix->At(7)*(1.176e-5+1.175e-5/TMath::Power(P,1.5)/Cosl/Cosl/Cosl);
     cc[8]=matrix->At(8);
-    cc[9]=matrix->At(9)*(1.289e-7+4.636e-7/TMath::Power(p,1.7)/cosl/cosl/cosl/cosl);
-    cc[10]=matrix->At(10)*(4.056e-7+4.379e-8/TMath::Power(p,1.5));
+    cc[9]=matrix->At(9)*(1.289e-7+4.636e-7/TMath::Power(P,1.7)/Cosl/Cosl/Cosl/Cosl);
+    cc[10]=matrix->At(10)*(4.056e-7+4.379e-8/TMath::Power(P,1.5));
     cc[11]=matrix->At(11);
-    cc[12]=matrix->At(12)*(3.049e-8+8.244e-9/TMath::Power(p,2.)/cosl);
+    cc[12]=matrix->At(12)*(3.049e-8+8.244e-9/TMath::Power(P,2.)/Cosl);
     cc[13]=matrix->At(13);
-    cc[14]=matrix->At(14)*(1.847e-10+5.822e-11/TMath::Power(p,2.)/cosl/cosl/cosl);
+    cc[14]=matrix->At(14)*(1.847e-10+5.822e-11/TMath::Power(P,2.)/Cosl/Cosl/Cosl);
   
-    TMatrixD covMatSmear(5,5);
+    TMatrixD CovMatSmear(5,5);
     
-    covMatSmear = GetSmearingMatrix(cc,pt,eta);
+    CovMatSmear = GetSmearingMatrix(cc,pt,eta);
 
     // get track original parameters
     xref=track->GetX();
@@ -541,7 +513,7 @@ const {
     lab=track->GetLabel();
 
     // use smearing matrix to smear the original parameters
-    SmearTrack(xx,xxsm,covMatSmear);
+    SmearTrack(xx,xxsm,CovMatSmear);
 
     AliTPCtrack* tpctrack = new AliTPCtrack(0,xxsm,cc,xref,alpha);
     tpctrack->SetLabel(lab);
@@ -549,12 +521,14 @@ const {
     // fill the array
     newtarray.AddLast(tpctrack);
  
-    delete matrix;  
+   delete matrix;  
 
   }
 
-  fileDB->Close();
-  delete fileDB;
+  DBfile->Close();
+
+  delete s;
+  delete DBfile;
 
 
   return; 

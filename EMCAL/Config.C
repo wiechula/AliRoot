@@ -114,7 +114,6 @@ void Config()
     gAlice->SetDebug(1);
 
     AliGenerator*  gener = GeneratorFactory(run);
-    gener->SetPtRange(0.,1.e10);
     gener->Init();
     gener->SetTrackingFlag(1);
     
