@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.4  2002/03/28 15:44:55  cblume
+Remove const from GetIndex()
+
+Revision 1.3  2002/03/28 14:59:07  cblume
+Coding conventions
+
+Revision 1.2  2001/11/07 11:04:22  hristov
+Minor corrections needed on Sun (arrays with undefined size created by new, inline decration removed when the body was hot in the header file)
+
 Revision 1.1  2001/11/06 17:19:41  cblume
 Add detailed geometry and simple simulator
 

@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.15  2002/04/09 13:38:47  jchudoba
+Add const to the filename argument
+
+Revision 1.14  2002/04/04 09:28:04  jchudoba
+Change default names of TPC trees. Use update instead of recreate for the output file. Overwrite the AliRunDigitizer object in the output if it exists.
+
+Revision 1.13  2002/02/13 09:03:32  jchudoba
+Pass option to subtasks. Delete input TTrees. Use gAlice from memory if it is present (user must delete the default one created by aliroot if he/she wants to use gAlice from the input file!). Add new data member to store name of the special TPC TTrees.
+
 Revision 1.12  2001/12/10 16:40:52  jchudoba
 Import gAlice from the signal file before InitGlobal() to allow detectors to use it during initialization
 
@@ -201,8 +210,8 @@ AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliR
   fTreeD = 0;
   fTreeDTPC = 0;
   fTreeDTRD = 0;
-  fTreeDTPCBaseName = "TreeD_75x40_100x60_";
-  fTreeTPCSBaseName = "TreeS_75x40_100x60_";
+  fTreeDTPCBaseName = "TreeD_75x40_100x60_150x60_";
+  fTreeTPCSBaseName = "TreeS_75x40_100x60_150x60_";
 
   for (i=0; i<kMaxStreamsToMerge; i++) fInputFiles[i]=0;
 }
@@ -229,7 +238,7 @@ void AliRunDigitizer::AddDigitizer(AliDigitizer *digitizer)
   this->Add(digitizer);
 }
 ////////////////////////////////////////////////////////////////////////
-void AliRunDigitizer::SetInputStream(Int_t i, char *inputFile)
+void AliRunDigitizer::SetInputStream(Int_t i, const char *inputFile)
 {
   if (i > fInputStreams->GetLast()) {
     Error("SetInputStream","Input stream number too high");
@@ -353,7 +362,7 @@ Bool_t AliRunDigitizer::InitOutputGlobal()
 
   TString fn;
   fn = fOutputDirName + '/' + fOutputFileName;
-  fOutput = new TFile(fn,"recreate");
+  fOutput = new TFile(fn,"update");
   if (GetDebug()>2) {
     cerr<<"AliRunDigitizer::InitOutputGlobal(): file "<<fn.Data()<<" was opened"<<endl;
   }
@@ -440,7 +449,7 @@ void AliRunDigitizer::FinishGlobal()
 // save unique objects to the output file
 
   fOutput->cd();
-  this->Write();
+  this->Write(0,TObject::kOverwrite);
   if (fCopyTreesFromInput > -1) {
     fInputFiles[fCopyTreesFromInput]->Get("TE")->Clone()->Write();
     gAlice->Write();

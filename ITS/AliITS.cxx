@@ -15,6 +15,33 @@
 
 /*
 $Log$
+Revision 1.71  2002/05/13 14:27:56  hristov
+TreeC created once per event (M.Masera)
+
+Revision 1.70  2002/05/10 22:28:30  nilsen
+Changes by Massimo Masera to allow the TTree of clusters to be written to a
+file otherthan the one with digits in it.
+
+Revision 1.69  2002/05/05 21:06:55  nilsen
+Added GetSimulationMoel, and fixed up SetDefaultSimulation to do the
+proper initilization when a simulation has already been defined.
+
+Revision 1.68  2002/05/02 18:51:53  nilsen
+AliITS.h
+   Method MakeBranchR has now a second argument, with a default value:
+       Option_t *opt=" ". Opt="Fast" is to create a separate branch
+       for fast points in TreeR
+   New method MakeBranchRF: it a separate branch in TreeR for Fast Points
+
+AliITS.cxx
+1) TTree->Write() replaced with TTree->AutoSave for TreeS, TreeD and
+   TreeR
+2) Changes in MakeBranchR to allow the creation of a special branch
+   for fast points
+
+Revision 1.67  2002/03/15 17:22:51  nilsen
+Intoduced SDigits2Digits and SDigitsToDigits functions.
+
 Revision 1.66  2001/11/28 01:35:45  nilsen
 Using standard constructors instead of default constructors for Clusterfinder,
 Response, and FastSimulator.
@@ -592,29 +619,57 @@ void AliITS::SetDefaultSimulation(){
     //      none.
 
     AliITSDetType *iDetType;
+    AliITSsimulation *sim;
     iDetType=DetType(0);
-    if (!iDetType->GetSimulationModel()) {
+    sim = iDetType->GetSimulationModel();
+    if (!sim) {
 	AliITSsegmentation *seg0=
 	    (AliITSsegmentation*)iDetType->GetSegmentationModel();
 	AliITSresponse *res0 = (AliITSresponse*)iDetType->GetResponseModel();
 	AliITSsimulationSPD *sim0=new AliITSsimulationSPD(seg0,res0);
 	SetSimulationModel(0,sim0);
+    }else{ // simulation exists, make sure it is set up properly.
+	((AliITSsimulationSPD*)sim)->Init(
+	    (AliITSsegmentationSPD*) iDetType->GetSegmentationModel(),
+	    (AliITSresponseSPD*) iDetType->GetResponseModel());
+//	if(sim->GetResponseModel()==0) sim->SetResponseModel(
+//	    (AliITSresponse*)iDetType->GetResponseModel());
+//	if(sim->GetSegmentationModel()==0) sim->SetSegmentationModel(
+//	    (AliITSsegmentation*)iDetType->GetSegmentationModel());
     } // end if
     iDetType=DetType(1);
-    if (!iDetType->GetSimulationModel()) {
+    sim = iDetType->GetSimulationModel();
+    if (!sim) {
 	AliITSsegmentation *seg1=
 	    (AliITSsegmentation*)iDetType->GetSegmentationModel();
 	AliITSresponse *res1 = (AliITSresponse*)iDetType->GetResponseModel();
 	AliITSsimulationSDD *sim1=new AliITSsimulationSDD(seg1,res1);
 	SetSimulationModel(1,sim1);
+    }else{ // simulation exists, make sure it is set up properly.
+	((AliITSsimulationSDD*)sim)->Init(
+	    (AliITSsegmentationSDD*) iDetType->GetSegmentationModel(),
+	    (AliITSresponseSDD*) iDetType->GetResponseModel());
+//	if(sim->GetResponseModel()==0) sim->SetResponseModel(
+//	    (AliITSresponse*)iDetType->GetResponseModel());
+//	if(sim->GetSegmentationModel()==0) sim->SetSegmentationModel(
+//	    (AliITSsegmentation*)iDetType->GetSegmentationModel());
     } //end if
     iDetType=DetType(2);
-    if (!iDetType->GetSimulationModel()) {
+    sim = iDetType->GetSimulationModel();
+    if (!sim) {
 	AliITSsegmentation *seg2=
 	    (AliITSsegmentation*)iDetType->GetSegmentationModel();
 	AliITSresponse *res2 = (AliITSresponse*)iDetType->GetResponseModel();
 	AliITSsimulationSSD *sim2=new AliITSsimulationSSD(seg2,res2);
 	SetSimulationModel(2,sim2);
+    }else{ // simulation exists, make sure it is set up properly.
+	((AliITSsimulationSSD*)sim)->Init(
+	    (AliITSsegmentationSSD*) iDetType->GetSegmentationModel(),
+	    (AliITSresponseSSD*) iDetType->GetResponseModel());
+//	if(sim->GetResponseModel()==0) sim->SetResponseModel(
+//	    (AliITSresponse*)iDetType->GetResponseModel());
+//	if(sim->GetSegmentationModel()==0) sim->SetSegmentationModel(
+//	    (AliITSsegmentation*)iDetType->GetSegmentationModel());
     } // end if
 }
 //______________________________________________________________________
@@ -678,15 +733,18 @@ void AliITS::MakeBranch(Option_t* option, const char *file){
     //      none.
     // Return:
     //      none.
-    const char *cS = strstr(option,"S");
-    const char *cD = strstr(option,"D");
-    const char *cR = strstr(option,"R");
+    Bool_t cS = (strstr(option,"S")!=0);
+    Bool_t cD = (strstr(option,"D")!=0);
+    Bool_t cR = (strstr(option,"R")!=0);
+    Bool_t cRF = (strstr(option,"RF")!=0);
+    if(cRF)cR = kFALSE;
 
     AliDetector::MakeBranch(option,file);
 
     if(cS) MakeBranchS(file);
     if(cD) MakeBranchD(file);
     if(cR) MakeBranchR(file);
+    if(cRF) MakeBranchRF(file);
 }
 //______________________________________________________________________
 void AliITS::SetTreeAddress(){
@@ -1158,9 +1216,7 @@ void AliITS::SDigitsToDigits(Option_t *opt){
 
     gAlice->TreeD()->GetEntries();
 
-    char hname[30];
-    sprintf(hname,"TreeD%d",gAlice->GetEvNumber());
-    gAlice->TreeD()->Write(hname,TObject::kOverwrite);
+    gAlice->TreeD()->AutoSave();
     // reset tree
     gAlice->TreeD()->Reset();
     
@@ -1263,10 +1319,7 @@ void AliITS::HitsToPreDigits(Int_t evNumber,Int_t bgrev,Int_t size,
     ClearModules();
 
     gAlice->TreeS()->GetEntries();
-
-    char hname[30];
-    sprintf(hname,"TreeS%d",evNumber);
-    gAlice->TreeS()->Write(hname,TObject::kOverwrite);
+    gAlice->TreeS()->AutoSave();
     // reset tree
     gAlice->TreeS()->Reset();
 }
@@ -1329,10 +1382,7 @@ void AliITS::HitsToDigits(Int_t evNumber,Int_t bgrev,Int_t size,
     ClearModules();
 
     gAlice->TreeD()->GetEntries();
-
-    char hname[30];
-    sprintf(hname,"TreeD%d",evNumber);
-    gAlice->TreeD()->Write(hname,TObject::kOverwrite);
+    gAlice->TreeD()->AutoSave();
     // reset tree
     gAlice->TreeD()->Reset();
 }
@@ -1472,9 +1522,22 @@ void AliITS::MakeTreeC(Option_t *option){
     //      none.
     // Return:
     //      none.
-
+  TDirectory *cwd = gDirectory;
+  TFile *fileRecPoints = gAlice->GetTreeRFile();
+  if(fileRecPoints)fileRecPoints->cd();
     const char *optC = strstr(option,"C");
-    if (optC && !fTreeC) fTreeC = new TTree("TC","Clusters in ITS");
+    char hname[30];
+    Int_t cureve = gAlice->GetEvNumber();
+    sprintf(hname,"TreeC%d",cureve);
+    if(fTreeC){
+      const char *curname = fTreeC->GetName();
+      char *exists = strstr(hname,curname);
+      if(!exists){
+        delete fTreeC; 
+        fTreeC=0;
+      }
+    }
+    if (optC && !fTreeC) fTreeC = new TTree(hname,"Clusters in ITS");
     else return;
 
     Int_t buffersize = 4000;
@@ -1484,18 +1547,21 @@ void AliITS::MakeTreeC(Option_t *option){
     char clclass[40];
 
     // one branch for Clusters per type of detector
-    Int_t i;
+    Int_t i;   
     for (i=0; i<kNTYPES ;i++) {
         AliITSDetType *iDetType=DetType(i); 
         iDetType->GetClassNames(digclass,clclass);
 	// clusters
-        fCtype->AddAt(new TClonesArray(clclass,1000),i);
+        if(!ClustersAddress(i)){
+          fCtype->AddAt(new TClonesArray(clclass,1000),i);
+        }
         if (kNTYPES==3) sprintf(branchname,"%sClusters%s",GetName(),det[i]);
 	else  sprintf(branchname,"%sClusters%d",GetName(),i+1);
 	if (fCtype   && fTreeC) {
 	    TreeC()->Branch(branchname,&((*fCtype)[i]), buffersize);
 	} // end if fCtype && fTreeC
     } // end for i
+    cwd->cd();
 }
 //______________________________________________________________________
 void AliITS::GetTreeC(Int_t event){
@@ -1516,7 +1582,13 @@ void AliITS::GetTreeC(Int_t event){
     } // end if fTreeC
 
     sprintf(treeName,"TreeC%d",event);
-    fTreeC = (TTree*)gDirectory->Get(treeName);
+    TFile *fileRecPoints = gAlice->GetTreeRFile();
+    if(!fileRecPoints){
+      fTreeC = (TTree*)gDirectory->Get(treeName);
+    }
+    else {
+      fTreeC = (TTree*)fileRecPoints->Get(treeName);
+    }
 
     TBranch *branch;
 
@@ -1591,7 +1663,7 @@ void AliITS::ResetClusters(Int_t i){
     if (fNctype)  fNctype[i]=0;
 }
 //______________________________________________________________________
-void AliITS::MakeBranchR(const char *file){
+void AliITS::MakeBranchR(const char *file, Option_t *opt){
     // Creates Tree branches for the ITS Reconstructed points.
     // Inputs:
     //      cont char *file  File name where RecPoints branch is to be written
@@ -1605,7 +1677,12 @@ void AliITS::MakeBranchR(const char *file){
     char branchname[30];
 
     // only one branch for rec points for all detector types
-    sprintf(branchname,"%sRecPoints",GetName());
+    Bool_t oFast= (strstr(opt,"Fast")!=0);
+    if(oFast){
+      sprintf(branchname,"%sRecPointsF",GetName());
+    } else {
+      sprintf(branchname,"%sRecPoints",GetName());
+    }
     if (fRecPoints && gAlice->TreeR()) {
 	MakeBranchInTree(gAlice->TreeR(),branchname,&fRecPoints,buffsz,file);
     } // end if
@@ -1625,7 +1702,16 @@ void AliITS::SetTreeAddressR(TTree *treeR){
     TBranch *branch;
     sprintf(branchname,"%sRecPoints",GetName());
     branch = treeR->GetBranch(branchname);
-    if (branch) branch->SetAddress(&fRecPoints);
+    if (branch) {
+      branch->SetAddress(&fRecPoints);
+    }
+    else {
+      sprintf(branchname,"%sRecPointsF",GetName());
+      branch = treeR->GetBranch(branchname);
+      if (branch) {
+        branch->SetAddress(&fRecPoints);
+      }
+    }
 }
 //______________________________________________________________________
 void AliITS::AddRecPoint(const AliITSRecPoint &r){
@@ -1691,15 +1777,15 @@ void AliITS::HitsToFastRecPoints(Int_t evNumber,Int_t bgrev,Int_t size,
 	} // end if !sim
 	mod      = (AliITSmodule *)fITSmodules->At(module);
 	sim->CreateFastRecPoints(mod,module,gRandom);
-	gAlice->TreeR()->Fill(); 
+    //	gAlice->TreeR()->Fill(); 
+    TBranch *br=gAlice->TreeR()->GetBranch("ITSRecPointsF");
+    br->Fill();
 	ResetRecPoints();
     } // end for module
 
     ClearModules();
 
-    char hname[30];
-    sprintf(hname,"TreeR%d",evNumber);
-    gAlice->TreeR()->Write(hname,TObject::kOverwrite);
+    gAlice->TreeR()->AutoSave();
     // reset tree
     gAlice->TreeR()->Reset();
 }
@@ -1745,7 +1831,6 @@ void AliITS::DigitsToRecPoints(Int_t evNumber,Int_t lastentry,Option_t *opt){
     setRec=kFALSE;
 
     TTree *treeC=TreeC();
-
     AliITSClusterFinder *rec     = 0;
     AliITSDetType      *iDetType = 0;
     Int_t id,module,first=0;
@@ -1766,7 +1851,7 @@ void AliITS::DigitsToRecPoints(Int_t evNumber,Int_t lastentry,Option_t *opt){
 	else gAlice->TreeD()->GetEvent(lastentry+(module-first));
 	Int_t ndigits = itsDigits->GetEntriesFast();
 	if (ndigits) rec->FindRawClusters(module);
-	gAlice->TreeR()->Fill(); 
+    gAlice->TreeR()->Fill(); 
 	ResetRecPoints();
 	treeC->Fill();
 	ResetClusters();
@@ -1774,15 +1859,11 @@ void AliITS::DigitsToRecPoints(Int_t evNumber,Int_t lastentry,Option_t *opt){
 
     gAlice->TreeR()->GetEntries();
     treeC->GetEntries();
-
-    char hname[30];
-    sprintf(hname,"TreeR%d",evNumber);
-    gAlice->TreeR()->Write(hname,TObject::kOverwrite);
+    gAlice->TreeR()->AutoSave();
     // reset tree
     gAlice->TreeR()->Reset();
 
-    sprintf(hname,"TreeC%d",evNumber);
-    treeC->Write(hname,TObject::kOverwrite);
+    treeC->AutoSave();
     treeC->Reset();
 }
 //______________________________________________________________________

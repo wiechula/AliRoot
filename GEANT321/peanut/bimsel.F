@@ -2,6 +2,12 @@
 * $Id$
 *
 * $Log$
+* Revision 1.2  2002/05/13 12:40:58  hristov
+* Dummy subroutines to avoid files with no code in
+*
+* Revision 1.1.1.1  1999/05/18 15:55:22  fca
+* AliRoot sources
+*
 * Revision 1.2  1997/10/17 10:00:03  mclareni
 * Remove SAVE statement for NT
 *
@@ -47,7 +53,7 @@
      &     PRCOLN, IBTOLD, ICTOLD, KPROJ , NTRIAL, ITFRMI
       SAVE SBHAL0, SBSKI0, SBCEN0, SBCEN1, SBSKI1, SBHAL1
 #ifndef CERNLIB_WINNT
-      SAVE
+*      SAVE
 #endif
       DATA IBTOLD, ICTOLD / 2*0 /
 *

@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.4  2002/03/28 14:59:07  cblume
+Coding conventions
+
+Revision 1.3  2002/02/11 14:21:16  cblume
+Update of the geometry. Get rid of MANY
+
 Revision 1.2  2001/11/08 13:13:08  cblume
 Change to MANY for UCFI/M/O and UAFI/M/O
 
@@ -314,7 +320,7 @@ void AliTRDgeometryDetail::CreateGeometry(Int_t *idtmed)
 }
 
 //_____________________________________________________________________________
-void AliTRDgeometryDetail::CreateReadout(Int_t *idtmed)
+void AliTRDgeometryDetail::CreateReadout(Int_t *idtmed) const
 {
   //
   // Create the volumina of the readout electronics
@@ -450,7 +456,7 @@ void AliTRDgeometryDetail::PositionReadout(Int_t ipla, Int_t icha)
 }
 
 //_____________________________________________________________________________
-void AliTRDgeometryDetail::CreateCooling(Int_t *idtmed)
+void AliTRDgeometryDetail::CreateCooling(Int_t *idtmed) const
 {
   //
   // Create the volumina of the cooling

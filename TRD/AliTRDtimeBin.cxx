@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.6  2002/03/28 14:59:07  cblume
+Coding conventions
+
+Revision 1.5  2001/11/06 17:19:41  cblume
+Add detailed geometry and simple simulator
+
 Revision 1.4  2001/10/21 18:30:02  hristov
 Several pointers were set to zero in the default constructors to avoid memory management problems
 
@@ -31,7 +37,14 @@ Revision 1.1.2.1  2000/09/22 14:47:52  cblume
 Add the tracking code
 
 */                        
-                                
+             
+//////////////////////////////////////////////////////////////////////
+//                                                                  //
+//  Hit compression class                                           //
+//  Adapted from AliTPCTimeBin by Marian                            //
+//                                                                  //
+//////////////////////////////////////////////////////////////////////
+                   
 #include "AliTRDcluster.h" 
 #include "AliTRDtimeBin.h" 
 
@@ -42,7 +55,7 @@ ClassImp(AliTRDtimeBin)
   AliTRDtimeBin::AliTRDtimeBin() {
   //default constructor
     fN=0;
-    for (UInt_t i=0; i<kMAX_CLUSTER_PER_TIME_BIN; i++) 
+    for (UInt_t i=0; i<kMaxClusterPerTimeBin; i++) 
       fClusters[i]=0;
   }
 //______________________________________________________
@@ -52,7 +65,7 @@ void AliTRDtimeBin::InsertCluster(AliTRDcluster* c, UInt_t index) {
 // Insert cluster in TimeBin cluster array.
 // Clusters are sorted according to Y coordinate.  
 
-  if (fN==kMAX_CLUSTER_PER_TIME_BIN) {
+  if (fN==kMaxClusterPerTimeBin) {
     printf("AliTRDtimeBin::InsertCluster(): Too many clusters !\n"); 
     return;
   }

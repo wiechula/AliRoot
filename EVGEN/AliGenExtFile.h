@@ -10,12 +10,12 @@
 // http://consult.cern.ch/alice/Internal_Notes/1995/32/abstract
 // Author: andreas.morsch@cern.ch
 
-#include "AliGenerator.h"
+#include "AliGenMC.h"
 #include "AliGenReader.h"
 
 class TTree;
 
-class AliGenExtFile : public AliGenerator
+class AliGenExtFile : public AliGenMC
 {
  public:
     AliGenExtFile();
@@ -28,7 +28,9 @@ class AliGenExtFile : public AliGenerator
     virtual void Generate();
     AliGenExtFile & operator=(const AliGenExtFile & rhs);
     void SetReader(AliGenReader* reader) {fReader = reader;}
-protected:
+ protected:
+    void CdEventFile();
+ protected:    
     const Text_t     *fFileName;      //! File to read from
     AliGenReader     *fReader;        //! Reader to read the file
     

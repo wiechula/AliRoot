@@ -15,6 +15,13 @@
 
 /*
  $Log$
+ Revision 1.9  2002/05/05 21:10:10  nilsen
+ In Distructor, delete fResponse. Since AliITSDetType is supposed to own it
+ it should delete it.
+
+ Revision 1.8  2001/10/04 22:40:15  nilsen
+ Cosmetic changes.
+
  Revision 1.7  2001/09/07 14:43:15  hristov
  Destructor reverted after a temporary fix
 
@@ -52,7 +59,7 @@ AliITSDetType::~AliITSDetType(){
     // destructor
 
     if(fSegmentation!=0) delete fSegmentation; fSegmentation = 0;
-    //    if(fResponse!=0)     delete fResponse;     fResponse     = 0;
+    if(fResponse!=0)     delete fResponse;     fResponse     = 0;
     if(fSimulation!=0)   delete fSimulation;   fSimulation   = 0;
     if(fReconst!=0)      delete fReconst;      fReconst      = 0;
 }

@@ -2,6 +2,12 @@
 * $Id$
 *
 * $Log$
+* Revision 1.2  2002/05/13 12:40:58  hristov
+* Dummy subroutines to avoid files with no code in
+*
+* Revision 1.1.1.1  1999/05/18 15:55:17  fca
+* AliRoot sources
+*
 * Revision 1.1.1.1  1995/10/24 10:20:57  cernlib
 * Geant
 *
@@ -680,5 +686,8 @@ C.    ------------------------------------------------------------------
       ENDIF
 *                                                              END GNEXT
   999 END
- 
+
+#else
+      SUBROUTINE GNEX2_DUMMY
+      END
 #endif
