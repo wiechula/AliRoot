@@ -204,6 +204,7 @@ if [ "$AG4_VERSION" = "" ]; then
 else
   export G4INSTALL=$G4_BASE/g4dev/geant4.$AG4_VERSION
 fi
+export MCINSTALL=$ALICE_ROOT/geant4_mc
 
 if [ "$AG4_MAKESHLIB" = "" ]; then
   unset G4LIB_BUILD_SHARED
@@ -221,7 +222,8 @@ if [ "$SYSTEM" = "HP-UX" ]; then
   #export G4USE_OSPACE=1        # compiling with Object Space STL
 fi  
 if [ "$SYSTEM" = "Linux" ]; then
-  export G4SYSTEM="Linux-g++"
+###  export G4SYSTEM="Linux-g++"
+  export G4SYSTEM="Linux-egcs"
 fi
 if [ "$SYSTEM" = "OSF1" ]; then
   export G4SYSTEM="DEC-cxx"
@@ -649,7 +651,7 @@ if [ "`echo ${SHLIBVAR} | grep ${G4INSTALL}/lib/${G4SYSTEM} `" = "" ]; then
   if [ "$VERBOSE" = "YES" ]; then
     echo Adding ${G4INSTALL}/lib/${G4SYSTEM} to the shared libraries path...
   fi
-  SHLIBVAR="${G4INSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
+  SHLIBVAR="${MCINSTALL}/lib/${G4SYSTEM}:${G4INSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
 fi
 if [ "`echo ${SHLIBVAR} | grep ${CLHEP_BASE_DIR}/lib `" = "" ]; then
   if [ "$VERBOSE" = "YES" ]; then

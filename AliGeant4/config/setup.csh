@@ -205,6 +205,7 @@ if ("$?AG4_VERSION" == 0) then
 else
   setenv G4INSTALL ${G4_BASE}/g4dev/geant4.${AG4_VERSION}
 endif
+setenv MCINSTALL ${ALICE_ROOT}/geant4_mc
 
 if ("$?AG4_MAKESHLIB" == 0) then
   unsetenv G4LIB_BUILD_SHARED
@@ -222,7 +223,8 @@ if ( $SYSTEM == "HP-UX" ) then
   #setenv G4USE_OSPACE 1        # compiling with Object Space STL
 endif 
 if ( $SYSTEM == "Linux" ) then
-  setenv G4SYSTEM "Linux-g++"
+###  setenv G4SYSTEM "Linux-g++"
+  setenv G4SYSTEM "Linux-egcs"
 endif
 if ( $SYSTEM == "OSF1" ) then
   setenv G4SYSTEM "DEC-cxx"
@@ -621,7 +623,7 @@ if ( "`echo ${SHLIBVAR} | grep ${G4INSTALL}/lib/${G4SYSTEM} `" == "" ) then
   if ( "$VERBOSE" == "YES" ) then
     echo Adding ${G4INSTALL}/lib/${G4SYSTEM} to the shared libraries path...
   endif
-  set SHLIBVAR="${G4INSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
+  set SHLIBVAR="${MCINSTALL}/lib/${G4SYSTEM}:${G4INSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
 endif
 if ( "`echo ${SHLIBVAR} | grep ${CLHEP_BASE_DIR}/lib `" == "" ) then
   if ( "$VERBOSE" == "YES" ) then
