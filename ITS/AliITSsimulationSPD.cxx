@@ -135,7 +135,7 @@ void AliITSsimulationSPD::DigitiseModule(AliITSmodule *mod, Int_t module, Int_t 
 
     // Fill detector maps with GEANT hits
     // loop over hits in the module
-    static Bool_t first;
+    static Bool_t first=kTRUE;
     Int_t lasttrack=-2;
     Int_t hit, iZi, jz, jx;
     for (hit=0;hit<nhits;hit++) {
@@ -151,8 +151,6 @@ void AliITSsimulationSPD::DigitiseModule(AliITSmodule *mod, Int_t module, Int_t 
 	// of particles : 
         Int_t itrack = iHit->GetTrack();
    
-	if (lasttrack != itrack || hit==(nhits-1)) first = kTRUE; 
-
 	//  Get hit z and x(r*phi) cordinates for each module (detector)
 	//  in local system.
 
@@ -380,9 +378,12 @@ void AliITSsimulationSPD::DigitiseModule(AliITSmodule *mod, Int_t module, Int_t 
 	   zPix0 = zPix;
 	   xPix0 = xPix;
         }
-	yPrev = yPix;  
+	yPrev = yPix;  //ch
 
+	if (lasttrack != itrack || hit==(nhits-1)) {
             GetList(itrack,idhit,pList,indexRange);
+            first=kTRUE;
+	}
 
 	lasttrack=itrack;
     }   // hit loop inside the module
@@ -413,12 +414,11 @@ void AliITSsimulationSPD::GetList(Int_t label,Int_t idhit,Float_t **pList,Int_t 
     for(Int_t ix=indexRange[2];ix<indexRange[3]+1;ix++){
 
         Float_t signal=fMapA2->GetSignal(iz,ix);
-
 	if (!signal) continue;
 
         Int_t globalIndex = iz*fNPixelsX+ix; // GlobalIndex starts from 0!
         if(!pList[globalIndex]){
-
+        
            // 
 	   // Create new list (9 elements - 3 signals and 3 tracks + 3 hits)
 	   //
@@ -530,26 +530,6 @@ void AliITSsimulationSPD::ChargeToSignal(Float_t **pList)
 	   }
 	   charges[j1] = 0;
 	 }
-
-	 if(tracks[0] == tracks[1] && tracks[0] == tracks[2]) {
-	   tracks[1] = -3;
-           hits[1] = -1;
-	   tracks[2] = -3;
-           hits[2] = -1;
-         } 
-	 if(tracks[0] == tracks[1] && tracks[0] != tracks[2]) {
-	   tracks[1] = -3;
-           hits[1] = -1;   
-         } 
-	 if(tracks[0] == tracks[2] && tracks[0] != tracks[1]) {
-	   tracks[2] = -3;
-           hits[2] = -1;   
-         } 
-	 if(tracks[1] == tracks[2] && tracks[0] != tracks[1]) {
-	   tracks[2] = -3;
-           hits[2] = -1;   
-         } 
-
          phys=0;
 	 aliITS->AddSimDigit(0,phys,digits,tracks,hits,charges);
       }
