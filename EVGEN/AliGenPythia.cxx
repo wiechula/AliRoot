@@ -203,13 +203,6 @@ AliGenPythia::AliGenPythia(Int_t npart)
     SetEventListRange();
     SetJetPhiRange();
     SetJetEtaRange();
-    // Options determining what to keep in the stack (Heavy flavour generation)
-    fStackFillOpt = kFlavorSelection; // Keep particle with selected flavor
-    fFeedDownOpt = kTRUE;             // allow feed down from higher family
-    // Fragmentation on/off
-    fFragmentation = kTRUE;
-    // Default counting mode
-    fCountMode = kCountAll;
 }
 
 AliGenPythia::AliGenPythia(const AliGenPythia & Pythia)
@@ -247,13 +240,6 @@ void AliGenPythia::Init()
     fPythia->SetCKIN(3,fPtHardMin);
     fPythia->SetCKIN(4,fPtHardMax);    
     if (fNucA1 > 0 && fNucA2 > 0) fPythia->SetNuclei(fNucA1, fNucA2);  
-    // Fragmentation?
-    if (fFragmentation) {
-      fPythia->SetMSTP(111,1);
-    } else {
-      fPythia->SetMSTP(111,0);
-    }
-
     fPythia->ProcInit(fProcess,fEnergyCMS,fStrucFunc);
 
     //    fPythia->Pylist(0);
@@ -268,10 +254,6 @@ void AliGenPythia::Init()
 	fParentSelect[1] =   421;
 	fParentSelect[2] =   431;
 	fParentSelect[3] =  4122;
-	fFlavorSelect    =  4;	
-	break;
-    case kPyD0PbMNR:
-	fParentSelect[0] =   421;
 	fFlavorSelect    =  4;	
 	break;
     case kPyBeauty:
@@ -363,12 +345,9 @@ void AliGenPythia::Generate()
 	for (i=0; i< np; i++) {
 	    pParent[i]   = -1;
 	    pSelected[i] =  0;
-	    trackIt[i]   =  0;
 	}
-	// printf("\n **************************************************%d\n",np);
-	Int_t nc = 0;        // Total n. of selected particles
-	Int_t nParents = 0;  // Selected parents
-	Int_t nTkbles = 0;   // Trackable particles
+	printf("\n **************************************************%d\n",np);
+	Int_t nc = 0;
 	if (fProcess != kPyMb && fProcess != kPyJets && fProcess != kPyDirectGamma) {
 	    
 	    for (i = 0; i<np; i++) {
@@ -397,44 +376,25 @@ void AliGenPythia::Generate()
 		    kfMo = TMath::Abs(mother->GetPdgCode());
 		}
 //		printf("\n particle (all)  %d %d %d", i, pSelected[i], kf);
-		// What to keep in Stack?
-		Bool_t flavorOK = kFALSE;
-		Bool_t selectOK = kFALSE;
-		if (fFeedDownOpt) {
-		  if (kfl >= fFlavorSelect) flavorOK = kTRUE;
-		} else {
-		  if (kfl > fFlavorSelect) {
-		    nc = -1;
-		    break;
-		  }
-		  if (kfl == fFlavorSelect) flavorOK = kTRUE;
-		}
-		switch (fStackFillOpt) {
-		case kFlavorSelection:
-		  selectOK = kTRUE;
-		  break;
-		case kParentSelection:
-		  if (ParentSelected(kf) || kf <= 10) selectOK = kTRUE;
-		  break;
-		}
-		if (flavorOK && selectOK) { 
+		if (kfl >= fFlavorSelect) { 
 //
 // Heavy flavor hadron or quark
 //
 // Kinematic seletion on final state heavy flavor mesons
 		    if (ParentSelected(kf) && !KinematicSelection(iparticle, 0)) 
 		    {
-		      continue;
+			nc = -1;
+			break;
 		    }
 		    pSelected[i] = 1;
-		    if (ParentSelected(kf)) ++nParents; // Update parent count
 //		    printf("\n particle (HF)  %d %d %d", i, pSelected[i], kf);
 		} else {
 // Kinematic seletion on decay products
 		    if (fCutOnChild && ParentSelected(kfMo) && ChildSelected(kf) 
 			&& !KinematicSelection(iparticle, 1))
 		    {
-		      continue;
+			nc = -1;
+			break;
 		    }
 //
 // Decay products 
@@ -462,8 +422,6 @@ void AliGenPythia::Generate()
 		}
 		if (pSelected[i] == -1) pSelected[i] = 0;
 		if (!pSelected[i]) continue;
-		// Count quarks only if you did not include fragmentation
-		if (fFragmentation && kf <= 10) continue;
 		nc++;
 // Decision on tracking
 		trackIt[i] = 0;
@@ -478,16 +436,16 @@ void AliGenPythia::Generate()
 		} else {
 		    if (ParentSelected(kf)) trackIt[i] = 0;
 		}
-		if (trackIt[i] == 1) ++nTkbles; // Update trackable counter
 //
 //
 
   	    } // particle selection loop
-	    if (nc > 0) {
+	    if (nc > -1) {
 		for (i = 0; i<np; i++) {
 		    if (!pSelected[i]) continue;
 		    TParticle *  iparticle = (TParticle *) fParticles->At(i);
 		    kf = CheckPDGCode(iparticle->GetPdgCode());
+		    Int_t ks = iparticle->GetStatusCode();
 		    p[0] = iparticle->Px();
 		    p[1] = iparticle->Py();
 		    p[2] = iparticle->Pz();
@@ -498,7 +456,7 @@ void AliGenPythia::Generate()
 		    Int_t ipa     = iparticle->GetFirstMother()-1;
 		    Int_t iparent = (ipa > -1) ? pParent[ipa] : -1;
 		    SetTrack(fTrackIt*trackIt[i] ,
-				     iparent, kf, p, origin, polar, tof, kPPrimary, nt, 1.);
+				     iparent, kf, p, origin, polar, tof, kPPrimary, nt, 1, ks);
 		    pParent[i] = nt;
 		    KeepTrack(nt); 
 		} //  SetTrack loop
@@ -512,20 +470,7 @@ void AliGenPythia::Generate()
 	if (trackIt)   delete[] trackIt;
 
 	if (nc > 0) {
-	  switch (fCountMode) {
-	  case kCountAll:
-	    // printf(" Count all \n");
-	    jev += nc;
-	    break;
-	  case kCountParents:
-	    // printf(" Count parents \n");
-	    jev += nParents;
-	    break;
-	  case kCountTrackables:
-	    // printf(" Count trackable \n");
-	    jev += nTkbles;
-	    break;
-	  }
+	    jev+=nc;
 	    if (jev >= fNpart || fNpart == -1) {
 		fKineBias=Float_t(fNpart)/Float_t(fTrials);
 		printf("\n Trials: %i %i %i\n",fTrials, fNpart, jev);
@@ -587,7 +532,7 @@ Int_t  AliGenPythia::GenerateMB()
 	    origin[2] = fOrigin[2]+iparticle->Vz()/10.;
 	    Float_t tof=kconv*iparticle->T();
 	    SetTrack(fTrackIt*trackIt, iparent, kf, p, origin, polar,
-			 tof, kPPrimary, nt);
+			 tof, kPPrimary, nt, 1., ks);
 	    KeepTrack(nt);
 	    pParent[i] = nt;
 	} // select particle

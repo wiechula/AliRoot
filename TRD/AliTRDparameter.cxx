@@ -15,6 +15,18 @@
 
 /*
 $Log$
+Revision 1.4  2002/04/12 12:13:23  cblume
+Add Jiris changes
+
+Revision 1.3  2002/03/28 14:59:07  cblume
+Coding conventions
+
+Revision 1.2  2002/03/28 10:00:36  hristov
+Some additional initialisation
+
+Revision 1.1  2002/03/25 20:01:18  cblume
+Introduce parameter class
+
 */
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,6 +105,47 @@ AliTRDparameter::AliTRDparameter(const Text_t *name, const Text_t *title)
   //
 
   fGeo                = new AliTRDgeometryFull();
+  fPRFsmp             = 0;
+  fTRFsmp             = 0;
+  fCTsmp              = 0;
+  fGasGain            = 0.0;
+  fNoise              = 0.0;
+  fChipGain           = 0.0;
+  fADCoutRange        = 0.0;
+  fADCinRange         = 0.0;
+  fADCthreshold       = 0;
+  fDiffusionOn        = 0;
+  fDiffusionT         = 0.0;
+  fDiffusionL         = 0.0;
+  fElAttachOn         = 0;
+  fElAttachProp       = 0.0;
+  fExBOn              = 0;
+  fOmegaTau           = 0.0;
+  fPRFOn              = 0;
+  fTRFOn              = 0;
+  fCTOn               = 0;
+  fTCOn               = 0;
+  fDriftVelocity      = 0.0;
+  fPadCoupling        = 0.0;
+  fTimeCoupling       = 0.0;
+  fTimeBinWidth       = 0.0;
+  fField              = 0.0;
+  fTiltingAngle       = 0.0;
+  fPRFbin             = 0;
+  fPRFlo              = 0.0;
+  fPRFhi              = 0.0;
+  fPRFwid             = 0.0;
+  fPRFpad             = 0;
+  fTRFbin             = 0;
+  fTRFlo              = 0.0;
+  fTRFhi              = 0.0;
+  fTRFwid             = 0.0;
+  fTCnexp             = 0;
+
+  fLUTOn              = 0;  
+  fLUT                = 0;
+  fClusMaxThresh      = 0;
+  fClusSigThresh      = 0;
 
   Init();
 
@@ -332,7 +385,8 @@ void AliTRDparameter::Init()
   SetTiltingAngle(5.0);
 
   // The magnetic field strength in Tesla
-  fField           = 0.2 * gAlice->Field()->Factor();
+  //fField           = 0.2 * gAlice->Field()->Factor();
+  fField           = 0.4;
 
   //
   // ----------------------------------------------------------------------------
@@ -497,7 +551,7 @@ void AliTRDparameter::SetNTimeBin(const Int_t nbin)
 }
 
 //_____________________________________________________________________________
-Float_t AliTRDparameter::CrossTalk(Float_t time)
+Float_t AliTRDparameter::CrossTalk(Float_t time) const
 {
   //
   // Applies the pad-pad capacitive cross talk
@@ -532,7 +586,7 @@ Int_t AliTRDparameter::Diffusion(Float_t driftlength, Float_t *xyz)
 }
 
 //_____________________________________________________________________________
-Int_t AliTRDparameter::ExB(Float_t driftlength, Float_t *xyz)
+Int_t AliTRDparameter::ExB(Float_t driftlength, Float_t *xyz) const
 {
   //
   // Applies E x B effects to the position of a single electron
@@ -548,7 +602,7 @@ Int_t AliTRDparameter::ExB(Float_t driftlength, Float_t *xyz)
 
 //_____________________________________________________________________________
 Int_t AliTRDparameter::PadResponse(Float_t signal, Float_t dist
-                                 , Int_t plane, Float_t *pad)
+                                 , Int_t plane, Float_t *pad) const
 {
   //
   // Applies the pad response
@@ -588,7 +642,7 @@ Int_t AliTRDparameter::PadResponse(Float_t signal, Float_t dist
 }
 
 //_____________________________________________________________________________
-Float_t AliTRDparameter::TimeResponse(Float_t time)
+Float_t AliTRDparameter::TimeResponse(Float_t time) const
 {
   //
   // Applies the preamp shaper time response
@@ -1001,14 +1055,21 @@ void AliTRDparameter::SamplePRF()
       diff  = 0;
       do {
         diff = bin - pad[ipos2++];
-      } while (diff > 0);
-      ipos2--;
-      if (ipos2 >= kPRFbin) ipos2 = kPRFbin - 1;
-      ipos1 = ipos2 - 1;
-
-      fPRFsmp[iPla*fPRFbin+iBin] = prf[iPla][ipos2] 
-                                 + diff * (prf[iPla][ipos2] - prf[iPla][ipos1]) 
-                                        / sPRFwid;
+      } while ((diff > 0) && (ipos2 < kPRFbin));
+      if      (ipos2 == kPRFbin) {
+        fPRFsmp[iPla*fPRFbin+iBin] = prf[iPla][ipos2-1];
+      }
+      else if (ipos2 == 1) {
+        fPRFsmp[iPla*fPRFbin+iBin] = prf[iPla][ipos2-1];
+      }
+      else {
+        ipos2--;
+        if (ipos2 >= kPRFbin) ipos2 = kPRFbin - 1;
+        ipos1 = ipos2 - 1;
+        fPRFsmp[iPla*fPRFbin+iBin] = prf[iPla][ipos2] 
+                                   + diff * (prf[iPla][ipos2] - prf[iPla][ipos1]) 
+                                          / sPRFwid;
+      }
 
     }
   } 
@@ -1257,9 +1318,9 @@ Float_t AliTRDparameter::GetOmegaTau(Float_t vd, Float_t b)
 }
 
 //_____________________________________________________________________________
-Double_t AliTRDparameter::LUTposition(Int_t iplane, Double_t ampL, 
-                                                    Double_t ampC,
-                                                     Double_t ampR)
+Double_t AliTRDparameter::LUTposition(Int_t iplane, Double_t ampL 
+                                                  , Double_t ampC
+                                                  , Double_t ampR) const
 {
   //
   // Calculates the cluster position using the lookup table.
