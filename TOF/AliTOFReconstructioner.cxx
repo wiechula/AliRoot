@@ -64,7 +64,7 @@
 #include "TFile.h"
 #include "TParticle.h"
 #include <TClonesArray.h>
-#include "../TGeant3/TGeant3.h"
+#include "TGeant3.h"
 #include <TF1.h>
 #include <TF2.h>
 #include "TROOT.h"

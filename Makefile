@@ -65,7 +65,7 @@ AliGeant4 AliFluka : FORCE
 	${MAKE} -C $$DIR
 
 #cernlibs: geant321 pythia6 minicern pdf hijing
-cernlibs: geant3 pythia6 pdf hijing
+cernlibs: pythia6 pdf hijing
 
 #geant4: TGeant4 AliGeant4
 geant4: AliGeant4

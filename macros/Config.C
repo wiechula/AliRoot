@@ -13,13 +13,13 @@ void Config()
     
     // libraries required by geant321
     // gSystem->Load("libMC");  
-    gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libminicern");
+    gSystem->Load("$(G3INSTALL)/lib/tgt_$(ALICE_TARGET)/libminicern");
     gSystem->Load("$(ROOTSYS)/lib/libPhysics");
     gSystem->Load("$(ROOTSYS)/lib/libEG"); 
     gSystem->Load("$(ROOTSYS)/lib/libEGPythia6");
     //gSystem->Load("$(ROOTSYS)/lib/libPythia6");  
     gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libpythia6");  
-    gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libgeant321");    
+    gSystem->Load("$(G3INSTALL)/lib/tgt_$(ALICE_TARGET)/libgeant321");    
     gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libITS");  
 
     new  TGeant3("C++ Interface to Geant3");
