@@ -67,8 +67,15 @@ void AliPHOSGeometry::Init(void)
   // Initializes the PHOS parameters :
   //  IHEP is the Protvino CPV (cathode pad chambers)
   //  GPS2 is the Subatech Pre-Shower (two micromegas sandwiching a passive lead converter)
-  //  MIXT 4 PHOS modules withe the IHEP CPV qnd one PHOS module with the Subatche Pre-Shower
+  //  MIXT 4 PHOS modules withe the IHEP CPV and one PHOS module with the Subatech Pre-Shower
   
+  TString test(GetName()) ; 
+  if (test != "IHEP" && test != "GPS2" && test != "MIXT") {
+    cerr << "ERROR: " << ClassName() << "::Init -> " << test.Data() 
+	 << " is not a known geometry (choose among IHEP, GPS2 and MIXT)" << endl ; 
+    abort() ;
+  }
+
   fgInit     = kTRUE ; 
   
   fNModules     = 5;
@@ -102,13 +109,12 @@ void AliPHOSGeometry::Init(void)
   
 }
 
-
 //____________________________________________________________________________
 AliPHOSGeometry *  AliPHOSGeometry::GetInstance() 
 { 
   // Returns the pointer of the unique instance; singleton specific
   
-  return (AliPHOSGeometry *) fgGeom ; 
+  return static_cast<AliPHOSGeometry *>( fgGeom ) ; 
 }
 
 //____________________________________________________________________________
@@ -343,6 +349,17 @@ void AliPHOSGeometry::ImpactOnEmc(const Double_t theta, const Double_t phi, Int_
   }
 }
 
+Bool_t  AliPHOSGeometry::Impact(const TParticle * particle) const 
+{
+  Bool_t In=kFALSE;
+  Int_t ModuleNumber=0;
+  Double_t z,x;
+  ImpactOnEmc(particle->Theta(),particle->Phi(),ModuleNumber,z,x);
+  if(ModuleNumber) In=kTRUE;
+  else In=kFALSE;
+  return In;
+}
+
 //____________________________________________________________________________
 Bool_t AliPHOSGeometry::RelToAbsNumbering(const Int_t * relid, Int_t &  AbsId) const
 {
@@ -420,9 +437,9 @@ void AliPHOSGeometry::RelPosInModule(const Int_t * relid, Float_t & x, Float_t &
   Int_t column     = relid[3] ; //offset along z axis
 
   
-  if ( relid[1] == 0 ) { // its a PbW04 crystal 
-    x = - ( GetNPhi()/2. - row    + 0.5 ) *  GetCrystalSize(0) ; // position of Xtal with respect
-    z =   ( GetNZ()  /2. - column + 0.5 ) *  GetCrystalSize(2) ; // of center of PHOS module  
+  if ( relid[1] == 0 ) { // its a PbW04 crystal
+    x = - ( GetNPhi()/2. - row    + 0.5 ) *  GetCellStep() ; // position of Xtal with respect
+    z =   ( GetNZ()  /2. - column + 0.5 ) *  GetCellStep() ; // of center of PHOS module  
   }  
   else  {    
     x = - ( GetNumberOfCPVPadsPhi()/2. - row    - 0.5 ) * GetPadSizePhi()  ; // position of pad  with respect

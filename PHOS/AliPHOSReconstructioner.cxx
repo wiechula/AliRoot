@@ -70,6 +70,7 @@
 
 // --- AliRoot header files ---
 #include "AliRun.h"
+#include "AliRunLoader.h"
 #include "AliPHOSReconstructioner.h"
 #include "AliPHOSClusterizerv1.h"
 #include "AliPHOSDigitizer.h"
@@ -78,6 +79,7 @@
 #include "AliPHOSPIDv1.h"
 #include "AliPHOSFastRecParticle.h"
 #include "AliPHOSCpvRecPoint.h"
+#include "AliPHOSLoader.h"
 
 ClassImp(AliPHOSReconstructioner)
 
@@ -90,45 +92,78 @@ ClassImp(AliPHOSReconstructioner)
   fTSMaker     = 0 ;
   fPID         = 0 ; 
   fSDigitizer  = 0 ;
-  fHeaderFileName = "galice.root" ;
 
   fIsInitialized = kFALSE ;
 
 } 
 
 //____________________________________________________________________________
-AliPHOSReconstructioner::AliPHOSReconstructioner(const char* headerFile,const char * branchName):
-TTask("AliPHOSReconstructioner","")
+AliPHOSReconstructioner::AliPHOSReconstructioner(const char* evFoldName,const char * branchName):
+TTask("AliPHOSReconstructioner",evFoldName)
 {
   // ctor
+  AliRunLoader* rl = AliRunLoader::GetRunLoader(evFoldName);
+  if (rl == 0x0)
+   {
+     Fatal("AliPHOSReconstructioner","Can not get Run Loader from folder %s.",evFoldName);
+   } 
+  if (rl->GetAliRun() == 0x0)
+   {
+     delete gAlice;
+     gAlice = 0x0;
+     rl->LoadgAlice();
+     gAlice = rl->GetAliRun();
+   }
+
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(rl->GetLoader("PHOSLoader"));
+  if (gime == 0x0)
+   {
+     Error("AliPHOSReconstructioner","Can not get PHOS Loader");
+     return;  
+   }
   
-  fHeaderFileName = headerFile ;
-
+  TString method("AliPHOSReconstructioner::AliPHOSReconstructioner(");
+  method = (((method + evFoldName)+",")+branchName)+"): ";
+  
   fSDigitsBranch= branchName; 
-  fSDigitizer  = new AliPHOSSDigitizer(fHeaderFileName.Data(),fSDigitsBranch.Data()) ; 
-  Add(fSDigitizer) ;
+  
+  cout<<"\n\n\n";
+  cout<<method<<"\n\nCreating SDigitizer\n";
+  fSDigitizer  = new AliPHOSSDigitizer(GetTitle(),"PHOSSDigitizer");
+  Add(fSDigitizer);
+  gime->PostSDigitizer(fSDigitizer);
 
-  fDigitsBranch=branchName ; 
-  fDigitizer   = new AliPHOSDigitizer(fHeaderFileName.Data(),fDigitsBranch.Data()) ; 
+  fDigitsBranch=branchName ;
+  cout<<"\n\n\n";
+  cout<<method<<"\n\nCreating Digitizer\n";
+  fDigitizer   = new AliPHOSDigitizer(GetTitle(),"PHOSDigitizer") ;
   Add(fDigitizer) ;
-
+  gime->PostDigitizer(fDigitizer);
 
   fRecPointBranch=branchName ; 
-  fClusterizer = new AliPHOSClusterizerv1(fHeaderFileName.Data(),fRecPointBranch.Data()) ; 
-  Add(fClusterizer) ;
+  cout<<"\n\n\n";
+  cout<<method<<"Creating Clusterizer\n";
+  fClusterizer = new AliPHOSClusterizerv1(GetTitle(),"PHOSReconstructioner");
+  Add(fClusterizer);
+  gime->PostReconstructioner(fClusterizer);
   
-
   fTSBranch=branchName ; 
-  fTSMaker     = new AliPHOSTrackSegmentMakerv1(fHeaderFileName.Data(),fTSBranch.Data()) ;
-  Add(fTSMaker) ;
   
+  cout<<"\n\n\n";
+  cout<<method<<"Creating Track Segmenter\n";
+  fTSMaker     = new AliPHOSTrackSegmentMakerv1(GetTitle(),"PHOSTracker");
+  Add(fTSMaker) ;
+  gime->PostTracker(fTSMaker);
+
   
   fRecPartBranch=branchName ; 
-  fPID         = new AliPHOSPIDv1(fHeaderFileName.Data(),fRecPartBranch.Data()) ;
-  Add(fPID) ;
+  cout<<"\n\n\n";
+  cout<<method<<"Creating PID\n";
+  fPID         = new AliPHOSPIDv1(GetTitle(),"PHOSPID");
+  Add(fPID);
+  cout<<"\nFINISHED \n\n"<<method;
   
   fIsInitialized = kTRUE ;
-  
 } 
 //____________________________________________________________________________
 void AliPHOSReconstructioner::Exec(Option_t *option)
@@ -137,220 +172,6 @@ void AliPHOSReconstructioner::Exec(Option_t *option)
   //existing
   if(!fIsInitialized)
     Init() ;
-
-  gAlice->GetEvent(0) ;
-
-  if(fSDigitizer->IsActive()&& gAlice->TreeS()){ //Will produce SDigits
-    TBranch * sdigitsBranch = 0;
-    TBranch * sdigitizerBranch = 0;
-
-    TObjArray * branches = gAlice->TreeS()->GetListOfBranches() ;
-    Int_t ibranch;
-    Bool_t phosNotFound = kTRUE ;
-    Bool_t sdigitizerNotFound = kTRUE ;
-
-    for(ibranch = 0;ibranch <branches->GetEntries();ibranch++){            
-      if(phosNotFound){
-	sdigitsBranch=(TBranch *) branches->At(ibranch) ;
-	if(( strcmp("PHOS",sdigitsBranch->GetName())==0 ) &&
-	   (fSDigitsBranch.CompareTo(sdigitsBranch->GetTitle())== 0 ))
-	  phosNotFound = kFALSE ;
-      }
-      if(sdigitizerNotFound){
-	sdigitizerBranch = (TBranch *) branches->At(ibranch) ;
-	if(( strcmp(sdigitizerBranch->GetName(),"AliPHOSSDigitizer") == 0) &&
-	   (fSDigitsBranch.CompareTo(sdigitizerBranch->GetTitle())== 0 ) )
-	  sdigitizerNotFound = kFALSE ;
-      }
-    }
-    
-    if(!(sdigitizerNotFound && phosNotFound)){
-      cout << "AliPHOSReconstructioner error: "<< endl ;
-      cout << "       Branches ''PHOS'' or ''AliPHOSSDigitizer'' with title ``" << fSDigitsBranch.Data() << "''" << endl ;
-      cout << "       already exist in TreeS. ROOT does not allow updating/overwriting." << endl ;
-      cout << "       Specify another title for branches or use ''StartFrom()'' method" << endl ;
-      
-      //mark all tasks as inactive
-      TIter next(fTasks);
-      TTask *task;
-      while((task=(TTask*)next()))
-	task->SetActive(kFALSE) ;
-      
-      return ;
-    }
-  }
-
-  if(fDigitizer->IsActive() && gAlice->TreeD()){ //Will produce Digits
-    TBranch * digitsBranch = 0;
-    TBranch * digitizerBranch = 0;
-    
-    TObjArray * branches = gAlice->TreeD()->GetListOfBranches() ;
-    Int_t ibranch;
-    Bool_t phosNotFound = kTRUE ;
-    Bool_t digitizerNotFound = kTRUE ;
-    
-    for(ibranch = 0;ibranch <branches->GetEntries();ibranch++){            
-      if(phosNotFound){
-	digitsBranch=(TBranch *) branches->At(ibranch) ;
-	if(( strcmp("PHOS",digitsBranch->GetName())==0 ) &&
-	   (fDigitsBranch.CompareTo(digitsBranch->GetTitle())== 0 ))
-	  phosNotFound = kFALSE ;
-      }
-      if(digitizerNotFound){
-	digitizerBranch = (TBranch *) branches->At(ibranch) ;
-	if(( strcmp(digitizerBranch->GetName(),"AliPHOSDigitizer") == 0) &&
-	   (fDigitsBranch.CompareTo(digitizerBranch->GetTitle())== 0 ) )
-	  digitizerNotFound = kFALSE ;
-      }
-    }
-    
-    if(!(digitizerNotFound && phosNotFound)){
-      cout << "AliPHOSReconstructioner error: "<< endl ;
-      cout << "       Branches ''PHOS'' or ''AliPHOSDigitizer'' with title ``" << fDigitsBranch.Data() << "''" << endl ;
-      cout << "       already exist in TreeD. ROOT does not allow updating/overwriting." << endl ;
-      cout << "       Specify another title for branches or use ''StartFrom()'' method" << endl ;
-      
-      //mark all tasks as inactive
-      TIter next(fTasks);
-      TTask *task;
-      while((task=(TTask*)next()))
-	task->SetActive(kFALSE) ;
-      
-      return ;
-    }
-  }
-
-  if(fClusterizer->IsActive() && gAlice->TreeR()){ //Will produce RecPoints
-    TBranch * emcBranch = 0;
-    TBranch * cpvBranch = 0;
-    TBranch * clusterizerBranch = 0;
-    
-    TObjArray * branches = gAlice->TreeR()->GetListOfBranches() ;
-    Int_t ibranch;
-    Bool_t emcNotFound = kTRUE ;
-    Bool_t cpvNotFound = kTRUE ;  
-    Bool_t clusterizerNotFound = kTRUE ;
-    
-    for(ibranch = 0;ibranch <branches->GetEntries();ibranch++){
-      
-      if(emcNotFound){
-	emcBranch=(TBranch *) branches->At(ibranch) ;
-	if(fRecPointBranch.CompareTo(emcBranch->GetTitle())==0 )
-	  if( strcmp(emcBranch->GetName(),"PHOSEmcRP") == 0) 
-	    emcNotFound = kFALSE ;
-      }
-      if(cpvNotFound){
-	cpvBranch=(TBranch *) branches->At(ibranch) ;
-	if(fRecPointBranch.CompareTo(cpvBranch->GetTitle())==0 )
-	  if( strcmp(cpvBranch->GetName(),"PHOSCpvRP") == 0) 
-	    cpvNotFound = kFALSE ;
-      }
-      if(clusterizerNotFound){
-	clusterizerBranch = (TBranch *) branches->At(ibranch) ;
-	if( fRecPointBranch.CompareTo(clusterizerBranch->GetTitle()) == 0)
-	  if( strcmp(clusterizerBranch->GetName(),"AliPHOSClusterizer") == 0) 
-	    clusterizerNotFound = kFALSE ;
-      }
-    }
-
-    if(!(clusterizerNotFound && emcNotFound && cpvNotFound)){
-      cout << "AliPHOSReconstructioner error: "<< endl ;
-      cout << "       Branches ''PHOSEmcRP'', ''PHOSCpvRP'' or ''AliPHOSClusterizer'' with title ``" 
-	   << fRecPointBranch.Data() << "''" << endl ;
-      cout << "       already exist in TreeR. ROOT does not allow updating/overwriting." << endl ;
-      cout << "       Specify another title for branches or use ''StartFrom()'' method" << endl ;
-      
-      //mark all tasks as inactive
-      TIter next(fTasks);
-      TTask *task;
-      while((task=(TTask*)next()))
-	task->SetActive(kFALSE) ;
-      return ;
-    }
-  }
-  
-  if(fTSMaker->IsActive() && gAlice->TreeR()){ //Produce TrackSegments
-    TBranch * tsMakerBranch = 0;
-    TBranch * tsBranch = 0;
-    
-    TObjArray * branches = gAlice->TreeR()->GetListOfBranches() ;
-    Int_t ibranch;
-    Bool_t tsMakerNotFound = kTRUE ;
-    Bool_t tsNotFound = kTRUE ;
-    
-    for(ibranch = 0;(ibranch <branches->GetEntries())&&(tsMakerNotFound||tsNotFound);ibranch++){
-      if(tsMakerNotFound){
-	tsMakerBranch=(TBranch *) branches->At(ibranch) ;
-	if( fTSBranch.CompareTo(tsMakerBranch->GetTitle())==0 )
-	  if( strcmp(tsMakerBranch->GetName(),"AliPHOSTrackSegmentMaker") == 0) 
-	    tsMakerNotFound = kFALSE ;
-      }
-      if(tsNotFound){
-	tsBranch=(TBranch *) branches->At(ibranch) ;
-	if( fTSBranch.CompareTo(tsBranch->GetTitle())==0 )
-	  if( strcmp(tsBranch->GetName(),"PHOSTS") == 0) 
-	    tsNotFound = kFALSE ;
-      }
-    }
-    
-    if(!(tsMakerNotFound &&tsNotFound) ){
-      cout << "AliPHOSReconstructioner error: "<< endl ;
-      cout << "       Branches ''PHOSTS'' or ''AliPHOSTrackSegmentMaker'' with title ``" 
-	   << fTSBranch.Data() << "''" << endl ;
-      cout << "       already exist in TreeR. ROOT does not allow updating/overwriting." << endl ;
-      cout << "       Specify another title for branches or use ''StartFrom()'' method" << endl ;
-      
-      //mark all tasks as inactive
-      TIter next(fTasks);
-      TTask *task;
-      while((task=(TTask*)next()))
-	task->SetActive(kFALSE) ;
-      return ;
-      
-    }
-    
-  }
-
-  if(fPID->IsActive() && gAlice->TreeR()){ //Produce RecParticles
-    TBranch * pidBranch = 0;
-    TBranch * rpBranch = 0;
-    
-    TObjArray * branches = gAlice->TreeR()->GetListOfBranches() ;
-    Int_t ibranch;
-    Bool_t pidNotFound = kTRUE ;
-    Bool_t rpNotFound = kTRUE ;
-    
-    for(ibranch = 0;(ibranch <branches->GetEntries()) && pidNotFound && rpNotFound ;ibranch++){
-      if(pidNotFound){
-	pidBranch=(TBranch *) branches->At(ibranch) ;
-	if( (strcmp(fRecPartBranch,pidBranch->GetTitle())==0 ) &&
-	    (strcmp(pidBranch->GetName(),"AliPHOSPID") == 0) )
-	  pidNotFound = kFALSE ;
-      }
-      if(rpNotFound){
-	rpBranch=(TBranch *) branches->At(ibranch) ;
-	if( (strcmp(fRecPartBranch,rpBranch->GetTitle())==0 ) &&
-	    (strcmp(rpBranch->GetName(),"PHOSRP") == 0) )
-	  rpNotFound = kFALSE ;
-      }
-    }
-    
-    if(!pidNotFound  || !rpNotFound ){
-      cout << "AliPHOSReconstructioner error: "<< endl ;
-      cout << "       Branches ''PHOSRP'' or ''AliPHOSPID'' with title ``" 
-	   << fRecPartBranch.Data() << "''" << endl ;
-      cout << "       already exist in TreeR. ROOT does not allow updating/overwriting." << endl ;
-      cout << "       Specify another title for branches." << endl ;
-      
-      //mark all tasks as inactive
-      TIter next(fTasks);
-      TTask *task;
-      while((task=(TTask*)next()))
-	task->SetActive(kFALSE) ;
-      return ;
-    }
-    
-  }
 }
 //____________________________________________________________________________
  void AliPHOSReconstructioner::Init()
@@ -361,24 +182,24 @@ void AliPHOSReconstructioner::Exec(Option_t *option)
     // Initialisation
 
     fSDigitsBranch="Default" ; 
-    fSDigitizer  = new AliPHOSSDigitizer(fHeaderFileName.Data(),fSDigitsBranch.Data()) ; 
+    fSDigitizer  = new AliPHOSSDigitizer(GetTitle(),fSDigitsBranch.Data()) ; 
     Add(fSDigitizer) ;
 
     fDigitsBranch="Default" ; 
-    fDigitizer   = new AliPHOSDigitizer(fHeaderFileName.Data(),fDigitsBranch.Data()) ; 
+    fDigitizer   = new AliPHOSDigitizer(GetTitle(),fDigitsBranch.Data());
     Add(fDigitizer) ;
 
     fRecPointBranch="Default" ; 
-    fClusterizer = new AliPHOSClusterizerv1(fHeaderFileName.Data(),fRecPointBranch.Data()) ; 
+    fClusterizer = new AliPHOSClusterizerv1(GetTitle(),fRecPointBranch.Data());
     Add(fClusterizer) ;
 
     fTSBranch="Default" ; 
-    fTSMaker     = new AliPHOSTrackSegmentMakerv1(fHeaderFileName.Data(),fTSBranch.Data()) ;
+    fTSMaker     = new AliPHOSTrackSegmentMakerv1(GetTitle(),fTSBranch.Data());
     Add(fTSMaker) ;
 
 
-    fRecPartBranch="Default" ; 
-    fPID         = new AliPHOSPIDv1(fHeaderFileName.Data(),fRecPartBranch.Data()) ;
+    fRecPartBranch="Default"; 
+    fPID         = new AliPHOSPIDv1(GetTitle(),fRecPartBranch.Data()) ;
     Add(fPID) ;
     
     fIsInitialized = kTRUE ;
@@ -389,155 +210,13 @@ AliPHOSReconstructioner::~AliPHOSReconstructioner()
 {
   // Delete data members if any
 
-//   if(fSDigitizer)
-//     delete fSDigitizer ;
-  
-//   if(fDigitizer)
-//     delete fDigitizer ;
-  
-//   if(fClusterizer)
-//     delete fClusterizer ;
-  
-//   if(fTSMaker)
-//     delete fTSMaker ;
-  
-//   if(fPID)
-//     delete fPID ;
-
-//    TFile * file = (TFile*) gROOT->GetFile(fHeaderFileName.Data()) ;
-    
-//    if(file != 0) {
-//      file->Close();
-//      delete file;
-//      printf("File %s is closed\n",fHeaderFileName.Data());
-//    }
-
 } 
-//____________________________________________________________________________
-void AliPHOSReconstructioner::SetBranchTitle(const char* branch, const char * title)
-{
-  //Diverge correcpoinding branch to the file "title"
-
-  if(strcmp(branch,"SDigits") == 0){ 
-    fSDigitizer->SetSDigitsBranch(title) ;
-    fDigitizer->SetSDigitsBranch(title) ;
-    fSDigitsBranch = title ;
-    return ;
-  }
-  
-  if(strcmp(branch,"Digits") == 0){ 
-    fDigitizer->SetName(title) ;
-    fClusterizer->SetName(title) ;
-    fDigitsBranch = title ;
-    return ;
-  }
-
-  if(strcmp(branch,"RecPoints") == 0){ 
-    fClusterizer->SetRecPointsBranch(title) ;
-    fTSMaker->SetRecPointsBranch(title) ;
-    fRecPointBranch = title ;
-    return ;
-  }
-
-  if(strcmp(branch,"TrackSegments") == 0){
-    fTSMaker->SetTrackSegmentsBranch(title) ;
-    fPID->SetTrackSegmentsBranch(title) ;
-    fTSBranch = title ;
-    return ;
-  }
-
-  if(strcmp(branch,"RecParticles") == 0){ 
-    fPID->SetRecParticlesBranch(title) ;
-    fRecPartBranch = title ;
-    return ;
-  }
-
-  cout << "There is no branch " << branch << "!"<< endl ;
-  cout << "Available branches `SDigits', `Digits', `RecPoints', `TrackSegments' and `RecParticles' " << endl ;
-  
-}
-//____________________________________________________________________________
-void AliPHOSReconstructioner::StartFrom(char * module,char* title)
-{
-  // in the next pass of reconstruction (call ExecuteTask()) reconstruction will 
-  // start from the module "module", and in the case of non zero title all 
-  // pruduced branches will have title "title". The following "modules" are recognized
-  // "SD" - AliPHOSSDigitizer,
-  // "D"  - AliPHOSDigitizer
-  // "C"  - AliPHOSClusterizer
-  // "TS" - AliPHOSTrackSegmentMaker
-  // "RP" - AliPHOSPID
-
-  if(!fIsInitialized)
-    Init() ;
-
-  char * moduleName = new char[30];
-  if(strstr(module,"SD"))
-    sprintf(moduleName,"AliPHOSSDigitizer") ;
-  else
-    if(strstr(module,"D") )
-      sprintf(moduleName,"AliPHOSDigitizer") ;
-    else
-      if(strstr(module,"C") || strstr(module,"RecPoint") )
-	sprintf(moduleName,"AliPHOSClusterizer") ;
-      else
-	if(strstr(module,"TS") || strstr(module,"Track") )
-	  sprintf(moduleName,"AliPHOSTrackSegmentMaker") ;
-	else
-	  if(strstr(module,"PID") || strstr(module,"Particle") || strstr(module,"RP") )
-	    sprintf(moduleName,"AliPHOSPID") ;
-	  else{
-	    cout << "Do not know such a module / Rec Object " << endl;
-	    return ;
-	  }
-  
-  TIter next(fTasks);
-  TTask *task;
-  Bool_t active = kFALSE ;
-  while((task=(TTask*)next())){ 
-    if (strcmp(moduleName,task->GetName())==0)  
-      active = kTRUE;
-    task->SetActive(active) ;
-    if(active && title){ // set title to branches
-      switch(strlen(task->GetName()) ) {
-      case 17:   // "AliPHOSSDigitizer"
-	fSDigitizer->SetSDigitsBranch(title) ;
-	fDigitizer->SetSDigitsBranch(title) ;
-	fSDigitsBranch = title ;
-	break ;
-      case 16:   //"AliPHOSDigitizer"
-	fDigitizer->SetName(title) ;
-	fClusterizer->SetName(title) ;
-	fDigitsBranch = title ;
-	break ;
-      case 18:   //"AliPHOSClusterizer"
-	fClusterizer->SetRecPointsBranch(title) ;
-	fTSMaker->SetRecPointsBranch(title) ;
-	fRecPointBranch = title ;
-	break ;
-      case 24:   //"AliPHOSTrackSegmentMaker"
-	fTSMaker->SetTrackSegmentsBranch(title) ;
-	fPID->SetTrackSegmentsBranch(title) ;
-	fTSBranch = title ;
-	break ;
-      case 10:   // "AliPHOSPID"
-	fPID->SetRecParticlesBranch(title) ;
-	fRecPartBranch = title ;
-	break ;
-      }
-      
-    }
-  }
-  
-  delete [] moduleName;
-}
-//____________________________________________________________________________
 
 void AliPHOSReconstructioner::Print(Option_t * option)const {
   // Print reconstructioner data  
 
   cout << "-----------------AliPHOSReconstructioner---------------" << endl ;
-  cout << " Reconstruction of the header file " <<fHeaderFileName.Data() << endl ;
+  cout << " Reconstruction of the header file " <<GetTitle() << endl ;
   cout << " with the following modules: " << endl ;
 
   if(fSDigitizer->IsActive()){

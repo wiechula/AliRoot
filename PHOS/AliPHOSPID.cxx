@@ -27,17 +27,20 @@
 
 
 // --- ROOT system ---
-
+#include "TGeometry.h"
+#include "TDirectory.h"
+#include "TFile.h"
+#include "TTree.h"
  
-
 // --- Standard library ---
 #include <iostream.h>
 #include <stdlib.h>
 
 
 // --- AliRoot header files ---
-
+#include "AliRun.h" 
 #include "AliPHOSPID.h"
+#include "AliHeader.h" 
 
 ClassImp(AliPHOSPID)
 
@@ -47,8 +50,9 @@ ClassImp(AliPHOSPID)
   // ctor
 }
 
+
 //____________________________________________________________________________
-AliPHOSPID::AliPHOSPID(const char* headerFile, const char * name ):TTask(name, headerFile)
+AliPHOSPID::AliPHOSPID(const char* headerFile, const char * name):TTask(name, headerFile)
 {
   // ctor
 }
@@ -58,3 +62,4 @@ AliPHOSPID::~AliPHOSPID()
 {
   // dtor
 }
+

@@ -94,7 +94,7 @@ AliPHOSPIDv0::AliPHOSPIDv0():AliPHOSPID()
   fDispersion        = 0. ; 
   fCpvEmcDistance    = 0 ; 
   fTimeGate          = 2.e-9 ;
-  fHeaderFileName    = "" ; 
+  fEventFolderName    = "" ; 
   fTrackSegmentsTitle= "" ; 
   fRecPointsTitle    = "" ; 
   fRecParticlesTitle = "" ; 
@@ -105,7 +105,7 @@ AliPHOSPIDv0::AliPHOSPIDv0():AliPHOSPID()
 }
 
 //____________________________________________________________________________
-AliPHOSPIDv0::AliPHOSPIDv0(const char * headerFile,const char * name) : AliPHOSPID(headerFile, name)
+AliPHOSPIDv0::AliPHOSPIDv0(const char * evFolderName,const char * name) : AliPHOSPID(evFolderName, name)
 { 
   //ctor with the indication on where to look for the track segments
 
@@ -114,16 +114,12 @@ AliPHOSPIDv0::AliPHOSPIDv0(const char * headerFile,const char * name) : AliPHOSP
   fCpvEmcDistance = 3.0 ;
   fTimeGate          = 2.e-9 ;
  
-  fHeaderFileName     = GetTitle() ; 
-  fTrackSegmentsTitle = GetName() ; 
-  fRecPointsTitle     = GetName() ; 
-  fRecParticlesTitle  = GetName() ; 
+  fEventFolderName     = GetTitle() ; 
+  fTrackSegmentsTitle = GetName();
+  fRecPointsTitle     = GetName();
+  fRecParticlesTitle  = GetName();
   fIDOptions          = "dis time" ;
     
-  TString tempo(GetName()) ; 
-  tempo.Append(":") ;
-  tempo.Append(Version()) ; 
-  SetName(tempo) ; 
   fRecParticlesInRun = 0 ; 
 
   Init() ;
@@ -134,7 +130,6 @@ AliPHOSPIDv0::AliPHOSPIDv0(const char * headerFile,const char * name) : AliPHOSP
 AliPHOSPIDv0::~AliPHOSPIDv0()
 { 
 }
-
 
 //____________________________________________________________________________
 Float_t  AliPHOSPIDv0::GetDistance(AliPHOSEmcRecPoint * emc,AliPHOSRecPoint * cpv, Option_t *  Axis)const
@@ -194,38 +189,19 @@ void  AliPHOSPIDv0::Exec(Option_t * option)
      return ;
    } 
 
-  runget->GetEvent(0);
-  runget->LoadHeader();
+  if(gime->BranchExists("RecParticles") )
+    return ;
 
-  //check, if the branch with name of this" already exits?
-  TObjArray * lob = (TObjArray*)gime->TreeR()->GetListOfBranches() ;
-  TIter next(lob) ; 
-  TBranch * branch = 0 ;  
-  Bool_t phospidfound = kFALSE, pidfound = kFALSE ; 
   
-  TString taskName(GetName()) ; 
-  taskName.Remove(taskName.Index(Version())-1) ;
+  Int_t nevents = runget->GetNumberOfEvents() ;       //(Int_t) gAlice->TreeE()->GetEntries() ;
 
-  while ( (branch = (TBranch*)next()) && (!phospidfound || !pidfound) ) {
-    if ( (strcmp(branch->GetName(), "PHOSPID")==0) && (strcmp(branch->GetTitle(), taskName.Data())==0) ) 
-      phospidfound = kTRUE ;
-    
-    else if ( (strcmp(branch->GetName(), "AliPHOSPID")==0) && (strcmp(branch->GetTitle(), taskName.Data())==0) ) 
-      pidfound = kTRUE ; 
-  }
-
-  if ( phospidfound || pidfound ) {
-    cerr << "WARNING: AliPHOSPIDv0::Exec -> RecParticles and/or PIDtMaker branch with name " 
-	 << taskName.Data() << " already exits" << endl ;
-    return ; 
-  }       
-  
-  Int_t nevents = (Int_t) runget->TreeE()->GetEntries() ;
   Int_t ievent ;
   
   for(ievent = 0; ievent < nevents; ievent++){
     runget->GetEvent(ievent) ;
     
+    cout << "event " << ievent << " " << gime->EmcRecPoints() << " " << gime->TrackSegments() << endl ;
+
     MakeRecParticles() ;
     
     WriteRecParticles(ievent);
@@ -312,7 +288,7 @@ void  AliPHOSPIDv0::MakeRecParticles(){
     
     new( (*recParticles)[index] ) AliPHOSRecParticle() ;
     rp = (AliPHOSRecParticle *)recParticles->At(index) ; 
-    rp->SetTraskSegment(index) ;
+    rp->SetTrackSegment(index) ;
     rp->SetIndexInList(index) ;
     
     AliPHOSEmcRecPoint * emc = 0 ;
@@ -375,7 +351,7 @@ void  AliPHOSPIDv0:: Print(Option_t * option) const
   // Print the parameters used for the particle type identification
     cout <<  "=============== AliPHOSPID1 ================" << endl ;
     cout <<  "Making PID "<< endl ;
-    cout <<  "    Headers file:               " << fHeaderFileName.Data() << endl ;
+    cout <<  "    Headers file:               " << fEventFolderName.Data() << endl ;
     cout <<  "    RecPoints branch title:     " << fRecPointsTitle.Data() << endl ;
     cout <<  "    TrackSegments Branch title: " << fTrackSegmentsTitle.Data() << endl ;
     cout <<  "    RecParticles Branch title   " << fRecParticlesTitle.Data() << endl;
@@ -422,15 +398,24 @@ void  AliPHOSPIDv0::WriteRecParticles(Int_t event)
   TClonesArray * recParticles = gime->RecParticles() ; 
   recParticles->Expand(recParticles->GetEntriesFast() ) ;
 
+  TTree * treeR = gime->TreeR();
+  
+  if(!treeR){
+    gime->MakeTree("R");
+    treeR = gime->TreeR() ;
+  }
+
+  
   //First rp
   Int_t bufferSize = 32000 ;    
-  TBranch * rpBranch = gime->TreeR()->Branch("PHOSRP",&recParticles,bufferSize);
+  TBranch * rpBranch = treeR->Branch("PHOSRP",&recParticles,bufferSize);
   rpBranch->SetTitle(fRecParticlesTitle);
+
   
   //second, pid
   Int_t splitlevel = 0 ; 
   AliPHOSPIDv0 * pid = this ;
-  TBranch * pidBranch = gime->TreeR()->Branch("AliPHOSPID","AliPHOSPIDv0",&pid,bufferSize,splitlevel);
+  TBranch * pidBranch = treeR->Branch("AliPHOSPID","AliPHOSPIDv0",&pid,bufferSize,splitlevel);
   pidBranch->SetTitle(fRecParticlesTitle.Data());
   
   rpBranch->Fill() ;

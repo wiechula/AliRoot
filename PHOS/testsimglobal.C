@@ -16,7 +16,7 @@
 
 //AliRoot
 #include "AliPHOSHit.h"
-#include "AliPHOSGetter.h"
+#include "AliPHOSLoader.h"
 #include "AliPHOSGeometry.h"
 #include "AliPHOSDigit.h"
 #include "AliPHOSSDigitizer.h"
@@ -133,9 +133,13 @@ Bool_t sim_exam()
   timer.Start() ;
    
   // Get the number of events generated in the simulation
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance("testPHOS.root") ;
-  Int_t maxevent = gime->MaxEvent() ;
-  gime->Event(0,"Q") ;
+  
+  AliRunLoader* rl = AliRunLoader::Open("testPHOS.root");
+  
+  AliPHOSLoader* gim = (AliPHOSLoader*)rl->GetLoader("PHOSLoader");
+  
+  Int_t maxevent = rl->GetNumberOfEvents() ;
+  
   
   // Examine the alarms
   TObjArray * alahm = dynamic_cast<TObjArray*>(gime->Alarms()->FindObject("HitsM")) ;

@@ -21,7 +21,7 @@
 //        EMC RecPoint + (possibly) CPV RecPoint + (possibly) PPSD RecPoint
 // To find TrackSegments we do the following: 
 //  for each EMC RecPoints we look at
-//   CPV/PPSD RecPoints in the radious fR0. 
+//   CPV/PPSD RecPoints in the radious fRcpv. 
 //  If there is such a CPV RecPoint, 
 //   we make "Link" it is just indexes of EMC and CPV/PPSD RecPoint and distance
 //   between them in the PHOS plane. 
@@ -77,61 +77,43 @@ ClassImp( AliPHOSTrackSegmentMakerv1)
 {
   // default ctor (to be used mainly by Streamer)
 
-  fR0                       = 10. ;   
-  fEmcFirst                 = 0 ;    
-  fEmcLast                  = 0 ;   
-  fCpvFirst                 = 0 ;   
-  fCpvLast                  = 0 ;   
-  fLinkUpArray              = 0 ;
-  fFolderName           = "" ;
-  fRecPointsBranchTitle     = "" ;
-  fTrackSegmentsBranchTitle = "" ; 
-  fFrom                     = "" ; 
+  InitParameters() ; 
 
   fTrackSegmentsInRun       = 0 ; 
+
+  fDefaultInit = kTRUE ; 
 }
 
 //____________________________________________________________________________
- AliPHOSTrackSegmentMakerv1::AliPHOSTrackSegmentMakerv1(const char * headerFile, const char * name, const char * from) : AliPHOSTrackSegmentMaker(headerFile, name)
+ AliPHOSTrackSegmentMakerv1::AliPHOSTrackSegmentMakerv1(const char * evFoldName, const char * name) : AliPHOSTrackSegmentMaker(evFoldName, name)
 {
   // ctor
 
-  fR0        = 10. ;   
-  fEmcFirst  = 0 ;    
-  fEmcLast   = 0 ;   
-  fCpvFirst  = 0 ;   
-  fCpvLast   = 0 ;   
-  fLinkUpArray = 0 ;
-
-  fFolderName           = GetTitle() ;
-  fRecPointsBranchTitle     = GetName() ;
-  fTrackSegmentsBranchTitle = GetName() ; 
+  InitParameters() ; 
   fTrackSegmentsInRun       = 0 ; 
-
-  TString tsmName( GetName()) ; 
-  tsmName.Append(":") ; 
-  tsmName.Append(Version()) ; 
-  SetName(tsmName) ;
-  if ( from == 0 ) 
-    fFrom = name ; 
-  else
-    fFrom = from ; 
   Init() ;
-  
+  fDefaultInit = kFALSE ; 
+
 }
 
 //____________________________________________________________________________
  AliPHOSTrackSegmentMakerv1::~AliPHOSTrackSegmentMakerv1()
 { 
   // dtor
-  delete fLinkUpArray  ;
+  // fDefaultInit = kTRUE if TrackSegmentMaker created by default ctor (to get just the parameters)
+  
+  if (!fDefaultInit) 
+   {
+    delete fLinkUpArray  ;
+   }
 }
+
 
 //____________________________________________________________________________
 const TString AliPHOSTrackSegmentMakerv1::BranchName() const 
 {  
   TString branchName(GetName() ) ;
-  branchName.Remove(branchName.Index(Version())-1) ;
+//  branchName.Remove(branchName.Index(Version())-1) ;
   return branchName ;
 }
 
@@ -140,11 +122,8 @@ void  AliPHOSTrackSegmentMakerv1::FillOneModule()
 {
   // Finds first and last indexes between which 
   // clusters from one PHOS module are
-  TString taskName(GetName()) ; 
-  taskName.Remove(taskName.Index(Version())-1);
   
-  
-  AliRunLoader* runget = AliRunLoader::GetRunLoader(fFolderName);
+  AliRunLoader* runget = AliRunLoader::GetRunLoader(GetTitle());
   if(runget == 0x0) 
    {
      Error("FillOneModule","Can not find run getter in event folder \"%s\"",GetTitle());
@@ -185,7 +164,7 @@ Float_t  AliPHOSTrackSegmentMakerv1::GetDistanceInPHOSPlane(AliPHOSEmcRecPoint *
 
   Float_t delta = 1 ;  // Width of the rows in sorting of RecPoints (in cm)
                        // if you change this value, change it as well in xxxRecPoint::Compare()
-  Float_t r = fR0 ;
+  Float_t r = fRcpv ;
  
   TVector3 vecEmc ;
   TVector3 vecCpv ;
@@ -194,7 +173,7 @@ Float_t  AliPHOSTrackSegmentMakerv1::GetDistanceInPHOSPlane(AliPHOSEmcRecPoint *
   cpvClu->GetLocalPosition(vecCpv)  ; 
 
   if(emcClu->GetPHOSMod() == cpvClu->GetPHOSMod()){ 
-    if(vecCpv.X() <= vecEmc.X() + fR0 + 2*delta ){ 
+    if(vecCpv.X() <= vecEmc.X() + fRcpv + 2*delta ){ 
 
       vecCpv = vecCpv  - vecEmc ; 
       r = vecCpv.Mag() ;
@@ -219,9 +198,9 @@ void  AliPHOSTrackSegmentMakerv1::Init()
   // Make all memory allocations that are not possible in default constructor
   
   if ( strcmp(GetTitle(), "") == 0 )
-    SetTitle("galice.root") ;
+          SetTitle(AliConfig::fgkDefaultEventFolderName) ;
     
-  AliRunLoader* runget = AliRunLoader::GetRunLoader(fFolderName);
+  AliRunLoader* runget = AliRunLoader::GetRunLoader(GetTitle());
   if(runget == 0x0) 
    {
      Error("Init","Can not find run getter in event folder \"%s\"",GetTitle());
@@ -236,27 +215,31 @@ void  AliPHOSTrackSegmentMakerv1::Init()
    } 
   
   fLinkUpArray  = new TClonesArray("AliPHOSLink", 1000); 
-  
-  //add Task to //YSAlice/tasks/Reconstructioner/PHOS
-
   gime->PostTrackSegmentMaker(this);
-
   // create a folder on the white board //YSAlice/WhiteBoard/RecPoints/PHOS/trackSegmentsName
-  gime->LoadTracks("RECREATE");
-
 }
+
+//____________________________________________________________________________
+void  AliPHOSTrackSegmentMakerv1::InitParameters()
+{
+  fRcpv      = 10. ;   
+  fEmcFirst  = 0 ;    
+  fEmcLast   = 0 ;   
+  fCpvFirst  = 0 ;   
+  fCpvLast   = 0 ;   
+  fLinkUpArray = 0 ;
+}
+
 
 //____________________________________________________________________________
 void  AliPHOSTrackSegmentMakerv1::MakeLinks()const
 { 
   // Finds distances (links) between all EMC and PPSD clusters, 
-  // which are not further apart from each other than fR0 
+  // which are not further apart from each other than fRcpv 
   // and sort them in accordance with this distance
   
-  TString taskName(GetName()) ; 
-  taskName.Remove(taskName.Index(Version())-1) ;
 
-  AliRunLoader* runget = AliRunLoader::GetRunLoader(fFolderName);
+  AliRunLoader* runget = AliRunLoader::GetRunLoader(GetTitle());
   if(runget == 0x0) 
    {
      Error("Init","Can not find run getter in event folder \"%s\"",GetTitle());
@@ -292,9 +275,9 @@ void  AliPHOSTrackSegmentMakerv1::MakeLinks()const
       Float_t r = GetDistanceInPHOSPlane(emcclu, cpv, toofar) ;
       
       if(toofar)
-       break ;        
-      if(r < fR0) { 
-       new ((*fLinkUpArray)[iLinkUp++])  AliPHOSLink(r, iEmcRP, iCpv) ;
+        break ;	 
+      if(r < fRcpv) { 
+        new ((*fLinkUpArray)[iLinkUp++])  AliPHOSLink(r, iEmcRP, iCpv) ;
       }      
     }
   } 
@@ -310,10 +293,8 @@ void  AliPHOSTrackSegmentMakerv1::MakePairs()
   // unassigned RecParticles. We assign these RecPoints to TrackSegment and 
   // remove them from the list of "unassigned". 
   
-  TString taskName(GetName()) ; 
-  taskName.Remove(taskName.Index(Version())-1) ;
 
-  AliRunLoader* runget = AliRunLoader::GetRunLoader(fFolderName);
+  AliRunLoader* runget = AliRunLoader::GetRunLoader(GetTitle());
   if(runget == 0x0) 
    {
      Error("Init","Can not find run getter in event folder \"%s\"",GetTitle());
@@ -394,7 +375,7 @@ void  AliPHOSTrackSegmentMakerv1::MakePairs()
 void  AliPHOSTrackSegmentMakerv1::Exec(Option_t * option)
 {
   // STEERing method
-
+  cout<<"\n\n\n  PHOS TRACKING  \n\n";
   if( strcmp(GetName(), "")== 0 ) 
     Init() ;
 
@@ -406,28 +387,7 @@ void  AliPHOSTrackSegmentMakerv1::Exec(Option_t * option)
     return ; 
   }
 
-  gAlice->GetEvent(0) ;
-  //check, if the branch with name of this" already exits?
-  TObjArray * lob = static_cast<TObjArray*>(gAlice->TreeR()->GetListOfBranches()) ;
-  TIter next(lob) ; 
-  TBranch * branch = 0 ;  
-  Bool_t phostsfound = kFALSE, tracksegmentmakerfound = kFALSE ; 
-  
-  while ( (branch = static_cast<TBranch*>(next())) && (!phostsfound || !tracksegmentmakerfound) ) {
-    if ( (strcmp(branch->GetName(), "PHOSTS")==0) && (strcmp(branch->GetTitle(), BranchName().Data())==0) ) 
-      phostsfound = kTRUE ;
-    
-    else if ( (strcmp(branch->GetName(), "AliPHOSTrackSegmentMaker")==0) && (strcmp(branch->GetTitle(), GetName())==0) ) 
-      tracksegmentmakerfound = kTRUE ; 
-  }
-
-  if ( phostsfound || tracksegmentmakerfound ) {
-    cerr << "WARNING: AliPHOSTrackSegmentMakerv1::Exec -> TrackSegments and/or TrackSegmentMaker branch with name " 
-        << BranchName().Data() << " already exits" << endl ;
-    return ; 
-  }       
-
-  AliRunLoader* runget = AliRunLoader::GetRunLoader(fFolderName);
+  AliRunLoader* runget = AliRunLoader::GetRunLoader(GetTitle());
   if(runget == 0x0) 
    {
      Error("Init","Can not find run getter in event folder \"%s\"",GetTitle());
@@ -442,10 +402,23 @@ void  AliPHOSTrackSegmentMakerv1::Exec(Option_t * option)
    } 
   if (runget->TreeE() == 0x0) runget->LoadHeader();
   if (gime->TreeR() == 0x0) gime->LoadRecPoints("READ");
-  if (gime->TreeT() == 0x0) gime->LoadTracks("UPDATE");
+  //this causes some warnings because normally
+  //loader tries to post if the option is update
+  //on the other hand we don't want to recreate because we destroy automatically an old file
+  if (gime->TreeT() == 0x0) 
+   {
+     gime->LoadTracks("UPDATE");
+     if (gime->TreeT() == 0x0) gime->MakeTree("T");
+   }
   
+  
+  if( gime->BranchExists("TrackSegments"))
+    return ;
+
   const AliPHOSGeometry * geom = gime->PHOSGeometry() ; 
-  Int_t nevents = (Int_t) runget->TreeE()->GetEntries() ;
+
+  Int_t nevents = (Int_t) runget->GetNumberOfEvents();
+
   Int_t ievent ;
 
   for(ievent = 0; ievent < nevents; ievent++)
@@ -458,6 +431,7 @@ void  AliPHOSTrackSegmentMakerv1::Exec(Option_t * option)
     fEmcLast  = 0 ;   
     fCpvFirst = 0 ;   
     fCpvLast  = 0 ;   
+    
     gime->TrackSegments()->Clear();
 
     //    if(!ReadRecPoints(ievent))   continue; //reads RecPoints for event ievent
@@ -466,9 +440,7 @@ void  AliPHOSTrackSegmentMakerv1::Exec(Option_t * option)
      {
       
       FillOneModule() ; 
-      
       MakeLinks() ;
-      
       MakePairs() ;
       
      }
@@ -476,7 +448,7 @@ void  AliPHOSTrackSegmentMakerv1::Exec(Option_t * option)
     WriteTrackSegments(ievent) ;
 
     if(strstr(option,"deb"))
-      PrintTrackSegments(option) ;
+      PrintTrackSegments(option);
     
     //increment the total number of track segments per run 
     fTrackSegmentsInRun += gime->TrackSegments()->GetEntriesFast() ; 
@@ -487,9 +459,12 @@ void  AliPHOSTrackSegmentMakerv1::Exec(Option_t * option)
     gBenchmark->Stop("PHOSTSMaker");
     cout << "AliPHOSTSMaker:" << endl ;
     cout << "  took " << gBenchmark->GetCpuTime("PHOSTSMaker") << " seconds for making TS " 
-        <<  gBenchmark->GetCpuTime("PHOSTSMaker")/nevents << " seconds per event " << endl ;
+        <<  gBenchmark->GetCpuTime("PHOSTSMaker")/nevents << " seconds per event " << endl;
     cout << endl ;
   }
+  gime->UnloadTracks();
+  gime->UnloadRecPoints();
+  cout<<"\n  PHOS TRACKING  FINISHED \n\n\n";
     
 }
 
@@ -501,11 +476,8 @@ void AliPHOSTrackSegmentMakerv1::Print(Option_t * option)const
   if( strcmp(GetName(), "") != 0 ) {
     cout <<  "======== AliPHOSTrackSegmentMakerv1 ========" << endl ;
     cout <<  "Making Track segments "<< endl ;
-    cout <<  "    Headers file:                   " << fFolderName.Data() << endl ;
-    cout <<  "    RecPoints branch file name:     " << fRecPointsBranchTitle.Data() << endl ;
-    cout <<  "    TrackSegments Branch file name: " << fTrackSegmentsBranchTitle.Data() << endl ;
     cout <<  "with parameters: " << endl ;
-    cout <<  "    Maximal EMC - CPV (PPSD) distance (cm)" << fR0 << endl ;
+    cout <<  "    Maximal EMC - CPV (PPSD) distance (cm)" << fRcpv << endl ;
     cout <<  "============================================" << endl ;
   }
   else
@@ -523,14 +495,7 @@ void AliPHOSTrackSegmentMakerv1::WriteTrackSegments(Int_t event)
   // first we check, if branches with the same title already exist.
   // If yes - exits without writing.
   
-  AliRunLoader* runget = AliRunLoader::GetRunLoader(fFolderName);
-  if(runget == 0x0) 
-   {
-     Error("Init","Can not find run getter in event folder \"%s\"",GetTitle());
-     return;
-   }
-  
-  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(runget->GetLoader("PHOSLoader"));
+  AliPHOSLoader* gime = AliPHOSLoader::GetPHOSLoader(GetTitle());
   if ( gime == 0 ) 
    {
      Error("Init","Could not obtain the Loader object !"); 
@@ -540,25 +505,20 @@ void AliPHOSTrackSegmentMakerv1::WriteTrackSegments(Int_t event)
   TClonesArray * trackSegments = gime->TrackSegments() ; 
   trackSegments->Expand(trackSegments->GetEntriesFast()) ;
 
-  //Make branch in TreeR for TrackSegments 
-  
+  TTree * treeT = gime->TreeT();
+  if(!treeT){
+    gime->MakeTree("T");
+    treeT = gime->TreeT() ;
+  }
+
   //First TS
   Int_t bufferSize = 32000 ;    
-  TBranch * tsBranch = gAlice->TreeR()->Branch("PHOSTS",&trackSegments,bufferSize);
 
-  tsBranch->SetTitle(BranchName());
-    
-  //Second -TSMaker
-  Int_t splitlevel = 0 ;
-  AliPHOSTrackSegmentMakerv1 * ts = this ;
-  TBranch * tsMakerBranch = gime->TreeR()->Branch("AliPHOSTrackSegmentMaker","AliPHOSTrackSegmentMakerv1",
-					  &ts,bufferSize,splitlevel);
-  tsMakerBranch->SetTitle(BranchName());
-
+  TBranch * tsBranch = treeT->Branch(gime->GetDetectorName(),&trackSegments,bufferSize);
   tsBranch->Fill() ;  
-  gime->WriteTracks("OVERWRITE");
+
   gime->WriteTracker("OVERWRITE");
-  
+  gime->WriteTracks("OVERWRITE");
 }
 
 
@@ -567,18 +527,15 @@ void AliPHOSTrackSegmentMakerv1::PrintTrackSegments(Option_t * option)
 {
   // option deb - prints # of found TrackSegments
   // option deb all - prints as well indexed of found RecParticles assigned to the TS
-  TString taskName(GetName()) ; 
-  taskName.Remove(taskName.Index(Version())-1) ;
-  
-  
-    AliRunLoader* runget = AliRunLoader::GetRunLoader(fFolderName);
+
+  AliRunLoader* runget = AliRunLoader::GetRunLoader(GetTitle());
   if(runget == 0x0) 
    {
      Error("Init","Can not find run getter in event folder \"%s\"",GetTitle());
      return;
    }
-  
-  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(runget->GetLoader("PHOSLoader"));
+
+  AliPHOSLoader* gime = AliPHOSLoader::GetPHOSLoader(GetTitle());
   if ( gime == 0 ) 
    {
      Error("Init","Could not obtain the Loader object !"); 
@@ -586,9 +543,19 @@ void AliPHOSTrackSegmentMakerv1::PrintTrackSegments(Option_t * option)
    } 
 
   TClonesArray * trackSegments = gime->TrackSegments() ; 
-
+  if (trackSegments == 0x0)
+   {//check if pointer exists - 
+     gime->LoadTracks();
+     trackSegments = gime->TrackSegments(); 
+     if (trackSegments == 0x0)
+      {
+       Error("PrintTrackSegments","Can not get track segments for current event = %d",
+             runget->GetEventNumber());
+       return;
+      }
+   }
   
-  cout << "AliPHOSTrackSegmentMakerv1: event "<<gAlice->GetEvNumber()  << endl ;
+  cout << "AliPHOSTrackSegmentMakerv1: event "<<runget->GetEventNumber()  << endl ;
   cout << "       Found " << trackSegments->GetEntriesFast() << "  trackSegments " << endl ;
   
   if(strstr(option,"all")) {  // printing found TS

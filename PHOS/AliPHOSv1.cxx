@@ -168,6 +168,7 @@ AliPHOSv1::~AliPHOSv1()
     delete fHits ;
     fHits = 0 ; 
   }
+  
   if ( fQAHitsMulB ) {
     fQAHitsMulB->Delete() ;
     delete fQAHitsMulB ; 

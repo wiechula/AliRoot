@@ -6,7 +6,7 @@
 /* $Id$ */
 
 //_________________________________________________________________________
-//  Base class for the clusterization algorithm (pure abstract)
+//  Base class for the clusterization algorithm 
 //*-- Author: Yves Schutz (SUBATECH) & Dmitri Peressounko (SUBATECH & Kurchatov Institute)
 // --- ROOT system ---
 
@@ -27,7 +27,8 @@ class AliPHOSClusterizer : public TTask {
 public:
 
   AliPHOSClusterizer() ;        // default ctor
-  AliPHOSClusterizer(const char * headerFile, const char * name);
+  AliPHOSClusterizer(const char * eventFolderName, const char * name);
+
   virtual ~AliPHOSClusterizer() ; // dtor
 
   virtual Float_t GetEmcClusteringThreshold()const {cout << "Not Defined" << endl ; return 0. ; }  
@@ -37,9 +38,9 @@ public:
   virtual Float_t GetCpvClusteringThreshold()const {cout << "Not Defined" << endl ; return 0. ; } 
   virtual Float_t GetCpvLocalMaxCut()const {cout << "Not Defined" << endl ; return 0. ; } 
   virtual Float_t GetCpvLogWeight()const {cout << "Not Defined" << endl ; return 0. ; } 
-  virtual char *  GetRecPointsBranch() const {cout << "Not Defined" << endl ; return 0 ; }  ;
+  virtual const char *  GetRecPointsBranch() const {cout << "Not Defined" << endl ; return 0 ; }  ;
   virtual const Int_t GetRecPointsInRun()  const {cout << "Not Defined" << endl ; return 0 ; } 
-  virtual char *  GetDigitsBranch() const{cout << "Not Defined" << endl ; return 0 ; }   ;
+  virtual const char *  GetDigitsBranch() const{cout << "Not Defined" << endl ; return 0 ; }   ;
 
   virtual void MakeClusters() {cout << "Not Defined" << endl ; } 
   virtual void Print(Option_t * option)const {cout << "Not Defined" << endl ; } 
@@ -55,11 +56,11 @@ public:
   virtual void SetRecPointsBranch(const char *title) {cout << "Not Defined" << endl ; } 
   virtual void SetUnfolding(Bool_t toUnfold ){cout << "Not Defined" << endl ;}  
   virtual const char * Version() const {cout << "Not Defined" << endl ; return 0 ; }  
+
 protected:
   AliRunLoader* fRunLoader;//!
-
   ClassDef(AliPHOSClusterizer,2)  // Clusterization algorithm class 
 
-} ;
+};
 
 #endif // AliPHOSCLUSTERIZER_H

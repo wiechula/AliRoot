@@ -9,7 +9,7 @@ PACKAGE = PHOS
 
 # C++ sources
 
-SRCS          =  AliPHOSLoader.cxx AliPHOS.cxx AliPHOSv0.cxx AliPHOSv1.cxx \
+SRCS          =  AliPHOS.cxx AliPHOSv0.cxx AliPHOSv1.cxx \
                  AliPHOSvFast.cxx AliPHOSvImpacts.cxx \
                  AliPHOSImpact.cxx \
                  AliPHOSHit.cxx \
@@ -32,7 +32,7 @@ SRCS          =  AliPHOSLoader.cxx AliPHOS.cxx AliPHOSv0.cxx AliPHOSv1.cxx \
                  AliPHOSQAObjectCheckable.cxx AliPHOSQAChecker.cxx AliPHOSQAMeanChecker.cxx AliPHOSQAAlarm.cxx \
                  AliPHOSIhepAnalyze.cxx AliPHOSEvalRecPoint.cxx \
                  AliPHOSRecManager.cxx AliPHOSRecCpvManager.cxx AliPHOSRecEmcManager.cxx \
-                 AliPHOSClusterizerv2.cxx
+                 AliPHOSClusterizerv2.cxx AliPHOSLoader.cxx 
 
 # C++ Headers
 

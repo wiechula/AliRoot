@@ -22,17 +22,23 @@
 //////////////////////////////////////////////////////////////////////////////
 
 // --- ROOT system ---
-
- 
+#include "TGeometry.h"
+#include "TDirectory.h"
+#include "TFile.h"
+#include "TTree.h"
 
 // --- Standard library ---
-
-
+#include <iostream.h>
+#include <stdlib.h>   
 
 // --- AliRoot header files ---
-
+#include "AliRun.h" 
 #include "AliPHOSClusterizer.h"
+
 #include "AliRunLoader.h"
+#include "AliHeader.h" 
+#include "AliPHOSSDigitizer.h"
+#include "AliPHOSDigitizer.h"
 
 ClassImp(AliPHOSClusterizer)
 
@@ -40,19 +46,20 @@ ClassImp(AliPHOSClusterizer)
   AliPHOSClusterizer::AliPHOSClusterizer():TTask("","")
 {
   // ctor
+  fRunLoader = 0x0;
 }
+
 //____________________________________________________________________________
-AliPHOSClusterizer::AliPHOSClusterizer(const char* headerFile, const char* name):
-TTask(name, headerFile)
+AliPHOSClusterizer::AliPHOSClusterizer(const char* eventFolderName, const char* name):
+TTask(name, eventFolderName)
 {
-  fRunLoader = AliRunLoader::Open(headerFile,name,"READ");
-  if (fRunLoader == 0x0)
-    Fatal("AliPHOSClusterizer","Can not open session");
+  // ctor
 }
 
 //____________________________________________________________________________
 AliPHOSClusterizer::~AliPHOSClusterizer()
 {
   // dtor
-  delete fRunLoader;
 }
+
+

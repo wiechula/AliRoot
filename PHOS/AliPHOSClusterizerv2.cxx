@@ -19,8 +19,8 @@ ClassImp(AliPHOSClusterizerv2)
 AliPHOSClusterizerv2::AliPHOSClusterizerv2() : AliPHOSClusterizerv1() 
 {}
 
-AliPHOSClusterizerv2::AliPHOSClusterizerv2(const char* File, const char* name):
-  AliPHOSClusterizerv1(File,name)
+AliPHOSClusterizerv2::AliPHOSClusterizerv2(const char * headerFile, const char * name):
+AliPHOSClusterizerv1(headerFile,name)
 {}
 
 void AliPHOSClusterizerv2::GetNumberOfClustersFound(int* numb) const
@@ -51,10 +51,17 @@ void AliPHOSClusterizerv2::Exec(Option_t* option)
      return;
    }
 
-  TFolder* aliceF  = (TFolder*)gROOT->FindObjectAny("YSAlice");
-  TFolder* storage = (TFolder*)aliceF->FindObject("WhiteBoard/RecPoints/PHOS"); 
-  TFolder* wPoolF = storage->AddFolder("SmP","SmartRecPoints for PHOS");
+  TFolder* storage = gime->GetDetectorDataFolder();
+  
+//  TFolder* wPoolF = storage->AddFolder("SmP","SmartRecPoints for PHOS");
+//I find the construction above completely unnacessary. Who cares whether data will be
+//in a special folder for them. Maybe it give more clear view in graphic mode, but who watches
+//on it during reconstruction?
+//Piotr.Skowronski@cern.ch
+
+  TFolder* wPoolF = storage;
     
+
   TObjArray* wPool = new TObjArray(400);
   wPool->SetName("SmartPoints");
   wPoolF->Add(wPool);
@@ -121,7 +128,7 @@ void AliPHOSClusterizerv2::Exec(Option_t* option)
     wPoolF->Add(recEmc);
 
     for(iPoint=0; iPoint<gime->EmcRecPoints()->GetEntriesFast(); iPoint++) {
-      rp = new AliPHOSEvalRecPoint(iPoint,AliPHOSEvalRecPoint::emc);
+      rp = new AliPHOSEvalRecPoint(iPoint,(Bool_t)AliPHOSEvalRecPoint::emc);
       rp->MakeJob();
     }
 
@@ -149,7 +156,7 @@ void AliPHOSClusterizerv2::Exec(Option_t* option)
     cout<<"       "<<gime->EmcRecPoints()->GetEntries()<<endl;
     cout<<"       "<<emcRecPoints->GetEntries()<<" emcRecPoints."<<endl<<endl;
 
-    WriteRecPoints(ievent);
+    WriteRecPoints();
 
 
   } // loop over events
@@ -163,7 +170,7 @@ void AliPHOSClusterizerv2::Exec(Option_t* option)
   }
 
 }
-
+//---------------------------------------------------------------------------------
 Int_t AliPHOSClusterizerv2::AreNeighbours(AliPHOSDigit* d1, AliPHOSDigit* d2) const
 {
   // Points are neighbours if they have common edge.
@@ -212,11 +219,6 @@ Int_t AliPHOSClusterizerv2::AreNeighbours(AliPHOSDigit* d1, AliPHOSDigit* d2) co
       rv=2 ;
 
   }
-
-//    //Do NOT clusterize upper PPSD  // YVK 30.09.2001
-//    if( IsInPpsd(d1) && IsInPpsd(d2) &&
-//       relid1[1] > 0                 &&
-//       relid1[1] < geom->GetNumberOfPadsPhi()*geom->GetNumberOfPadsPhi() ) rv = 2 ;
 
   return rv ; 
 

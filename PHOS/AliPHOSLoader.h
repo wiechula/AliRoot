@@ -62,12 +62,14 @@ class AliPHOSLoader : public AliLoader {
 
   // assignement operator requested by coding convention, but not needed
   AliPHOSLoader & operator = (const AliPHOSLoader & ) {return *this;}
-  Int_t  PostHits(); 
-  Int_t  PostSDigits();
-  Int_t  PostDigits();
-  Int_t  PostRecPoints();
-  Int_t  PostTracks();  //previous PostTrackSegments 
- 
+
+  Bool_t BranchExists(const TString& recName);
+  Int_t  PostHits(); //reads  from disk and sends them to folder; array as well as tree
+  Int_t  PostSDigits(); //reads SDigits from disk and sends them to folder; array as well as tree
+  Int_t  PostDigits(); //reads Digits from disk and sends them to folder; array as well as tree
+  Int_t  PostRecPoints(); //reads RecPoints from disk and sends them to folder; array as well as tree
+  Int_t  PostTracks();  //reads Tracks from disk and sends them to folder; array as well as tree
+  
   void   CleanFolders();//cleans all the stuff loaded by this detector + calls AliLoader::Clean
 
 //up to now it is only here -> no definition about global/incremental tracking/PID
@@ -87,6 +89,7 @@ class AliPHOSLoader : public AliLoader {
   TObject** EmcRecPointsRef(){return GetDetectorDataRef(EmcRecPoints());}
   TObject** CpvRecPointsRef(){return GetDetectorDataRef(CpvRecPoints());}
   TObject** TracksRef(){return GetDetectorDataRef(TrackSegments());}
+  TObject** RecParticlesRef(){return GetDetectorDataRef(RecParticles());}
   TObject** AlarmsRef(){return GetDetectorDataRef(Alarms());}
   void   Track(Int_t itrack) ;
 
@@ -140,6 +143,10 @@ class AliPHOSLoader : public AliLoader {
   Int_t PostTrackSegmentMaker(TTask* segmaker){return PostTracker(segmaker);}
   
   void   SetDebug(Int_t level) {fDebug = level;} // Set debug level
+  void   SetBranchTitle(const TString& btitle);
+  
+protected:
+  TString fBranchTitle;
 private:
 
   Int_t ReadHits();
@@ -150,10 +157,7 @@ private:
   Int_t ReadRecParticles();
   
   void  ReadTreeQA() ;
-
- private:
-
-  Int_t          fDebug ;             // Debug level
+  Int_t  fDebug ;             // Debug level
  
  public:
 
@@ -163,11 +167,11 @@ private:
   static const TString fgkEmcRecPointsName;//Name for TClonesArray 
   static const TString fgkCpvRecPointsName;//Name for TClonesArray 
   static const TString fgkTracksName;//Name for TClonesArray 
-  static const TString fgkReconstrParticles;//Name for TClonesArray
+  static const TString fgkRecParticlesName;//Name for TClonesArray
 
-  static const TString fgkEmcRecPointsBranchName;//Name for TClonesArray 
-  static const TString fgkCpvRecPointsBranchName;//Name for TClonesArray 
-  
+  static const TString fgkEmcRecPointsBranchName;//Name for branch
+  static const TString fgkCpvRecPointsBranchName;//Name for branch
+  static const TString fgkRecParticlesBranchName;//Name for branch
   
   ClassDef(AliPHOSLoader,2)  // Algorithm class that provides methods to retrieve objects from a list knowing the index 
 
@@ -269,7 +273,7 @@ inline const AliPHOSTrackSegment * AliPHOSLoader::TrackSegment(Int_t index)
 
 inline TClonesArray * AliPHOSLoader::RecParticles() 
 {
- return dynamic_cast<TClonesArray*>(GetDetectorData(fgkReconstrParticles)); 
+ return dynamic_cast<TClonesArray*>(GetDetectorData(fgkRecParticlesName)); 
 }
 /******************************************************************************/
 

@@ -28,7 +28,7 @@ class  AliPHOSTrackSegmentMakerv1 : public AliPHOSTrackSegmentMaker {
 public:
 
   AliPHOSTrackSegmentMakerv1() ;                     
-  AliPHOSTrackSegmentMakerv1(const char* headerFile, const char* name = "Default", const char * from = 0) ;                     
+  AliPHOSTrackSegmentMakerv1(const char* evFoldName, const char* name = "Default");
   AliPHOSTrackSegmentMakerv1(const AliPHOSTrackSegmentMakerv1 & tsm) {
     // cpy ctor: no implementation yet
     // requested by the Coding Convention
@@ -37,8 +37,8 @@ public:
    
   virtual ~ AliPHOSTrackSegmentMakerv1() ; // dtor
   
-  virtual char*  GetRecPointsBranch    (void)const{return (char*)fRecPointsBranchTitle.Data() ;}
-  virtual char*  GetTrackSegmentsBranch(void)const{return (char*)fTrackSegmentsBranchTitle.Data() ;}
+  //  virtual char*  GetRecPointsBranch    (void)const{return (char*)fRecPointsBranchTitle.Data() ;}
+  //  virtual char*  GetTrackSegmentsBranch(void)const{return (char*)fTrackSegmentsBranchTitle.Data() ;}
   virtual const Int_t GetTrackSegmentsInRun()const {return fTrackSegmentsInRun ;}  
 
   virtual void   Exec(Option_t * option) ;
@@ -47,9 +47,12 @@ public:
           void   MakeLinks() const;      //Evaluates distances(links) between EMC and PPSD
           void   MakePairs() ;           //Finds pairs(triplets) with smallest link
   virtual void   Print(Option_t * option) const ;
-  virtual void   SetMaxEmcPpsdDistance(Float_t r){ fR0 = r ;}
-  virtual void   SetRecPointsBranch(const char * title) { fRecPointsBranchTitle = title ;} 
-  virtual void   SetTrackSegmentsBranch(const char * title){ fTrackSegmentsBranchTitle = title ; }
+  virtual void   SetMaxEmcCPVDistance(Float_t r){ fRcpv = r ;} //Maximal distance (in PHOS plane) 
+                                                               //between EMCrp and CPVrp
+  virtual void   SetMaxEmcTPCDistance(Float_t r){ fRtpc = r ;} //Maximal distance (in PHOS plane) 
+                                                               //between EMCrp and extrapolation of TPC track
+  //  virtual void   SetRecPointsBranch(const char * title) { fRecPointsBranchTitle = title ;} 
+  //  virtual void   SetTrackSegmentsBranch(const char * title){ fTrackSegmentsBranchTitle = title ; }
   virtual const char * Version() const { return "tsm-v1" ; }  
 
   AliPHOSTrackSegmentMakerv1 & operator = (const AliPHOSTrackSegmentMakerv1 & )  {
@@ -64,20 +67,19 @@ private:
   const TString BranchName() const ; 
   Float_t GetDistanceInPHOSPlane(AliPHOSEmcRecPoint * EmcClu , AliPHOSRecPoint * Ppsd , Bool_t & TooFar )const ; // see R0
   void    Init() ;
+  void    InitParameters() ;
   void    PrintTrackSegments(Option_t *option) ;
   virtual void   WriteTrackSegments(Int_t event) ;
 
 private:  
 
-  TString fFolderName ;          // name of the file which contains event data
-  TString fFrom ;                     // name of Recpoints 
-  TString fHeaderFileName ;           // name of the file which contains gAlice, Tree headers etc.
-  TString fRecPointsBranchTitle ;     // name of the file, where RecPoints branchs are stored
-  TString fTrackSegmentsBranchTitle ; // name of the file, where TrackSegment branchs is stored
+  Bool_t  fDefaultInit;               //! Says if the task was created by defaut ctor (only parameters are initialized)
  
   Int_t fNTrackSegments ; // number of track segments found 
-  Float_t fR0 ;        // Maximum distance between a EMC RecPoint and a PPSD RecPoint   
- 
+
+  Float_t fRcpv ;        // Maximum distance between a EMC RecPoint and a CPV RecPoint   
+  Float_t fRtpc ;        // Maximum distance between a EMC RecPoint and extrapolation of a TPC track   
+
   TClonesArray * fLinkUpArray  ;  //!
   Int_t fEmcFirst;     //! Index of first EMC RecPoint belonging to currect PHOS module
   Int_t fEmcLast ;     //!
@@ -88,6 +90,6 @@ private:
 
   ClassDef( AliPHOSTrackSegmentMakerv1,2)  // Implementation version 1 of algorithm class to make PHOS track segments 
 
-};
+ };
 
 #endif // AliPHOSTRACKSEGMENTMAKERV1_H

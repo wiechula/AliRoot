@@ -9,7 +9,7 @@ class AliPHOSClusterizerv2 : public AliPHOSClusterizerv1 {
 public:
 
   AliPHOSClusterizerv2();
-  AliPHOSClusterizerv2(const char* headerFile, const char* name = 0);
+  AliPHOSClusterizerv2(const char * headerFile, const char * name = "Default") ;
   ~AliPHOSClusterizerv2() {}
   
   Int_t AreNeighbours(AliPHOSDigit* d1, AliPHOSDigit* d2) const ;

@@ -22,11 +22,18 @@
 
 
 // --- ROOT system ---
+#include "TGeometry.h"
+#include "TFile.h"
+#include "TTree.h"
 
 // --- Standard library ---
+#include <iostream.h>
+#include <stdlib.h>   
 
 // --- AliRoot header files ---
+#include "AliRun.h" 
 #include "AliPHOSTrackSegmentMaker.h"
+#include "AliHeader.h" 
 
 ClassImp( AliPHOSTrackSegmentMaker) 
 
@@ -35,11 +42,18 @@ ClassImp( AliPHOSTrackSegmentMaker)
   AliPHOSTrackSegmentMaker:: AliPHOSTrackSegmentMaker() : TTask("","")
 {
   // ctor
+
 }
 
 //____________________________________________________________________________
-AliPHOSTrackSegmentMaker::AliPHOSTrackSegmentMaker(const char * headerFile, const char * name): TTask(name, headerFile)
+AliPHOSTrackSegmentMaker::AliPHOSTrackSegmentMaker(const char * evFoldName, const char * name): TTask(name, evFoldName)
 {
   // ctor
 }
 
+//____________________________________________________________________________
+AliPHOSTrackSegmentMaker::~AliPHOSTrackSegmentMaker()
+{
+}
+
+// //____________________________________________________________________________

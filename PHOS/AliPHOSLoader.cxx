@@ -83,11 +83,11 @@ const TString AliPHOSLoader::fgkDigitsName("DIGITS");//Name for TClonesArray
 const TString AliPHOSLoader::fgkEmcRecPointsName("EMCRECPOINTS");//Name for TClonesArray 
 const TString AliPHOSLoader::fgkCpvRecPointsName("CPVRECPOINTS");//Name for TClonesArray 
 const TString AliPHOSLoader::fgkTracksName("TRACKS");//Name for TClonesArray 
-const TString AliPHOSLoader::fgkReconstrParticles("RECPARTICLES");//Name for TClonesArray
+const TString AliPHOSLoader::fgkRecParticlesName("RECPARTICLES");//Name for TClonesArray
 
-const TString AliPHOSLoader::fgkEmcRecPointsBranchName("PHOSEmcRP");//Name for TClonesArray 
-const TString AliPHOSLoader::fgkCpvRecPointsBranchName("PHOSCpvRP");//Name for TClonesArray 
-
+const TString AliPHOSLoader::fgkEmcRecPointsBranchName("PHOSEmcRP");//Name for branch with EMC Reconstructed Points
+const TString AliPHOSLoader::fgkCpvRecPointsBranchName("PHOSCpvRP");//Name for branch with CPV Reconstructed Points
+const TString AliPHOSLoader::fgkRecParticlesBranchName("PHOSRP");//Name for branch with Reconstructed Particles
 //____________________________________________________________________________ 
 AliPHOSLoader::AliPHOSLoader()
  {
@@ -100,16 +100,14 @@ AliPHOSLoader::AliPHOSLoader(const Char_t *detname,const Char_t *eventfoldername
   fDebug=0;
 }
 //____________________________________________________________________________ 
-AliPHOSLoader::~AliPHOSLoader(){
-
+AliPHOSLoader::~AliPHOSLoader()
+{
 }
 
 void AliPHOSLoader::CleanFolders()
  {
    AliLoader::CleanFolders();
-   
    //the our stuff
-   
  }
 
 //____________________________________________________________________________ 
@@ -145,6 +143,7 @@ Int_t AliPHOSLoader::PostHits(void)
   
   //First call the AliLoader's method to send the TreeH to folder
   res = AliLoader::PostHits();
+  
   if (res)
    {//oops, error
      Error("PostHits","AliLoader::PostHits returned error");
@@ -152,7 +151,7 @@ Int_t AliPHOSLoader::PostHits(void)
    }
 
   //read the data from tree in folder and send it to folder
-
+  cout<<"AliPHOSLoader::PostHits: Calling AliLoader::ReadHits()\n";
   res = ReadHits();
 
   return 0;
@@ -223,8 +222,9 @@ Int_t  AliPHOSLoader::PostTracks()
     Error("PostRecPoints","AliLoader::PostRecPoints returned error");
     return res;
   }
- //PostTracker();
- //return ReadTracks();
+ PostTracker();
+ return ReadTracks();
+ 
  Error("PostTracks","Do not forget to finish implementation of this method");
  return 1000;
 }
@@ -347,8 +347,8 @@ Int_t AliPHOSLoader::ReadDigits()
 // connect to tree if available
 // Read the data
   
+  TClonesArray* digits;
   TObject** dref = DigitsRef();
-  TClonesArray* digits = dynamic_cast<TClonesArray*>(*dref);
 
   if(dref == 0x0)
    {//if there is not array in folder, create it and put it there
@@ -357,7 +357,10 @@ Int_t AliPHOSLoader::ReadDigits()
      GetDetectorDataFolder()->Add(digits);
      dref = DigitsRef();
    }
-
+  else
+   {
+    digits = dynamic_cast<TClonesArray*>(*dref);
+   }
   TTree * treeD = TreeD();
   if(treeD==0)
    {
@@ -399,12 +402,10 @@ void AliPHOSLoader::Track(Int_t itrack)
       cout << "WARNING:  AliPHOSLoader::ReadTreeH -> Cannot find branch PHOS" << endl ; 
     return ;
   }  
-  if(!Hits())
-    PostHits() ;
+  if(!Hits()) PostHits();
 
   hitsbranch->SetAddress(HitsRef());
   hitsbranch->GetEntry(itrack);
-
 
 }
 //____________________________________________________________________________ 
@@ -439,17 +440,18 @@ Int_t AliPHOSLoader::ReadRecPoints()
 //Creates and posts to folder an array container, 
 //connects branch in tree (if exists), and reads data to arry
 
-  TObject** cpvref = DigitsRef();
-  
+  TObject** cpvref = CpvRecPointsRef();
+  TObjArray * cpv;
   if ( cpvref == 0x0 )   
    {
-    TObjArray * cpv = new TObjArray(100) ;
+    cpv = new TObjArray(100) ;
     cpv->SetName(fgkCpvRecPointsName);
     GetDetectorDataFolder()->Add(cpv);
     cpvref = DigitsRef();
    }
-  
-  TObject** emcref = DigitsRef();
+
+  TObject** emcref = EmcRecPointsRef();
+
   if ( emcref == 0x0 ) 
    {
     TObjArray * emc = new TObjArray(100) ;
@@ -466,16 +468,30 @@ Int_t AliPHOSLoader::ReadRecPoints()
      return 0;
    }
 
-
+  Int_t retval = 0;
   TBranch * emcbranch = treeR->GetBranch(fgkEmcRecPointsBranchName);
-  emcbranch->SetAddress(emcref) ;
-  emcbranch->GetEntry(0) ;
-  
+  if (emcbranch == 0x0)
+   {
+     Error("ReadRecPoints","Can not get branch with EMC Rec. Points named %s",fgkEmcRecPointsBranchName.Data());
+     retval = 1;
+   }
+  else
+   {
+     emcbranch->SetAddress(emcref) ;
+     emcbranch->GetEntry(0) ;
+   }
   TBranch * cpvbranch = treeR->GetBranch(fgkCpvRecPointsBranchName);
-  cpvbranch->SetAddress(cpvref);
-  cpvbranch->GetEntry(0) ;
-
-  return 0;
+  if (cpvbranch == 0x0)
+   {
+     Error("ReadRecPoints","Can not get branch with CPV Rec. Points named %s",fgkCpvRecPointsBranchName.Data());
+     retval = 2;
+   }
+  else
+   {
+     cpvbranch->SetAddress(cpvref);
+     cpvbranch->GetEntry(0) ;
+   }
+  return retval;
 }
 //____________________________________________________________________________ 
 
@@ -497,7 +513,8 @@ Int_t AliPHOSLoader::ReadTracks()
   TTree * treeT = TreeT();
   if(treeT==0)
    {
-     //May happen if file is truncated or new in LoadSDigits
+     //May happen if file is truncated or new in LoadSDigits, or the file is in update mode, 
+     //but tracking was not performed yet for a current event
      Error("ReadTracks","There is no Tree with Tracks");
      return 0;
    }
@@ -505,7 +522,7 @@ Int_t AliPHOSLoader::ReadTracks()
   TBranch * branch = treeT->GetBranch(fDetectorName);
   if (branch == 0) 
    {//easy, maybe just a new tree
-    Error("ReadTracks"," Cannot find branch ",fDetectorName.Data()); 
+    Error("ReadTracks"," Cannot find branch named %s",fDetectorName.Data());
     return 0;
   }
 
@@ -514,6 +531,7 @@ Int_t AliPHOSLoader::ReadTracks()
   
   return 0;
 }
+//____________________________________________________________________________ 
 
 Int_t AliPHOSLoader::ReadRecParticles()
 {
@@ -521,19 +539,72 @@ Int_t AliPHOSLoader::ReadRecParticles()
 //Creates and posts to folder an array container, 
 //connects branch in tree (if exists), and reads data to arry
   
-  Error("ReadRecParticles","Do not forgot to implement SKOWRON");
-  return 1;
+  TObject** recpartref = RecParticlesRef();
+  
+  if ( recpartref == 0x0 )   
+   {//Create and post array
+    TClonesArray * rp = new TClonesArray("AliPHOSRecParticle",100) ;
+    rp->SetName(fgkRecParticlesName);
+    GetDetectorDataFolder()->Add(rp);
+    recpartref = TracksRef();
+   }
+
+  TTree * treeT = TreeT();
+  if(treeT==0)
+   {
+     //May happen if file is truncated or new in LoadSDigits, or the file is in update mode, 
+     //but tracking was not performed yet for a current event
+     Error("ReadRecParticles","There is no Tree with Tracks and Reconstructed Particles");
+     return 0;
+   }
+  
+  TBranch * branch = treeT->GetBranch(fgkRecParticlesBranchName);
+  if (branch == 0) 
+   {//easy, maybe just a new tree
+    Error("ReadRecParticles"," Cannot find branch %s",fgkRecParticlesBranchName.Data()); 
+    return 0;
+  }
+
+  branch->SetAddress(recpartref);//connect branch to buffer sitting in folder
+  branch->GetEntry(0);//get first event 
+  
+  return 0;
 }
 //____________________________________________________________________________ 
 
 Int_t AliPHOSLoader::LoadRecParticles(Option_t* opt)
 {
+ //load (reads and posts to folder) reconstructed particles
+ //it looks like thet because we use the track file for storing rec particles
+ //PID should be done in global level, anyway
+ //skowron
+ 
+ //Load tracks (treeT)
+ //reads RecParticles from tree to to array and puts it in detector data folder (ReadRecParticles)
+ 
+ Int_t retval = 0;
+ if (TreeT() == 0x0) 
+  {
+    retval = LoadTracks(opt);
+    if (retval)
+     {
+      Error("LoadRecParticles","Load Tracks returned error");
+      return retval;
+     }
+  }
+  
+ retval = ReadRecParticles();
+ if (retval) 
+  {
+   Error("LoadRecParticles","Error occured while reading");
+   return retval;
+  }
  return 0;
 }
 //____________________________________________________________________________ 
 Int_t AliPHOSLoader::WriteRecParticles(Option_t* opt)
 {
- return 0;
+ return WriteTracks(opt);
 }
 //____________________________________________________________________________ 
 Int_t AliPHOSLoader::WritePID(Option_t* opt)
@@ -565,6 +636,72 @@ AliPHOSLoader* AliPHOSLoader::GetPHOSLoader(const  char* eventfoldername)
   return dynamic_cast<AliPHOSLoader*>(rn->GetLoader("PHOSLoader"));
 }
 /********************************************************************************************************/
+Bool_t AliPHOSLoader::BranchExists(const TString& recName)
+ {
+  TString dataname, zername ;
+  TTree* tree;
+  if(recName == "SDigits")
+   {
+    tree = TreeS();
+    dataname = GetDetectorName();
+    zername = "AliPHOSSDigitizer" ;
+   }
+  else
+    if(recName == "Digits"){
+      tree = TreeD();
+      dataname = GetDetectorName();
+      zername = "AliPHOSDigitizer" ;
+    }
+    else
+      if(recName == "RecPoints"){
+       tree = TreeR();
+       dataname = fgkEmcRecPointsBranchName;
+       zername = "AliPHOSClusterizer" ;
+      }
+      else
+       if(recName == "TrackSegments"){
+         tree = TreeT();
+         dataname = GetDetectorName();
+         zername = "AliPHOSTrackSegmentMaker";
+       }        
+       else
+         if(recName == "RecParticles"){
+           tree = TreeT();
+           dataname = fgkRecParticlesBranchName;
+           zername = "AliPHOSPID";
+         }
+         else
+           return kFALSE ;
 
+  
+  if(!tree ) 
+    return kFALSE ;
 
+  TObjArray * lob = static_cast<TObjArray*>(tree->GetListOfBranches()) ;
+  TIter next(lob) ; 
+  TBranch * branch = 0 ;  
+  TString titleName(fBranchTitle);
+  titleName+=":";
 
+  while ((branch = (static_cast<TBranch*>(next())))) {
+    TString branchName(branch->GetName() ) ; 
+    TString branchTitle(branch->GetTitle() ) ;  
+    if ( branchName.BeginsWith(dataname) && branchTitle.BeginsWith(fBranchTitle) ){  
+      cerr << "WARNING: AliPHOSGetter::BranchExists -> branch " << dataname.Data() << " with title " << fBranchTitle << " already exits\n";
+      return kTRUE ;
+    }
+    if ( branchName.BeginsWith(zername) &&  branchTitle.BeginsWith(titleName) ){
+      cerr << "WARNING:  AliPHOSGetter::BranchExists -> branch AliPHOS... with title " << branch->GetTitle() << " already exits\n";
+      return kTRUE ; 
+    }
+  }
+  return kFALSE ;
+
+ }
+
+void AliPHOSLoader::SetBranchTitle(const TString& btitle)
+ {
+  if (btitle.CompareTo(fBranchTitle) == 0) return;
+  fBranchTitle = btitle;
+  ReloadAll();
+ }

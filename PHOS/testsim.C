@@ -18,8 +18,11 @@ void testsim (Int_t nevent=1, const char *config="testconfig.C")
   gAlice->Run(nevent);
   timer.Stop();
   timer.Print();
-   cerr<<" ___________________________________________________________________ "<<endl;
+  cerr<<" ___________________________________________________________________ "<<endl;
   cerr<<" "<<endl;
   cerr << "             MESS ==> Simulation ended successfully. " << endl ; 
   cerr<<" ___________________________________________________________________ "<<endl;
+  
+  //delete AliRunLoader::GetRunLoader(AliConfig::fgkDefaultEventFolderName);
+  
 }

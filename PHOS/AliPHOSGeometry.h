@@ -22,6 +22,7 @@
 
 #include "TString.h"
 #include "TObjArray.h"
+#include "TParticle.h"
 #include "TVector3.h" 
 
 // --- AliRoot header files ---
@@ -56,8 +57,9 @@ public:
   virtual ~AliPHOSGeometry(void) ; 
   static AliPHOSGeometry * GetInstance(const Text_t* name, const Text_t* title="") ; 
   static AliPHOSGeometry * GetInstance() ; 
-  virtual void  GetGlobal(const AliRecPoint* RecPoint, TVector3 & gpos, TMatrix & gmat) const ;
-  virtual void  GetGlobal(const AliRecPoint* RecPoint, TVector3 & gpos) const ;
+  virtual void   GetGlobal(const AliRecPoint* RecPoint, TVector3 & gpos, TMatrix & gmat) const ;
+  virtual void   GetGlobal(const AliRecPoint* RecPoint, TVector3 & gpos) const ;
+  virtual Bool_t Impact(const TParticle * particle) const ;
 
   AliPHOSGeometry & operator = (const AliPHOSGeometry  & rvalue) const {
     // assignement operator requested by coding convention but not needed
@@ -102,6 +104,8 @@ public:
   Float_t  GetIPtoUpperCPVsurface(void)         const { return fIPtoUpperCPVsurface ; }
   Float_t  GetOuterBoxSize(Int_t index)         const { return 2.*fPHOSParams[index]; }
   Float_t  GetCrystalSize(Int_t index)          const { return fGeometryEMCA->GetCrystalSize(index) ;  }
+  Float_t  GetCellStep(void)                    const { return 2*(fGeometryEMCA->GetAirCellHalfSize()[0] + 
+							          fGeometryEMCA->GetStripWallWidthOut()) ;}
 
   // Return EMCA geometry parameters
 
