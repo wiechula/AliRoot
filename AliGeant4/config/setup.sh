@@ -77,6 +77,10 @@ if [ "$LOCAL" = "NO" ]; then
   # Geant4 base directory
   G4_BASE=${ALICE_BASE}/geant4
 
+  # ====== G4MC_BASE
+  # Geant4_mc base directory
+  G4MC_BASE=${ALICE_BASE}
+
   # ====== LHCXX_BASE
   # LHC++ base directory
   LHCXX_BASE=/afs/cern.ch/sw/lhcxx/specific/@sys
@@ -101,11 +105,15 @@ else
 
   # ====== ALICE_BASE
   # ALICE base directory
-  ALICE_BASE=$ALICE_INSTALL
+  ALICE_BASE=$ALICE_INSTALL/$ALICE_LEVEL
 
   # ====== G4_BASE
   # Geant4 base directory
   G4_BASE=$ALICE_BASE
+
+  # ====== G4MC_BASE
+  # Geant4_mc base directory
+  G4MC_BASE=$ALICE_BASE
 
   # ====== LHCXX_BASE
   # LHC++ base directory
@@ -222,8 +230,18 @@ if [ "$SYSTEM" = "HP-UX" ]; then
   #export G4USE_OSPACE=1        # compiling with Object Space STL
 fi  
 if [ "$SYSTEM" = "Linux" ]; then
-###  export G4SYSTEM="Linux-g++"
-  export G4SYSTEM="Linux-egcs"
+  # check compiler version
+  COMPILER="g++"
+  ${COMPILER} -v 2> /tmp/g4compiler
+  if [ "`cat /tmp/g4compiler | grep 2.96 `" != "" ]; then
+    echo "WARNING: Found version of 'g++' (2.96.XXX) is known to be buggy!"
+  fi   
+  if [ "`cat /tmp/g4compiler | grep egcs `" != "" ]; then
+    export G4SYSTEM="Linux-egcs"
+  else   
+    export G4SYSTEM="Linux-g++"
+  fi 
+  rm /tmp/g4compiler
 fi
 if [ "$SYSTEM" = "OSF1" ]; then
   export G4SYSTEM="DEC-cxx"
@@ -242,6 +260,19 @@ if [ "$VERBOSE" = "YES" ]; then
   fi
 fi
 
+#
+# Geant4_mc  
+# ==================================
+#
+if [ "$VERBOSE" = "YES" ]; then
+  echo " "
+  echo "Geant4_mc env. variables..."
+  echo "============================"
+fi
+export MCINSTALL=$G4MC_BASE/geant4_mc
+if [ "$VERBOSE" = "YES" ]; then
+  echo "geant4_mc base directory: $MCINSTALL"
+fi
 
 #
 # CLHEP
@@ -297,9 +328,7 @@ if [ $AG4_VISUALIZE ]; then
     echo "* Fukui Renderer (DAWN)..."
   fi
   export G4VIS_BUILD_DAWN_DRIVER=1
-  export G4VIS_BUILD_DAWNFILE_DRIVER=1
   export G4VIS_USE_DAWN=1
-  export G4VIS_USE_DAWNFILE=1
   #export G4DAWNFILE_VIEWER=david
   export DAWN_HOME=${G4_BASE}/tools/bin
   if [ "`echo ${PATH} | grep ${DAWN_HOME} `" = "" ]; then
@@ -313,9 +342,6 @@ if [ $AG4_VISUALIZE ]; then
   if [ "$VERBOSE" = "YES" ]; then
     if [ $G4VIS_USE_DAWN ]; then
       echo "  Dawn driver activated"
-    fi
-    if [ $G4VIS_USE_DAWNFILE ]; then
-      echo "  Dawn file driver activated"
     fi
     if [ $G4DAWNFILE_VIEWER ]; then
       echo "  Dawn file viewer set to ${G4DAWNFILE_VIEWER}"
@@ -379,8 +405,10 @@ if [ $AG4_VISUALIZE ]; then
   export G4VIS_BUILD_OPENGLXM_DRIVER=1
   export G4VIS_USE_OPENGLX=1
   export G4VIS_USE_OPENGLXM=1
-  export OGLHOME=/usr/local
-  export OGLLIBS="-L$OGLHOME/lib -lMesaGLU -lMesaGL"
+  #export OGLHOME=/usr/local
+  export OGLHOME=/export/alice/tools
+  #export OGLLIBS="-L$OGLHOME/lib -lMesaGLU -lMesaGL"
+  export OGLLIBS="-L$OGLHOME/lib -lGLU -lGL"
   if [ "$SYSTEM" = "HP-UX" ]; then
     export OGLLIBS="-L/usr/lib $OGLLIBS"
   fi
@@ -433,9 +461,7 @@ if [ $AG4_VISUALIZE ]; then
     echo "* VRML..."
   fi
   export G4VIS_BUILD_VRML_DRIVER=1    
-  export G4VIS_BUILD_VRMLFILE_DRIVER=1
   export G4VIS_USE_VRML=1
-  export G4VIS_USE_VRMLFILE=1
   #Set preferred vrml viewer to be invoked in this mode
   export G4VRMLFILE_VIEWER=vrweb
   #Set host name for VRML1 visualization.... the g4vrmlview machine!
@@ -448,24 +474,6 @@ if [ $AG4_VISUALIZE ]; then
       echo "  VRML driver activated"
       echo "  Host Name for remote visualization is ${G4VRML_HOST_NAME}"
     fi
-    if [ $G4VIS_USE_VRMLFILE ]; then
-      echo "  VRML file driver activated"
-      echo "  VRML viewer set to ${G4VRMLFILE_VIEWER}"
-    fi
-  fi
-
-  #
-  # Ray Tracer
-  #
-  if [ "$VERBOSE" = "YES" ]; then
-    echo "* Ray Tracer..."
-  fi
-  #export G4VIS_BUILD_RAYTRACER_DRIVER=1
-  #export G4VIS_USE_RAYTRACER=1
-  if [ "$VERBOSE" = "YES" ]; then
-    if [ $G4VIS_USE_RAYTRACER ]; then
-      echo "  Ray tracing driver activated"
-    fi
   fi
 
   #
@@ -474,7 +482,6 @@ if [ $AG4_VISUALIZE ]; then
   if [ "$VERBOSE" = "YES" ]; then
     echo "* Geant Adaptative GUI (GAG)..."
   fi
-  export G4UI_BUILD_GAG_SESSION=1
   export G4UI_USE_GAG=1
   export MOMOPATH=${G4_BASE}/tools/GAG/tcltk
   if [ "`echo ${PATH} | grep ${MOMOPATH} `" = "" ]; then
@@ -512,9 +519,7 @@ else
 
   # Dawn
   unset G4VIS_BUILD_DAWN_DRIVER
-  unset G4VIS_BUILD_DAWNFILE_DRIVER
   unset G4VIS_USE_DAWN
-  unset G4VIS_USE_DAWNFILE
   unset G4DAWNFILE_VIEWER
   unset DAWN_HOME
   unset G4DAWN_MULTI_WINDOW
@@ -544,14 +549,11 @@ else
 
   # VRML1
   unset G4VIS_BUILD_VRML_DRIVER
-  unset G4VIS_BUILD_VRMLFILE_DRIVER
   unset G4VIS_USE_VRML
-  unset G4VIS_USE_VRMLFILE 
   unset G4VRMLFILE_VIEWER
   unset G4VRML_HOST_NAME
 
   # GAG
-  unset G4UI_BUILD_GAG_SESSION
   unset G4UI_USE_GAG
   unset MOMOPATH
 
@@ -651,7 +653,13 @@ if [ "`echo ${SHLIBVAR} | grep ${G4INSTALL}/lib/${G4SYSTEM} `" = "" ]; then
   if [ "$VERBOSE" = "YES" ]; then
     echo Adding ${G4INSTALL}/lib/${G4SYSTEM} to the shared libraries path...
   fi
-  SHLIBVAR="${MCINSTALL}/lib/${G4SYSTEM}:${G4INSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
+  SHLIBVAR="${G4INSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
+fi
+if [ "`echo ${SHLIBVAR} | grep ${MCINSTALL}/lib/${G4SYSTEM} `" = "" ]; then
+  if [ "$VERBOSE" = "YES" ]; then
+    echo Adding ${MCINSTALL}/lib/${G4SYSTEM} to the shared libraries path...
+  fi
+  SHLIBVAR="${MCINSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
 fi
 if [ "`echo ${SHLIBVAR} | grep ${CLHEP_BASE_DIR}/lib `" = "" ]; then
   if [ "$VERBOSE" = "YES" ]; then

@@ -77,6 +77,10 @@ if ( "$LOCAL" == "NO" ) then
   # Geant4 base directory
   set G4_BASE = ${ALICE_BASE}/geant4
 
+  # ====== G4MC_BASE
+  # Geant4_mc base directory
+  set G4MC_BASE = ${ALICE_BASE}
+
   # ====== LHCXX_BASE
   # LHC++ base directory
   set LHCXX_BASE = /afs/cern.ch/sw/lhcxx/specific/@sys
@@ -106,6 +110,10 @@ else
   # ====== G4_BASE
   # Geant4 base directory
   set G4_BASE = $ALICE_BASE
+
+  # ====== G4MC_BASE
+  # Geant4_mc base directory
+  set G4MC_BASE = $ALICE_BASE
 
   # ====== LHCXX_BASE
   # LHC++ base directory
@@ -205,7 +213,6 @@ if ("$?AG4_VERSION" == 0) then
 else
   setenv G4INSTALL ${G4_BASE}/g4dev/geant4.${AG4_VERSION}
 endif
-setenv MCINSTALL ${ALICE_ROOT}/geant4_mc
 
 if ("$?AG4_MAKESHLIB" == 0) then
   unsetenv G4LIB_BUILD_SHARED
@@ -223,8 +230,18 @@ if ( $SYSTEM == "HP-UX" ) then
   #setenv G4USE_OSPACE 1        # compiling with Object Space STL
 endif 
 if ( $SYSTEM == "Linux" ) then
-###  setenv G4SYSTEM "Linux-g++"
-  setenv G4SYSTEM "Linux-egcs"
+  # check compiler version
+  set COMPILER = "g++"
+  ${COMPILER} -v >& /tmp/g4compiler
+  if ( "`cat /tmp/g4compiler | grep 2.96 `" != "" ) then
+    echo "WARNING: Found version of 'g++' (2.96.XXX) is known to be buggy!"
+  endif   
+  if ( "`cat /tmp/g4compiler | grep egcs `" != "" ) then
+    setenv G4SYSTEM "Linux-egcs"
+  else   
+    setenv G4SYSTEM "Linux-g++"
+  endif  
+  rm /tmp/g4compiler
 endif
 if ( $SYSTEM == "OSF1" ) then
   setenv G4SYSTEM "DEC-cxx"
@@ -243,6 +260,19 @@ if ( "$VERBOSE" == "YES" ) then
   endif
 endif
 
+#
+# Geant4_mc  
+# ==================================
+#
+if ( "$VERBOSE" == "YES" ) then
+  echo " "
+  echo "Geant4_mc env. variables..."
+  echo "============================"
+endif
+setenv MCINSTALL ${G4MC_BASE}/geant4_mc
+if ( "$VERBOSE" == "YES" ) then
+  echo "geant4_mc base directory: $MCINSTALL"
+endif
 
 #
 # CLHEP
@@ -623,7 +653,13 @@ if ( "`echo ${SHLIBVAR} | grep ${G4INSTALL}/lib/${G4SYSTEM} `" == "" ) then
   if ( "$VERBOSE" == "YES" ) then
     echo Adding ${G4INSTALL}/lib/${G4SYSTEM} to the shared libraries path...
   endif
-  set SHLIBVAR="${MCINSTALL}/lib/${G4SYSTEM}:${G4INSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
+  set SHLIBVAR="${G4INSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
+endif
+if ( "`echo ${SHLIBVAR} | grep ${MCINSTALL}/lib/${G4SYSTEM} `" == "" ) then
+  if ( "$VERBOSE" == "YES" ) then
+    echo Adding ${MCINSTALL}/lib/${G4SYSTEM} to the shared libraries path...
+  endif
+  set SHLIBVAR="${MCINSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
 endif
 if ( "`echo ${SHLIBVAR} | grep ${CLHEP_BASE_DIR}/lib `" == "" ) then
   if ( "$VERBOSE" == "YES" ) then
