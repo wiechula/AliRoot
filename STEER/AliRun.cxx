@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.82.4.1  2002/06/10 14:43:06  hristov
+Merged with v3-08-02
+
 Revision 1.86  2002/05/28 14:24:57  hristov
 Correct warning messages
  
@@ -2036,12 +2039,6 @@ TTree* AliRun::TreeK() {
   return fStack->TreeK();
 }
 
-
-//___________________________________________________________________________
-void AliRun::SetGenEventHeader(AliGenEventHeader* header)
-{
-    fHeader->SetGenEventHeader(header);
-}
 
 //___________________________________________________________________________
 void AliRun::SetGenEventHeader(AliGenEventHeader* header)
