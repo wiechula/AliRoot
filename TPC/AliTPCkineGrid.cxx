@@ -15,6 +15,10 @@
 
 /*
 $Log$
+Revision 1.1  2002/05/08 18:19:50  kowal2
+New class by Andrea Dainese. It deals with the parameters used by
+AliTPCtrackerParam (efficiences, pulls etc)
+
 */
 
 ////////////////////////////////////////////////////////////////////////
@@ -27,10 +31,14 @@ $Log$
 //  Origin: Andrea Dainese, Padova - e-mail: andrea.dainese@pd.infn.it
 ////////////////////////////////////////////////////////////////////////
 
+//-- standard headers -----
 #include <iostream.h>
+//--- Root headers --------
 #include <TMatrixD.h>
 #include <TArrayD.h>
+//-- AliRoot headers ------
 #include "AliTPCkineGrid.h"
+//-------------------------
 
 ClassImp(AliTPCkineGrid)
 
