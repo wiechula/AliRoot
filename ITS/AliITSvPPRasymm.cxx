@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.45  2001/06/07 14:42:14  barbera
+Both chip and det thicknesses set to [100,300]
+
+Revision 1.44  2001/05/31 19:24:47  barbera
+Default values of SPD detector and chip thickness set to 200 microns as defined by the Technical Board
+
+Revision 1.43  2001/05/30 16:15:47  fca
+Correct comparison wiht AliGeant3::Class() introduced. Thanks to I.Hrivnacova
+
 Revision 1.42  2001/05/30 15:55:35  hristov
 Strings compared instead of pointers
 
@@ -352,7 +361,7 @@ void AliITSvPPRasymm::CreateGeometry(){
   Float_t ddet2=300.;     // total detector thickness on layer 2 (micron)                         
   Float_t dchip2=300.;    // total chip thickness on layer 2 (micron)
   
-  Float_t dbus=200.;      // total bus thickness on both layers (micron)
+  Float_t dbus=300.;      // total bus thickness on both layers (micron)
 
   ddet1 = GetThicknessDet1();
   ddet2 = GetThicknessDet2();
@@ -371,14 +380,14 @@ void AliITSvPPRasymm::CreateGeometry(){
 	  ddet2=300.;
   }
   
-  if(dchip1 < 150. || dchip1 > 300.) {
-     cout << "ITS - WARNING: the chip thickness for layer 1 is outside the range of [150,300] microns."
+  if(dchip1 < 100. || dchip1 > 300.) {
+     cout << "ITS - WARNING: the chip thickness for layer 1 is outside the range of [100,300] microns."
 	  " The default value of 300 microns will be used." << endl;
 	  dchip1=300.;
   }
   
-  if(dchip2 < 150. || dchip2 > 300.) {
-     cout << "ITS - WARNING: the chip thickness for layer 2 is outside the range of [150,300] microns."
+  if(dchip2 < 100. || dchip2 > 300.) {
+     cout << "ITS - WARNING: the chip thickness for layer 2 is outside the range of [100,300] microns."
 	  " The default value of 300 microns will be used." << endl;
 	  dchip2=300.;
   }      
