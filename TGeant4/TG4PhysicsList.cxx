@@ -187,10 +187,9 @@ void TG4PhysicsList::PrintAllProcesses() const
   G4cout << "========================= " << endl;
  
   G4ProcessTable* processTable = G4ProcessTable::GetProcessTable();
-  G4ProcessTable::G4ProcNameVector* processNameList 
-    = processTable->GetNameList();
+  TG4StringVector* processNameList = processTable->GetNameList();
 
-  for (G4int i=0; i <processNameList->size(); i++){
+  for (G4int i=0; i <processNameList->entries(); i++){
     G4cout << "   " << (*processNameList)[i] << endl;
   }  
 }

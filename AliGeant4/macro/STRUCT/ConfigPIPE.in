@@ -1,7 +1,0 @@
-# PIPE
-
-#/aliDet/pipe/setAllSensitive true
-/aliDet/pipe/setFrame QBPM
-#/aliDet/pipe/setFrame QQMO
-/aliDet/pipe/setConfigDir STRUCT
- 
