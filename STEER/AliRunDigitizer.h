@@ -29,6 +29,7 @@ const Int_t kMaxStreamsToMerge = 4;
 class AliStream;
 class AliDigitizer;
 class AliMergeCombi;
+class AliRunLoader;
 
 class AliRunDigitizer: public TTask {
 
@@ -62,7 +63,7 @@ public:
 
   Int_t     GetNinputs() const {return fNinputs;}
   const TString& GetInputFolderName(Int_t i) const;
-  const TString& GetOutputFolderName() const;
+  const char* GetOutputFolderName();
 
     
 // Nr of particles in all input files for a given event
@@ -108,7 +109,9 @@ private:
   Int_t             fNinputs;             // nr of input streams - can be taken from the TClonesArray dimension
   Int_t             fNinputsGiven;        // nr of input streams given by user
   TClonesArray *    fInputStreams;        // input signal streams
-  AliStream*        fOutputStream;
+
+//  AliStream*        fOutputStream;
+  AliRunLoader*     fOutRunLoader;        //!
   
   AliMergeCombi *   fCombi;               // pointer to the combination object
   TArrayI           fCombination;         //! combination of events from
@@ -122,7 +125,8 @@ private:
   void              FinishGlobal();
   Int_t             fDebug;                //! specifies debug level, 0 is min
 
-
+  AliRunLoader*     GetOutRunLoader();
+  
   static const TString fgkDefOutFolderName;
   static const TString fgkBaseInFolderName;
   

@@ -88,7 +88,8 @@ class AliRunLoader: public TNamed
     Int_t       WriteAliRun(Option_t* opt="");
     Int_t       WriteKinematics(Option_t* opt="");
     Int_t       WriteTrackRefs(Option_t* opt="");
-
+    Int_t       WriteRunLoader(Option_t* opt="");
+    
     Int_t       WriteHits(Option_t* opt=""); 
     Int_t       WriteSDigits(Option_t* opt="");
     Int_t       WriteDigits(Option_t* opt="");
@@ -122,6 +123,8 @@ class AliRunLoader: public TNamed
     void        SetDirName(TString& dirname);
     Int_t       GetFileOffset() const;
     void        SetNumberOfEventsPerFile(Int_t nevpf){fNEventsPerFile = nevpf;}
+    
+    const TObjArray* GetArrayOfLoaders() const {return fLoaders;}
   protected:
     TObjArray     *fLoaders;          //  List of Detectors
     TFolder       *fEventFolder;      //!top folder for this run

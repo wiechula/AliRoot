@@ -905,7 +905,7 @@ Int_t AliRunLoader::WriteDigits(Option_t* opt)
   TIter next(fLoaders);
   AliLoader *loader;
   while((loader = (AliLoader*)next()))
-   {
+   { 
      res = loader->WriteDigits(opt);
      if (res)
       {
@@ -952,6 +952,14 @@ Int_t AliRunLoader::WriteTracks(Option_t* opt)
       }
    }
   return result;
+}
+/**************************************************************************/
+
+Int_t AliRunLoader::WriteRunLoader(Option_t* opt="")
+{
+  CdGAFile();
+  this->Write(0,TObject::kOverwrite);
+  return 0;
 }
 /**************************************************************************/
 
@@ -1424,6 +1432,7 @@ void AliRunLoader::UnloadgAlice()
 
 void  AliRunLoader::MakeTrackRefsContainer()
 {
+// Makes a tree for Track References
   if (TreeTR()) return;
   TTree* tree = new TTree(fgkTrackRefsContainerName,"Tree with Track References");
   GetEventFolder()->Add(tree);
@@ -1477,16 +1486,22 @@ void  AliRunLoader::SetDirName(TString& dirname)
    }
 
 }
+/*****************************************************************************/ 
+
 Int_t AliRunLoader::OpenKineFile(Option_t* opt)
  {
  //Opens file with kinematicss
    return OpenDataFile(SetFileOffset(fKineFileName),fKineFile,fKineDir,opt);
  }
+/*****************************************************************************/ 
+
 Int_t AliRunLoader::OpenTrackRefsFile(Option_t* opt)
  {
   //opens file with Track References
    return OpenDataFile(SetFileOffset(fTrackRefsFileName),fTrackRefsFile,fTrackRefsDir,opt);
  }
+/*****************************************************************************/ 
+
 Int_t AliRunLoader::GetFileOffset() const
 {
   return fCurrentEvent%fNEventsPerFile;
@@ -1495,18 +1510,16 @@ Int_t AliRunLoader::GetFileOffset() const
 /*****************************************************************************/ 
 const TString AliRunLoader::SetFileOffset(const TString& fname)
 {
-return fname;
-
-/*  Int_t offset = GetFileOffset();
+  Long_t offset = (Long_t)GetFileOffset();
   if (offset < 1) return fname;
   TString soffset;
   soffset += offset;//automatic conversion to string
   TString dotroot(".root");
-  const TString& offfsetdotroot = offset+dotroot;
-  TString out = fname.ReplaceAll(dotroot,offfsetdotroot);
+  const TString& offfsetdotroot = offset + dotroot;
+  TString out = fname;
+  out = out.ReplaceAll(dotroot,offfsetdotroot);
   cout<<"AliLoader::SetFileOffset: in="<<fname<<" out="<<out<<endl;
   return out;
-*/
 }
 
 /*****************************************************************************/ 

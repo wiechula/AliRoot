@@ -2010,17 +2010,19 @@ void  AliLoader::SetDirName(TString& dirname)
 const TString AliLoader::SetFileOffset(const TString& fname)
 {
 
-return fname;
-/*  Int_t offset = GetRunLoader()->GetFileOffset();
+//return fname;
+  Long_t offset = (Long_t)GetRunLoader()->GetFileOffset();
   if (offset < 1) return fname;
+
   TString soffset;
   soffset += offset;//automatic conversion to string
   TString dotroot(".root");
-  const TString& offfsetdotroot = offset+dotroot;
-  TString out = fname.ReplaceAll(dotroot,offfsetdotroot);
+  const TString& offfsetdotroot = offset + dotroot;
+  TString out = fname;
+  out = out.ReplaceAll(dotroot,offfsetdotroot);
   cout<<"AliLoader::SetFileOffset: in="<<fname<<" out="<<out<<endl;
   return out;
-*/
+
 }
 
 /*****************************************************************************/ 

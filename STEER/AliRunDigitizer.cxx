@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.13.4.2  2002/06/18 10:18:32  hristov
+Important update (P.Skowronski)
+
 Revision 1.13.4.1  2002/05/31 09:37:59  hristov
 First set of changes done by Piotr
 
@@ -151,6 +154,8 @@ Manager class for merging/digitization
 #include "TParticle.h"
 #include "AliStream.h"
 #include "AliMergeCombi.h"
+#include "AliRunLoader.h"
+#include "AliLoader.h"
 
 ClassImp(AliRunDigitizer)
 
@@ -167,8 +172,9 @@ AliRunDigitizer::AliRunDigitizer()
 // just set all pointers - data members to 0
   fInputStreams = 0x0;
   fCombi = 0x0;
-  fOutputStream = 0x0;
-  
+
+//  fOutputStream = 0x0;
+  fOutRunLoader  = 0x0;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -183,8 +189,8 @@ AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliR
   Int_t i;
   fNinputs = nInputStreams;
   
-  fOutputFileName = "./galice.root";
-//  fOutputDirName = ".";
+  fOutputFileName = "";
+  fOutRunLoader  = 0x0;
   
   fCombination.Set(kMaxStreamsToMerge);
 
@@ -201,7 +207,7 @@ AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliR
 // the first Input is open RW to be output as well
 
   new(lInputStreams[0]) AliStream(fgkBaseInFolderName + "0","UPDATE");
-  fOutputStream =  (AliStream*)lInputStreams.At(0);//redirects output to first input
+  //fOutputStream =  (AliStream*)lInputStreams.At(0);//redirects output to first input
   
   
   for (i=1;i<nInputStreams;i++) {
@@ -233,6 +239,8 @@ AliRunDigitizer::~AliRunDigitizer() {
     fCombi = 0;
    }
 
+ if (fOutRunLoader) delete fOutRunLoader;
+
 }
 ////////////////////////////////////////////////////////////////////////
 void AliRunDigitizer::AddDigitizer(AliDigitizer *digitizer)
@@ -258,7 +266,9 @@ void AliRunDigitizer::Digitize(Option_t* option)
 // take gAlice from the first input file. It is needed to access
 //  geometry data
 // If gAlice is already in memory, use it
-
+  SetDebug(10);
+  
+  
   if (!InitGlobal()) //calls Init() for all (sub)digitizers
    {
      cerr<<"False from InitGlobal"<<endl;
@@ -269,8 +279,8 @@ void AliRunDigitizer::Digitize(Option_t* option)
 // loop until there is anything on the input in case fNrOfEventsToWrite < 0
   while ((eventsCreated++ < fNrOfEventsToWrite) || (fNrOfEventsToWrite < 0)) 
    {
+     
     if (!ConnectInputTrees()) break;
-    
     InitEvent();
     ExecuteTasks(option);// loop over all registered digitizers and let them do the work
     CleanTasks();
@@ -290,7 +300,7 @@ Bool_t AliRunDigitizer::ConnectInputTrees()
     if (delta[i] == 1)
      {
       AliStream *iStream = static_cast<AliStream*>(fInputStreams->At(i));//gets the "i" defined  in combination
-      if (!iStream->NextEventInStream()) return kFALSE; //sets serial number 
+      if (!iStream->NextEventInStream()) return kFALSE; //sets serial number
      } 
     else if (delta[i] != 0) 
      {
@@ -309,7 +319,7 @@ Bool_t AliRunDigitizer::InitGlobal()
   TList* subTasks = this->GetListOfTasks();
   if (subTasks) {
     subTasks->ForEach(AliDigitizer,Init)();
-  }  
+  }
   return kTRUE;
 }
 
@@ -319,6 +329,7 @@ void AliRunDigitizer::SetOutputFile(TString fn)
 // the output will be to separate file, not to the signal file
 {
  //here should be protection to avoid setting the same file as any input 
+  cout<<"Calling AliRunDigitizer::SetOutputFile fn = "<<fn<<endl;
   fOutputFileName = fn;
   InitOutputGlobal();
 }
@@ -329,18 +340,32 @@ Bool_t AliRunDigitizer::InitOutputGlobal()
 // Creates the output file, called by InitEvent()
 
   
-  fOutputStream = new AliStream(fgkDefOutFolderName,"recreate");
-  fOutputStream->AddFile(fOutputFileName);
+//  fOutputStream = new AliStream(fgkDefOutFolderName,"recreate");
+//  fOutputStream->AddFile(fOutputFileName);
+  if ( !fOutputFileName.IsNull())
+   {
+    fOutRunLoader = AliRunLoader::Open(fOutputFileName,fgkDefOutFolderName,"recreate");
+    
+    if (fOutRunLoader == 0x0)
+     {
+       Error("InitOutputGlobal","Can not open ooutput");
+       return kFALSE;
+     }
+    AliRunLoader* inrl = AliRunLoader::GetRunLoader(GetInputFolderName(0));
+    const TObjArray* inloaders = inrl->GetArrayOfLoaders();
 
+    TIter next(inloaders);
+    AliLoader *loader;
+    while((loader = (AliLoader*)next()))
+     {
+       GetOutRunLoader()->AddLoader(loader);
+     }
+   }
+  
   if (GetDebug()>2) {
     cerr<<"AliRunDigitizer::InitOutputGlobal(): file "<<fOutputFileName<<" was opened"<<endl;
   }
 
-  if (fOutputStream->OpenNextFile() == kFALSE)
-   {
-     Error("InitOutputGlobal","Could not create output file.");
-     return kFALSE;
-   }  
 
   return kTRUE;
 }
@@ -351,13 +376,12 @@ void AliRunDigitizer::InitEvent()
 {
 //redirects output properly
   if (GetDebug()>2)
+   {
     cerr<<"AliRunDigitizer::InitEvent: fEvent = "<<fEvent<<endl;
+    cout<<"fOutputFileName "<<fOutputFileName<<endl;
+   }
 
 // if fOutputFileName was not given, write output to signal directory
-  if (fOutputFileName == "")
-   {
-     fOutputStream = (AliStream*)fInputStreams->At(0);
-   }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -366,10 +390,11 @@ void AliRunDigitizer::FinishEvent()
 // called at the end of loop over digitizers
 
   Int_t i;
-  AliRunLoader* outRN = AliRunLoader::GetRunLoader(fOutputStream->GetFolderName());
-  if (outRN == 0x0)
+  
+
+  if (GetOutRunLoader() == 0x0)
    {
-     Error("FinishEvent","Can not get RunLoader from Output Stream folder");
+     Error("FinishEvent","fOutRunLoader is null");
      return;
    }
   
@@ -383,7 +408,7 @@ void AliRunDigitizer::FinishEvent()
     
     i = fCopyTreesFromInput;
 
-    TFolder* outfolder = outRN->GetEventFolder();
+    TFolder* outfolder = GetOutRunLoader()->GetEventFolder();
     if (outfolder == 0x0)
      {
        Error("FinishEvent","Can not get Event Folder");
@@ -391,13 +416,47 @@ void AliRunDigitizer::FinishEvent()
      }
     
     AliStream* instream = (AliStream*)fInputStreams->At(fCopyTreesFromInput);
-    AliRunLoader* inRN = AliRunLoader::GetRunLoader(instream->GetFolderName());
+    AliRunLoader* inRL = AliRunLoader::GetRunLoader(instream->GetFolderName());
     
-    outfolder->Add( inRN->TreeK() );
-    outRN->WriteKinematics("OVERWRITE");
+    inRL->LoadKinematics("read");
+    outfolder->Add( inRL->TreeK() );
+    GetOutRunLoader()->WriteKinematics("OVERWRITE");
+    inRL->UnloadKinematics();
+    GetOutRunLoader()->UnloadKinematics();
     
-//    outfolder->Add( inRN->TreeH() );
-//    outRN->WriteKine("OVERWRITE");
+    inRL->LoadTrackRefs("read");
+    outfolder->Add( inRL->TreeTR() );
+    GetOutRunLoader()->WriteTrackRefs("OVERWRITE");
+    inRL->UnloadTrackRefs();
+    GetOutRunLoader()->UnloadTrackRefs();
+    
+    const TObjArray* inloaders = inRL->GetArrayOfLoaders();
+    const TObjArray* outloaders = GetOutRunLoader()->GetArrayOfLoaders();
+    
+    TIter next(inloaders);
+    AliLoader *inloader;
+    while((inloader = (AliLoader*)next()))
+     {
+       //find detector loader in out RL corresponding to inloader
+       AliLoader* outloader =  dynamic_cast<AliLoader*>(outloaders->FindObject(inloader->GetName()));
+       if (outloader == 0x0)
+        {
+          Warning("FinishEvent","Can not find %s in out Out Run Loader");
+          continue;
+        }
+       
+       inloader->LoadHits("read");//load hits in read mode for input
+       outfolder = outloader->GetDetectorDataFolder();//get folder for detector data
+       outfolder->Add(inloader->TreeH());//put in out folder tree from in
+       outloader->WriteHits("OVERWRITE");//write out 
+
+       inloader->UnloadHits();
+       outloader->UnloadHits();
+       
+     }
+
+//    outfolder->Add( inRL->TreeH() );
+//    GetOutRunLoader()->WriteKine("OVERWRITE");
       
    }
 }
@@ -407,19 +466,18 @@ void AliRunDigitizer::FinishGlobal()
 // called at the end of Exec
 // save unique objects to the output file
 
-  AliRunLoader* outRN = AliRunLoader::GetRunLoader(fOutputStream->GetFolderName());
-  if (outRN == 0x0)
+  if (GetOutRunLoader() == 0x0)
    {
      Error("FinishGlobal","Can not get RunLoader from Output Stream folder");
      return;
    }
-  outRN->CdGAFile();
+  GetOutRunLoader()->CdGAFile();
   
   this->Write(0,TObject::kOverwrite);
    
   if (fCopyTreesFromInput > -1) 
    {
-    TFolder* outfolder = outRN->GetEventFolder();
+    TFolder* outfolder = GetOutRunLoader()->GetEventFolder();
     if (outfolder == 0x0)
      {
        Error("FinishEvent","Can not get Event Folder");
@@ -429,10 +487,10 @@ void AliRunDigitizer::FinishGlobal()
     AliRunLoader* inRN = AliRunLoader::GetRunLoader(instream->GetFolderName());
     
     outfolder->Add ( inRN->GetAliRun() );
-    outRN->WriteAliRun();
+    GetOutRunLoader()->WriteAliRun();
 
     outfolder->Add ( inRN->TreeE() );
-    outRN->WriteHeader();
+    GetOutRunLoader()->WriteHeader();
 
    }
  
@@ -562,8 +620,21 @@ const TString& AliRunDigitizer::GetInputFolderName(Int_t i) const
   return stream->GetFolderName();
 }
 ////////////////////////////////////////////////////////////////////////
-const TString& AliRunDigitizer::GetOutputFolderName() const
+const char* AliRunDigitizer::GetOutputFolderName()
 {
-  return fOutputStream->GetFolderName();
+  return GetOutRunLoader()->GetEventFolder()->GetName();
 }
 
+
+AliRunLoader* AliRunDigitizer::GetOutRunLoader()
+{
+  if (fOutRunLoader) return fOutRunLoader;
+  
+  if ( fOutputFileName.IsNull() )
+   {//guard that sombody calls it without settting file name
+    cout<<"Output file name is empty. Using Input 0 for output\n";
+    return AliRunLoader::GetRunLoader(GetInputFolderName(0));
+   }
+  InitOutputGlobal();
+  return fOutRunLoader;
+}
