@@ -69,7 +69,7 @@ ALIBRARY	= $(LIBDIR)/libHBTAN.a
 default:	$(SLIBRARY)
 
 
-$(LIBDIR)/libHBTAN.$(SL):		$(OBJS)
+$(LIBDIR)/libHBTAN.$(SL): $(OBJS) $(FOBJS)
 
 $(DICT):			$(HDRS)
 
