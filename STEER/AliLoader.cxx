@@ -1337,7 +1337,7 @@ TDirectory* AliLoader::ChangeDir(TFile* file, Int_t eventno)
 
  TString dirname("Event");
  dirname+=eventno;
- cout<<" AliLoader::ChangeDir Changing Dir to "<<dirname<<endl;
+ cout<<" AliLoader::ChangeDir Changing Dir to "<<dirname<<" in file "<<file->GetName()<<endl;
 
  Bool_t result;
  
@@ -1616,7 +1616,7 @@ Int_t AliLoader::PostRecPoints()
    }
   else
    {
-    Warning("PostRecPoints","Can not find TreeH in file %s",fRecPointsFile->GetName());
+    Warning("PostRecPoints","Can not find TreeR in file %s",fRecPointsFile->GetName());
     return 1;
    }
 }

@@ -17,6 +17,9 @@
 
 /*
 $Log$
+Revision 1.81.2.4  2002/06/24 16:17:09  hristov
+First reset and then begin event
+
 Revision 1.81.2.3  2002/06/18 10:18:32  hristov
 Important update (P.Skowronski)
 
@@ -413,7 +416,18 @@ AliRun::~AliRun()
   //
   // Default AliRun destructor
   //
-
+  if (fRunLoader)
+   {
+    TFolder* evfold = fRunLoader->GetEventFolder();
+    TFolder* modfold = dynamic_cast<TFolder*>(evfold->FindObjectAny(AliConfig::GetModulesFolderName()));
+    TIter next(fModules);
+    AliModule *mod;
+    while((mod = (AliModule*)next()))
+     { 
+       modfold->Remove(mod);
+     }
+   }
+   
   delete fImedia;
   delete fField;
   delete fMC;
@@ -421,10 +435,13 @@ AliRun::~AliRun()
   delete fDisplay;
   delete fGenerator;
   delete fLego;
+  
+  
   if (fModules) {
     fModules->Delete();
     delete fModules;
   }
+  
   delete fHitLists;
   delete fPDGDB;
   delete fMCQA;
@@ -684,7 +701,6 @@ void AliRun::FinishEvent()
 void AliRun::InitLoaders()
 {
   //creates list of getters
-  
   TIter next(fModules);
   AliModule *mod;
   while((mod = (AliModule*)next()))

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.16.6.3  2002/06/18 10:18:31  hristov
+Important update (P.Skowronski)
+
 Revision 1.16.6.2  2002/06/06 14:18:33  hristov
 Merged with v3-08-02
 
@@ -174,6 +177,12 @@ AliDetector::~AliDetector()
     fDigits     = 0;
   }
   if (fDigitsFile) delete [] fDigitsFile;
+
+  if (fLoader)
+   {
+    fLoader->GetModulesFolder()->Remove(this);
+   }
+
 }
 
 //_____________________________________________________________________________

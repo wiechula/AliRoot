@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.18.4.2  2002/06/06 14:18:33  hristov
+Merged with v3-08-02
+
 Revision 1.18.4.1  2002/05/31 09:37:59  hristov
 First set of changes done by Piotr
 
@@ -176,6 +179,7 @@ AliModule::~AliModule()
   // Delete TArray objects
   delete fIdtmed;
   delete fIdmate;
+
 }
  
 //_____________________________________________________________________________

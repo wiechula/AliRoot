@@ -1421,7 +1421,7 @@ void AliRunLoader::UnloadHeader()
 {
  //removes TreeE from folder and deletes it
  // as well as fHeader object
- if (GetEventFolder()) GetEventFolder()->Remove(TreeE());
+ CleanHeader();
  delete fHeader;
  fHeader = 0x0;
 }
