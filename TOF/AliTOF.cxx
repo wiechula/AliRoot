@@ -15,6 +15,18 @@
 
 /*
 $Log$
+Revision 1.34.2.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
+Revision 1.37  2002/05/03 07:34:19  vicinanz
+Updated SDigitizer; Added AliTOFanalyzeSDigits.C macro
+
+Revision 1.36  2002/04/19 14:40:51  vicinanz
+Updated SDigitizer
+
+Revision 1.35  2002/03/21 13:52:53  vicinanz
+Minor changes to AliTOF constructor
+
 Revision 1.34  2002/02/20 13:41:38  hristov
 Default arguments set only in the header file
 
@@ -145,11 +157,12 @@ Introduction of the Copyright and cvs Log
 #include "TFolder.h"
 #include "TTask.h"
 
+
 #include "AliRun.h"
 #include "AliMC.h"
 #include "AliMagF.h"
 #include "AliConst.h"
-
+#include "AliLoader.h"
  
 ClassImp(AliTOF)
  
@@ -159,16 +172,19 @@ AliTOF::AliTOF()
   //
   // Default constructor
   //
-  fFGeom = 0;
-  fDTask = 0;
-  fReTask = 0;
-  fSDigits       = 0 ;
-  fReconParticles = 0;
-  fMerger = 0;
-
+  fFGeom = 0x0;
+  fDTask = 0x0;
+  fReTask = 0x0;
   fIshunt   = 0;
-  fDigits        = 0 ;
+  fSDigits= 0 ;
+  fNSDigits = 0;
+  fDigits = 0;
+  fReconParticles = 0x0;
   fName="TOF";
+  fMerger = 0x0;
+/* fp
+  CreateTOFFolders();
+*/
 }
  
 //_____________________________________________________________________________
@@ -199,6 +215,13 @@ AliTOF::AliTOF(const char *name, const char *title, Option_t *option)
   fIshunt  = 0;
   fSDigits       = new TClonesArray("AliTOFSDigit",  1000);
   fDigits        = new TClonesArray("AliTOFdigit",  1000);
+
+  fFGeom = 0x0;
+  fDTask = 0x0;
+  fReTask = 0x0;
+  fReconParticles = 0x0;
+  fMerger = 0x0;
+
   //
   // Digitization parameters
   //
@@ -321,7 +344,7 @@ AliTOF::~AliTOF()
     }
   if (fSDigits)
     {
-      fSDigits->Delete ();
+      fSDigits->Delete();
       delete fSDigits;
       fSDigits = 0;
     }
@@ -387,8 +410,7 @@ void AliTOF::SetTreeAddress ()
   AliDetector::SetTreeAddress ();
 
   TBranch *branch;
-  TTree *treeD = gAlice->TreeD ();
-
+  TTree *treeD = fLoader->TreeD();
 
   if (treeD)
     {
@@ -403,16 +425,16 @@ void AliTOF::SetTreeAddress ()
 //  if (fSDigits)
     //  fSDigits->Clear ();
 
-  if (gAlice->TreeS () && fSDigits)
+  if (fLoader->TreeS () && fSDigits)
     {
-      branch = gAlice->TreeS ()->GetBranch ("TOF");
+      branch = fLoader->TreeS ()->GetBranch ("TOF");
       if (branch)
-	branch->SetAddress (&fSDigits);
+        branch->SetAddress (&fSDigits);
     }
 
-  if (gAlice->TreeR() && fReconParticles) 
+  if (fLoader->TreeR() && fReconParticles) 
     {
-      branch = gAlice->TreeR()->GetBranch("TOF"); 
+      branch = fLoader->TreeR()->GetBranch("TOF"); 
       if (branch) branch->SetAddress(&fReconParticles) ;
     }   
 }
@@ -782,9 +804,9 @@ void AliTOF::Hits2SDigits()
   cout<<"ALiTOF::Hits2SDigits> start...\n";
   //#endif
   
-  char * fileSDigits = 0 ;
+  //char * fileSDigits = 0 ;
   char * fileHeader = 0;
-  AliTOFSDigitizer * sd = new AliTOFSDigitizer(fileHeader,fileSDigits) ;
+  AliTOFSDigitizer * sd = new AliTOFSDigitizer(fileHeader) ;
 
   sd->Exec("") ;
   sd->Print("");
@@ -993,3 +1015,20 @@ void AliTOF::Raw2Digits(Int_t evNumber)
   tD->Write(0,TObject::kOverwrite);
 } 
 
+////////////////////////////////////////////////////////////////////////
+void AliTOF::RecreateSDigitsArray() {
+//
+// delete TClonesArray fSDigits and create it again
+//  needed for backward compatability with PPR test production
+//
+  delete fSDigits;
+  fSDigits       = new TClonesArray("AliTOFSDigit",  1000);
+}
+////////////////////////////////////////////////////////////////////////
+void AliTOF::CreateSDigitsArray() {
+//
+// create TClonesArray fSDigits
+//  needed for backward compatability with PPR test production
+//
+  fSDigits       = new TClonesArray("AliTOFSDigit",  1000);
+}
