@@ -28,16 +28,40 @@ Revision 1.1.2.1  2000/09/22 14:47:52  cblume
 Add the tracking code
 
 */
+ 
+///////////////////////////////////////////////////////////////////////////////
+//                                                                           //
+//  TRD cluster                                                              //
+//                                                                           //
+/////////////////////////////////////////////////////////////////////////////// 
 
 #include "AliTRDcluster.h"
-#include "AliTRDgeometry.h"
 #include "AliTRDrecPoint.h"
 
 ClassImp(AliTRDcluster)
  
+//_____________________________________________________________________________
+AliTRDcluster::AliTRDcluster() 
+{
+  //
+  // Default constructor
+  //
+
+  fDetector  = 0;
+  fTimeBin   = 0;
+  fTracks[0] = 0;
+  fTracks[1] = 0;
+  fTracks[2] = 0; 
+  fY         = 0;
+  fZ         = 0;
+  fQ         = 0;
+  fSigmaY2   = 0;
+  fSigmaZ2   = 0;
+
+}
 
 //_____________________________________________________________________________
-  AliTRDcluster::AliTRDcluster(const AliTRDrecPoint &p):AliCluster()
+AliTRDcluster::AliTRDcluster(const AliTRDrecPoint &p)
 {
   //
   // Constructor from AliTRDrecPoint
@@ -63,26 +87,60 @@ ClassImp(AliTRDcluster)
 }
 
 //_____________________________________________________________________________
-AliTRDcluster::AliTRDcluster(const AliTRDcluster &c):AliCluster()
+AliTRDcluster::AliTRDcluster(const AliTRDcluster &c)
 {
   //
   // Copy constructor 
   //
 
-  fTracks[0]  = c.GetLabel(0);
-  fTracks[1]  = c.GetLabel(1);
-  fTracks[2]  = c.GetLabel(2);
-
-  fY          = c.GetY();
-  fZ          = c.GetZ();
-  fSigmaY2    = c.GetSigmaY2();
-  fSigmaZ2    = c.GetSigmaZ2();  
-
-  fDetector   = c.GetDetector();
-  fTimeBin    = c.GetLocalTimeBin();
-  fQ          = c.GetQ();
+  ((AliTRDcluster &) c).Copy(*this);
 
 }
+
+//_____________________________________________________________________________
+AliTRDcluster::~AliTRDcluster()
+{
+  //
+  // AliTRDcluster destructor
+  //
+
+}
+
+//_____________________________________________________________________________
+AliTRDcluster &AliTRDcluster::operator=(const AliTRDcluster &c)
+{
+  //
+  // Assignment operator
+  //
+
+  if (this != &c) ((AliTRDcluster &) c).Copy(*this);
+  return *this;
+
+}
+
+//_____________________________________________________________________________
+void AliTRDcluster::Copy(TObject &c)
+{
+  //
+  // Copy function
+  //
+
+  ((AliTRDcluster &) c).fDetector   = fDetector;
+  ((AliTRDcluster &) c).fTimeBin    = fTimeBin;
+
+  ((AliTRDcluster &) c).fTracks[0]  = fTracks[0];
+  ((AliTRDcluster &) c).fTracks[1]  = fTracks[1];
+  ((AliTRDcluster &) c).fTracks[2]  = fTracks[2];
+
+  ((AliTRDcluster &) c).fQ          = fQ;
+
+  ((AliTRDcluster &) c).fY          = fY;
+  ((AliTRDcluster &) c).fZ          = fZ;
+  ((AliTRDcluster &) c).fSigmaY2    = fSigmaY2;
+  ((AliTRDcluster &) c).fSigmaZ2    = fSigmaZ2;  
+
+}
+
 
 //_____________________________________________________________________________
 void AliTRDcluster::AddTrackIndex(Int_t *track)
@@ -96,37 +154,38 @@ void AliTRDcluster::AddTrackIndex(Int_t *track)
   //     ones are stored first;
   //
 
-  const Int_t size = 9;
+  const Int_t kSize = 9;
 
-  Int_t entries[size][2], i, j, index;
+  Int_t entries[kSize][2], i, j, index;
 
-  Bool_t index_added;
+  Bool_t indexAdded;
 
-  for (i=0; i<size; i++) {
+  for (i=0; i<kSize; i++) {
     entries[i][0]=-1;
     entries[i][1]=0;
-  }                                 
+  }
 
-  for (Int_t k=0; k<size; k++) {
+  for (Int_t k=0; k<kSize; k++) {
     index=track[k];
-    index_added=kFALSE; j=0;
+    indexAdded=kFALSE; 
+    j=0;
     if (index >= 0) {
-      while ( (!index_added) && ( j < size ) ) {
+      while ( (!indexAdded) && ( j < kSize ) ) {
         if ((entries[j][0]==index) || (entries[j][1]==0)) {
           entries[j][0]=index;
           entries[j][1]=entries[j][1]+1;
-          index_added=kTRUE;
+          indexAdded=kTRUE;
         }
         j++;
       }
     }
-  }             
+  }
 
   // sort by number of appearances and index value
   Int_t swap=1, tmp0, tmp1;
   while ( swap > 0) {
     swap=0;
-    for(i=0; i<(size-1); i++) {
+    for(i=0; i<(kSize-1); i++) {
       if ((entries[i][0] >= 0) && (entries[i+1][0] >= 0)) {
         if ((entries[i][1] < entries[i+1][1]) ||
             ((entries[i][1] == entries[i+1][1]) &&
@@ -141,12 +200,14 @@ void AliTRDcluster::AddTrackIndex(Int_t *track)
         }
       }
     }
-  }               
+  }
 
   // set track indexes
-  for(i=0; i<3; i++) SetLabel(entries[i][0],i);
+  for(i=0; i<3; i++) {
+    fTracks[i] = entries[i][0];
+  }
 
   return;
 
-}          
+}
 

@@ -170,6 +170,8 @@ AliPHOSv1::~AliPHOSv1()
     fHits = 0 ; 
   }
   
+  delete fTreeQA ; 
+
   if ( fQAHitsMulB ) {
     fQAHitsMulB->Delete() ;
     delete fQAHitsMulB ; 

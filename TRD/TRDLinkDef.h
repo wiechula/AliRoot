@@ -32,7 +32,9 @@
 #pragma link C++ class  AliTRDdataArrayF+;
 #pragma link C++ class  AliTRDsim+;
 #pragma link C++ class  AliTRDpoints+;
-#pragma link C++ class  AliTRDtrack+;
+#pragma link C++ class  AliTRDtimeBin+;
+#pragma link C++ class  AliTRDtrackingSector+;
+#pragma link C++ class  AliTRDtrack-;
 #pragma link C++ class  AliTRDtracker+;
 #pragma link C++ class  AliTRDtrackHits+;
 #pragma link C++ class  AliTRDcluster+;

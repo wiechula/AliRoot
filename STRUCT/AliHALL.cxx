@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.15  2002/05/28 08:47:38  morsch
-Reduces size of pillars to avoid overlap with DIPO.
-
 Revision 1.14  2001/11/16 12:38:26  morsch
 Reverse z-ordering in HMBS. (I. Hrivnacova)
 
@@ -325,9 +322,9 @@ void AliHALL::CreateGeometry()
   gMC->Gsvolu("HMBU", "PGON", idtmed[1954], ppgon, 10);
 
   gMC->Gspos("HMBU", 1, "HMBT", 0., -70., 0., 0, "ONLY");
-
+*/
   gMC->Gspos("HMBT", 1, "ALIC", 0.,  70., 0., 0, "ONLY");
-*/  
+  
 }
 
 //_____________________________________________________________________________

@@ -33,8 +33,6 @@ class AliDigitizer: public TTask {
 //    virtual void Digitize() = 0;
 
  protected:
-    Int_t GetNInputStreams() const;
-
     AliRunDigitizer *fManager;
     
     ClassDef(AliDigitizer,1) // Base class for detector digitizers

@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.20  2001/10/30 12:18:45  morsch
-Place station 3 into DDIP only if DDIP is present.
-
 Revision 1.19  2001/07/17 09:51:38  morsch
 Place station 3 inside Dipole.
 
@@ -134,12 +131,12 @@ void AliMUONv0::CreateGeometry()
 	 dAlu=iChamber->DAlu();
 	 if (ch < AliMUONConstants::NTrackingCh()) {
 	   // tracking chambers
-	     sprintf(alu,"SA0%1d",ch);
-	     sprintf(gas,"SG0%1d",ch);	 
+	     sprintf(alu,"CA0%1d",ch);
+	     sprintf(gas,"CG0%1d",ch);	 
 	 } else {
 	   // trigger chambers
-	     sprintf(alu,"SA%2d",ch);
-	     sprintf(gas,"SG%2d",ch);	 
+	     sprintf(alu,"CA%2d",ch);
+	     sprintf(gas,"CG%2d",ch);	 
 	 }
 //
 	 tpar[0] = iChamber->RInner(); 
@@ -203,10 +200,10 @@ void AliMUONv0::Init()
 // Set sensitive volume Id
 	if (i < AliMUONConstants::NTrackingCh()) {
 	    // tracking chambers
-	    sprintf(vName,"SG0%1d",i);	 
+	    sprintf(vName,"CG0%1d",i);	 
 	} else {
 	    // trigger chambers
-	    sprintf(vName,"SG%2d",i);	 
+	    sprintf(vName,"CG%2d",i);	 
 	}
 	((AliMUONChamber*) (*fChambers)[i])->SetGid(gMC->VolId(vName));
     }

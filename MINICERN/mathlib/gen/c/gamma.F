@@ -2,9 +2,6 @@
 * $Id$
 *
 * $Log$
-* Revision 1.1  1999/05/18 15:55:34  fca
-* Initial revision
-*
 * Revision 1.1.1.1  1996/04/01 15:01:54  mclareni
 * Mathlib gen
 *

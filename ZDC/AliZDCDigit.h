@@ -10,9 +10,9 @@
 //
 //_________________________________________________________________________
 
-#include<TObject.h>
+#include "AliDigitNew.h"
 
-class AliZDCDigit : public TObject {
+class AliZDCDigit : public AliDigitNew {
 
  public:
   
@@ -51,9 +51,8 @@ class AliZDCDigit : public TObject {
      fSector[0], fSector[1], fADCValue);
   }
     
-  ClassDef(AliZDCDigit,3)   // Digits in ZDC 
+  ClassDef(AliZDCDigit,2)   // Digits in ZDC 
 
 } ;
 
 #endif //  ALIZDCDIGIT_H
-

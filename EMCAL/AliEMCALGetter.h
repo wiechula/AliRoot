@@ -20,7 +20,6 @@
 #include "TClonesArray.h"
 #include "TFolder.h"  
 #include "TTree.h"
-#include "TFile.h"
 class TString ;
 class TParticle ;
 class TTask ;
@@ -62,10 +61,7 @@ class AliEMCALGetter : public TObject {
   
   virtual ~AliEMCALGetter() ; 
   
-  void CloseFile() ;  
-  const TFolder * Folder(const TString what) const ;
   const Bool_t HasFailed(void) const {return fFailed ;} 
-  Bool_t PostPrimaries(void ) const ;  
   Bool_t PostHits(void ) const ;  
   Bool_t PostSDigits(      const char * name,  const char * file = 0) const ;  
   Bool_t PostDigits(       const char * name ) const ;  
@@ -112,12 +108,10 @@ class AliEMCALGetter : public TObject {
   
   
   // Hits
-  TTree *               TreeH(TString filename="") ; 
   const TClonesArray *  Hits(void) { return static_cast<const TClonesArray*>(ReturnO("Hits")) ; }
-  const AliEMCALHit *   Hit(Int_t index)  { return static_cast<const AliEMCALHit*>(Hits()->At(index) );}
+  const AliEMCALHit * Hit(Int_t index)  { return static_cast<const AliEMCALHit*>(Hits()->At(index) );}
   
   // SDigits
-  TTree *         TreeS(TString filename="") ; 
   TClonesArray *  SDigits(const char * name = 0, const char * file=0) { 
     return static_cast<TClonesArray*>(ReturnO("SDigits", name, file)) ; 
   }
@@ -128,8 +122,7 @@ class AliEMCALGetter : public TObject {
   }
  
   // Digits
-  TTree *         TreeD(TString filename="") ; 
-  TClonesArray *  Digits(const char * name = 0)const  { 
+   TClonesArray *  Digits(const char * name = 0)const  { 
     return static_cast<TClonesArray*>(ReturnO("Digits", name)) ; 
   }
   const AliEMCALDigit *  Digit(Int_t index) { return static_cast<const AliEMCALDigit *>(Digits()->At(index)) ;}
@@ -163,14 +156,10 @@ class AliEMCALGetter : public TObject {
       //             { return (AliEMCALPID*)(ReturnT("PID", name)) ; }
 
   // Primaries
-  TTree *                     TreeK(TString filename="") ; 
   const TParticle *           Primary(Int_t index) const ;
   const Int_t                 NPrimaries()const { return fNPrimaries; }
 
-  void RemoveTask(TString opt, TString name) const ;
-  void RemoveObjects(TString opt, TString name) const ; 
-  void RemoveSDigits() const ; 
-  void SetDebug(Int_t level) {fDebug = level;} // Set debug level
+  void  SetDebug(Int_t level) {fDebug = level;} // Set debug level
 
   AliEMCALGetter & operator = (const AliEMCALGetter & ) {
     // assignement operator requested by coding convention, but not needed
@@ -194,7 +183,6 @@ class AliEMCALGetter : public TObject {
   //void ReadTreeQA() ;
   void ReadPrimaries() ;
 
-  TObject ** PrimariesRef(void) const ;
   TObject ** HitsRef(void) const ;
   TObject ** SDigitsRef(const char * name, const char * file = 0 ) const;
   TObject ** DigitsRef (const char * name)   const ;
@@ -224,13 +212,11 @@ class AliEMCALGetter : public TObject {
   Bool_t         fFailed ;            //! true if file is not opened and/or galice not found
   Int_t          fDebug ;             // Debug level
 
-  AliRun *       fAlice ;             //! needed to read TreeK if in an other file than fHeaderFile
   Int_t          fNPrimaries ;        //! # of primaries
   
   TObjArray *    fPrimaries ;         //! list of lists of primaries-for the case of mixing
 
   TFolder *      fModuleFolder ;      //!Folder that contains the modules 
-  TFolder *      fPrimariesFolder ;   //!Folder that contains the Primary Particles 
   TFolder *      fHitsFolder ;        //!Folder that contains the Hits 
   TFolder *      fSDigitsFolder ;     //!Folder that contains the SDigits 
   TFolder *      fDigitsFolder ;      //!Folder that contains the Digits 

@@ -4,6 +4,5 @@ ClassImp(AliITStrackV2Pid)
 
 AliITStrackV2Pid::AliITStrackV2Pid()
 {
-    fWpi=fWk=fWp=0.;
-    fPcode=0; fMom=0.; fSignal=0;
+    fWpi=fWk=fWp=-1.;
 }

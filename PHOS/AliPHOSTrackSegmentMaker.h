@@ -14,10 +14,10 @@
 
 // --- ROOT system ---
 #include "TTask.h"
-class TFile ; 
+
 
 // --- Standard library ---
-#include <iostream.h>
+#include <iostream>
 
 // --- AliRoot header files ---
 
@@ -32,7 +32,9 @@ public:
   AliPHOSTrackSegmentMaker() ;                     
   AliPHOSTrackSegmentMaker(const char* headerFile, const char* name) ;                     
   
-  virtual ~ AliPHOSTrackSegmentMaker() ;
+  virtual ~ AliPHOSTrackSegmentMaker(){
+    // dtor 
+  } 
 
   virtual void    Exec(Option_t * option){cout << "Not Defined" << endl ; } 
   virtual char*   GetRecPointsBranch ()const{cout << "Not Defined" << endl ; return 0 ; } 
@@ -45,13 +47,8 @@ public:
   //  virtual void SetMaxEmcCpvDistance(Float_t r) {cout << "Not Defined" << endl ; return 0 ; } 
   virtual void SetRecPointsBranch(const char * title){cout << "Not Defined" << endl ; } 
   virtual void SetTrackSegmentsBranch(const char * title){cout << "Not Defined" << endl ; } 
-  virtual void SetSplitFile(const TString splitFileName = "PHOS.RecData.root") const ; 
   virtual const char * Version() const {cout << "Not Defined" << endl ; return 0 ; }   
   virtual void WriteTrackSegments(Int_t event){cout << "Not Defined" << endl ; } 
-  
-protected:
-  
-  TFile * fSplitFile ;             //! file in which TrackSegments will eventually be stored
   
   ClassDef( AliPHOSTrackSegmentMaker,1)    // Algorithm class to make PHOS track segments (Base Class)
 

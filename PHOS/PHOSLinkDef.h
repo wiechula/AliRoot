@@ -52,5 +52,4 @@
 #pragma link C++ class AliPHOSClusterizerv2+;
 #pragma link C++ class AliPHOSEvalRecPoint+;
 #pragma link C++ class AliPHOSPIDv1+;
-#pragma link C++ class AliPHOSMemoryWatcher+;
 #endif

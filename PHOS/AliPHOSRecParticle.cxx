@@ -29,7 +29,7 @@
 
 
 // --- AliRoot header files ---
-#include "AliHeader.h"
+
 #include "AliPHOSRecParticle.h"
 #include "AliPHOSGetter.h" 
 #include "TParticle.h"
@@ -71,14 +71,6 @@ ClassImp(AliPHOSRecParticle)
 
 //____________________________________________________________________________
 const Int_t AliPHOSRecParticle::GetNPrimaries() const  
-{   
-  AliHeader *h = gAlice->GetHeader();
-  return  h->GetNprimary(); 
-  // return  gAlice->GetNtrack(); 
-}
-
-//____________________________________________________________________________
-const Int_t AliPHOSRecParticle::GetNPrimariesToRecParticles() const  
 { 
 
   Int_t rv = 0 ;
@@ -90,7 +82,7 @@ const Int_t AliPHOSRecParticle::GetNPrimariesToRecParticles() const
 //____________________________________________________________________________
 const TParticle * AliPHOSRecParticle::GetPrimary(Int_t index) const  
 {
-  if ( index > GetNPrimariesToRecParticles() ) { 
+  if ( index > GetNPrimaries() ) { 
     if (fDebug) 
       cout << "WARNING : AliPHOSRecParticle::GetPrimary -> " << index << " is larger that the number of primaries " 
 	   <<  GetNPrimaries() << endl ;

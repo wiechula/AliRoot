@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.33  2002/02/20 14:01:40  hristov
-Compare a TString with a string, otherwise the conversion cannot be done on Sun
-
 Revision 1.32  2002/02/13 16:58:37  cblume
 Bug fix reported by Jiri. Make atoi input zero terminated in StepManager()
 
@@ -515,6 +512,7 @@ void AliTRDv1::StepManager()
   Int_t    qTot;
 
   Float_t  hits[3];
+  Float_t  moms[3];
   Float_t  random[1];
   Float_t  charge;
   Float_t  aMass;
@@ -628,12 +626,15 @@ void AliTRDv1::StepManager()
 	// Special hits and TR photons only in the drift region
         if (drRegion) {
 
-          // Create a track reference at the entrance and
-          // exit of each chamber that contain the 
-	  // momentum components of the particle
+          // Create some special hits with amplitude 0 at the entrance and
+          // exit of each chamber that contain the momentum components of the particle
           if (gMC->IsTrackEntering() || gMC->IsTrackExiting()) {
             gMC->TrackMomentum(mom);
-            AddTrackReference(gAlice->CurrentTrack(),mom,pos);
+            moms[0] = mom[0];
+            moms[1] = mom[1];
+            moms[2] = mom[2];
+            AddHit(gAlice->CurrentTrack(),det,moms,0,kTRUE);
+            AddHit(gAlice->CurrentTrack(),det,hits,0,kTRUE); 
           }
 
           // Create the hits from TR photons

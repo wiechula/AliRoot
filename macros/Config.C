@@ -93,7 +93,7 @@ void Config()
     gAlice->SetField(-999, 2);  //Specify maximum magnetic field in Tesla (neg. ==> default field)
 
     Int_t   iABSO = 1;
-    Int_t   iCRT = 1;
+    Int_t   iCASTOR = 1;
     Int_t   iDIPO = 1;
     Int_t   iFMD = 1;
     Int_t   iFRAME = 1;
@@ -159,7 +159,7 @@ void Config()
     {
         //=================== SHIL parameters ============================
 
-        AliSHIL *SHIL = new AliSHILv2("SHIL", "Shielding");
+        AliSHIL *SHIL = new AliSHILvF("SHIL", "Shielding");
     }
 
 
@@ -288,11 +288,11 @@ void Config()
         AliZDC *ZDC = new AliZDCv2("ZDC", "normal ZDC");
     }
 
-    if (iCRT)
+    if (iCASTOR)
     {
         //=================== CASTOR parameters ============================
 
-        AliCRT *CRT = new AliCRTv0("CRT", "normal CRT");
+        AliCASTOR *CASTOR = new AliCASTORv1("CASTOR", "normal CASTOR");
     }
 
     if (iTRD)

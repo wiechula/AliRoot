@@ -15,18 +15,6 @@
 
 /*
 $Log$
-Revision 1.18  2002/07/17 08:59:39  jchudoba
-Do not delete subtasks when AliRunDigitizer is deleted. Owner should delete them itself.
-
-Revision 1.17  2002/07/16 13:47:53  jchudoba
-Add methods to get access to names of files used in merging.
-
-Revision 1.16  2002/06/07 09:18:47  jchudoba
-Changes to enable merging of ITS fast rec points. Although this class should be responsible for a creation of digits only, other solutions would be more complicated.
-
-Revision 1.15  2002/04/09 13:38:47  jchudoba
-Add const to the filename argument
-
 Revision 1.14  2002/04/04 09:28:04  jchudoba
 Change default names of TPC trees. Use update instead of recreate for the output file. Overwrite the AliRunDigitizer object in the output if it exists.
 
@@ -169,7 +157,6 @@ AliRunDigitizer::AliRunDigitizer()
 // just set all pointers - data members to 0
   fOutput = 0;
   fTreeD = 0;
-  fTreeR = 0;
   fTreeDTPC = 0;
   fTreeDTRD = 0;
   fInputStreams = 0;
@@ -218,7 +205,6 @@ AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliR
   fCombi = new AliMergeCombi(nInputStreams,sperb);
   fDebug = 0;
   fTreeD = 0;
-  fTreeR = 0;
   fTreeDTPC = 0;
   fTreeDTRD = 0;
   fTreeDTPCBaseName = "TreeD_75x40_100x60_150x60_";
@@ -232,10 +218,6 @@ AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliR
 AliRunDigitizer::~AliRunDigitizer() {
 // dtor
 
-// do not delete subtasks, let the creator delete them
-  if (GetListOfTasks()) 
-    GetListOfTasks()->Clear("nodelete");
-  
   if (fInputStreams) {
     delete fInputStreams;
     fInputStreams = 0;
@@ -409,14 +391,6 @@ void AliRunDigitizer::InitEvent()
     fTreeD->Write(0,TObject::kOverwrite);
   }
 
-// tree for ITS fast points
-  sprintf(treeName,"TreeR%d",fEvent);
-  fTreeR = static_cast<TTree*>(fOutput->Get(treeName));
-  if (!fTreeR) {
-    fTreeR = new TTree(treeName,"Reconstruction");
-    fTreeR->Write(0,TObject::kOverwrite);
-  }
-
 // special tree for TPC
   sprintf(treeName,"%s%d",fTreeDTPCBaseName,fEvent);
   fTreeDTPC = static_cast<TTree*>(fOutput->Get(treeName));
@@ -456,10 +430,6 @@ void AliRunDigitizer::FinishEvent()
     delete fTreeD;
     fTreeD = 0;
   }
-  if (fTreeR) {
-    delete fTreeR;
-    fTreeR = 0;
-  }
   if (fTreeDTPC) {
     delete fTreeDTPC;
     fTreeDTPC = 0;
@@ -481,7 +451,7 @@ void AliRunDigitizer::FinishGlobal()
     fInputFiles[fCopyTreesFromInput]->Get("TE")->Clone()->Write();
     gAlice->Write();
   }
-  fOutput->Write();
+  fOutput->Close();
 }
 
 
@@ -643,18 +613,3 @@ void AliRunDigitizer::ExecuteTask(Option_t* option)
   fHasExecuted = kTRUE;
   return;
 }
-////////////////////////////////////////////////////////////////////////
-TString AliRunDigitizer::GetInputFileName(const Int_t input, const Int_t order) const 
-{
-// returns file name of the order-th file in the input stream input
-// returns empty string if such file does not exist
-// first input stream is 0
-// first file in the input stream is 0
-  TString fileName("");
-  if (input >= fNinputs) return fileName;
-  AliStream * stream = static_cast<AliStream*>(fInputStreams->At(input));
-  if (order > stream->GetNInputFiles()) return fileName;
-  fileName = stream->GetFileName(order);
-  return fileName;
-}
-////////////////////////////////////////////////////////////////////////

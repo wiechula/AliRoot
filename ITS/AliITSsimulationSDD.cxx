@@ -15,10 +15,6 @@
 /*
   $Id$
   $Log$
-  Revision 1.33  2002/04/24 22:02:31  nilsen
-  New SDigits and Digits routines, and related changes,  (including new
-  noise values).
-
  */
 
 #include <iostream.h>
@@ -162,7 +158,6 @@ AliITSsimulationSDD::AliITSsimulationSDD(){
     fMaxNofSamples = 0;
     fITS           = 0;
     fTreeB         = 0;
-    fAnodeFire     = 0;
     SetScaleFourier();
     SetPerpendTracksFlag();
     SetCrosstalkFlag();
@@ -233,8 +228,7 @@ void AliITSsimulationSDD::Init(AliITSsegmentationSDD *seg,
 
     fNofMaps = fSegmentation->Npz();
     fMaxNofSamples = fSegmentation->Npx();
-    fAnodeFire = new Bool_t [fNofMaps];
-    
+
     Float_t sddLength = fSegmentation->Dx();
     Float_t sddWidth  = fSegmentation->Dz();
 
@@ -328,7 +322,6 @@ AliITSsimulationSDD::~AliITSsimulationSDD() {
     if(fInZI)  delete [] fInZI;        
     if(fOutZR) delete [] fOutZR;
     if(fOutZI) delete [] fOutZI;
-    if(fAnodeFire) delete [] fAnodeFire;
 }
 //______________________________________________________________________
 void AliITSsimulationSDD::InitSimulationModule( Int_t module, Int_t event ) {
@@ -336,7 +329,6 @@ void AliITSsimulationSDD::InitSimulationModule( Int_t module, Int_t event ) {
     fModule = module;
     fEvent  = event;
     ClearMaps();
-    memset(fAnodeFire,0,sizeof(Bool_t)*fNofMaps);    
 }
 //______________________________________________________________________
 void AliITSsimulationSDD::ClearMaps() {
@@ -368,7 +360,7 @@ Bool_t AliITSsimulationSDD::AddSDigitsToModule( TClonesArray *pItemArray, Int_t 
     // Add Summable digits to module maps.
     Int_t    nItems = pItemArray->GetEntries();
     Double_t maxadc = fResponse->MaxAdc();
-    //Bool_t sig = kFALSE;
+    Bool_t sig = kFALSE;
     
     // cout << "Adding "<< nItems <<" SDigits to module " << fModule << endl;
     for( Int_t i=0; i<nItems; i++ ) {
@@ -377,11 +369,10 @@ Bool_t AliITSsimulationSDD::AddSDigitsToModule( TClonesArray *pItemArray, Int_t 
             Error( "AliITSsimulationSDD",
                    "Error reading, SDigits module %d != current module %d: exit\n",
                     pItem->GetModule(), fModule );
-            return kFALSE;
+            return sig;
         } // end if
 
-      //  if(pItem->GetSignal()>0.0 ) sig = kTRUE;
-        
+	if(pItem->GetSignal()>0.0 ) sig = kTRUE;
         fpList->AddItemTo( mask, pItem ); // Add SignalAfterElect + noise
         AliITSpListItem * pItem2 = fpList->GetpListItem( pItem->GetIndex() );
         Double_t sigAE = pItem2->GetSignalAfterElect();
@@ -390,9 +381,8 @@ Bool_t AliITSsimulationSDD::AddSDigitsToModule( TClonesArray *pItemArray, Int_t 
         Int_t it;
         fpList->GetMapIndex( pItem->GetIndex(), ia, it );
         fHitMap2->SetHit( ia, it, sigAE );
-        fAnodeFire[ia] = kTRUE;
     }
-    return kTRUE;
+    return sig;
 }
 //______________________________________________________________________
 void AliITSsimulationSDD::FinishSDigitiseModule() {
@@ -699,7 +689,6 @@ void AliITSsimulationSDD::HitsToAnalogDigits( AliITSmodule *mod ) {
                     fHitMap2->SetHit(index, it-1, charge);
                     fpList->AddSignal(index,it-1,itrack,ii-1,
                                      mod->GetIndex(),timeAmplitude);
-                    fAnodeFire[index] = kTRUE;                 
                 } // end if anodeAmplitude and loop over time in window
             } // loop over anodes in window
         } // end loop over "sub-hits"
@@ -981,7 +970,6 @@ void AliITSsimulationSDD::ChargeToSignal(Bool_t bAddNoise) {
     Float_t maxadc = fResponse->MaxAdc();    
     if(!fDoFFT) {
         for (i=0;i<fNofMaps;i++) {
-            if( !fAnodeFire[i] ) continue;
             if (read && i<fNofMaps) GetAnodeBaseline(i,baseline,noise);
             for(k=0; k<fScaleSize*fMaxNofSamples; k++) {
                 fInZR[k]  = fHitMap2->GetSignal(i,k);
@@ -1010,7 +998,6 @@ void AliITSsimulationSDD::ChargeToSignal(Bool_t bAddNoise) {
     } // end if DoFFT
 
     for (i=0;i<fNofMaps;i++) {
-        if( !fAnodeFire[i] ) continue;
         if  (read && i<fNofMaps) GetAnodeBaseline(i,baseline,noise);
         for(k=0; k<fScaleSize*fMaxNofSamples; k++) {
             fInZR[k]  = fHitMap2->GetSignal(i,k);
@@ -1516,7 +1503,6 @@ void AliITSsimulationSDD::Compress1D(){
         for (i=0; i<fNofMaps/2; i++) {
             Bool_t firstSignal=kTRUE;
             Int_t idx=i+k*fNofMaps/2;
-            if( !fAnodeFire[idx] ) continue;
             CompressionParam(idx,decr,thres); 
             for (j=0; j<fMaxNofSamples; j++) {
                 Int_t signal=(Int_t)(fHitMap2->GetSignal(idx,j));
@@ -1734,7 +1720,6 @@ void AliITSsimulationSDD::WriteSDigits(){
     static AliITS *aliITS = (AliITS*)gAlice->GetModule("ITS");
 
     for( Int_t i=0; i<fNofMaps; i++ ) {
-        if( !fAnodeFire[i] ) continue;
         for( Int_t j=0; j<fMaxNofSamples; j++ ) {
             Double_t sig = fHitMap2->GetSignal( i, j );
             if( sig > 0.2 ) {

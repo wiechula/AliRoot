@@ -15,14 +15,6 @@
 
 /*
 $Log$
-Revision 1.12  2002/06/10 17:31:03  nilsen
-Replaced TArrayI expansion with Root version.
-
-Revision 1.11  2002/06/04 18:43:15  nilsen
-Fix to avoid divide by zero problem in MedianHitG and MedianHitL for track
-that enter and exit the same side of a detector sensitive volume. Needed
-for Fast simulation. Thanks to Nicola Carrer.
-
 Revision 1.10  2002/03/15 17:21:54  nilsen
 Removed zero-ing of fModules variable in constructors.
 
@@ -152,14 +144,70 @@ Int_t AliITSmodule::AddHit(AliITShit* hit,Int_t t,Int_t h) {
     fHitsM->AddLast(new AliITShit(*hit));
     Int_t fNhitsM = fHitsM->GetEntriesFast();
     if(fNhitsM-1>=fTrackIndex->GetSize()){ // need to expand the TArrayI
-      fTrackIndex->Set(fNhitsM+64);
+	TArrayI *p = new TArrayI(fNhitsM+64);
+	for(Int_t i=0;i<fTrackIndex->GetSize();i++) 
+	    (*p)[i] = fTrackIndex->At(i);
+	delete fTrackIndex;
+	fTrackIndex = p;
     } // end if
     if(fNhitsM-1>=fHitIndex->GetSize()){ // need to expand the TArrayI
-      fHitIndex->Set(fNhitsM+64);
+	TArrayI *p = new TArrayI(fNhitsM+64);
+	for(Int_t i=0;i<fHitIndex->GetSize();i++) 
+	    (*p)[i] = fHitIndex->At(i);
+	delete fHitIndex;
+	fHitIndex = p;
     } // end if
     (*fTrackIndex)[fNhitsM-1] = t;
     (*fHitIndex)[fNhitsM-1]   = h;
     return fNhitsM;
+}
+
+//___________________________________________________________________________
+void AliITSmodule::MedianHitG(Int_t index,
+			      Float_t hitx1,Float_t hity1,Float_t hitz1,
+			      Float_t hitx2,Float_t hity2,Float_t hitz2,
+			      Float_t &xMg, Float_t &yMg, Float_t &zMg){
+  // median hit
+   AliITSgeom *gm = fITS->GetITSgeom();
+   Float_t x1l,y1l,z1l;
+   Float_t x2l,y2l,z2l;
+   Float_t xMl,yMl=0,zMl;
+   Float_t l[3], g[3];
+
+   g[0] = hitx1;
+   g[1] = hity1;
+   g[2] = hitz1;
+   gm->GtoL(index,g,l);
+   x1l = l[0];
+   y1l = l[1];
+   z1l = l[2];
+
+   g[0] = hitx2;
+   g[1] = hity2;
+   g[2] = hitz2;
+   gm->GtoL(index,g,l);
+   x2l = l[0];
+   y2l = l[1];
+   z2l = l[2];
+
+   // Modified by N.Carrer. In very rare occasions the track may be just
+   // tangent to the module. Therefore the entrance and exit points have the
+   // same y.
+   if( (y2l-y1l) != 0.0 ) {
+     xMl = (-y1l / (y2l-y1l))*(x2l-x1l) + x1l;
+     zMl = (-y1l / (y2l-y1l))*(z2l-z1l) + z1l;
+   } else {
+     xMl = 0.5*(x1l+x2l);
+     zMl = 0.5*(z1l+z2l);
+   }
+
+   l[0] = xMl;
+   l[1] = yMl;
+   l[2] = zMl;
+   gm->LtoG(index,l,g);
+   xMg = g[0];
+   yMg = g[1];
+   zMg = g[2];
 }
 //___________________________________________________________________________
 Double_t AliITSmodule::PathLength(Int_t index,AliITShit *itsHit1,
@@ -187,7 +235,7 @@ void AliITSmodule::PathLength(Int_t index,
   // path length
     static Float_t x0,y0,z0;
 
-    if ((status&0x0002)!=0){ // entering
+    if (status == 66){ // entering
 	x0 = x;
 	y0 = y;
 	z0 = z;
@@ -201,9 +249,8 @@ void AliITSmodule::PathLength(Int_t index,
 	dy1 = y-y1;
 	dz1 = z-z1;
 	nseg++;
-	if ((status&0x0004)!=0) flag = 0; //exiting
-	if ((status&0x0001)!=0) flag = 2; // inside
-	else flag = 2; //inside ?
+	if (status == 68) flag = 0; //exiting
+	else flag = 2; //inside
 	x0 = x;
 	y0 = y;
 	z0 = z;
@@ -323,91 +370,9 @@ Bool_t AliITSmodule::LineSegmentG(Int_t hitindex,Double_t &a,Double_t &b,
     track = h1->GetTrack();
     return kTRUE;
 }
-//______________________________________________________________________
-Bool_t AliITSmodule::MedianHitG(AliITShit *h1,AliITShit *h2,
-				Float_t &x,Float_t &y,Float_t &z){
-    // Computes the mean hit location for a set of hits that make up a track
-    // passing through a volume. Returns kFALSE untill the the track leaves
-    // the volume.
-    // median hit
-   AliITSgeom *gm = fITS->GetITSgeom();
-   Float_t x1l=0.,y1l=0.,z1l=0.;
-   Float_t x2l=0.,y2l=0.,z2l=0.;
-   Float_t xMl,yMl=0,zMl;
-   Float_t l[3], g[3];
-
-   h1->GetPositionG(x1l,y1l,z1l);
-   h2->GetPositionG(x2l,y2l,z2l);
-
-   // Modified by N.Carrer. In very rare occasions the track may be just
-   // tangent to the module. Therefore the entrance and exit points have the
-   // same y.
-   if( (y2l-y1l) != 0.0 ) {
-     xMl = (-y1l / (y2l-y1l))*(x2l-x1l) + x1l;
-     zMl = (-y1l / (y2l-y1l))*(z2l-z1l) + z1l;
-   } else {
-     xMl = 0.5*(x1l+x2l);
-     zMl = 0.5*(z1l+z2l);
-   }
-
-   l[0] = xMl;
-   l[1] = yMl;
-   l[2] = zMl;
-   gm->LtoG(h1->GetModule(),l,g);
-   x = g[0];
-   y = g[1];
-   z = g[2];
-   return kTRUE;
-}
 //___________________________________________________________________________
-void AliITSmodule::MedianHitG(Int_t index,
-			      Float_t hitx1,Float_t hity1,Float_t hitz1,
-			      Float_t hitx2,Float_t hity2,Float_t hitz2,
-			      Float_t &xMg, Float_t &yMg, Float_t &zMg){
-  // median hit
-   AliITSgeom *gm = fITS->GetITSgeom();
-   Float_t x1l,y1l,z1l;
-   Float_t x2l,y2l,z2l;
-   Float_t xMl,yMl=0,zMl;
-   Float_t l[3], g[3];
-
-   g[0] = hitx1;
-   g[1] = hity1;
-   g[2] = hitz1;
-   gm->GtoL(index,g,l);
-   x1l = l[0];
-   y1l = l[1];
-   z1l = l[2];
-
-   g[0] = hitx2;
-   g[1] = hity2;
-   g[2] = hitz2;
-   gm->GtoL(index,g,l);
-   x2l = l[0];
-   y2l = l[1];
-   z2l = l[2];
-
-   // Modified by N.Carrer. In very rare occasions the track may be just
-   // tangent to the module. Therefore the entrance and exit points have the
-   // same y.
-   if( (y2l-y1l) != 0.0 ) {
-     xMl = (-y1l / (y2l-y1l))*(x2l-x1l) + x1l;
-     zMl = (-y1l / (y2l-y1l))*(z2l-z1l) + z1l;
-   } else {
-     xMl = 0.5*(x1l+x2l);
-     zMl = 0.5*(z1l+z2l);
-   }
-
-   l[0] = xMl;
-   l[1] = yMl;
-   l[2] = zMl;
-   gm->LtoG(index,l,g);
-   xMg = g[0];
-   yMg = g[1];
-   zMg = g[2];
-}
-//___________________________________________________________________________
-Bool_t AliITSmodule::MedianHitL( AliITShit *itsHit1, 
+void AliITSmodule::MedianHitL(Int_t index, 
+               		     AliITShit *itsHit1, 
 	       	    	     AliITShit *itsHit2, 
 	       		     Float_t &xMl, Float_t &yMl, Float_t &zMl){
   // median hit
@@ -428,7 +393,6 @@ Bool_t AliITSmodule::MedianHitL( AliITShit *itsHit1,
      xMl = 0.5*(x1l+x2l);
      zMl = 0.5*(z1l+z2l);
    }
-   return kTRUE;
 }
 //___________________________________________________________________________
 void AliITSmodule::MedianHit(Int_t index,
@@ -439,16 +403,17 @@ void AliITSmodule::MedianHit(Int_t index,
   // median hit
    static Float_t x1,y1,z1;
 
-   if ((status&0x0002)!=0){ // entering
+   if (status == 66){ // entering
        x1 = xg;
        y1 = yg;
        z1 = zg;
        flag = 1;
-   } else if ((status&0x0004)!=0){ // exiting
+   } // end if
+   if (status == 68){ // exiting
        MedianHitG(index,x1,y1,z1,xg,yg,zg,xMg,yMg,zMg);
        flag = 0;
    } // end if
-   else  flag = 1;
+   if ((status != 66) && (status != 68)) flag = 1;
 }
 //___________________________________________________________________________
 void AliITSmodule::GetID(Int_t &lay,Int_t &lad,Int_t &det){

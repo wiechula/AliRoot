@@ -15,18 +15,6 @@
 
 /*
 $Log$
-Revision 1.11  2002/06/06 15:26:24  morsch
-Correct child-selection for kPhiKK
-
-Revision 1.10  2002/06/05 14:05:46  morsch
-Decayer option kPhiKK for forced phi->K+K- decay added.
-
-Revision 1.9  2002/05/30 14:58:29  morsch
-Add pointer to AliGeometry to handle geometrical acceptance. (G. MArtinez)
-
-Revision 1.8  2002/04/26 10:42:35  morsch
-Case kNoDecayHeavy added. (N. Carrer)
-
 Revision 1.7  2002/04/17 10:32:32  morsch
 Coding Rule violations corrected.
 
@@ -59,7 +47,6 @@ AliGenMC base class for AliGenParam and AliGenPythia commonalities.
 
 #include "AliGenMC.h"
 #include "AliPDG.h"
-#include <TMath.h>
 #include <TParticle.h>
 
  ClassImp(AliGenMC)
@@ -75,9 +62,6 @@ AliGenMC::AliGenMC()
     SetChildThetaRange(); 
     SetChildYRange(); 
     SetMaximumLifetime();
-    SetGeometryAcceptance();
-    SetPdgCodeParticleforAcceptanceCut();
-    SetNumberOfAcceptedParticles();
 }
 
 AliGenMC::AliGenMC(Int_t npart)
@@ -95,9 +79,6 @@ AliGenMC::AliGenMC(Int_t npart)
     fChildSelect.Set(8);
     for (Int_t i=0; i<8; i++) fParentSelect[i]=fChildSelect[i]=0;
     SetMaximumLifetime();
-    SetGeometryAcceptance();
-    SetPdgCodeParticleforAcceptanceCut();
-    SetNumberOfAcceptedParticles();
 }
 
 AliGenMC::AliGenMC(const AliGenMC & mc)
@@ -133,8 +114,6 @@ void AliGenMC::Init()
 	fChildSelect[0]=kPiPlus;
 	fChildSelect[1]=kKPlus;
 	break;
-    case kPhiKK:
-	fChildSelect[0]=kKPlus;
     case kOmega:	
     case kAll:
     case kNoDecay:
@@ -174,7 +153,7 @@ Bool_t AliGenMC::KinematicSelection(TParticle *particle, Int_t flag) const
     Float_t pt    = particle->Pt();
     Float_t p     = particle->P();
     Float_t theta = particle->Theta();
-    Float_t mass  = particle->GetCalcMass();
+    Float_t mass  = particle->GetMass();
     Float_t mt2   = pt * pt + mass * mass;
     
     Float_t phi   = Float_t(TMath::ATan2(Double_t(py),Double_t(px)));
@@ -266,29 +245,9 @@ Bool_t AliGenMC::KinematicSelection(TParticle *particle, Int_t flag) const
 	}
     }
     
+    
+
     return kTRUE;
-}
-
-Bool_t AliGenMC::CheckAcceptanceGeometry(Int_t np, TClonesArray* particles)
-{
-  Bool_t Check ;  // All fPdgCodeParticleforAcceptanceCut particles are in in the fGeometryAcceptance acceptance
-  Int_t NumberOfPdgCodeParticleforAcceptanceCut=0;
-  Int_t NumberOfAcceptedPdgCodeParticleforAcceptanceCut=0;
-  TParticle * particle;
-  Int_t i;
-  for (i=0; i<np; i++) {
-    particle =  (TParticle *) particles->At(i);
-    if( TMath::Abs( particle->GetPdgCode() ) == TMath::Abs( fPdgCodeParticleforAcceptanceCut ) ) {
-      NumberOfPdgCodeParticleforAcceptanceCut++;
-      if (fGeometryAcceptance->Impact(particle)) NumberOfAcceptedPdgCodeParticleforAcceptanceCut++;
-    }   
-  }
-  if ( NumberOfAcceptedPdgCodeParticleforAcceptanceCut > (fNumberOfAcceptedParticles-1) )
-    Check = kTRUE;
-  else
-    Check = kFALSE;
-
-  return Check;
 }
 
 Int_t AliGenMC::CheckPDGCode(Int_t pdgcode) const

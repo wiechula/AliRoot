@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.4  2002/03/28 14:59:07  cblume
-Coding conventions
-
 Revision 1.3  2002/02/11 14:21:16  cblume
 Update of the geometry. Get rid of MANY
 
@@ -38,7 +35,6 @@ Add detailed geometry and simple simulator
 #include "AliMC.h"
 
 #include "AliTRDgeometryDetail.h"
-#include "AliTRDparameter.h"
 
 ClassImp(AliTRDgeometryDetail)
 
@@ -432,17 +428,15 @@ void AliTRDgeometryDetail::PositionReadout(Int_t ipla, Int_t icha)
 
   const Int_t   kNmcmChannel = 18;
 
-  AliTRDparameter *parameter = new AliTRDparameter();
-
-  Int_t nMCMrow = parameter->GetRowMax(ipla,icha,0);
-  Int_t nMCMcol = parameter->GetColMax(ipla) / kNmcmChannel;
+  Int_t nMCMrow = GetRowMax(ipla,icha,0);
+  Int_t nMCMcol = GetColMax(ipla) / kNmcmChannel;
 
   Float_t xSize = (GetChamberWidth(ipla)       - 2.*fgkCpadW) 
                 / ((Float_t) nMCMcol);
   Float_t ySize = (GetChamberLength(ipla,icha) - 2.*fgkRpadW) 
                 / ((Float_t) nMCMrow);
-  Float_t x0    = parameter->GetCol0(ipla);
-  Float_t y0    = parameter->GetRow0(ipla,icha,0);
+  Float_t x0    = GetCol0(ipla);
+  Float_t y0    = GetRow0(ipla,icha,0);
 
   Int_t iCopy = GetDetector(ipla,icha,0) * 1000;
   for (Int_t iMCMrow = 0; iMCMrow < nMCMrow; iMCMrow++) {
@@ -455,8 +449,6 @@ void AliTRDgeometryDetail::PositionReadout(Int_t ipla, Int_t icha)
       gMC->Gspos("UMCM",iCopy,"UTR1",xpos,ypos,zpos,0,"ONLY");    
     }
   }
-
-  delete parameter;
 
 }
 
@@ -508,14 +500,12 @@ void AliTRDgeometryDetail::PositionCooling(Int_t ipla, Int_t icha, Int_t idrotm)
   Float_t ypos;
   Float_t zpos;
 
-  AliTRDparameter *parameter = new AliTRDparameter();
-
   Int_t   iCopy   = GetDetector(ipla,icha,0) * 100;
-  Int_t   nMCMrow = parameter->GetRowMax(ipla,icha,0);
+  Int_t   nMCMrow = GetRowMax(ipla,icha,0);
 
   Float_t ySize   = (GetChamberLength(ipla,icha) - 2.*fgkRpadW) 
                   / ((Float_t) nMCMrow);
-  Float_t y0      = parameter->GetRow0(ipla,icha,0);
+  Float_t y0      = GetRow0(ipla,icha,0);
 
   // Position the cooling pipes
   for (Int_t iMCMrow = 0; iMCMrow < nMCMrow; iMCMrow++) {
@@ -531,7 +521,5 @@ void AliTRDgeometryDetail::PositionCooling(Int_t ipla, Int_t icha, Int_t idrotm)
                       ,idrotm,"ONLY",par,kNpar);
 
   }
-
-  delete parameter;
 
 }

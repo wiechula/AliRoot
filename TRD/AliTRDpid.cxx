@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.4  2001/11/19 08:44:08  cblume
-Fix bugs reported by Rene
-
 Revision 1.3  2001/11/14 10:50:46  cblume
 Changes in digits IO. Add merging of summable digits
 
@@ -364,7 +361,7 @@ Bool_t AliTRDpid::ReadCluster(const Char_t *name)
   printf("AliTRDpid::ReadCluster -- ");
   printf("Open file %s\n",name);
 
-  AliTRDtracker *tracker = new AliTRDtracker();
+  AliTRDtracker *tracker = new AliTRDtracker("dummy","dummy");
   tracker->ReadClusters(fClusterArray,name);
 
   if (!fClusterArray) {
@@ -461,7 +458,7 @@ Int_t AliTRDpid::MCpid(const AliTRDtrack *t)
   }
   
   // Loop through all clusters associated to this track
-  Int_t nCluster = t->GetNumberOfClusters();
+  Int_t nCluster = t->GetNclusters();
   for (Int_t iCluster = 0; iCluster < nCluster; iCluster++) {
 
     // Get a cluster
@@ -471,8 +468,8 @@ Int_t AliTRDpid::MCpid(const AliTRDtrack *t)
     } 
 
     // Get the first two MC track indices
-    Int_t track0 = cluster->GetLabel(0);
-    Int_t track1 = cluster->GetLabel(1);
+    Int_t track0 = cluster->GetTrackIndex(0);
+    Int_t track1 = cluster->GetTrackIndex(1);
 
     // Check on the track index to find the right primaries
     if ((track0 >  fPIDindexMin) && 
@@ -577,7 +574,7 @@ Int_t AliTRDpid::MCpid(const AliTRDtrack *t, Int_t *pdg
   }
 
   // Loop through all clusters associated to this track
-  Int_t nCluster = t->GetNumberOfClusters();
+  Int_t nCluster = t->GetNclusters();
   for (iCluster = 0; iCluster < nCluster; iCluster++) {
 
     // Get a cluster
@@ -589,7 +586,7 @@ Int_t AliTRDpid::MCpid(const AliTRDtrack *t, Int_t *pdg
     // Get the MC track indices
     for (iTrack = 0; iTrack < kNtrack; iTrack++) {
 
-      Int_t trackIndex = cluster->GetLabel(iTrack);
+      Int_t trackIndex = cluster->GetTrackIndex(iTrack);
       if (trackIndex >= 0) {
         particle = gAlice->Particle(trackIndex);
         Int_t  pdgCode = particle->GetPdgCode(); 
@@ -658,7 +655,7 @@ Bool_t AliTRDpid::SumCharge(const AliTRDtrack *t
   }
   
   // Loop through all clusters associated to this track
-  Int_t nClus = t->GetNumberOfClusters();
+  Int_t nClus = t->GetNclusters();
   for (Int_t iClus = 0; iClus < nClus; iClus++) {
 
     // Get a cluster

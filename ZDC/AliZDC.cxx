@@ -15,12 +15,6 @@
 
 /*
 $Log$
-Revision 1.29  2002/06/04 08:17:04  coppedis
-Reconstruction method improved
-
-Revision 1.28  2002/02/04 09:18:08  coppedis
-Merging and reconstruction code review
-
 Revision 1.26.2.2  2001/11/12 18:41:44  hristov
 All the changes from the head are merged to the release
 
@@ -135,8 +129,8 @@ AliZDC::AliZDC()
   
   fIshunt     = 1;
   fNoShower   = 0;
-
   fMerger     = 0;
+
   fHits       = 0;
   fNhits      = 0;
 
@@ -144,6 +138,8 @@ AliZDC::AliZDC()
   fNdigits    = 0;
 
   fMergedHits = 0;
+  fTreeSD     = 0;
+  fTreeMD     = 0;
 
   fNRecPoints = 0;
   fRecPoints  = 0;
@@ -171,6 +167,9 @@ AliZDC::AliZDC(const char *name, const char *title)
   // Allocate the digits array  
   fDigits = new TClonesArray("AliZDCDigit",1000);
   
+  fTreeSD = 0;
+  fTreeMD = 0;
+
   fNRecPoints = 0;
   fRecPoints = 0;  
 
@@ -185,6 +184,16 @@ AliZDC::~AliZDC()
   fIshunt   = 0;
   
   if(fMerger) delete fMerger;
+
+//  if(fHits){
+//    fHits->Delete();
+//    delete fHits;
+//  }
+
+//  if(fDigits){
+//    fDigits->Delete();
+//    delete fDigits;
+//  }
 
 }
 //_____________________________________________________________________________
@@ -213,6 +222,7 @@ void AliZDC::AddHit(Int_t track, Int_t *vol, Float_t *hits)
       else if(track == primary){
         newquad->fSFlag = 0;  // PRIMARY particle entering the ZDC
       }  
+//      fNPrimaryHits += 1;
       sFlag 	= newquad->fSFlag;
       primKinEn = newquad->fPrimKinEn;
       xImpact 	= newquad->fXImpact;
@@ -343,7 +353,6 @@ Float_t AliZDC::ZMax(void) const
   const char *cR = strstr(opt,"R");
 
   if (gAlice->TreeR() && cR) {
-    if(fRecPoints==0) fRecPoints = new TClonesArray("AliZDCReco",1000);
     MakeBranchInTree(gAlice->TreeR(), 
 		     branchname, &fRecPoints, fBufferSize, file) ;
     printf("* AliZDC::MakeBranch    * Making Branch %s for RecPoints\n\n",branchname);   }
@@ -351,13 +360,13 @@ Float_t AliZDC::ZMax(void) const
 }
 
 //_____________________________________________________________________________
- void AliZDC::MakeBranchInTreeS(TTree *treeS, const char *file)
+ void AliZDC::MakeBranchInTreeSD(TTree *treeSD, const char *file)
 {
   // MakeBranchInTree
   const Int_t kBufferSize = 4000;
   char  branchname[20];
   sprintf(branchname,"%s",GetName());
-  MakeBranchInTree(treeS, branchname, &fMergedHits, kBufferSize, file) ;
+  MakeBranchInTree(treeSD, branchname, &fMergedHits, kBufferSize, file) ;
   printf("* AliZDC::MakeBranch    * Making Branch %s for SDigits\n\n",branchname);
 
 }
@@ -424,8 +433,9 @@ void AliZDC::Hits2SDigits()
 	  fNMergedhits++;
 	  delete MHit;
     }
+//    printf("\n	### Filling SDigits tree\n");
     gAlice->TreeS()->Fill();
-    gAlice->TreeS()->AutoSave(); 
+    gAlice->TreeS()->Write(0,TObject::kOverwrite);  
     gAlice->TreeS()->Reset();  
   }
   //----------------------------------------------------------------
@@ -434,33 +444,29 @@ void AliZDC::Hits2SDigits()
     // ### Initialise merging
     fMerger -> InitMerging();
 
+    TFile *bgrFile  = fMerger->BgrFile();
+    bgrFile->cd();
     // SDigits tree
-    TTree *treeS = 0;
-    char treeSName[20];
-    sprintf(treeSName,"TreeS%d",fMerger->EvNum());
-    if(gAlice->GetTreeSFile()){
-      gAlice->GetTreeSFile()->cd();
-      treeS = (TTree*)gAlice->GetTreeSFile()->Get(treeSName);
-    }
-    else {
-      treeS = gAlice->TreeS();
-    }
-    if(!treeS){
-      printf("\n ERROR -> Can't find TreeS%d in background file\n",fMerger->EvNum());
+    Int_t fNEvBgr = fMerger->EvNum();
+    char treeSDBgrName[20];
+    sprintf(treeSDBgrName,"TreeS%d",fNEvBgr);
+    fTreeSD = (TTree*)gDirectory->Get(treeSDBgrName); // TreeH
+    if(!fTreeSD){
+      printf("\n ERROR -> Can't find TreeS%d in background file\n",fNEvBgr);
     }	 
+    // Branch address
+    char branchSDname[20];
+    sprintf(branchSDname,"%s",GetName());
+    if(fTreeSD && fMergedHits){
+      TBranch *branchSD = fTreeSD->GetBranch(branchSDname);
+      if(branchSD) branchSD->SetAddress(&fMergedHits);
+      else if(!branchSD) MakeBranchInTreeSD(fTreeSD);
+    }
 
     // ### Get TCA of MergedHits from AliZDCMerger
     fMergedHits  = fMerger->MergedHits();
     fNMergedhits = fMerger->GetNMhits();
-
-    // Branch address
-    char branchSDname[20];
-    sprintf(branchSDname,"%s",GetName());
-    if(treeS && fMergedHits){
-      TBranch *branchSD = treeS->GetBranch(branchSDname);
-      if(branchSD) branchSD->SetAddress(&fMergedHits);
-      else if(!branchSD) MakeBranchInTreeS(treeS);
-    }
+//    printf("\n         fNMergedhits (from AliZDCMerger) = %d\n", fNMergedhits);   
     AliZDCMergedHit *MHit;
     TClonesArray &sdigits = *fMergedHits;
     Int_t imhit;
@@ -469,8 +475,11 @@ void AliZDC::Hits2SDigits()
        MHit = (AliZDCMergedHit*) fMergedHits->UncheckedAt(imhit);
        new (sdigits[imhit]) AliZDCMergedHit(*MHit);
     }
-    treeS->Fill();
-    treeS->AutoSave();
+
+//    printf("\n ### Filling SDigits tree\n");
+    bgrFile->cd();
+    fTreeSD->Fill();
+    fTreeSD->Write(0,TObject::kOverwrite);
   }
   
 }
@@ -478,44 +487,45 @@ void AliZDC::Hits2SDigits()
 //_____________________________________________________________________________
 void AliZDC::SDigits2Digits()
 {
+  //printf("\n	Entering AliZDC::SDigits2Digits() ");
   if(!fMerger){ // Only digitization
-    printf("	ZDC digitization (no merging) \n");
+    printf("	ZDC digitization (without merging) \n");
     fMerger = new AliZDCMerger();    
     fMerger->Digitize(fNMergedhits, fMergedHits);
 
     char hname[30];
     sprintf(hname,"TreeD%d",gAlice->GetHeader()->GetEvent());
     gAlice->TreeD()->Fill();
-    gAlice->TreeD()->AutoSave();
+    gAlice->TreeD()->Write(0,TObject::kOverwrite);
     gAlice->TreeD()->Reset();  
   }
   else if(fMerger){	// Merging and digitization
     printf("	ZDC merging and digitization\n");
     fMerger->Digitize(fNMergedhits, fMergedHits);
 
+    TFile *bgrFile = fMerger->BgrFile();
+    bgrFile->cd();
     // Digits tree
-    TTree *treeD = 0;
-    char treeDName[20];
-    sprintf(treeDName,"TreeD%d",fMerger->EvNum());  
-    if(gAlice->GetTreeDFile()){
-      treeD = (TTree*)gAlice->GetTreeDFile()->Get(treeDName);
-    }
-    else {
-      treeD = gAlice->TreeD();
-    }
-    if(!treeD){
-      printf("\n ERROR -> Can't find TreeD%d in background file\n",fMerger->EvNum());
+    Int_t fNEvBgr = fMerger->EvNum();
+    //printf("	fNEvBgr = %d\n",fNEvBgr);
+    char treeDBgrName[20];
+    sprintf(treeDBgrName,"TreeD%d",fNEvBgr);
+    fTreeMD = (TTree*)gDirectory->Get(treeDBgrName); // TreeH
+    if(!fTreeMD){
+      printf("\n ERROR -> Can't find TreeD%d in background file\n",fNEvBgr);
     }	 
     // Branch address
     char branchDname[20];
     sprintf(branchDname,"%s",GetName());
-    if(treeD && fDigits){
-      TBranch *branchD = treeD->GetBranch(branchDname);
+    if(fTreeMD && fDigits){
+//      printf("\n	fTreeMD!=0 && fDigits!=0\n");
+      TBranch *branchD = fTreeMD->GetBranch(branchDname);
       if(branchD) branchD->SetAddress(&fDigits);
-      else if(!branchD) MakeBranchInTreeD(treeD);
+      else if(!branchD) MakeBranchInTreeD(fTreeMD);
     }
-    treeD->Fill();
-    treeD->AutoSave();
+    
+    fTreeMD->Fill();
+    fTreeMD->Write(0,TObject::kOverwrite);
   }
   
   
@@ -530,20 +540,21 @@ void AliZDC::Hits2Digits()
 //_____________________________________________________________________________
 void AliZDC::Digits2Reco()
 {
-    printf("	Entering AliZDC::Digits2Reco\n");
+  //printf("\n	Entering AliZDC::Digits2Reco() ");
+    
+    Int_t fNEvBgr = fMerger->EvNum();
+    //printf("	fNEvBgr = %d\n",fNEvBgr);
+    gAlice->GetEvent(fNEvBgr);
+
     AliDetector *ZDC  = gAlice->GetDetector("ZDC");
     TClonesArray *ZDCdigits = ZDC->Digits();
     
-    TTree *TD = 0;
-    char treeDame[20];
-    sprintf(treeDame,"TreeD%d",fMerger->EvNum());
-    if(gAlice->GetTreeDFile()){
-      TD = (TTree*)gAlice->GetTreeDFile()->Get(treeDame);
-    }
-    else {
-      TD = gAlice->TreeD();
-    }
+    char tdname[20];
+    sprintf(tdname,"TreeD%d",fNEvBgr);
+    TTree *TD = (TTree*)gDirectory->Get(tdname);
+    //TTree *TD = gAlice->TreeD();
     if(TD){
+      //printf("	TreeD found in gAlice object\n");
       char brname[20];
       sprintf(brname,"%s",ZDC->GetName());
       TBranch *br = TD->GetBranch(brname);
@@ -552,6 +563,7 @@ void AliZDC::Digits2Reco()
     else if(!TD) printf("	ERROR -> TreeD NOT found in gAlice object\n");
     
     Int_t nt = (Int_t) (TD->GetEntries());
+    //printf("\n		#entries in TreeD = %d\n",nt);
     gAlice->ResetDigits();    
     
     AliZDCDigit *dig;
@@ -560,6 +572,7 @@ void AliZDC::Digits2Reco()
     for(j=0; j<nt; j++){
       TD->GetEvent(j);
       ndigits = ZDCdigits->GetEntries();
+      //printf("\n Entry #%d, ndigits = %d",j,ndigits);
       ZNraw=0;
       ZPraw=0; 
       ZEMraw=0;
@@ -611,7 +624,7 @@ void AliZDC::Digits2Reco()
   
   if(ZDCenergy==0)
     printf("\n\n	###	ATTENZIONE!!! -> ev# %d: ZNenergy = %f TeV, ZPenergy = %f TeV, ZDCenergy = %f GeV, "
-         " ZEMenergy = %f TeV\n\n", fMerger->EvNum(), ZNenergy, ZPenergy, ZDCenergy, ZEMenergy); 
+         " ZEMenergy = %f TeV\n\n", fNEvBgr, ZNenergy, ZPenergy, ZDCenergy, ZEMenergy); 
   
   //  ---      Number of incident spectator nucleons
   Int_t NDetSpecN, NDetSpecP;
@@ -620,9 +633,7 @@ void AliZDC::Digits2Reco()
   printf("\n    NDetSpecN = %d, NDetSpecP = %d\n",NDetSpecN, NDetSpecP);
   
   //  ---      Number of generated spectator nucleons and impact parameter
-  // --------------------------------------------------------------------------------------------------
-  // [1] ### Results in Chiara's PhD thesis -> 0<b<15 fm (Dec 2001)
-  /*// Fit results for neutrons (Nspectator n true vs. EZN)
+  // Fit results for neutrons (Nspectator n true vs. EZN)
   TF1 *fZNCen = new TF1("fZNCen",
       "(-2.116909+sqrt(2.116909*2.116909-4*(-0.00651)*(14.556798-x)))/(2*(-0.00651))",0.,158.5);
   TF1 *fZNPer = new TF1("fZNPer",
@@ -636,59 +647,22 @@ void AliZDC::Digits2Reco()
   TF1 *fZDCCen = new TF1("fZDCCen",
       "(-1.867335+sqrt(1.867335*1.867335-4*(-0.004119)*(19.100289-x)))/(2*(-0.004119))",0.,220.4);
   TF1 *fZDCPer = new TF1("fZDCPer",
-      "(-22.429097-sqrt(22.429097*22.429097-4*(-0.072435)*(-1482.034526-x)))/(2*(-0.072435))",0.,220.4);*/
-  // --------------------------------------------------------------------------------------------------
-  // [1] ### Results from a new production  -> 0<b<18 fm (Apr 2002)
-  // Fit results for neutrons (Nspectator n true vs. EZN)
-  TF1 *fZNCen = new TF1("fZNCen",
-      "(-2.287920+sqrt(2.287920*2.287920-4*(-0.007629)*(11.921710-x)))/(2*(-0.007629))",0.,164.);
-  TF1 *fZNPer = new TF1("fZNPer",
-      "(-37.812280-sqrt(37.812280*37.812280-4*(-0.190932)*(-1709.249672-x)))/(2*(-0.190932))",0.,164.);
-  // Fit results for protons (Nspectator p true vs. EZP)
-  TF1 *fZPCen = new TF1("fZPCen",
-       "(-1.321353+sqrt(1.321353*1.321353-4*(-0.007283)*(3.550697-x)))/(2*(-0.007283))",0.,60.);
-  TF1 *fZPPer = new TF1("fZPPer",
-      "(-42.643308-sqrt(42.643308*42.643308-4*(-0.310786)*(-1402.945615-x)))/(2*(-0.310786))",0.,60.);
-  // Fit results for total number of spectators (Nspectators true vs. EZDC)
-  TF1 *fZDCCen = new TF1("fZDCCen",
-      "(-1.934991+sqrt(1.934991*1.934991-4*(-0.004080)*(15.111124-x)))/(2*(-0.004080))",0.,225.);
-  TF1 *fZDCPer = new TF1("fZDCPer",
-      "(-34.380639-sqrt(34.380639*34.380639-4*(-0.104251)*(-2612.189017-x)))/(2*(-0.104251))",0.,225.);
-  // --------------------------------------------------------------------------------------------------
-  // [1] ### Results in Chiara's PhD thesis -> 0<b<15 fm (Dec 2001)
-  /*// Fit results for b (b vs. EZDC)
+      "(-22.429097-sqrt(22.429097*22.429097-4*(-0.072435)*(-1482.034526-x)))/(2*(-0.072435))",0.,220.4);
+  // Fit results for b (b vs. EZDC)
   //TF1 *fbCen = new TF1("fbCen","0.611543+0.052231*x-0.000112*x*x+0.000000374*x*x*x",0.,222.);
   //TF1 *fbPer = new TF1("fbPer","16.552010-0.023866*x-0.00001*x*x",0.,222.);
   TF1 *fbCen = new TF1("fbCen","0.612769+0.051929*x-0.0001074*x*x+0.0000003724*x*x*x",0.,225.);
-  TF1 *fbPer = new TF1("fbPer","16.6131016-0.026053*x+0.000006893*x*x",0.,225.);*/
-  // --------------------------------------------------------------------------------------------------
-  // [2] ### Results from a new production  -> 0<b<18 fm (Apr 2002)
-  TF1 *fbCen = new TF1("fbCen","-0.056923+0.079703*x-0.0004301*x*x+0.000001366*x*x*x",0.,220.);
-  TF1 *fbPer = new TF1("fbPer","17.943998-0.046846*x+0.000074*x*x",0.,220.);
-  // --------------------------------------------------------------------------------------------------
+  TF1 *fbPer = new TF1("fbPer","16.6131016-0.026053*x+0.000006893*x*x",0.,225.);
   // Evaluating Nspectators and b from ZEM energy
-  // [1] ### Results in Chiara's PhD thesis -> 0<b<15 fm (Dec 2001)
-  /*TF1 *fZEMn  = new TF1("fZEMn","124.2-0.0566*x+0.000006014*x*x",0.,3500.);
+  TF1 *fZEMn  = new TF1("fZEMn","124.2-0.0566*x+0.000006014*x*x",0.,3500.);
   TF1 *fZEMp  = new TF1("fZEMp","81.3-0.03834*x+0.000004359*x*x",0.,3500.);
   TF1 *fZEMsp = new TF1("fZEMsp","205.6-0.09567*x+0.00001056*x*x",0.,3500.);
-  TF1 *fZEMb  = new TF1("fZEMb","15.8-0.02084*x+2.802e-5*x*x-2.007e-8*x*x*x+6.586e-12*x*x*x*x-8.042e-16*x*x*x*x*x",0.,3500.);*/
-  // --------------------------------------------------------------------------------------------------
-  // [2] ### Results from a new production  -> 0<b<18 fm (Apr 2002)
-  TF1 *fZEMn  = new TF1("fZEMn","126.2-0.05399*x+0.000005679*x*x",0.,4000.);
-  TF1 *fZEMp  = new TF1("fZEMp","82.49-0.03611*x+0.00000385*x*x",0.,4000.);
-  TF1 *fZEMsp = new TF1("fZEMsp","208.7-0.09006*x+0.000009526*x*x",0.,4000.);
-  TF1 *fZEMb  = new TF1("fZEMb","16.06-0.01633*x+1.44e-5*x*x-6.778e-9*x*x*x+1.438e-12*x*x*x*x-1.112e-16*x*x*x*x*x",0.,4000.);
+  TF1 *fZEMb  = new TF1("fZEMb","15.8-0.02084*x+2.802e-5*x*x-2.007e-8*x*x*x+6.586e-12*x*x*x*x-8.042e-16*x*x*x*x*x",0.,3500.);
   
   Int_t NGenSpecN=0, NGenSpecP=0, NGenSpec=0;
   Double_t ImpPar=0;
-  // Cut value for Ezem (GeV)
-  // [1] ### Results in Chiara's PhD thesis -> 0<b<15 fm (Dec 2001)
-  //Float_t EZEMCut = 360.; 
-  // [2] ### Results from a new production  -> 0<b<18 fm (Apr 2002)
-  Float_t EZEMCut = 420.;
-  Float_t DeltaEZEMSup = 690.; 
-  Float_t DeltaEZEMInf = 270.; 
-  if(ZEMenergy > (EZEMCut+DeltaEZEMSup)){
+  Float_t EZEMCut = 360.; // Cut value for Ezem (GeV)
+  if(ZEMenergy >= EZEMCut){
     NGenSpecN = (Int_t) (fZNCen->Eval(ZNenergy));
     NGenSpecP = (Int_t) (fZPCen->Eval(ZPenergy));
     NGenSpec  = (Int_t) (fZDCCen->Eval(ZDCenergy));
@@ -696,7 +670,7 @@ void AliZDC::Digits2Reco()
     //printf("    fZNCen = %f, fZPCen = %f, fZDCCen = %f\n",fZNCen->Eval(ZNenergy),
     //            fZPCen->Eval(ZPenergy),fZDCCen->Eval(ZDCenergy));
   }
-  else if(ZEMenergy < (EZEMCut-DeltaEZEMInf)){
+  else if(ZEMenergy < EZEMCut){
     NGenSpecN = (Int_t) (fZNPer->Eval(ZNenergy)); 
     NGenSpecP = (Int_t) (fZPPer->Eval(ZPenergy));
     NGenSpec  = (Int_t) (fZDCPer->Eval(ZDCenergy));
@@ -704,23 +678,14 @@ void AliZDC::Digits2Reco()
     //printf("    fZNPer = %f, fZPPer = %f, fZDCPer = %f\n",fZNPer->Eval(ZNenergy),
     //            fZPPer->Eval(ZPenergy),fZDCPer->Eval(ZDCenergy));
   }
-  else if(ZEMenergy >= (EZEMCut-DeltaEZEMInf) && ZEMenergy <= (EZEMCut+DeltaEZEMSup)){
-    NGenSpecN = (Int_t) (fZEMn->Eval(ZEMenergy));
-    NGenSpecP = (Int_t) (fZEMp->Eval(ZEMenergy));
-    NGenSpec  = (Int_t)(fZEMsp->Eval(ZEMenergy));
-    ImpPar    =  fZEMb->Eval(ZEMenergy);
-    //printf("    Nspec ZEM = %f, Nspec ZDC = %f\n",fZEMsp->Eval(ZNenergy),fZDCPer->Eval(ZDCenergy));
-  }
-  // [1] ### Results in Chiara's PhD thesis -> 0<b<15 fm (Dec 2001)
-  /*if(ZNenergy>158.5)  NGenSpecN = (Int_t) (fZEMn->Eval(ZEMenergy));
+  if(ZNenergy>158.5)  NGenSpecN = (Int_t) (fZEMn->Eval(ZEMenergy));
   if(ZPenergy>58.91)  NGenSpecP = (Int_t) (fZEMp->Eval(ZEMenergy));
   if(ZDCenergy>220.4) NGenSpec  = (Int_t)(fZEMsp->Eval(ZEMenergy));
-  if(ZDCenergy>225.)  ImpPar    =          fZEMb->Eval(ZEMenergy);*/
-  // [2] ### Results from a new production  -> 0<b<18 fm (Apr 2002)
-  if(ZNenergy>162.)  NGenSpecN = (Int_t) (fZEMn->Eval(ZEMenergy));
-  if(ZPenergy>59.75)  NGenSpecP = (Int_t) (fZEMp->Eval(ZEMenergy));
-  if(ZDCenergy>221.5) NGenSpec  = (Int_t)(fZEMsp->Eval(ZEMenergy));
-  if(ZDCenergy>220.)  ImpPar    =  fZEMb->Eval(ZEMenergy);
+  if(ZDCenergy>225.)  ImpPar    =          fZEMb->Eval(ZEMenergy);
+  /*if(ZNenergy>158.5)  NGenSpecN = -999;
+  if(ZPenergy>58.91)  NGenSpecP = -999;
+  if(ZDCenergy>220.4) NGenSpec  = -999;
+  if(ZDCenergy>225.)  ImpPar    = -999;*/
   
   if(NGenSpecN>125)    NGenSpecN=125;
   else if(NGenSpecN<0) NGenSpecN=0;
@@ -728,14 +693,13 @@ void AliZDC::Digits2Reco()
   else if(NGenSpecP<0) NGenSpecP=0;
   if(NGenSpec>207)     NGenSpec=207;
   else if(NGenSpec<0)  NGenSpec=0;
-  //printf("    NRecSpecN = %d, NRecSpecP = %d, NRecSpec = %d\n",NGenSpecN,NGenSpecP,NGenSpec);
+  printf("    NRecSpecN = %d, NRecSpecP = %d, NRecSpec = %d\n",NGenSpecN,NGenSpecP,NGenSpec);
   
   //  ---      Number of participants
   Int_t NPart, NPartTot;
-  NPart = 207-NGenSpecN-NGenSpecP;
-  NPartTot = 207-NGenSpec;
-  //printf("	###	NPart(ZP+ZN) = %d, NPart(ZDC) = %d, b = %f fm\n",NPart,NPartTot,ImpPar);
-  printf("	###	NPart = %d, b = %f fm\n",NPartTot,ImpPar);
+  NPart = 208-NGenSpecN-NGenSpecP;
+  NPartTot = 208-NGenSpec;
+  printf("	###	NPart(ZP+ZN) = %d, NPart(ZDC) = %d, b = %f fm\n",NPart,NPartTot,ImpPar);
   
   //  ---     Writing RecPoints TCA
   // Allocate the RecPoints TCA 
@@ -743,13 +707,16 @@ void AliZDC::Digits2Reco()
   AliZDCReco *reco = new AliZDCReco(ZNenergy,ZPenergy,ZDCenergy,ZEMenergy,
   	      NDetSpecN,NDetSpecP,NGenSpecN,NGenSpecP,NGenSpec,NPartTot,ImpPar);
   new((*fRecPoints)[fNRecPoints]) AliZDCReco(*reco);
+  //printf("	fNRecPoints = %d \n",fNRecPoints );
   //fNRecPoints++;
   //fRecPoints->Dump();
   delete reco;
   
   // TreeR
   TTree *treeR = gAlice->TreeR();
-  if(!treeR) printf("\n ERROR -> Can't find TreeR%d in background file\n",fMerger->EvNum());
+  char tname[20];
+  sprintf(tname,"TreeR%d",fNEvBgr);
+  if(!treeR) printf("\n ERROR -> Can't find TreeR%d in background file\n",fNEvBgr);
   // Branch address
   char branchRname[20];
   sprintf(branchRname,"%s",GetName());
@@ -759,8 +726,22 @@ void AliZDC::Digits2Reco()
     else if(!branchR) MakeBranchInTreeR(treeR);
   }
   treeR->Fill();
-  treeR->AutoSave();
+  treeR->Write(tname,TObject::kOverwrite);
   treeR->Reset();
 }
 
  
+//_____________________________________________________________________________
+void   AliZDC::SetMerger(AliZDCMerger* merger)
+{
+// Set pointer to merger 
+    fMerger = merger;
+}
+
+//_____________________________________________________________________________
+AliZDCMerger*  AliZDC::Merger()
+{
+// Return pointer to merger
+    return fMerger;
+}
+

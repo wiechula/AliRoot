@@ -38,11 +38,8 @@
 //   Float_t vec[3]={6,1,20};
 //   cal.SetPosition(2,8,vec,"car");
 //
-//   AliSignal s;
 //   Float_t loc[3]={-1,12,3};
-//   s.SetPosition(loc,"car");
-//   s.SetSignal(328);
-//   cal.AddVetoSignal(s); // Associate (extrapolated) signal as a veto
+//   cal.AddVetoSignal(loc,"car"); // Associate (extrapolated) position as a veto
 //
 //   cal.Group(2);      // Group 'fired' modules into clusters
 //                      // Perform grouping over 2 rings around the center
@@ -83,16 +80,19 @@ AliCalorimeter::~AliCalorimeter()
 // Destructor to delete memory allocated to the various arrays and matrix
  if (fModules)
  {
+  fModules->Delete();
   delete fModules;
   fModules=0;
  }
  if (fClusters)
  {
+  fClusters->Delete();
   delete fClusters;
   fClusters=0;
  }
  if (fVetos)
  {
+  fVetos->Delete();
   delete fVetos;
   fVetos=0;
  }
@@ -145,7 +145,6 @@ AliCalorimeter::AliCalorimeter(Int_t nrow,Int_t ncol)
  fNrows=nrow;
  fNcolumns=ncol;
  fNsignals=0;
- fModules=0;
  fNclusters=0;
  fClusters=0;
  fAttributes=new TMatrix(nrow,ncol);
@@ -177,6 +176,9 @@ AliCalorimeter::AliCalorimeter(Int_t nrow,Int_t ncol)
   (*fAttributes)(i,0)=10;
   (*fAttributes)(i,ncol-1)=10;
  }
+ 
+ fModules=new TObjArray();  // Default size, expanded automatically
+ fModules->SetOwner();
  
  fHmodules=0;
  fHclusters=0;
@@ -210,13 +212,8 @@ void AliCalorimeter::SetSignal(Int_t row,Int_t col,Float_t sig)
   AliCalmodule* m=fMatrix[row-1][col-1];
   if (!m) // only count new modules
   {
-   if (!fModules)
-   {
-    fModules=new TObjArray();  // Default size, expanded automatically
-    fModules->SetOwner();
-   }
    fNsignals++;
-   m=new AliCalmodule();
+   m=new AliCalmodule;
    AliPosition* r=fPositions[row-1][col-1];
    if (r) m->SetPosition(*r);
    fModules->Add(m);
@@ -275,11 +272,6 @@ void AliCalorimeter::AddSignal(AliCalmodule* mod)
   AliCalmodule* m=fMatrix[row-1][col-1];
   if (!m) // No module existed yet at this position
   {
-   if (!fModules)
-   {
-    fModules=new TObjArray();  // Default size, expanded automatically
-    fModules->SetOwner();
-   }
    fNsignals++;
    m=new AliCalmodule;
    fModules->Add(m);
@@ -330,13 +322,9 @@ void AliCalorimeter::Reset()
 // Note : Module gains, edge and dead flags remain unchanged
  
  if (!fMatrix) LoadMatrix(); // Restore matrix data in case of reading input
-
+ 
  fNsignals=0;
- if (fModules)
- {
-  delete fModules;
-  fModules=0;
- }
+ if (fModules) fModules->Delete();
  for (Int_t i=0; i<fNrows; i++)
  {
   for (Int_t j=0; j<fNcolumns; j++)
@@ -348,6 +336,7 @@ void AliCalorimeter::Reset()
  fNclusters=0;
  if (fClusters)
  {
+  fClusters->Delete();
   delete fClusters;
   fClusters=0;
  }
@@ -355,6 +344,7 @@ void AliCalorimeter::Reset()
  fNvetos=0;
  if (fVetos)
  {
+  fVetos->Delete();
   delete fVetos;
   fVetos=0;
  }
@@ -738,6 +728,7 @@ void AliCalorimeter::Group(Int_t n)
   // Clustering of modules. Start with the highest signal.
   if (fClusters)
   {
+   fClusters->Delete();
    delete fClusters;
    fClusters=0;
   }
@@ -1067,9 +1058,10 @@ void AliCalorimeter::Ungroup()
  }
 }
 ///////////////////////////////////////////////////////////////////////////
-void AliCalorimeter::AddVetoSignal(AliSignal& s)
+void AliCalorimeter::AddVetoSignal(Float_t* r,TString f,Float_t s)
 {
-// Associate an (extrapolated) AliSignal as veto to the calorimeter.
+// Associate an (extrapolated) AliSignal at location r as veto to the cal.
+// Note : The default signal value (s) is 0
  if (!fVetos)
  {
   fNvetos=0;
@@ -1077,23 +1069,11 @@ void AliCalorimeter::AddVetoSignal(AliSignal& s)
   fVetos->SetOwner();
  } 
 
- Int_t nvalues=s.GetNvalues();
- AliSignal* sx=new AliSignal(nvalues);
- sx->SetName(s.GetName());
- 
- sx->SetPosition((Ali3Vector&)s);
-
- Double_t sig,err;
- for (Int_t i=1; i<=nvalues; i++)
- {
-  sig=s.GetSignal(i);
-  err=s.GetSignalError(i);
-  sx->SetSignal(sig,i);
-  sx->SetSignalError(err,i);
- } 
-
- fVetos->Add(sx);
+ fVetos->Add(new AliSignal);
  fNvetos++;
+
+ ((AliSignal*)fVetos->At(fNvetos-1))->SetPosition(r,f);
+ ((AliSignal*)fVetos->At(fNvetos-1))->SetSignal(s);
 }
 ///////////////////////////////////////////////////////////////////////////
 Int_t AliCalorimeter::GetNvetos()

@@ -15,12 +15,6 @@
 
 /*
 $Log$
-Revision 1.3  2002/05/30 15:02:31  morsch
-Impact method added. (G. Martinez)
-
-Revision 1.2  2000/07/12 08:56:25  fca
-Coding convention correction and warning removal
-
 Revision 1.1  1999/12/17 09:01:14  fca
 Y.Schutz new classes for reconstruction
 
@@ -55,4 +49,4 @@ AliGeometry::~AliGeometry()
 {
   // dtor
 }
-//____________________________________________________________________________
+

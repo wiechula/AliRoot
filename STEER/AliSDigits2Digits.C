@@ -63,8 +63,7 @@ Int_t AliSDigits2Digits(TString fileNameDigits="digits.root",
     manager->SetOutputFile(fileNameDigits);
   }
   manager->SetNrOfEventsToWrite(nEvents);
-  if (iITS == 1) AliITSDigitizer *dITS  = new AliITSDigitizer(manager);
-  if (iITS == 2) AliITSFDigitizer *dITS  = new AliITSFDigitizer(manager);
+  if (iITS) AliITSDigitizer *dITS  = new AliITSDigitizer(manager);
   if (iTPC) AliTPCDigitizer *dTPC  = new AliTPCDigitizer(manager);
   if (iTRD) AliTRDdigitizer *dTRD  = new AliTRDdigitizer(manager);
   if (iPHOS) AliPHOSDigitizer *dPHOS  = new AliPHOSDigitizer(manager);

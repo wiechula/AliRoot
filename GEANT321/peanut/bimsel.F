@@ -2,18 +2,6 @@
 * $Id$
 *
 * $Log$
-* Revision 1.5  2002/06/25 08:17:33  hristov
-* Additional protection
-*
-* Revision 1.4  2002/06/22 10:50:18  hristov
-* Better protection
-*
-* Revision 1.3  2002/06/20 15:58:37  hristov
-* Protection in case of invalid ACOS argument. The reason for such argument has to be investigated.
-*
-* Revision 1.2  2002/05/13 12:40:58  hristov
-* Dummy subroutines to avoid files with no code in
-*
 * Revision 1.1.1.1  1999/05/18 15:55:22  fca
 * AliRoot sources
 *
@@ -298,26 +286,13 @@
             BIMPCT = 0.5D+00 * ( RADTOT + BIMPTR - RADPRO )
             IF ( BIMPTR .GE. RADTOT ) THEN
                X1 = BIMPTR - RADTOT
-               DUMMY = 2.D+00 * X1 / ( RADPRO + X1 )
-               IF (ABS(DUMMY).GT.1.D0) THEN
-                  PRINT *,"Warning in GEANT321/peanut/bimsel.F "
-                  PRINT *,"Illegal ACOS argument ",DUMMY
-                  DUMMY = SIGN(1.D0, DUMMY )
-               ENDIF
-               ANGRED = ACOS ( DUMMY ) / PI
+               ANGRED = ACOS ( 2.D+00 * X1 / ( RADPRO + X1 ) ) / PI
                X1 = X1 / ( R0PROT * RPRONU * RADCO2 )
                DSKRED = ( 0.5D+00 * X1 * X1 + X1 + 1.D+00 ) * EXP (-X1)
      &                * ANGRED
-               IF (DSKRED.EQ.0.D0) DSKRED=1.D+00
             ELSE
                X1 = RADPRO + BIMPTR - RADTOT
-               DUMMY = 2.D+00 * X1 / ( RADPRO + X1 )
-               IF (ABS(DUMMY).GT.1.D0) THEN
-                  PRINT *,"Warning in GEANT321/peanut/bimsel.F "
-                  PRINT *,"Illegal ACOS argument ",DUMMY
-                  DUMMY = SIGN(1.D0, DUMMY )
-               ENDIF
-               ANGRED = ACOS ( DUMMY ) / PI
+               ANGRED = ACOS ( 2.D+00 * X1 / ( RADPRO + X1 ) ) / PI
                X1 = X1 / ( R0PROT * RPRONU * RADCO2 )
                DSKRED = 1.D+00 - ( 0.5D+00 * X1 * X1 + X1 + 1.D+00 )
      &                * EXP (-X1) * ANGRED

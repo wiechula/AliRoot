@@ -68,7 +68,7 @@ ClassImp(AliPHOSQAVirtualCheckable)
   // dtor 
 
   fAlarms->Clear() ; 
-  //PH  delete fAlarms ; 
+  delete fAlarms ; 
 }
 
 //____________________________________________________________________________ 

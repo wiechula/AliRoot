@@ -167,7 +167,6 @@ public:
    TFile* GetTreeDFile() const {return fTreeDFile;}
    TFile* GetTreeSFile() const {return fTreeSFile;}
    TFile* GetTreeRFile() const {return fTreeRFile;}
-   void PrintTreeFile();
    
 
    TTree         *TreeD() {return fTreeD;}
@@ -181,7 +180,6 @@ public:
    AliStack      *Stack() {return fStack;}
 
 protected:
-  void CloseTreeFile(Option_t *option);
   virtual  void  Tree2Tree(Option_t *option, const char *detector=0);
   TFile* InitFile(TString fileName="");
   Int_t          fRun;               //! Current run number

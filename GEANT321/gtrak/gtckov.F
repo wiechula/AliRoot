@@ -104,6 +104,7 @@ C.    ------------------------------------------------------------------
 *            NMEC = 1
 *            LMEC(1)= 30
 *            GO TO 110
+
             GEKRAT=0.
             IEKBIN=1
          ELSE
@@ -130,7 +131,7 @@ C.    ------------------------------------------------------------------
 *
       IPROC  = 103
       STEP   = STEMAX
-*     
+*
 *  **   Step limitation due to in flight absorbtion ?
 *
       IF (ILABS.GT.0) THEN
@@ -328,7 +329,6 @@ C
                GEKRT1=1.-GEKRT2
                ABSCO2=Q(JABSC2+IEKBI2)*GEKRT1+Q(JABSC2+IEKBI2+1)*GEKRT2
                EFFIC2=Q(JEFFI2+IEKBI2)*GEKRT1+Q(JEFFI2+IEKBI2+1)*GEKRT2
-
                IF(JINDX2.GT.0) THEN
                  RIN2=Q(JINDX2+IEKBI2)*GEKRT1+Q(JINDX2+IEKBI2+1)*GEKRT2
                ELSE
@@ -342,8 +342,6 @@ C
                   VECT(1)=VOUT(1)
                   VECT(2)=VOUT(2)
                   VECT(3)=VOUT(3)
-                  STEPLA = ABSCO2
-                  EFFIC  = EFFIC2
                   IPROC=0
                ELSE
                   IPROC = 102
@@ -384,13 +382,11 @@ C
 *
       IF (IPROC.EQ.101) THEN
          ISTOP=2
-
          CALL GRNDM(RNDM,1)
          IF(RNDM.LT.EFFIC) THEN
 *
 * ***  Destep =/= 0 means that the photon has been detected
 *
-
             DESTEP=VECT(7)
          ELSE
             DESTEP=0.

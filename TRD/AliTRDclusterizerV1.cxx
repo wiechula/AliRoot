@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.16  2002/03/25 20:01:30  cblume
-Introduce parameter class
-
 Revision 1.15  2001/11/14 12:09:11  cblume
 Use correct name for digitizer
 
@@ -110,6 +107,7 @@ AliTRDclusterizerV1::AliTRDclusterizerV1():AliTRDclusterizer()
   //
 
   fDigitsManager = 0;
+  fPar           = 0;
 
 }
 
@@ -123,6 +121,7 @@ AliTRDclusterizerV1::AliTRDclusterizerV1(const Text_t* name, const Text_t* title
 
   fDigitsManager = new AliTRDdigitsManager();
   fDigitsManager->CreateArrays();
+  fPar           = 0;
 
 }
 
@@ -171,6 +170,7 @@ void AliTRDclusterizerV1::Copy(TObject &c)
   //
 
   ((AliTRDclusterizerV1 &) c).fDigitsManager = 0;
+  ((AliTRDclusterizerV1 &) c).fPar           = 0;
 
   AliTRDclusterizer::Copy(c);
 
@@ -217,8 +217,10 @@ Bool_t AliTRDclusterizerV1::MakeClusters()
   // Create a default parameter class if none is defined
   if (!fPar) {
     fPar = new AliTRDparameter("TRDparameter","Standard TRD parameter");
-    printf("<AliTRDclusterizerV1::MakeCluster> ");
-    printf("Create the default parameter object.\n");
+    if (fVerbose > 0) {
+      printf("<AliTRDclusterizerV1::MakeCluster> ");
+      printf("Create the default parameter object.\n");
+    }
   }
 
   Float_t timeBinSize = fPar->GetTimeBinSize();
@@ -310,15 +312,10 @@ Bool_t AliTRDclusterizerV1::MakeClusters()
                 ,icham,iplan,isect);
 	}
 
-        Int_t   nRowMax     = fPar->GetRowMax(iplan,icham,isect);
-        Int_t   nColMax     = fPar->GetColMax(iplan);
-        Int_t   nTimeBefore = fPar->GetTimeBefore();
-        Int_t   nTimeTotal  = fPar->GetTimeTotal();  
-
-        Float_t row0        = fPar->GetRow0(iplan,icham,isect);
-        Float_t col0        = fPar->GetCol0(iplan);
-        Float_t rowSize     = fPar->GetRowPadSize(iplan,icham,isect);
-        Float_t colSize     = fPar->GetColPadSize(iplan);
+        Int_t nRowMax     = fPar->GetRowMax(iplan,icham,isect);
+        Int_t nColMax     = fPar->GetColMax(iplan);
+        Int_t nTimeBefore = fPar->GetTimeBefore();
+        Int_t nTimeTotal  = fPar->GetTimeTotal();  
 
         // Get the digits
         digits = fDigitsManager->GetDigits(idet);
@@ -474,8 +471,7 @@ Bool_t AliTRDclusterizerV1::MakeClusters()
 
   		  // Calculate the position of the cluster by using the
 		  // lookup table method
-                  clusterPads[1] = col + 0.5
-                                 + fPar->LUTposition(iplan,clusterSignal[0]
+                  clusterPads[1] = fPar->LUTposition(iplan,clusterSignal[0]
                                                           ,clusterSignal[1]
 					                  ,clusterSignal[2]);
 
@@ -490,11 +486,8 @@ Bool_t AliTRDclusterizerV1::MakeClusters()
 
 		}
 
-                Float_t q0 = clusterSignal[0];
-		Float_t q1 = clusterSignal[1];
-                Float_t q2 = clusterSignal[2];
-                Float_t clusterSigmaY2 = (q1*(q0+q2)+4*q0*q2) /
-                                         (clusterCharge*clusterCharge);
+                Float_t clusterSigmaY2 = (clusterSignal[2] + clusterSignal[0]) / clusterCharge 
+                                       - (clusterPads[1]-col-0.5) * (clusterPads[1]-col-0.5);
 
                 // Correct for ExB displacement
                 if (fPar->ExBOn()) { 
@@ -527,21 +520,13 @@ Bool_t AliTRDclusterizerV1::MakeClusters()
                   printf("Type = %d, Number of pads = %d\n",iType,nPadCount);
                 }
 
-		// Calculate the position and the error
-                Float_t clusterPos[3];
-                clusterPos[0] = clusterPads[1] * colSize + col0;
-                clusterPos[1] = clusterPads[0] * rowSize + row0;
-                clusterPos[2] = clusterPads[2];
-                Float_t clusterSig[2];
-                clusterSig[0] = (clusterSigmaY2 + 1./12.) * colSize*colSize;
-                clusterSig[1] = rowSize * rowSize / 12.;
-
                 // Add the cluster to the output array 
-                fTRD->AddCluster(clusterPos
+                fTRD->AddCluster(clusterPads
+                                ,clusterDigit
                                 ,idet
                                 ,clusterCharge
                                 ,clusterTracks
-				,clusterSig
+				,clusterSigmaY2
                                 ,iType);
 
               }
