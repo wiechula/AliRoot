@@ -8,20 +8,29 @@
 #include "TG4PhysicsList.h"
 #include "TG4PhysicsListMessenger.h"
 #include "TG4PhysicsManager.h"
+#include "TG4CutVector.h"
 #include "TG4FlagVector.h"
 #include "TG4SpecialCuts.h"
 #include "TG4SpecialFlags.h"
 
 #include <G4ParticleDefinition.hh>
+#include <G4ParticleWithCuts.hh>
 #include <G4ProcessManager.hh>
 #include <G4ProcessVector.hh>
+#include <G4ParticleTypes.hh>
+#include <G4ParticleTable.hh>
 #include <G4BosonConstructor.hh>
 #include <G4LeptonConstructor.hh>
 #include <G4MesonConstructor.hh>
 #include <G4BaryonConstructor.hh>
 #include <G4IonConstructor.hh>
 #include <G4ShortLivedConstructor.hh>
+#include <G4Material.hh>
+#include <G4MaterialTable.hh>
 #include <G4ProcessTable.hh>
+//#include <G4ios.hh>
+
+#include <g4std/iomanip>
 
 
 TG4PhysicsList::TG4PhysicsList()
@@ -942,44 +951,11 @@ void TG4PhysicsList::ConstructSpecialFlags()
 
 void TG4PhysicsList::SetCuts()
 {
-// Sets the default cut value for all particle types
-// other then e-/e+. 
-// The cut value for e-/e+ is high in oredr to supress
-// tracking of delta electrons.
+// "G4VUserPhysicsList::SetCutsWithDefault" method sets 
+// the default cut value for all particle types 
 // ---
 
-  // SetCutsWithDefault();   
-         // "G4VUserPhysicsList::SetCutsWithDefault" method sets 
-         // the default cut value for all particle types.
-
-  // default cut value
-  G4double cut  = defaultCutValue;
-  G4double ecut = 10.*m; 
-  //G4double ecut = cut; 
-
-#ifdef G4VERBOSE    
-  if (verboseLevel >1){
-    G4cout << "G4VUserPhysicsList::SetCutsWithDefault:";
-    G4cout << "CutLength : " << cut/mm << " (mm)" << G4endl;
-  }  
-#endif
-
-  // set cut values for gamma at first and for e- second and next for e+,
-  // because some processes for e+/e- need cut values for gamma 
-  SetCutValue(cut, "gamma");
-  SetCutValue(ecut, "e-");
-  SetCutValue(ecut, "e+");
- 
-  // set cut values for proton and anti_proton before all other hadrons
-  // because some processes for hadrons need cut values for proton/anti_proton 
-  SetCutValue(cut, "proton");
-  SetCutValue(cut, "anti_proton");
-  
-  SetCutValueForOthers(cut);
-
-  if (verboseLevel>1) {
-    DumpCutValuesTable();
-  }
+  SetCutsWithDefault();   
 }
 
 void TG4PhysicsList::ConstructAllBosons()

@@ -7,9 +7,6 @@
 #define TGEANT4_H
 
 #include "AliMC.h"
-#include "AliMCProcess.h"
-
-#include <TArrayI.h>
 
 class TG4VRunConfiguration;
 class TG4GeometryManager;
@@ -18,8 +15,6 @@ class TG4StepManager;
 class TG4VisManager;
 class TG4RunManager;
 class TG4Messenger;
-
-class AliDecayer;
 
 class TGeant4: public AliMC
 {
@@ -61,8 +56,8 @@ class TGeant4: public AliMC
                      Float_t thetaY, Float_t phiY, Float_t thetaZ, 
 		     Float_t phiZ);
     virtual void  Gstpar(Int_t itmed, const char *param, Float_t parval); 
-    virtual void  SetCerenkov(Int_t itmed, Int_t npckov, Float_t *ppckov,
-                     Float_t *absco, Float_t *effic, Float_t *rindex);
+    virtual void  Gsckov(Int_t itmed, Int_t npckov, Float_t *ppckov,
+			 Float_t *absco, Float_t *effic, Float_t *rindex); 
 
     // functions from GGEOM 
     virtual Int_t Gsvolu(const char *name, const char *shape, Int_t nmed,  
@@ -91,7 +86,6 @@ class TGeant4: public AliMC
     virtual Int_t VolId(const Text_t* volName) const;
     virtual const char* VolName(Int_t id) const;
     virtual Int_t NofVolumes() const;
-    virtual Int_t VolId2Mate(Int_t id) const;
 
     //
     // methods for physics management
@@ -104,10 +98,6 @@ class TGeant4: public AliMC
     virtual void SetCut(const char* cutName, Float_t cutValue);
     virtual void SetProcess(const char* flagName, Int_t flagValue);
     virtual Float_t Xsec(char* reac, Float_t energy, Int_t part, Int_t mate);
-    virtual void SetExternalDecayer(AliDecayer* decayer); //NEW
-
-    // get methods
-    virtual AliDecayer* Decayer() const; //NEW
  
         // particle table usage         
     virtual Int_t IdFromPDG(Int_t pdgID) const;
@@ -172,8 +162,10 @@ class TGeant4: public AliMC
     virtual Int_t NSecondaries() const;
     virtual void  GetSecondary(Int_t isec, Int_t& particleId, 
                     TLorentzVector& position, TLorentzVector& momentum);
-    virtual AliMCProcess ProdProcess(Int_t isec) const; 
-    virtual Int_t StepProcesses(TArrayI &proc) const;
+    virtual const char* ProdProcess() const; 
+
+	// random number generator	    
+    virtual void Rndm(Float_t* array, const Int_t size) const;    
   
     //
     // methods for visualization
