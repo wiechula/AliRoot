@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.61  2002/09/10 07:06:42  kowal2
+Corrected for the memory leak. Thanks to J. Chudoba and M. Ivanov
+
+Revision 1.60  2002/06/12 14:56:56  kowal2
+Added track length to the reference hits
+
 Revision 1.59  2002/06/05 15:37:31  kowal2
 Added cross-talk from the wires beyond the first and the last rows
 
@@ -264,7 +270,9 @@ AliTPCFastMatrix::AliTPCFastMatrix(Int_t row_lwb, Int_t row_upb, Int_t col_lwb, 
 class AliTPCFastVector : public TVector {
 public :
   AliTPCFastVector(Int_t size);
+  virtual ~AliTPCFastVector(){;}
   inline Float_t & UncheckedAt(Int_t index) const  {return  fElements[index];} //fast acces  
+  
 };
 
 AliTPCFastVector::AliTPCFastVector(Int_t size):TVector(size){
@@ -1895,7 +1903,7 @@ void AliTPC::Hits2DigitsSector(Int_t isec)
    
        } // end of the sector digitization
 
-      for(i=0;i<nrows;i++){
+      for(i=0;i<nrows+2;i++){
         row[i]->Delete();  
         delete row[i];   
       }
@@ -2739,6 +2747,13 @@ void AliTPC::SetTreeAddress2()
     branch = treeH->GetBranch(branchname);
     if (branch) branch->SetAddress(&fTrackHitsOld);
   }
+  //set address to TREETR
+  TTree *treeTR = gAlice->TreeTR();
+  if (treeTR && fTrackReferences) {
+    branch = treeTR->GetBranch(GetName());
+    if (branch) branch->SetAddress(&fTrackReferences);
+  }
+
 
 }
 

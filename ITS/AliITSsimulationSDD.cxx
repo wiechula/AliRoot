@@ -15,6 +15,12 @@
 /*
   $Id$
   $Log$
+  Revision 1.35  2002/09/09 17:23:28  nilsen
+  Minor changes in support of changes to AliITSdigitS?D class'.
+
+  Revision 1.34  2002/06/07 16:32:28  nilsen
+  Latest SDD changes to speed up the SDD simulation code.
+
   Revision 1.33  2002/04/24 22:02:31  nilsen
   New SDigits and Digits routines, and related changes,  (including new
   noise values).
@@ -807,8 +813,12 @@ void AliITSsimulationSDD::ListOfFiredCells(Int_t *arg,Double_t timeAmplitude,
 //____________________________________________
 void AliITSsimulationSDD::AddDigit( Int_t i, Int_t j, Int_t signal ) {
     // Adds a Digit.
-    Int_t digits[3], tracks[3], hits[3];
-    Float_t phys, charges[3];
+    Int_t size = AliITSdigitSPD::GetNTracks();
+    Int_t digits[3];
+    Int_t * tracks = new Int_t[size];
+    Int_t * hits = new Int_t[size];
+    Float_t phys;
+    Float_t * charges = new Float_t[size];
 
     if( fResponse->Do10to8() ) signal = Convert8to10( signal ); 
     digits[0] = i;
@@ -818,7 +828,7 @@ void AliITSsimulationSDD::AddDigit( Int_t i, Int_t j, Int_t signal ) {
     AliITSpListItem *pItem = fpList->GetpListItem( i, j );
     if( pItem == 0 ) {
         phys = 0.0;
-        for( Int_t l=0; l<3; l++ ) {
+        for( Int_t l=0; l<size; l++ ) {
             tracks[l]  = 0;
             hits[l]    = 0;
             charges[l] = 0.0;
@@ -828,14 +838,21 @@ void AliITSsimulationSDD::AddDigit( Int_t i, Int_t j, Int_t signal ) {
         if( idtrack >= 0 ) phys = pItem->GetSignal();  
         else phys = 0.0;
 
-        for( Int_t l=0; l<3; l++ ) {
+        for( Int_t l=0; l<size; l++ ) if(l<pItem->GetMaxKept()) {
             tracks[l]  = pItem->GetTrack( l );
             hits[l]    = pItem->GetHit( l );
             charges[l] = pItem->GetSignal( l );
-        }
+        }else{
+            tracks[l]  = -3;
+            hits[l]    = -1;
+            charges[l] = 0.0;
+	}// end for if
     }
 
     fITS->AddSimDigit( 1, phys, digits, tracks, hits, charges ); 
+    delete [] tracks;
+    delete [] hits;
+    delete [] charges;
 }
 
 /*

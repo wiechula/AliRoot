@@ -1,32 +1,32 @@
-#ifndef ALIITSV3_H
-#define ALIITSV3_H
+#ifndef ALIITSVPPRASYMMFMD_H
+#define ALIITSVPPRASYMMFMD_H
 /* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
  * See cxx source for full Copyright notice                               */
 
 /* $Id$ */
 
 /////////////////////////////////////////////////////////
-//  Manager and hits classes for set: ITS version 3    //
+//  Manager and hits classes for set: ITS version 10   //
 /////////////////////////////////////////////////////////
  
 #include "AliITS.h"
-
-class AliITSv3 : public AliITS {
+ 
+class AliITSvPPRasymmFMD : public AliITS {
 
  public:
-    AliITSv3();
-    AliITSv3(const char *name, const char *title);
-    AliITSv3(const AliITSv3 &source); // copy constructor
-    AliITSv3& operator=(const AliITSv3 &source); // assignment operator
-    virtual       ~AliITSv3() ;
+    AliITSvPPRasymmFMD();
+    AliITSvPPRasymmFMD(const char *name, const char *title);
+    AliITSvPPRasymmFMD(const AliITSvPPRasymmFMD &source); // copy constructor
+    AliITSvPPRasymmFMD& operator=(const AliITSvPPRasymmFMD &source); // assignment operator
+    virtual       ~AliITSvPPRasymmFMD() ;
     virtual void   BuildGeometry();
     virtual void   CreateGeometry();
     virtual void   CreateMaterials();
-    virtual void   Init();   
-    virtual Int_t  IsVersion() const {
-      // returns the ITS version number 
-      return 3;
-    }
+    virtual Int_t  IsVersion() const {// returns the ITS version number 
+                                      return 10;} 
+    virtual void   Init(); 
+    virtual void   SetDefaults();
+    virtual void   DrawModule();
     virtual void   StepManager();
     virtual void   SetWriteDet(Bool_t det=kTRUE){ // set .det write
 	                                         fGeomDetOut = det;}
@@ -40,11 +40,26 @@ class AliITSv3 : public AliITS {
 	                                          fEuclidOut = euclid;}
     virtual void   SetEUCLIDFileName(const char *f){ // set write file
 	                     fEuclidGeometry=f;fEuclidOut = kTRUE;}
-    virtual void   SetMinorVersion(Int_t v){ // Choose between existing minor versions
-	fMinorVersion = 1;
-	if(v==1) fMinorVersion = 1;
-	else if(v==2) fMinorVersion = 2;
-	else Warning("SetMinorVersion","Undefined Minor Version setting =1");}
+    virtual void   SetMinorVersion(Int_t v=22){ // Choose between existing minor versions
+	fMinorVersion = v;}
+    virtual void   SetThicknessDet1(Float_t v=300.){ 
+	 // Set detector thickness in layer 1
+	 fDet1 = v;}
+    virtual void   SetThicknessDet2(Float_t v=300.){ 
+	 // Set detector thickness in layer 2
+	 fDet2 = v;}
+    virtual void   SetThicknessChip1(Float_t v=300.){ 
+	 // Set chip thickness in layer 1
+	 fChip1 = v;}	 	 
+    virtual void   SetThicknessChip2(Float_t v=300.){ 
+	 // Set chip thickness in layer 2
+	 fChip2 = v;}
+    virtual void   SetRails(Int_t v=1){ 
+	 // Set flag for rails
+	 fRails = v;}	 
+    virtual void   SetCoolingFluid(Int_t v=1){ 
+	 // Set flag for cooling fluid
+	 fFluid = v;}	 	 
     virtual Bool_t GetEUCLID(){return fEuclidOut;}// returns value Euclid flag.
     virtual const char  *GetEULIIDFileName() const{ // return .euc file name
 	                               return fEuclidGeometry.Data();}
@@ -60,7 +75,25 @@ class AliITSv3 : public AliITS {
 	return fMajorVersion;}
     virtual Int_t GetMinorVersion(){// return Major Version Number
 	return fMinorVersion;}
-
+    virtual Float_t GetThicknessDet1(){ 
+	 // Get detector thickness in layer 1
+	 return fDet1;}
+    virtual Float_t GetThicknessDet2(){ 
+	 // Get detector thickness in layer 2
+	 return fDet2;}
+    virtual Float_t GetThicknessChip1(){ 
+	 // Get chip thickness in layer 1
+	 return fChip1;}	 	 
+    virtual Float_t GetThicknessChip2(){ 
+	 // Get chip thickness in layer 2
+	 return fChip2;}
+    virtual Int_t GetRails(){ 
+	 // Get flag for rails
+	 return fRails;}	 
+    virtual Int_t GetCoolingFluid(){ 
+	 // Get flag for cooling fluid
+	 return fFluid;}	 	 	 
+	 	 
  private:
     void InitAliITSgeom();
 
@@ -73,9 +106,16 @@ class AliITSv3 : public AliITS {
     char   fEuclidGeomDet[60];// file where detector transormation are define.
     char   fRead[60];         //! file name to read .det file
     char   fWrite[60];        //! file name to write .det file
-   
-    ClassDef(AliITSv3,1)//Hits manager for set:ITS version 3, TP detailed geometry
+    Float_t  fDet1;	      // thickness of detector in SPD layer 1
+    Float_t  fDet2;	      // thickness of detector in SPD layer 2
+    Float_t  fChip1;	      // thickness of chip in SPD layer 1   
+    Float_t  fChip2;	      // thickness of chip in SPD layer 2   
+    Int_t    fRails;          // flag to switch rails on (=1) and off (=0)
+    Int_t    fFluid;          // flag to switch between water (=1) and freon (=0)
+    Int_t fIDMother;          //! ITS Mother Volume id.
+
+    ClassDef(AliITSvPPRasymmFMD,1)  //Hits manager for set:ITS version 8 
+                                 // PPR detailed Geometry asymmetric
 };
  
 #endif
-

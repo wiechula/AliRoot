@@ -15,7 +15,6 @@
  
 #pragma link C++ class  AliITS+;
 #pragma link C++ class  AliITSv1+;
-#pragma link C++ class  AliITSv3+;
 #pragma link C++ class  AliITSv5+;
 #pragma link C++ class  AliITSv5symm+;
 #pragma link C++ class  AliITSv5asymm+;
@@ -23,6 +22,7 @@
 #pragma link C++ class  AliITSvPPRcoarsesymm+;
 #pragma link C++ class  AliITSvPPRasymm+;
 #pragma link C++ class  AliITSvPPRsymm+;
+#pragma link C++ class  AliITSvPPRasymmFMD+;
 #pragma link C++ class  AliITShit+;
 #pragma link C++ class  AliITSdigit+;
 #pragma link C++ class  AliITSdigitSPD+;
@@ -144,4 +144,5 @@
 #pragma link C++ class AliITSsDigitize+;
 #pragma link C++ class AliITSDigitizer+;
 #pragma link C++ class AliITSFDigitizer+;
+#pragma link C++ class AliITSFindClustersV2+;
 #endif
