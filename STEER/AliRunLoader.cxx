@@ -997,7 +997,7 @@ Int_t AliRunLoader::WriteTracks(Option_t* opt)
 }
 /**************************************************************************/
 
-Int_t AliRunLoader::WriteRunLoader(Option_t* opt="")
+Int_t AliRunLoader::WriteRunLoader(Option_t* opt)
 {
   CdGAFile();
   this->Write(0,TObject::kOverwrite);
