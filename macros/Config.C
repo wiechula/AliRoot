@@ -13,14 +13,14 @@ void Config()
     
     // libraries required by geant321
     // gSystem->Load("libMC");  
-    gSystem->Load("$(G3INSTALL)/lib/tgt_$(ALICE_TARGET)/libminicern");
-    gSystem->Load("$(ROOTSYS)/lib/libPhysics");
-    gSystem->Load("$(ROOTSYS)/lib/libEG"); 
-    gSystem->Load("$(ROOTSYS)/lib/libEGPythia6");
+    gSystem->Load("libminicern");
+    gSystem->Load("libPhysics");
+    gSystem->Load("libEG"); 
+    gSystem->Load("libEGPythia6");
     //gSystem->Load("$(ROOTSYS)/lib/libPythia6");  
-    gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libpythia6");  
-    gSystem->Load("$(G3INSTALL)/lib/tgt_$(ALICE_TARGET)/libgeant321");    
-    gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libITS");  
+    gSystem->Load("libpythia6");  
+    gSystem->Load("libgeant321");    
+    gSystem->Load("libITS");  
 
     new  TGeant3("C++ Interface to Geant3");
 
@@ -105,7 +105,7 @@ void Config()
     gAlice->SetField(-999, 2);  //Specify maximum magnetic field in Tesla (neg. ==> default field)
 
     Int_t   iABSO = 1;
-    Int_t   iCASTOR = 1;
+    Int_t   iCRT = 1;
     Int_t   iDIPO = 1;
     Int_t   iFMD = 1;
     Int_t   iFRAME = 1;
@@ -300,11 +300,11 @@ void Config()
         AliZDC *ZDC = new AliZDCv2("ZDC", "normal ZDC");
     }
 
-    if (iCASTOR)
+    if (iCRT)
     {
         //=================== CASTOR parameters ============================
 
-        AliCASTOR *CASTOR = new AliCASTORv1("CASTOR", "normal CASTOR");
+        AliCRT *CRT = new AliCRT("CRT", "normal CRT");
     }
 
     if (iTRD)
