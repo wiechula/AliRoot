@@ -41,7 +41,7 @@ AliPHOSReconstructioner::AliPHOSReconstructioner()
 //____________________________________________________________________________
 AliPHOSReconstructioner::AliPHOSReconstructioner(AliPHOSClusterizer & Clusterizer, AliPHOSTrackSegmentMaker & Tracker)
 {
-  fClusterizer         = &Clusterizer ;
+  fClusterizer        = &Clusterizer ;
   fTrackSegmentMaker  = &Tracker ;
 } 
 
@@ -49,12 +49,14 @@ AliPHOSReconstructioner::AliPHOSReconstructioner(AliPHOSClusterizer & Clusterize
 AliPHOSReconstructioner::~AliPHOSReconstructioner() 
 {
   // dtor
+ fClusterizer = 0 ; 
+ fTrackSegmentMaker = 0 ; 
 }  
 
 //____________________________________________________________________________
- void AliPHOSReconstructioner:: Make(TClonesArray * dl, RecPointsList * emccl, RecPointsList * ppsdl, TrackSegmentsList * trsl)
+void AliPHOSReconstructioner::Make(TClonesArray * dl, RecPointsList * emccl, RecPointsList * ppsdl, TrackSegmentsList * trsl)
 {
   fClusterizer->MakeClusters(dl, emccl, ppsdl);
 
-  fTrackSegmentMaker->MakeTrackSegments(dl,emccl,ppsdl,trsl) ;
+  fTrackSegmentMaker->MakeTrackSegments(dl, emccl, ppsdl, trsl) ;
 }

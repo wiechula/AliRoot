@@ -22,7 +22,8 @@
 
 // --- Standard library ---
 
-#include <iostream.h>
+#include <iostream>
+#include <cassert>
 
 // --- AliRoot header files ---
 
@@ -55,16 +56,22 @@ void AliPHOSPpsdRecPoint::AddDigit(AliDigitNew & digit, Float_t Energy)
   
   
   if ( fMulDigit >= fMaxDigit ) { // increase the size of the lists 
-    int * tempo = new ( int[fMaxDigit*=2] ) ; 
+    fMaxDigit*=2 ; 
+    int * tempo = new ( int[fMaxDigit] ) ; 
     Int_t index ; 
     
     for ( index = 0 ; index < fMulDigit ; index++ )
       tempo[index] = fDigitsList[index] ;
     
-    delete fDigitsList ; 
-    fDigitsList = tempo ;
+    delete []  fDigitsList ; 
+    fDigitsList =  new ( int[fMaxDigit] ) ;
+   
+    for ( index = 0 ; index < fMulDigit ; index++ )
+      fDigitsList[index] = tempo[index] ;
+ 
+    delete [] tempo ;
   }
-  
+
   fDigitsList[fMulDigit++]  =  (int) &digit  ; 
   fAmp += Energy ; 
 }
