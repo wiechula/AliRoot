@@ -61,6 +61,7 @@ class AliPHOSGetter : public TObject {
   
   virtual ~AliPHOSGetter() ; 
   
+  const Bool_t HasFailed() const { return fFailed ; }
   Bool_t PostPrimaries(void ) const ;  
   Bool_t PostHits(void ) const ;  
   Bool_t PostSDigits(      const char * name,  const char * file = 0) const ;  
@@ -182,6 +183,8 @@ class AliPHOSGetter : public TObject {
   }
   
   TFolder * SDigitsFolder() { return dynamic_cast<TFolder*>(fSDigitsFolder->FindObject("PHOS")) ; }
+
+  void SetRecParticlesTitle(const TString title) { fRecParticlesTitle = title ; }
   
 private:
   
@@ -190,10 +193,10 @@ private:
   TObject * ReturnO(TString what, TString name=0, TString file=0) const ; 
   const TTask * ReturnT(TString what,TString name=0) const ; 
   void DefineBranchTitles(char* branch, char* branchTitle) ;
-  void ReadTreeD() ;
-  void ReadTreeH() ;
-  void ReadTreeR() ;
-  void ReadTreeS(Int_t event) ;
+  Int_t ReadTreeD() ;
+  Int_t ReadTreeH() ;
+  Int_t ReadTreeR(Bool_t any=kFALSE) ;
+  Int_t ReadTreeS(Int_t event) ;
   void ReadTreeQA() ;
   void ReadPrimaries() ;
 
@@ -215,6 +218,7 @@ private:
 
  private:
 
+  TFile *        fFile;               //! 
   TString        fHeaderFile ;        //! File in which gAlice lives
   TString        fBranchTitle ;       //!
   TString        fTrackSegmentsTitle ;//! 
@@ -223,6 +227,7 @@ private:
   TString        fDigitsTitle ;       //!
   TString        fSDigitsTitle ;      //!
 
+  Bool_t         fFailed ;            //! set if file not opend or galice not found
   Int_t          fDebug ;             // Debug level
 
   Int_t          fNPrimaries ;        //! # of primaries

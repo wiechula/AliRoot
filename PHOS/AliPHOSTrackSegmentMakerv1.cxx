@@ -95,6 +95,7 @@ ClassImp( AliPHOSTrackSegmentMakerv1)
   fEmcLast   = 0 ;   
   fCpvFirst  = 0 ;   
   fCpvLast   = 0 ;   
+  fLinkUpArray = 0 ;
 
   fHeaderFileName           = GetTitle() ;
   fRecPointsBranchTitle     = GetName() ;
@@ -114,7 +115,7 @@ ClassImp( AliPHOSTrackSegmentMakerv1)
  AliPHOSTrackSegmentMakerv1::~AliPHOSTrackSegmentMakerv1()
 { 
   // dtor
-  if(fLinkUpArray)  delete fLinkUpArray  ;
+  delete fLinkUpArray  ;
 }
 
 //____________________________________________________________________________
@@ -319,7 +320,8 @@ void  AliPHOSTrackSegmentMakerv1::MakePairs()
       } 
     }
   }
-  
+  delete [] emcExist ; 
+  delete [] cpvExist ; 
 }
 
 //____________________________________________________________________________
@@ -492,6 +494,7 @@ void AliPHOSTrackSegmentMakerv1::WriteTrackSegments(Int_t event)
 
   gAlice->TreeR()->Write(0,kOverwrite) ;  
   
+  delete [] filename ; 
 }
 
 

@@ -17,14 +17,16 @@ Int_t AliITStestV2(Char_t SlowOrFast='s') {
 
    if (SlowOrFast=='f') {
       cerr<<"Fast AliITSRecPoint(s) !\n";
-      gROOT->LoadMacro("$(ALICE_ROOT)/ITS/ITSHitsToFastPoints.C");
-      ITSHitsToFastPoints();
+      gROOT->LoadMacro("$(ALICE_ROOT)/ITS/AliITSHits2FastRecPoints.C");
+      AliITSHits2FastRecPoints();
    } else {
       cerr<<"Slow AliITSRecPoint(s) !\n";
-      gROOT->LoadMacro("$(ALICE_ROOT)/ITS/AliITSHits2Digits.C");
-      AliITSHits2Digits();
-      gROOT->LoadMacro("$(ALICE_ROOT)/ITS/AliITSFindClusters.C");
-      AliITSFindClusters();
+      gROOT->LoadMacro("$(ALICE_ROOT)/ITS/AliITSHits2SDigits.C");
+      AliITSHits2SDigits();
+      gROOT->LoadMacro("$(ALICE_ROOT)/ITS/AliITSSDigits2Digits.C");
+      AliITSSDigits2Digits();
+      gROOT->LoadMacro("$(ALICE_ROOT)/ITS/AliITSDigits2Recpoints.C");
+      AliITSdigits2RecPoints();
    }
 
    gROOT->LoadMacro("$(ALICE_ROOT)/ITS/AliITSFindClustersV2.C");

@@ -103,43 +103,62 @@ AliEMCALGetter::AliEMCALGetter(const char* headerFile, const char* branchTitle, 
   //fQAFolder      = dynamic_cast<TFolder*>(gROOT->FindObjectAny("Folders/Run/Conditions/QA")); 
   fTasksFolder   = dynamic_cast<TFolder*>(gROOT->FindObjectAny("Folders/Tasks")) ; 
 
+  fFailed = kFALSE ; 
+ 		   
   if ( fHeaderFile != "aliroot"  ) { // to call the getter without a file
 
     //open headers file
-    TFile * file = static_cast<TFile*>(gROOT->GetFile(fHeaderFile.Data() ) ) ;
-    
-    if(file == 0){    //if file was not opened yet, read gAlice
-      if(fHeaderFile.Contains("rfio")) // if we read file using HPSS
-	file =	TFile::Open(fHeaderFile.Data(),rw) ;
-      else
-	file = new TFile(fHeaderFile.Data(),rw) ;
+    fFile = static_cast<TFile*>(gROOT->GetFile(fHeaderFile.Data() ) ) ;
+    if(!fFile){    //if file was not opened yet, read gAlice
+      fFile =	TFile::Open(fHeaderFile.Data(),rw) ;   
       
-      if (!file->IsOpen()) {
+      if (!fFile->IsOpen()) {
 	cerr << "ERROR : AliEMCALGetter::AliEMCALGetter -> Cannot open " << fHeaderFile.Data() << endl ; 
-	abort() ; 
+       	fFailed = kTRUE ;
+        return ;  
       }
       
-      gAlice = static_cast<AliRun *>(file->Get("gAlice")) ;
+      gAlice = static_cast<AliRun *>(fFile->Get("gAlice")) ;
     }
   }
 
   if (!gAlice) {
     cerr << "ERROR : AliEMCALGetter::AliEMCALGetter -> Cannot find gAlice in " << fHeaderFile.Data() << endl ; 
-    abort() ; 
+    fFailed = kTRUE ;
+    return ; 
   }
   if (!EMCAL()) {
     if (fDebug)
       cout << "INFO: AliEMCALGetter -> Posting EMCAL to Folders" << endl ; 
-    AliConfig * conf = AliConfig::Instance() ; 
-    conf->Add(static_cast<AliDetector*>(gAlice->GetDetector("EMCAL"))) ; 
-    conf->Add(static_cast<AliModule*>(gAlice->GetDetector("EMCAL"))) ; 
+    if (gAlice->GetDetector("EMCAL")) {
+      AliConfig * conf = AliConfig::Instance() ;
+      conf->Add(static_cast<AliDetector*>(gAlice->GetDetector("EMCAL"))) ; 
+      conf->Add(static_cast<AliModule*>(gAlice->GetDetector("EMCAL"))) ;
+    }
+    else 
+      cerr << "ERROR: AliEMCALGetter -> detector EMCAL not found" << endl ;
   }
   
   fDebug=0;
 }
 //____________________________________________________________________________ 
-AliEMCALGetter::~AliEMCALGetter(){
+AliEMCALGetter::~AliEMCALGetter()
+{
+  if (fPrimaries) {
+    fPrimaries->Delete() ; 
+    delete fPrimaries ; 
+  }
 
+  TFolder * emcalF = dynamic_cast<TFolder *>(fSDigitsFolder->FindObject("EMCAL")) ;
+  TCollection * folderslist = emcalF->GetListOfFolders() ; 
+  TIter next(folderslist) ; 
+  TFolder * folder = 0 ; 
+  while ( (folder = static_cast<TFolder*>(next())) ) 
+    emcalF->Remove(folder) ; 
+
+  fFile->Close() ;  
+  delete fFile ; 
+  fFile = 0 ;
 }
 
 //____________________________________________________________________________ 
@@ -174,10 +193,13 @@ AliEMCALGetter * AliEMCALGetter::GetInstance(const char* headerFile,
        (fgObjGetter->fHeaderFile.CompareTo(headerFile)==0))
       return fgObjGetter ;
     else
-      fgObjGetter->~AliEMCALGetter() ;  // delete it if already exists another version
+      fgObjGetter->~AliEMCALGetter() ;  // delete it already exists another version
   
   fgObjGetter = new AliEMCALGetter(headerFile,branchTitle, rw) ; 
-  
+
+  if (fgObjGetter->HasFailed() ) 
+    fgObjGetter = 0 ; 
+
   // Posts a few item to the white board (folders)
   // fgObjGetter->CreateWhiteBoard() ;
     
@@ -695,7 +717,7 @@ TObject ** AliEMCALGetter::ClusterizerRef(const char * name) const
 
   if ( !tasks ) {
     cerr << "ERROR: AliEMCALGetter::Post RerRef -> Task //" << fTasksFolder << "/Reconstructioner not found!" << endl;
-    return kFALSE ;
+    return 0 ;
   }        
         
   TTask * emcal = dynamic_cast<TTask*>(tasks->GetListOfTasks()->FindObject("EMCAL")) ; 
@@ -892,7 +914,7 @@ TObject ** AliEMCALGetter::TSMakerRef(const char * name) const
 
   if ( !tasks ) {
     cerr << "ERROR: AliEMCALGetter::Post TerRef -> Task //" << fTasksFolder << "/Reconstructioner not found!" << endl;
-    return kFALSE ;
+    return 0 ;
   }        
         
   TTask * emcal = dynamic_cast<TTask*>(tasks->GetListOfTasks()->FindObject("EMCAL")) ; 
@@ -1062,7 +1084,7 @@ TObject ** AliEMCALGetter::PIDRef(const char * name) const
 
   if ( !tasks ) {
     cerr << "ERROR: AliEMCALGetter::Post PerRef -> Task //" << fTasksFolder << "/Reconstructioner not found!" << endl;
-    return kFALSE ;
+    return 0 ;
   }        
         
   TTask * emcal = dynamic_cast<TTask*>(tasks->GetListOfTasks()->FindObject("EMCAL")) ; 

@@ -14,12 +14,13 @@
 
 #include "AliRun.h"
 #include "AliDetector.h"
+#include "AliITSDetType.h"
 
 class TString;
 class TTree;
 class TFile;
 
-class AliITSDetType;
+//class AliITSDetType;
 class AliITSsimulation;
 class AliITSClusterFinder;
 class AliITSsegmentation;
@@ -88,6 +89,9 @@ class AliITS : public AliDetector {
     virtual void SetSegmentationModel(Int_t id, AliITSsegmentation *seg);
     // Set simulation - temporary 
     virtual void SetSimulationModel(Int_t id, AliITSsimulation *sim);
+    // Set simulation - temporary 
+    virtual AliITSsimulation* GetSimulationModel(Int_t id){
+	return ((AliITSDetType*)(fDetTypes->At(id)))->GetSimulationModel();}
     // Set reconstruction 
     virtual void SetReconstructionModel(Int_t id, AliITSClusterFinder *rec);
     // Set class names for digit and rec point 
@@ -161,7 +165,8 @@ class AliITS : public AliDetector {
                    {return ((TClonesArray *) (*fCtype)[id]);}
 
     //=================== Reconstruction ===============================
-    void MakeBranchR(const char *file);
+    void MakeBranchR(const char *file, Option_t *opt=" ");
+    void MakeBranchRF(const char *file){MakeBranchR(file,"Fast");}
     void SetTreeAddressR(TTree *treeR);
     void AddRecPoint(const AliITSRecPoint &p);
     void HitsToFastRecPoints(Int_t evNumber,Int_t bgrev,Int_t size,
@@ -194,12 +199,12 @@ class AliITS : public AliDetector {
 
     TObjArray    *fCtype;      // List of clusters
     Int_t        *fNctype;     //[fNDetTypes] Num. of clust. per type of det.
-    TTree        *fTreeC;      // Tree for raw clusters
+    TTree        *fTreeC;      //! Tree for raw clusters
 
     TClonesArray *fRecPoints;  // List of reconstructed points
     Int_t         fNRecPoints; // Number of rec points
 
-    ClassDef(AliITS,1) // Base class for ITS
+    ClassDef(AliITS,2) // Base class for ITS
 };
 
 #endif

@@ -48,8 +48,9 @@ class AliITSsimulation : public TObject {
     // Reset module arrays (maps), etc
     virtual void InitSimulationModule( Int_t module, Int_t event ){;}
     // add (sum) a new list of summable digits to module, 
-    // add an offset (mask) to the track numbers
-    virtual void AddSDigitsToModule( TClonesArray *pItemArray, Int_t mask );
+    // add an offset (mask) to the track numbers. Returns kTRUE if there
+    // is a "good" signal in this module.
+    virtual Bool_t AddSDigitsToModule( TClonesArray *pItemArray, Int_t mask );
     // digitize module using the "slow" detector simulator from
     // the sum of summable digits.
     virtual void FinishSDigitiseModule(){;}
@@ -60,6 +61,15 @@ class AliITSsimulation : public TObject {
     // digitizes module using the "fast" detector simulator.
     virtual void CreateFastRecPoints(AliITSmodule *mod,Int_t module,
 				     TRandom *rndm) {}
+    // Return pointer to Response model
+    virtual AliITSresponse* GetResponseModel(){return fResponse;}
+    // set pointer to Response model
+    virtual void SetResponseModel(AliITSresponse *res){fResponse = res;}
+    // Return pointer to Response model
+    virtual AliITSsegmentation* GetSegmentationModel(){return fSegmentation;}
+    // set pointer to Response model
+    virtual void SetSegmentationModel(AliITSsegmentation *seg){
+	fSegmentation = seg;}
 
  protected:
     AliITSresponse      *fResponse;       //! response

@@ -5,6 +5,12 @@
 
 /* $Id$ */
 
+///////////////////////////////////////////////////////////////////////////////
+//                                                                           //
+//  TRD geometry class                                                       //
+//                                                                           //
+///////////////////////////////////////////////////////////////////////////////
+
 #include "AliGeometry.h"
 
 class AliTRDgeometry : public AliGeometry {
@@ -46,6 +52,8 @@ class AliTRDgeometry : public AliGeometry {
   static  Float_t  DrThick() { return fgkDrThick; };
   static  Float_t  AmThick() { return fgkAmThick; };
   static  Float_t  DrZpos()  { return fgkDrZpos;  };
+  static  Float_t  RpadW()   { return fgkRpadW;   };
+  static  Float_t  CpadW()   { return fgkCpadW;   };
 
   virtual void     SetPHOShole() = 0;
   virtual void     SetRICHhole() = 0;
@@ -61,7 +69,7 @@ class AliTRDgeometry : public AliGeometry {
   virtual Bool_t   GetPHOShole() const = 0;
   virtual Bool_t   GetRICHhole() const = 0;
 
-  virtual Int_t    GetDetectorSec(const Int_t p, const Int_t) const;
+  virtual Int_t    GetDetectorSec(const Int_t p, const Int_t c) const;
   virtual Int_t    GetDetector(const Int_t p, const Int_t c, const Int_t s) const;
   virtual Int_t    GetPlane(const Int_t d)   const;
   virtual Int_t    GetChamber(const Int_t d) const;
