@@ -15,6 +15,9 @@
 
 /*
   $Log$
+  Revision 1.58.8.1  2002/10/31 10:36:26  morsch
+  Fresnel losses and wire grid absorption calculated in local coordinates.
+
   Revision 1.58  2001/11/14 09:49:37  dibari
   Use debug methods
 
@@ -2079,7 +2082,7 @@ void AliRICH::StepManager()
     Float_t        localTheta,localPhi;
     Float_t        theta,phi;
     Float_t        destep, step;
-    Float_t        ranf[2];
+    Double_t        ranf[2];
     Int_t          nPads;
     Float_t        coscerenkov;
     static Float_t eloss, xhit, yhit, tlength;
@@ -2094,9 +2097,9 @@ void AliRICH::StepManager()
     // Only gas gap inside chamber
     // Tag chambers and record hits when track enters 
     
-    idvol=-1;
+ 
     id=gMC->CurrentVolID(copy);
-    idvol = copy -1;
+    idvol = copy-1;
     Float_t cherenkovLoss=0;
     //gAlice->KeepTrack(gAlice->CurrentTrack());
     
@@ -2172,16 +2175,12 @@ void AliRICH::StepManager()
 			mom[1]=momentum(1);
 			mom[2]=momentum(2);
 			mom[3]=momentum(3);
-			Chamber(idvol).GlobaltoLocal(mom,localMom);
-			// Z-position for hit
 			
-			
-			/**************** Photons lost in second grid have to be calculated by hand************/ 
-			
+			gMC->Gmtod(mom,localMom,2);
 			Float_t cophi = TMath::Cos(TMath::ATan2(localMom[0], localMom[1]));
 			Float_t t = (1. - .025 / cophi) * (1. - .05 /  cophi);
-			gMC->Rndm(ranf, 1);
-			//printf("grid calculation:%f\n",t);
+			/**************** Photons lost in second grid have to be calculated by hand************/ 
+			gMC->GetRandom()->RndmArray(1,ranf);
 			if (ranf[0] > t) {
 			  gMC->StopTrack();
 			  ckovData[13] = 5;
@@ -2202,21 +2201,25 @@ void AliRICH::StepManager()
 			mom[1]=momentum(1);
 			mom[2]=momentum(2);
 			mom[3]=momentum(3);
-			Chamber(idvol).GlobaltoLocal(mom,localMom);
+
+			gMC->Gmtod(mom,localMom,2);
 			/********* Photons lost by Fresnel reflection have to be calculated by hand********/ 
 			/***********************Cerenkov phtons (always polarised)*************************/
-			
-			Float_t cophi = TMath::Cos(TMath::ATan2(localMom[0], localMom[1]));
-			Float_t t = Fresnel(ckovEnergy*1e9,cophi,1);
-			gMC->Rndm(ranf, 1);
-			if (ranf[0] < t) {
-			  gMC->StopTrack();
-			  ckovData[13] = 6;
-			  AddCerenkov(gAlice->CurrentTrack(),vol,ckovData);
-			  //printf("Added One (2)!\n");
-			  //printf("Lost by Fresnel\n");
-			}
-			/**********************************************************************************/
+			Double_t localTc = localMom[0]*localMom[0]+localMom[2]*localMom[2];
+			Double_t localRt = TMath::Sqrt(localTc);
+			localTheta   = Float_t(TMath::ATan2(localRt,Double_t(localMom[1])));
+			Double_t cotheta = TMath::Abs(cos(localTheta));
+			Float_t t = Fresnel(ckovEnergy*1e9,cotheta,1);
+			    gMC->GetRandom()->RndmArray(1,ranf);
+			    if (ranf[0] < t) {
+			      gMC->StopTrack();
+			      ckovData[13] = 6;
+			      AddCerenkov(gAlice->CurrentTrack(),vol,ckovData);
+				
+			      //printf("Added One (2)!\n");
+			      //printf("Lost by Fresnel\n");
+			    }
+			    /**********************************************************************************/
 		      }
 		  } //track entering?
 		  
@@ -2310,8 +2313,19 @@ void AliRICH::StepManager()
 		Double_t rt = TMath::Sqrt(tc);
 		theta   = Float_t(TMath::ATan2(rt,Double_t(mom[2])))*kRaddeg;
 		phi     = Float_t(TMath::ATan2(Double_t(mom[1]),Double_t(mom[0])))*kRaddeg;
-		gMC->Gmtod(pos,localPos,1);                                                                    
+		
+		gMC->CurrentVolOffID(2,copy);
+		vol[0]=copy;
+		idvol=vol[0]-1;
+		
+
+		gMC->Gmtod(pos,localPos,1);
+
+		//Chamber(idvol).GlobaltoLocal(pos,localPos);
+                                                                    
 		gMC->Gmtod(mom,localMom,2);
+
+		//Chamber(idvol).GlobaltoLocal(mom,localMom);
 		
 		gMC->CurrentVolOffID(2,copy);
 		vol[0]=copy;
@@ -2443,8 +2457,14 @@ void AliRICH::StepManager()
 	    mom[1]=momentum(1);
 	    mom[2]=momentum(2);
 	    mom[3]=momentum(3);
-	    gMC->Gmtod(pos,localPos,1);                                                                    
+
+	    gMC->Gmtod(pos,localPos,1);
+	    
+	    //Chamber(idvol).GlobaltoLocal(pos,localPos);
+                                                                    
 	    gMC->Gmtod(mom,localMom,2);
+
+	    //Chamber(idvol).GlobaltoLocal(mom,localMom);
 	    
 	    ipart  = gMC->TrackPid();
 	    //
