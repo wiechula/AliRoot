@@ -203,7 +203,7 @@ void AliTOFSDigitizer::Exec(Option_t *verboseOption, Option_t *allEvents) {
     TOF->RecreateSDigitsArray();
   }
 
-  AliLoader* gime = fRunLoader->GetLoader("TOFLoader");
+  //PH  AliLoader* gime = fRunLoader->GetLoader("TOFLoader");
 
   if (fEdgeTails) ftail = new TF1("tail",TimeWithTail,-2,2,3);
 
