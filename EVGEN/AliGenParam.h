@@ -11,25 +11,22 @@
 #include "TMCParticle.h"
 
 //-------------------------------------------------------------
-// Generators specific to MUON Arm
-
-// Generate heavy mesons - J/Psi, Upsilon, Phi
-
 class AliGenParam : public AliGenerator
 {
 protected:
-    Double_t (*fPtParaFunc)(Double_t*, Double_t*);
-    Double_t (*fYParaFunc )(Double_t*, Double_t*);
-    Int_t    (*fIpParaFunc )();    
+  Double_t (*fPtParaFunc)(Double_t*, Double_t*); //! Pointer to Pt parametrisation function
+  Double_t (*fYParaFunc )(Double_t*, Double_t*); //! Pointer to Y parametrisation function
+  Int_t    (*fIpParaFunc )();    //! Pointer to particle type parametrisation function
     TF1* fPtPara;
     TF1* fYPara;
-    Int_t fIpart;
-    Float_t fdNdy0;
-    Float_t fYWgt;
-    Float_t fPtWgt;
-    Float_t fBias;
-    Int_t   fTrials;
-    Decay_t fForceDecay;
+    Param_t     fParam;
+    Float_t     fdNdy0;
+    Float_t     fYWgt;
+    Float_t     fPtWgt;
+    Weighting_t fAnalog;       //Flaf for anolog or pt-weighted generation
+    Float_t     fBias;
+    Int_t       fTrials;
+    Decay_t     fForceDecay;
     TArrayI   fChildSelect;
     AliPythia *fPythia;
  private:
@@ -39,17 +36,18 @@ protected:
     Bool_t KinematicSelection(TMCParticle *particle);
  public:
   AliGenParam();
-  AliGenParam(Int_t npart, Int_t ipart);
+  AliGenParam(Int_t npart, Param_t param);
 //		   Double_t (*PtPara)(Double_t*, Double_t*),
 //		   Double_t (*YPara )(Double_t*, Double_t*));
   virtual ~AliGenParam();
   virtual void Generate();
   virtual void Init();
   // select particle type
-  virtual void SetPart(Int_t part=443) {fIpart=part;}
+  virtual void SetParam(Param_t param=jpsi_p) {fParam=param;}
   // force decay type
   virtual void ForceDecay(Decay_t decay=dimuon) {fForceDecay=decay;}
-  ClassDef(AliGenParam,1)
+  virtual void SetWeighting(Weighting_t flag=analog) {fAnalog=flag;}	
+  ClassDef(AliGenParam,1) // Generator using parameterised pt- and y-distribution
 };
 #endif
 

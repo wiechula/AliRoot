@@ -5,7 +5,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliBODYClass.gif">
+<img src="picts/AliBODYClass.gif">
 </pre>
 <br clear=left>
 <font size=+2 color=red>
@@ -19,16 +19,13 @@
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "AliMC.h"
-#include "AliBODY.h"
-#include <TNode.h>
-#include <TBRIK.h>
 #include "AliRun.h"
+#include "AliBODY.h"
 
 ClassImp(AliBODY)
  
 //_____________________________________________________________________________
-  AliBODY::AliBODY() : AliDetector()
+AliBODY::AliBODY()
 {
   //
   // Default constructor
@@ -37,7 +34,7 @@ ClassImp(AliBODY)
  
 //_____________________________________________________________________________
 AliBODY::AliBODY(const char *name, const char *title)
-       : AliDetector(name,title)
+       : AliModule(name,title)
 {
   //
   // Standard constructor of the Alice external volume
@@ -48,14 +45,6 @@ AliBODY::AliBODY(const char *name, const char *title)
 }
  
 //_____________________________________________________________________________
-void AliBODY::BuildGeometry()
-{
-  //
-  // Build the ROOT TNode geometry. Only for detectors
-  //
-}
- 
-//_____________________________________________________________________________
 void AliBODY::CreateGeometry()
 {
   //
@@ -63,7 +52,7 @@ void AliBODY::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliBODYTree.gif">
+    <img src="picts/AliBODYTree.gif">
   */
   //End_Html
   //
@@ -72,7 +61,7 @@ void AliBODY::CreateGeometry()
   //  
   //Begin_Html
   /*
-    <img src="gif/AliBODYLarge.gif">
+    <img src="picts/AliBODYLarge.gif">
   */
   //End_Html
   //
@@ -80,7 +69,7 @@ void AliBODY::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliBODYSmall.gif">
+    <img src="picts/AliBODYSmall.gif">
   */
   //End_Html
 
@@ -88,7 +77,7 @@ void AliBODY::CreateGeometry()
   Int_t *idtmed = gAlice->Idtmed();
   AliMC *pMC = AliMC::GetMC();
   //
-  if(gAlice->GetDetector("ZDC")) {
+  if(gAlice->GetModule("ZDC")) {
     //
     // If the ZDC is present we have an asymmetric box
     // made by a four sides polygone
@@ -131,7 +120,7 @@ void AliBODY::CreateMaterials()
 }
  
 //_____________________________________________________________________________
-void AliBODY::DrawDetector()
+void AliBODY::DrawModule()
 {
   //
   // Draw a view of the Alice outside box
@@ -147,7 +136,7 @@ void AliBODY::DrawDetector()
   // Set the volumes visible
   //
   pMC->Gdopt("hide","off");
-  if(gAlice->GetDetector("ZDC")) {
+  if(gAlice->GetModule("ZDC")) {
     //
     // ZDC is present
     //
@@ -164,10 +153,4 @@ void AliBODY::DrawDetector()
   pMC->Gdman(18, 4, "MAN");
 }
  
-//_____________________________________________________________________________
-void AliBODY::StepManager()
-{
-  //
-  // Called at every step in the Alice Body
-  //
-}
+

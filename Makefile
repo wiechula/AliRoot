@@ -52,7 +52,7 @@ minicern:  lib
 
 cernlibs: geant321 pythia minicern pdf
 
-all:	default cernlibs
+all:	cernlibs default
 
 FORCE:
 
@@ -75,20 +75,23 @@ distall: AliOffline3.01.tar.gz
 
 AliOffline3.01.tar.gz: $(STRUCT_DIRS) $(ALIROOT_DIRS) $(LIBRARY_DIRS) ALIROOT
 
-distlib: AliLib3.10.tar.gz
+distlib: AliLibs3.01.tar.gz
 
-AliLib3.01.tar.gz: $(LIBRARY_DIRS)
+AliLibs3.01.tar.gz: $(LIBRARY_DIRS)
 
 AliRoot3.01.tar.gz AliLibs3.01.tar.gz AliOffline3.01.tar.gz:
 		@rm -f $(ALICE)/$@ 
 		@rm -f `find . -name '*~' -print` \
                        `find . -name '*.bak' -print` \
-                       `find . -name '.*~' -print` 
+                       `find . -name '.*~' -print` \
+		       `find . -name '*\#*' -print` 
 		@rm -f /tmp/saves
 		@ls -1d $^ | sed -e "s/^/$(ALICE_LEVEL)\//" > /tmp/saves
 	 	@cd $(ALICE) ; \
                 gtar cvfz $@ --exclude '*.o' --exclude '*Cint.*' \
-                --exclude '*/roothtml/*' `cat /tmp/saves` ; \
+                --exclude '*/roothtml/*' --exclude '*/CVS' \
+		--exclude Make-depend --exclude '*html/gif' \
+                `cat /tmp/saves` 
 
 alidepend:
 		@for i in $(ALIROOT_DIRS) ; do \
@@ -110,6 +113,7 @@ htmldocnew:		FORCE
 
 htmldoc:		FORCE
 		@rm -rf html/roothtml
+		@rm -f  html/picts
 		@rm -f /tmp/macros
 		@cd html ;\
 		aliroot -q -b "mkhtml.C(0,1)" ;\
@@ -122,13 +126,14 @@ htmldoc:		FORCE
 			aliroot -b -q "mkhtml.C(\"$$i\")" > /dev/null ;\
                 done ;\
 		./makeExampleList ;
-		@ln -s ../../picts html/roothtml/gif
-		@ln -s ../../../picts html/roothtml/src/gif
-		@ln -s ../../../picts html/roothtml/examples/gif
+		@ln -s ../picts html/picts
+		@ln -s ../../picts html/roothtml/picts
+		@ln -s ../../../picts html/roothtml/src/picts
+		@ln -s ../../../picts html/roothtml/examples/picts
 
 clean:  FORCE
 		@rm -f *~ \#*
-		@for i in $(ALIROOT_DIRS) ; do \
+		@for i in $(ALIROOT_DIRS) ALIROOT ; do \
                     ${MAKE} -C $$i macroclean ; \
                 done
 

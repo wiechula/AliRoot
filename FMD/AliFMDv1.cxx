@@ -4,7 +4,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliFMDv1Class.gif">
+<img src="picts/AliFMDv1Class.gif">
 </pre>
 <br clear=left>
 <font size=+2 color=red>
@@ -50,12 +50,12 @@ void AliFMDv1::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliFMDv1Tree.gif">
+    <img src="picts/AliFMDv1Tree.gif">
   */
   //End_Html
   //Begin_Html
   /*
-    <img src="gif/AliFMDv1.gif">
+    <img src="picts/AliFMDv1.gif">
   */
   //End_Html
 
@@ -706,7 +706,7 @@ void AliFMDv1::CreateGeometry()
 }
  
 //_____________________________________________________________________________
-void AliFMDv1::DrawDetector()
+void AliFMDv1::DrawModule()
 {
   //
   // Draw a shaded view of the FMD version 1

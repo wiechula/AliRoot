@@ -5,7 +5,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliABSOClass.gif">
+<img src="picts/AliABSOClass.gif">
 </pre>
 <br clear=left>
 <font size=+2 color=red>
@@ -21,7 +21,6 @@
 
 #include "AliABSO.h"
 #include "AliRun.h"
-#include "AliMC.h"
 #include "AliConst.h"
  
 ClassImp(AliABSO)
@@ -36,7 +35,7 @@ AliABSO::AliABSO()
  
 //_____________________________________________________________________________
 AliABSO::AliABSO(const char *name, const char *title)
-       : AliDetector(name,title)
+       : AliModule(name,title)
 {
   //
   // Standard constructor
@@ -47,15 +46,6 @@ AliABSO::AliABSO(const char *name, const char *title)
 }
  
 //_____________________________________________________________________________
-void AliABSO::BuildGeometry()
-{
-  //
-  // ROOT TNode geometry is built only for sensitive detectors
-  // and not for structural elements
-  //
-}
- 
-//_____________________________________________________________________________
 void AliABSO::CreateGeometry()
 {
   //
@@ -63,12 +53,12 @@ void AliABSO::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliABSOTree.gif">
+    <img src="picts/AliABSOTree.gif">
   */
   //End_Html
   //Begin_Html
   /*
-    <img src="gif/AliABSO.gif">
+    <img src="picts/AliABSO.gif">
   */
   //End_Html
 
@@ -400,7 +390,7 @@ void AliABSO::CreateGeometry()
 }
 
 //_____________________________________________________________________________
-void AliABSO::DrawDetector()
+void AliABSO::DrawModule()
 {
   //
   // Draw a shaded view of the muon absorber
@@ -608,10 +598,3 @@ void AliABSO::Init()
   printf("\n");
 }
  
-//_____________________________________________________________________________
-void AliABSO::StepManager()
-{
-  //
-  // Procedure called at every step in the muon absorber
-  //
-}

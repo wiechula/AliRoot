@@ -29,12 +29,12 @@ void    TGeant3::GeomIter() {}
 Int_t   TGeant3::CurrentMaterial(Float_t &, Float_t &, Float_t &, Float_t &, Float_t &) const {return 0;}
 Int_t   TGeant3::NextVolUp(Text_t*, Int_t&) {return 0;}
 Int_t   TGeant3::CurrentVol(Text_t*, Int_t&) const {return 0;}
-Int_t   TGeant3::Nvolumes() const {return 0;}
+Int_t   TGeant3::NofVolumes() const {return 0;}
 Int_t   TGeant3::CurrentVolOff(Int_t, Text_t*, Int_t&) const {return 0;}
 void    TGeant3::TrackPosition(Float_t*) const {}
 void    TGeant3::TrackMomentum(Float_t*) const {}
 Int_t   TGeant3::VolId(Text_t*) const {return 0;}
-char*   TGeant3::VolName(Int_t ) const {return 0;}
+const char*   TGeant3::VolName(Int_t ) const {return 0;}
 Float_t TGeant3::TrackCharge() const {return 0;}
 Float_t TGeant3::TrackMass() const {return 0;}
 Bool_t  TGeant3::TrackInside() const {return 0;}
@@ -232,6 +232,7 @@ void TGeant3::SetPHOT(Int_t)  {}
 void TGeant3::SetRAYL(Int_t)  {}
 void TGeant3::SetSWIT(Int_t , Int_t)  {}
 void TGeant3::SetTRIG(Int_t)  {}
+void TGeant3::SetUserDecay(Int_t) {}
 void TGeant3::Vname(const char *, char *) {}
 void TGeant3::InitLego() {}
 

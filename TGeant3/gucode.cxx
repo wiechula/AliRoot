@@ -35,7 +35,7 @@
 #  define ghelix ghelix_
 #  define grkuta grkuta_
 #  define gtrack gtrack_
-#  define gtreve gtreve_
+#  define gtreve_root gtreve_root_
 #  define glast  glast_
 
 #else
@@ -71,7 +71,7 @@
 #  define ghelix GHELIX
 #  define grkuta GRKUTA
 #  define gtrack GTRACK
-#  define gtreve GTREVE
+#  define gtreve_root GTREVE_ROOT
 #  define glast  GLAST
 
 #endif
@@ -86,7 +86,7 @@ extern "C" type_of_call void ghelx3(Float_t&, Float_t&, Float_t*, Float_t*);
 extern "C" type_of_call void ghelix(Float_t&, Float_t&, Float_t*, Float_t*);
 extern "C" type_of_call void grkuta(Float_t&, Float_t&, Float_t*, Float_t*);
 extern "C" type_of_call void gtrack();
-extern "C" type_of_call void gtreve();
+extern "C" type_of_call void gtreve_root();
 extern "C" type_of_call void glast();
 
 
@@ -144,14 +144,6 @@ void guout()
 //
 //    ------------------------------------------------------------------
 //
-
-  Int_t ndet = gAlice->Detectors()->GetLast();
-  TObjArray &dets = *gAlice->Detectors();
-  AliDetector *detector;
-  Int_t i;
-  for(i=0; i<=ndet; i++)
-    if((detector = (AliDetector*)dets[i]))
-      detector->FinishEvent();
 }
 
 //______________________________________________________________________
@@ -409,20 +401,20 @@ void gutrak()
 //
 //    ------------------------------------------------------------------
 //
-     Int_t ndet = gAlice->Detectors()->GetLast();
-     TObjArray &dets = *gAlice->Detectors();
-     AliDetector *detector;
+     Int_t ndet = gAlice->Modules()->GetLast();
+     TObjArray &dets = *gAlice->Modules();
+     AliModule *module;
      Int_t i;
 
      for(i=0; i<=ndet; i++)
-       if((detector = (AliDetector*)dets[i]))
-	 detector->PreTrack();
+       if((module = (AliModule*)dets[i]))
+	 module->PreTrack();
 
      gtrack();
 
      for(i=0; i<=ndet; i++)
-       if((detector = (AliDetector*)dets[i]))
-	 detector->PostTrack();
+       if((module = (AliModule*)dets[i]))
+	 module->PostTrack();
 }
 
 //______________________________________________________________________
@@ -440,7 +432,7 @@ void gutrev()
 //
 //    ------------------------------------------------------------------
 //
-  gtreve();
+  gtreve_root();
 }
 
 

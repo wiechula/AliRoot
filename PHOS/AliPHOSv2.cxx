@@ -63,7 +63,7 @@ AliPHOSv2::AliPHOSv2(const char *name, const char *title):
   
   //Begin_Html
   /*
-    <img src="gif/aliphos.gif">
+    <img src="picts/aliphos.gif">
   */
   //End_Html
   
@@ -303,7 +303,7 @@ void AliPHOSv2::CreateGeometry()
 
   AliMC* pMC = AliMC::GetMC();
 
-  AliPHOSv2 *PHOS_tmp = (AliPHOSv2*)gAlice->GetDetector("PHOS");
+  AliPHOSv2 *PHOS_tmp = (AliPHOSv2*)gAlice->GetModule("PHOS");
   if(PHOS_tmp==NULL){
     
     fprintf(stderr,"PHOS detector not found!\n");

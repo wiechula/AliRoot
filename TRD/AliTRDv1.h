@@ -17,14 +17,14 @@ public:
   virtual Int_t IsVersion() const {return 1;}
   virtual void  StepManager();
   virtual void  Init();
-  virtual void  DrawDetector();
+  virtual void  DrawModule();
 
 protected:
   Int_t        fIdSens1;    // 1st sensitive volume identifier
   Int_t        fIdSens2;    // 2nd sensitive volume identifier
   Int_t        fIdSens3;    // 3rd sensitive volume identifier
             
-  ClassDef(AliTRDv1,1)     // Transition Radiation Detector version 1
+  ClassDef(AliTRDv1,1)      // Transition Radiation Detector version 1
 };
 
 #endif

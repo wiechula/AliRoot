@@ -15,7 +15,7 @@
 ClassImp(AliFRAMEv0)
  
 //_____________________________________________________________________________
-AliFRAMEv0::AliFRAMEv0() : AliFRAME()
+AliFRAMEv0::AliFRAMEv0()
 {
 }
 
@@ -33,14 +33,14 @@ void AliFRAMEv0::CreateGeometry()
   printf("Create FRAMEv0 geometry ");
 //Begin_Html
 /*
-<img src="gif/frame.gif">
+<img src="picts/frame.gif">
 */
 //End_Html
 
 
 //Begin_Html
 /*
-<img src="gif/tree_frame.gif">
+<img src="picts/tree_frame.gif">
 */
 //End_Html
 
@@ -75,11 +75,6 @@ void AliFRAMEv0::CreateGeometry()
 }
 
  
-//___________________________________________
-void AliFRAMEv0::DrawDetector()
-{
-}
-
 //___________________________________________
 void AliFRAMEv0::CreateMaterials()
 {

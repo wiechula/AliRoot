@@ -4,7 +4,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliITSv1Class.gif">
+<img src="picts/AliITSv1Class.gif">
 </pre>
 <br clear=left>
 <font size=+2 color=red>
@@ -56,12 +56,12 @@ void AliITSv1::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliITSv1Tree.gif">
+    <img src="picts/AliITSv1Tree.gif">
   */
   //End_Html
   //Begin_Html
   /*
-    <img src="gif/AliITSv1.gif">
+    <img src="picts/AliITSv1.gif">
   */
   //End_Html
   
@@ -462,7 +462,7 @@ void AliITSv1::Init()
 }  
  
 //_____________________________________________________________________________
-void AliITSv1::DrawDetector()
+void AliITSv1::DrawModule()
 { 
   //
   // Draw a shaded view of the FMD version 1

@@ -7,13 +7,12 @@ F77	      = f77
 
 # Global optimisation
 OPT	      = -O +Onolimit
-OPT           = -g
 
 # Shared library suffix
 SL	      = sl
 
 # The options
-CXXOPTS       = +a1 +z  
+CXXOPTS       = $(OPT) +a1 +z  
 COPT          = $(OPT)
 FOPT          = $(OPT) +ppu +Z
 
@@ -30,6 +29,8 @@ DEPINC	      = -I /opt/CC/include/CC/
 
 LD            = CC
 LDFLAGS       = $(OPT) +a1 -z
+
+SHLD	      = $(LD)
 SOFLAGS       = -b /usr/lib/libm.sl 
 
 G3LIBS        = -lgeant321

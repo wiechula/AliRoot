@@ -9,7 +9,7 @@ PACKAGE = PMD
 
 # C++ sources
 
-SRCS          = AliPMD.cxx
+SRCS          = AliPMD.cxx AliPMDv0.cxx AliPMDv1.cxx AliPMDv2.cxx
 
 # C++ Headers
 
@@ -64,4 +64,4 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include Make-depend 

@@ -1,10 +1,9 @@
 AliRoot
 -------
 
-########################### Pre-release version ###############################
-########################### Use at your onw risk ##############################
+########################### Release version 3.01 ##############################
 
-Last update Tue Apr 27 07:56 1988 - Federico Carminati
+Last update Tue Jun 15 08:10:40 1999 - Federico Carminati
 
 This is the Version 3.01 of the ALICE simulation and reconstruction
 software. This code will be released after the May ALICE Offline
@@ -37,12 +36,26 @@ PATH			= $PATH\:$ALICE_ROOT/bin
 At this point you should logout, login again and check that the symbols are
 set correctly
 
-- Get the file /afs/cern.ch/alice/offline/AliOffline3.01.tar.gz
+EITHER
+======
+
+- Get the file /afs/cern.ch/alice/offline/dist/AliOffline3.01.tar.gz
 
 - Unpack it with
 
 $ cd $ALICE
 $ gtar xvfz AliOffline3.01.tar.gz
+
+OR
+==
+
+- Get the files
+
+      /afs/cern.ch/alice/offline/dist/AliRoot3.01.tar.gz (AliRoot code)
+      /afs/cern.ch/alice/offline/dist/AliLibs3.01.tar.gz (minicern code)
+
+THEN PROCEED WITH
+=================
 
 - install the CERN library part
 
@@ -63,56 +76,30 @@ $ aliroot
 root [1] .x menu.C
 
 
-List of changes
-===============
+Notice for Linux users
+======================
 
-Sun Mar 21 12:38:38 CET 1999 ==================================================
+AliRoot requires the compiler system egcs 1.1.1 or later. Unfortunately the 
+location of the include files is dependent on the compiler version on Linux.
+While g++ knows the location of the files relative to its own version, but 
+this is not the case for the makedepend, that should be told where include
+files are. This is accomplished by the DEPINC variable in the file
+$ALIROOT/conf.
 
--------------------------------------------------------------------------------
-AliRun.cxx
-removed AliDetector::FinishEvent call from AliRun::FinishRun
+In case several error message appear during the make phase, complaining for
+include files not found, the list of include directories in DEPINC should
+be compared with the standard list of the compiler, that can be found out
+with the following commands:
 
--------------------------------------------------------------------------------
-Makefile.hpux
-added +Onolimit to the optimisation on the hp to avoid warning messages
+touch dummy.cxx
+g++ -v dummy.cxx
 
--------------------------------------------------------------------------------
-TOPDIR changed to ALITOP as it should be in this README file. 
+and looking at the output between the lines:
 
-Wed Mar 24 15:44:49 CET 1999 ==================================================
+#include <...> search starts here:
+.
+.
+.
+.
+End of search list.
 
--------------------------------------------------------------------------------
-SGI Makefile corrected
-
--------------------------------------------------------------------------------
-Make-macros corrected to include the ITS*.det files in the distribution
-
--------------------------------------------------------------------------------
-Code of PHOSv2 introduced, thanks to M. Volkov
-
-Thu Mar 25 21:19:52 CET 1999 ==================================================
-
--------------------------------------------------------------------------------
-Change the load order in Make-macros
-
-Wed Apr  7 09:25:51 CEST 1999 =================================================
-
--------------------------------------------------------------------------------
-AliTPC.cxx, AliTPCv2.cxx, AliTPCSecGeo.h, GeantPatch.F
-
-The drift gas parameters updated using the recent numbers from A.Sharma.
-M.Kowalski
-
-Thu Apr  8 16:08:12 CEST 1999 =================================================
-
--------------------------------------------------------------------------------
-Slight changes to M.Volkov files to correct some syntactical problems
-
--------------------------------------------------------------------------------
-Changed common_ to G..._t in TGeant3.h to be compatible with P.Murat, CDF.
-
-Fri Apr  9 08:06:21 CEST 1999 =================================================
-
--------------------------------------------------------------------------------
-Restructuration of TGeant3. Common addresses are now returned by access
-functions and they are all private.

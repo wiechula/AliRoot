@@ -9,7 +9,7 @@ PACKAGE = TGeant3
 
 # FORTRAN sources
 
-FSRCS	     = GeantPatch.F  galicef.F
+FSRCS	     = galicef.F
 
 # C++ sources
 
@@ -83,7 +83,7 @@ SLIBRARY	= $(ALICE_ROOT)/lib/libTGeant3.$(SL) \
 		  $(ALICE_ROOT)/lib/libTGeant3Dummy.$(SL) 
 ALIBRARY	= $(ALICE_ROOT)/lib/libTGeant3.a
 
-default:	$(SLIBRARY) headers
+default:	headers $(SLIBRARY)
 
 $(ALICE_ROOT)/lib/libTGeant3.$(SL):		$(GOBJS)
 
@@ -111,4 +111,4 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include Make-depend 

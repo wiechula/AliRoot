@@ -286,6 +286,12 @@ if(iTRD) {
 //=================== TRD parameters ============================
 
 AliTRD *TRD  = new AliTRDv2("TRD","TRD version 2");
+// Select the gas mixture (0: 97% Xe + 3% isobutane, 1: 90% Xe + 10% CO2)
+TRD->SetGasMix(0);
+// Define the sensitive parts of the detector
+//TRD->SetSensPlane(3);
+//TRD->SetSensChamber(2);
+//TRD->SetSensSector(5);
 }
 
 
@@ -600,12 +606,12 @@ PHOS->SetFoam(214.6,  80.,  260., 467.);
 if(iPMD) {
 //=================== PMD parameters ============================
 
-//         Must be defined AFTER PHOS
-AliPMD *PMD  = new AliPMDv1("PMD","normal PMD");
+AliPMD *PMD  = new AliPMDv0("PMD","normal PMD");
 PMD->SetPAR(1., 1., 0.8, 0.02);
-PMD->SetIN(6., 20., 600., 27., 27.);
+PMD->SetIN(6., 18., -580., 27., 27.);
 PMD->SetGEO(0.0, 0.2, 4.);
-PMD->SetPadSize(0.8, 1.0, 1.2, 1.5);
+PMD->SetPadSize(0.8, 1.0, 1.0, 1.5);
+
 }
          
 }

@@ -12,7 +12,7 @@ PACKAGE = STEER
 SRCS          = AliDetector.cxx  AliHeader.cxx    AliMagF.cxx GParticle.cxx \
                 AliDigit.cxx     AliHit.cxx       AliPoints.cxx \
                 AliDisplay.cxx   AliMC.cxx        AliRun.cxx AliGenerator.cxx \
-		AliLego.cxx
+		AliLego.cxx AliModule.cxx
 
 
 # C++ Headers
@@ -52,7 +52,7 @@ FFLAGS      = $(FOPT)
 SLIBRARY	= $(ALICE_ROOT)/lib/libSTEER.$(SL)
 ALIBRARY	= $(ALICE_ROOT)/lib/libSTEER.a
 
-default:	$(SLIBRARY) headers
+default:	headers $(SLIBRARY)
 
 $(ALICE_ROOT)/lib/libSTEER.$(SL):		$(OBJS)
 
@@ -70,4 +70,4 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include Make-depend 

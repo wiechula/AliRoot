@@ -9,6 +9,7 @@
 #include "TTree.h"
 #include "TBRIK.h"
 #include "TNode.h"
+#include "TMath.h"
 
 // --- galice header files ---
 #include "AliPHOSv1.h"
@@ -20,7 +21,7 @@ ClassImp(AliPHOSv1)
 //______________________________________________________________________________
 
 
-AliPHOSv1::AliPHOSv1() : AliPHOS()
+AliPHOSv1::AliPHOSv1()
 {
 }
  
@@ -37,7 +38,7 @@ void AliPHOSv1::CreateGeometry()
 
   AliMC* pMC = AliMC::GetMC();
 
-  AliPHOS *PHOS_tmp = (AliPHOS*)gAlice->GetDetector("PHOS");
+  AliPHOS *PHOS_tmp = (AliPHOS*)gAlice->GetModule("PHOS");
   if( NULL==PHOS_tmp )
   {
     printf("There isn't PHOS detector!\n");
@@ -53,7 +54,7 @@ void AliPHOSv1::CreateGeometry()
 
   const float           cell_length             = GetCrystalLength()+GetAirThickness()+GetWrapThickness()+GetPIN_Length(),
                         cell_side_size          = GetCrystalSideSize()+2*GetAirThickness()+2*GetWrapThickness(),
-//                        cell_angle              = 180/M_PI * 2 * atan(cell_side_size/2 / GetRadius()),        // radians
+//                        cell_angle              = 180/kPI * 2 * atan(cell_side_size/2 / GetRadius()),        // radians
                         cradle_thikness         = cell_length + GetCPV_Thickness() + GetCPV_PHOS_Distance(),
                         distance_to_CPV         = GetRadius() - GetCPV_Thickness() - GetCPV_PHOS_Distance();
 
@@ -158,13 +159,13 @@ void AliPHOSv1::CreateGeometry()
   {
     float c                = distance_to_CPV,           // Distance to CPV
           l                = cell_side_size*GetNphi()/2,      // Cradle half size around beam (for rect. geom.)
-          cradle_angle     = 360/M_PI*atan(l/c),
+          cradle_angle     = 360/kPI*atan(l/c),
           cradle_angle_pos = -90+(i-(GetCradlesAmount()-1)/2.) * (cradle_angle+GetAngleBetweenCradles());
     // Cradles are numerated in clock reversed order. (general way of angle increment)
 
     float   r       = GetRadius() + cradle_thikness/2;
-    x = r*cos(cradle_angle_pos*M_PI/180);
-    y = r*sin(cradle_angle_pos*M_PI/180);
+    x = r*cos(cradle_angle_pos*kPI/180);
+    y = r*sin(cradle_angle_pos*kPI/180);
     z = 0;
     AliMatrix(rotation_matrix_number, 0,0 , 90,90+cradle_angle_pos , 90,180+cradle_angle_pos);
     pMC->Gspos("PHOS",i+1,"ALIC",x,y,z,rotation_matrix_number,"ONLY");
@@ -207,16 +208,13 @@ void AliPHOSv1::StepManager()
   AliMC *MC = AliMC::GetMC();
   Int_t copy;
 
-// cout << form("PHOS STEP: %d %d %d %d\n",
-//               MC->GetMedium(),cvolu->nlevel,ctrak->inwvol,inwold);
-
   int cradle_number, cell_Z, cell_Phi;  // Variables that describe cell position.
 
   if( MC->GetMedium() == GetPHOS_IDTMED_PIN() && (MC->TrackInside() || MC->TrackExiting()==2) && inwold && MC->TrackCharge()!=0 )
   {
     // GEANT particle just have entered into PIN diode.
 
-    AliPHOS &PHOS = *(AliPHOS*)gAlice->GetDetector("PHOS");
+    AliPHOS &PHOS = *(AliPHOS*)gAlice->GetModule("PHOS");
 
     MC->CurrentVolOff(4,0,copy);
     cradle_number  = copy-1;
@@ -236,11 +234,11 @@ void AliPHOSv1::StepManager()
 
   //////////////////////////////////////////////////////////////////////////////
 
-  if( MC->GetMedium() == GetPHOS_IDTMED_PbWO4() ) //&& gckine_.CHARGE )
+  if( MC->GetMedium() == GetPHOS_IDTMED_PbWO4() )
   {
     // GEANT particle into crystal.
 
-    AliPHOS &PHOS = *(AliPHOS*)gAlice->GetDetector("PHOS");
+    AliPHOS &PHOS = *(AliPHOS*)gAlice->GetModule("PHOS");
 
     MC->CurrentVolOff(5,0,copy);
     cradle_number  = copy-1;
@@ -263,7 +261,7 @@ void AliPHOSv1::StepManager()
   {
     // GEANT particle just have entered into CPV detector.
 
-    AliPHOS &PHOS = *(AliPHOS*)gAlice->GetDetector("PHOS");
+    AliPHOS &PHOS = *(AliPHOS*)gAlice->GetModule("PHOS");
 
     MC->CurrentVolOff(1,0,cradle_number);
     cradle_number--;
@@ -275,7 +273,7 @@ void AliPHOSv1::StepManager()
 
     Float_t   xyz[3];
     MC->TrackPosition(xyz);
-    Hep3Vector          p(xyz[0],xyz[1],xyz[2]),v;
+    TVector3          p(xyz[0],xyz[1],xyz[2]),v;
 
     float x,y,l;
     float R = cradle.GetRadius() - cradle.GetCPV_PHOS_Distance() - cradle.GetCPV_Thikness();
@@ -290,10 +288,11 @@ void AliPHOSv1::StepManager()
     float     Px      =       pmom[0] * pmom[3],
               Py      =       pmom[1] * pmom[3],
               Pz      =       pmom[2] * pmom[3];
+    Int_t     Ipart   =       MC->TrackPid();
 
 //     TClonesArray &P=cradle.GetParticles();
 //     new( P[P.GetEntries()] ) AliPHOSgamma(x,0,y,0,ctrak->getot,0,Px,Py,Pz);
-    cradle.GetParticles().Add(new AliPHOSgamma(x,0,y,0,MC->Etot(),0,Px,Py,Pz));
+    cradle.GetParticles().Add(new AliPHOSgamma(x,y,MC->Etot(),Px,Py,Pz,Ipart));
 
     if( MC->TrackCharge()!=0 )
       cradle.AddCPVHit(x,y);

@@ -6,11 +6,7 @@ $(SLIBRARY):
                 ifeq ($(PLATFORM),aix)
 		   @$(SHLD) -o $@ $(LIBS) -p 0 $^
                 else
-                   ifeq ($(PLATFORM),alpha)
-		      @$(SHLD) -msym -o $@ $^ -lcxxstd -lcxx -lexc -lots -lc
-                   else
-		      @$(LD) $(SOFLAGS) $(LDFLAGS) $^ $(SHLIB) -o $@
-                   endif
+		   @$(SHLD) $(SOFLAGS) $(LDFLAGS) $^ $(SHLIB) -o $@
                 endif
 		@chmod 555 $@
 		@echo "$@ done"
@@ -40,6 +36,9 @@ $(DICT):
  
 depend:
 		@$(MAKEDEPEND) -fMake-depend -- $(CXXFLAGS) $(DEPINC) -- $^
+
+Make-depend:
+		@cp $(ALICE_ROOT)/conf/Makedepend ./Make-depend
 
 macroclean:
 		@rm -f $(TOCLEAN) *~ \#*

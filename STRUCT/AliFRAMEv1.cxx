@@ -4,7 +4,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliFRAMEClass.gif">
+<img src="picts/AliFRAMEClass.gif">
 */
 //End_Html
 //                                                                           //
@@ -12,12 +12,11 @@
 
 #include "AliFRAMEv1.h"
 #include "AliRun.h"
-#include "AliMC.h"
  
 ClassImp(AliFRAMEv1)
  
 //_____________________________________________________________________________
-AliFRAMEv1::AliFRAMEv1() : AliFRAME()
+AliFRAMEv1::AliFRAMEv1()
 {
   //
   // Default constructor for space frame
@@ -41,12 +40,12 @@ void AliFRAMEv1::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliFRAME.gif">
+    <img src="picts/AliFRAME.gif">
   */
   //End_Html
   //Begin_Html
   /*
-    <img src="gif/AliFRAMETree.gif">
+    <img src="picts/AliFRAMETree.gif">
   */
   //End_Html
   AliMC* pMC = AliMC::GetMC();
@@ -240,7 +239,7 @@ void AliFRAMEv1::CreateGeometry()
 }
 
 //_____________________________________________________________________________
-void AliFRAMEv1::DrawDetector()
+void AliFRAMEv1::DrawModule()
 {
   //
   // Draw a shaded view of the space frame

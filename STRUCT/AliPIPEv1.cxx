@@ -4,7 +4,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliPIPEClass.gif">
+<img src="picts/AliPIPEClass.gif">
 */
 //End_Html
 //                                                                           //
@@ -17,7 +17,7 @@
 ClassImp(AliPIPEv1)
  
 //_____________________________________________________________________________
-AliPIPEv1::AliPIPEv1() : AliPIPE()
+AliPIPEv1::AliPIPEv1()
 {
   //
   // Default constructor for beam pipe
@@ -41,12 +41,12 @@ void AliPIPEv1::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliPIPE.gif">
+    <img src="picts/AliPIPE.gif">
   */
   //End_Html
   //Begin_Html
   /*
-    <img src="gif/AliPIPETree.gif">
+    <img src="picts/AliPIPETree.gif">
   */
   //End_Html
 
@@ -183,7 +183,7 @@ void AliPIPEv1::CreateGeometry()
   //     Replace Absorber or Shield by Beam-Pipe 
   //     in case they are not selected 
   
-  if (gAlice->GetDetector("ABSO") == 0) {
+  if (gAlice->GetModule("ABSO") == 0) {
     
     pMC->Gspos("QN63", 2, "ALIC", 0., 0., z_flange, 0, "ONLY");
     r2      = 2.9;
@@ -208,7 +208,7 @@ void AliPIPEv1::CreateGeometry()
     zpos = tpar[2] + z_flange;
     pMC->Gspos("QDTS", 1, "ALIC", 0., 0., zpos, 0, "ONLY");
   }
-  if (gAlice->GetDetector("SHIL") == 0) {
+  if (gAlice->GetModule("SHIL") == 0) {
     r2      = 2.9;
     dr      = .015;
     tpar[0] = 0.;
@@ -224,7 +224,7 @@ void AliPIPEv1::CreateGeometry()
 }
 
 //_____________________________________________________________________________
-void AliPIPEv1::DrawDetector()
+void AliPIPEv1::DrawModule()
 {
   //
   // Draw a shaded view of the Beam Pipe

@@ -4,7 +4,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/TGeant3Class.gif">
+<img src="picts/TGeant3Class.gif">
 */
 //End_Html
 //                                                                           //
@@ -101,6 +101,7 @@
 # define gckpar  gckpar_
 # define gckmat  gckmat_
 # define geditv  geditv_
+# define mzdrop  mzdrop_
  
 # define setbomb setbomb_
 # define setclip setclip_
@@ -191,10 +192,11 @@
 # define gckpar  GCKPAR
 # define gckmat  GCKMAT
 # define geditv  GEDITV
+# define mzdrop  MZDROP 
 
 # define setbomb SETBOMB
 # define setclip SETCLIP
-# define gcomad GCOMAD
+# define gcomad  GCOMAD
  
 #endif 
 
@@ -396,6 +398,8 @@ extern "C"
 			   const int&, const int&, const int& DEFCHARL
 			   DEFCHARL); 
 
+  void type_of_call mzdrop(Int_t&, Int_t&, DEFCHARD DEFCHARL);
+
   void type_of_call setbomb(Float_t &);
   void type_of_call setclip(DEFCHARD, Float_t &,Float_t &,Float_t &,Float_t &,
 			    Float_t &, Float_t & DEFCHARL); 
@@ -486,6 +490,7 @@ void TGeant3::LoadAddress()
   //
   Int_t *addr;
   gcomad(PASSCHARD("QUEST"), (int*&) fQuest PASSCHARL("QUEST"));
+  gcomad(PASSCHARD("GCBANK"),(int*&) fGcbank  PASSCHARL("GCBANK"));
   gcomad(PASSCHARD("GCLINK"),(int*&) fGclink  PASSCHARL("GCLINK"));
   gcomad(PASSCHARD("GCCUTS"),(int*&) fGccuts  PASSCHARL("GCCUTS"));
   gcomad(PASSCHARD("GCFLAG"),(int*&) fGcflag  PASSCHARL("GCFLAG"));
@@ -607,7 +612,7 @@ Int_t TGeant3::VolId(Text_t *name) const
 }
 
 //_____________________________________________________________________________
-Int_t TGeant3::Nvolumes() const 
+Int_t TGeant3::NofVolumes() const 
 {
   //
   // Return total number of volumes in the geometry
@@ -616,7 +621,7 @@ Int_t TGeant3::Nvolumes() const
 }
 
 //_____________________________________________________________________________
-char* TGeant3::VolName(Int_t id) const
+const char* TGeant3::VolName(Int_t id) const
 {
   //
   // Return the volume name given the volume identifier
@@ -2951,6 +2956,27 @@ void TGeant3::SetTRIG(Int_t nevents)
   fGcflag->nevent = nevents;
 }
  
+//_____________________________________________________________________________
+void TGeant3::SetUserDecay(Int_t ipart)
+{
+  //
+  // Force the decays of particles to be done with Pythia
+  // and not with the Geant routines. 
+  // just kill pointers doing mzdrop
+  //
+  Int_t jpart=fGclink->jpart;
+  Int_t jpa=fZlq[jpart-ipart];
+  //
+  if(jpart && jpa) {
+    Int_t jpa1=fZlq[jpa-1];
+    if(jpa1)
+      mzdrop(fGcbank->ixcons,jpa1,PASSCHARD(" ") PASSCHARL(" "));
+    Int_t jpa2=fZlq[jpa-2];
+    if(jpa2)
+      mzdrop(fGcbank->ixcons,jpa2,PASSCHARD(" ") PASSCHARL(" "));
+  }
+}
+
 //______________________________________________________________________________
 void TGeant3::Vname(const char *name, char *vname)
 {

@@ -4,7 +4,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliMAGClass.gif">
+<img src="picts/AliMAGClass.gif">
 </pre>
 <br clear=left>
 <font size=+2 color=red>
@@ -19,7 +19,6 @@
  
 #include "AliMAG.h"
 #include "AliRun.h"
-#include "TGeant3.h"
  
 ClassImp(AliMAG)
  
@@ -33,14 +32,14 @@ AliMAG::AliMAG()
  
 //_____________________________________________________________________________
 AliMAG::AliMAG(const char *name, const char *title)
-  : AliDetector(name,title)
+  : AliModule(name,title)
 {
   //
   // Standard constructor for L3 magnet
   //
   //Begin_Html
   /*
-    <img src="gif/aliMAG.gif">
+    <img src="picts/aliMAG.gif">
   */
   //End_Html
   
@@ -50,15 +49,6 @@ AliMAG::AliMAG(const char *name, const char *title)
 }
 
 //_____________________________________________________________________________
-void AliMAG::BuildGeometry()
-{
-  //
-  // Build ROOT TNode geometry for L3 magnet
-  // only for detectors
-  //
-}
- 
-//_____________________________________________________________________________
 void AliMAG::CreateGeometry()
 {
   //
@@ -66,12 +56,12 @@ void AliMAG::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/mag.gif">
+    <img src="picts/mag.gif">
   */
   //End_Html
   //Begin_Html
   /*
-    <img src="gif/tree_mag.gif">
+    <img src="picts/tree_mag.gif">
   */
   //End_Html
   
@@ -241,7 +231,7 @@ void AliMAG::CreateMaterials()
 }
 
 //_____________________________________________________________________________
-void AliMAG::DrawDetector()
+void AliMAG::DrawModule()
 {
   //
   // Draw a shaded view of the L3 magnet
@@ -266,10 +256,3 @@ void AliMAG::Init()
   printf("\n");
 }
 
-//_____________________________________________________________________________
-void AliMAG::StepManager()
-{
-  //
-  // Called at every step in the L3 magnet
-  //
-}

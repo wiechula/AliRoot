@@ -4,7 +4,7 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliPIPEClass.gif">
+<img src="picts/AliPIPEClass.gif">
 */
 //End_Html
 //                                                                           //
@@ -12,7 +12,6 @@
 
 #include "AliPIPE.h"
 #include "AliRun.h"
-#include "TGeant3.h"
  
 ClassImp(AliPIPE)
  
@@ -26,7 +25,7 @@ AliPIPE::AliPIPE()
  
 //_____________________________________________________________________________
 AliPIPE::AliPIPE(const char *name, const char *title)
-       : AliDetector(name,title)
+       : AliModule(name,title)
 {
   //
   // Standard constructor for beam pipe
@@ -36,20 +35,3 @@ AliPIPE::AliPIPE(const char *name, const char *title)
   SetMarkerSize(0.4);
 }
  
-//_____________________________________________________________________________
-void AliPIPE::BuildGeometry()
-{
-  //
-  // Create ROOT TNode geometry. Only for sensitive detectors
-  //
-}
- 
-
-
-//_____________________________________________________________________________
-void AliPIPE::StepManager()
-{
-  //
-  // Called at every step in the beam pipe
-  //
-}

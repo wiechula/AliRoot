@@ -56,7 +56,7 @@ $(DICT):			$(HDRS)
 
 depend:				$(SRCS)
 
-TOCLEAN		 = $(OBSJ) *Cint.cxx *Cint.h
+TOCLEAN		 = $(OBJS) *Cint.cxx *Cint.h
 
 ############################### General Macros ################################
 
@@ -64,4 +64,4 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include Make-depend 

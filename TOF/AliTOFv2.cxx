@@ -6,23 +6,20 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliTOFv3Class.gif">
+<img src="picts/AliTOFv3Class.gif">
 */
 //End_Html
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "AliTOFv2.h"
-#include <TNode.h>
-#include <TTUBE.h>
 #include "AliRun.h"
-#include "AliMC.h"
 #include "AliConst.h"
  
 ClassImp(AliTOFv2)
  
 //_____________________________________________________________________________
-AliTOFv2::AliTOFv2() : AliTOF()
+AliTOFv2::AliTOFv2()
 {
   //
   // Default constructor
@@ -46,7 +43,7 @@ void AliTOFv2::CreateGeometry()
   //
   //Begin_Html
   /*
-    <img src="gif/AliTOFv3.gif">
+    <img src="picts/AliTOFv3.gif">
   */
   //End_Html
   //
@@ -204,7 +201,7 @@ void AliTOFv2::TOFpc(Float_t xm, Float_t ym, Float_t zm0,
 }
 
 //_____________________________________________________________________________
-void AliTOFv2::DrawDetector()
+void AliTOFv2::DrawModule()
 {
   //
   // Draw a shaded view of the Time Of Flight version 2

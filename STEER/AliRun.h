@@ -13,6 +13,7 @@
 #include "AliGenerator.h"
 #include "AliLego.h"
 
+enum {kMaxModules = 25, kLenModuleName=7};
 
 class AliDisplay;
 
@@ -31,14 +32,15 @@ protected:
   TTree        *fTreeH;        //Pointer to Tree for Hits
   TTree        *fTreeE;        //Pointer to Tree for Header
   TTree        *fTreeR;        //Pointer to Tree for Reconstructed Objects
-  TObjArray    *fDetectors;    //List of Detectors
+  TObjArray    *fModules;    //List of Detectors
   TClonesArray *fParticles;    //Pointer to list of particles
   TGeometry    *fGeometry;     //Pointer to geometry
   AliDisplay   *fDisplay;      //Pointer to event display
   TStopwatch    fTimer;        //Timer object
   AliMagF      *fField;        //Magnetic Field Map
   AliMC        *fMC;           //pointer to MonteCarlo object
-  char          fDnames[21][7];//Array of detector names
+  char          fDnames[kMaxModules][kLenModuleName];
+                               //Array of detector names
   TArrayI      *fImedia;       //Array of correspondence between media and detectors
   Int_t         fNdets;        //Number of detectors
   Float_t       fTrRmax;       //Maximum radius for tracking
@@ -61,7 +63,8 @@ public:
    virtual  void  BuildSimpleGeometry();
    virtual  void  CleanDetectors();
    virtual  void  CleanParents();
-   TObjArray     *Detectors() const {return fDetectors;}
+   TObjArray     *Detectors() const {return fModules;}
+   TObjArray     *Modules() const {return fModules;}
    Int_t          CurrentTrack() const {return fCurrent;}
    AliDisplay    *Display() { return fDisplay;}
    virtual  Int_t DistancetoPrimitive(Int_t px, Int_t py);
@@ -75,10 +78,11 @@ public:
    virtual  void  FlagTrack(Int_t track);
    Int_t          GetEvNumber() const {return fEvent;}
    Int_t          GetRunNumber() const {return fRun;}
-  void           SetRunNumber(Int_t run) {fRun=run;}
+   void           SetRunNumber(Int_t run) {fRun=run;}
    Int_t          GetDebug() const {return fDebug;}
+   AliModule     *GetModule(const char *name);
    AliDetector   *GetDetector(const char *name);
-   Int_t          GetDetectorID(const char *name);
+   Int_t          GetModuleID(const char *name);
    virtual  Int_t GetEvent(Int_t event);
    TGeometry     *GetGeometry();
    AliHeader     *GetHeader() {return &fHeader;}
