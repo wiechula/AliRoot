@@ -35,8 +35,6 @@
 
 // --- Standard library ---
 
-#include <stdio.h>
-
 // --- AliRoot header files ---
 #include "AliPHOSFastRecParticle.h"
 #include "AliPHOSGeometry.h"
@@ -481,8 +479,6 @@ void AliPHOSvFast::StepManager(void)
 {
   // Only verifies if the particle reaches PHOS and stops the tracking 
 
-  Int_t primary =  gAlice->GetPrimary( gAlice->CurrentTrack() ); 
-
   TLorentzVector lv ; 
   gMC->TrackPosition(lv) ;
   TVector3 pos = lv.Vect() ; 
@@ -503,7 +499,6 @@ void AliPHOSvFast::StepManager(void)
     TParticle * part = new TParticle(gMC->TrackPid(), 0,-1,-1,-1,-1, pTrack, lv)  ;
         
     AliPHOSFastRecParticle rp(*part) ;
-    rp.SetPrimary(primary) ; 
 
     // Adds the response of PHOS to the particle
     MakeRecParticle(modid, pos, rp) ;

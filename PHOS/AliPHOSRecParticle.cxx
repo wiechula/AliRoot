@@ -31,6 +31,9 @@
 // --- AliRoot header files ---
 
 #include "AliPHOSRecParticle.h"
+#include "AliPHOSLoader.h" 
+#include "AliStack.h" 
+#include "TParticle.h"
 
 ClassImp(AliPHOSRecParticle)
 
@@ -41,6 +44,7 @@ ClassImp(AliPHOSRecParticle)
   // copy ctor
 
   fPHOSTrackSegment = rp.fPHOSTrackSegment ; 
+  fDebug            = kFALSE ; 
   fType             = rp.fType ; 
   fIndexInList      = rp.fIndexInList ;
 
@@ -66,6 +70,62 @@ ClassImp(AliPHOSRecParticle)
   
 }
 
+//____________________________________________________________________________
+const Int_t AliPHOSRecParticle::GetNPrimaries() const  
+{ 
 
+  Int_t rv = 0 ;
+  AliRunLoader* runget = AliRunLoader::GetRunLoader(AliConfig::fgkDefaultEventFolderName);
+  if(runget == 0x0) 
+   {
+     Error("Init","Can not find run getter in event folder \"%s\"",GetTitle());
+     return 0;
+   }
+  
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(runget->GetLoader("PHOSLoader"));
+  if ( gime == 0 ) 
+   {
+     Error("Init","Could not obtain the Loader object !"); 
+     return 0;
+   } 
 
+  gime->EmcRecPoint(gime->TrackSegment(GetPHOSTSIndex())->GetEmcIndex())->GetPrimaries(rv) ; 
+  return rv ; 
+}
+
+//____________________________________________________________________________
+const TParticle * AliPHOSRecParticle::GetPrimary(Int_t index) const  
+{
+  if ( index > GetNPrimaries() ) { 
+    if (fDebug) 
+      cout << "WARNING : AliPHOSRecParticle::GetPrimary -> " << index << " is larger that the number of primaries " 
+	   <<  GetNPrimaries() << endl ;
+    return 0 ; 
+  } else { 
+    Int_t dummy ; 
+  AliRunLoader* runget = AliRunLoader::GetRunLoader(AliConfig::fgkDefaultEventFolderName);
+  if(runget == 0x0) 
+   {
+     Error("Init","Can not find run getter in event folder \"%s\"",AliConfig::fgkDefaultEventFolderName.Data());
+     return 0;
+   }
+  
+  AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(runget->GetLoader("PHOSLoader"));
+  if ( gime == 0 ) 
+   {
+     Error("Init","Could not obtain the Loader object !"); 
+     return 0;
+   } 
+
+    Int_t primaryindex = gime->EmcRecPoint(gime->TrackSegment(GetPHOSTSIndex())->GetEmcIndex())->GetPrimaries(dummy)[index] ; 
+    if (primaryindex >= 10000000) { // it comes from backgroundfile 
+      if (fDebug) 
+	cout << "WARNING : AliPHOSRecParticle::GetPrimary -> not a signal primary" << endl ;
+      return 0 ; 
+    } else 
+      //      return gime->Primary(primaryindex) ; 
+      return runget->Stack()->Particle(primaryindex) ; 
+  } 
+  return 0 ; 
+}
 

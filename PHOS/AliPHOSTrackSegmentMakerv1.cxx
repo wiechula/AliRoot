@@ -12,7 +12,9 @@
  * about the suitability of this software for any purpose. It is          *
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
+
 /* $Id$ */
+
 //_________________________________________________________________________
 // Implementation version 1 of algorithm class to construct PHOS track segments
 // Track segment for PHOS is list of 
@@ -32,14 +34,16 @@
 // In principle this class should be called from AliPHOSReconstructioner, but 
 // one can use it as well in standalone mode.
 // Use  case:
-//  root [0] AliPHOSTrackSegmentMakerv1 * t = new AliPHOSTrackSegmentMaker("galice.root")
+//  root [0] AliPHOSTrackSegmentMakerv1 * t = new AliPHOSTrackSegmentMaker("galice.root", "tracksegmentsname", "recpointsname")
 //  Warning in <TDatabasePDG::TDatabasePDG>: object already instantiated
+//               // reads gAlice from header file "galice.root", uses recpoints stored in the branch names "recpointsname" (default = "Default")
+//               // and saves recpoints in branch named "tracksegmentsname" (default = "recpointsname")                       
 //  root [1] t->ExecuteTask()
 //  root [2] t->SetMaxEmcPpsdDistance(5)
 //  root [3] t->SetTrackSegmentsBranch("max distance 5 cm")
 //  root [4] t->ExecuteTask("deb all time") 
 //                 
-//*-- Author: Dmitri Peressounko (RRC Ki & SUBATECH)
+//*-- Author: Dmitri Peressounko (RRC Ki & SUBATECH) & Yves Schutz (SUBATECH) 
 //
 
 // --- ROOT system ---
@@ -82,11 +86,13 @@ ClassImp( AliPHOSTrackSegmentMakerv1)
   fFolderName           = "" ;
   fRecPointsBranchTitle     = "" ;
   fTrackSegmentsBranchTitle = "" ; 
+  fFrom                     = "" ; 
+
   fTrackSegmentsInRun       = 0 ; 
 }
 
 //____________________________________________________________________________
- AliPHOSTrackSegmentMakerv1::AliPHOSTrackSegmentMakerv1(const char * headerFile, const char * name) : AliPHOSTrackSegmentMaker(headerFile, name)
+ AliPHOSTrackSegmentMakerv1::AliPHOSTrackSegmentMakerv1(const char * headerFile, const char * name, const char * from) : AliPHOSTrackSegmentMaker(headerFile, name)
 {
   // ctor
 
@@ -95,6 +101,7 @@ ClassImp( AliPHOSTrackSegmentMakerv1)
   fEmcLast   = 0 ;   
   fCpvFirst  = 0 ;   
   fCpvLast   = 0 ;   
+  fLinkUpArray = 0 ;
 
   fFolderName           = GetTitle() ;
   fRecPointsBranchTitle     = GetName() ;
@@ -105,16 +112,27 @@ ClassImp( AliPHOSTrackSegmentMakerv1)
   tsmName.Append(":") ; 
   tsmName.Append(Version()) ; 
   SetName(tsmName) ;
-  
+  if ( from == 0 ) 
+    fFrom = name ; 
+  else
+    fFrom = from ; 
   Init() ;
-
+  
 }
 
 //____________________________________________________________________________
  AliPHOSTrackSegmentMakerv1::~AliPHOSTrackSegmentMakerv1()
 { 
   // dtor
-  if(fLinkUpArray)  delete fLinkUpArray  ;
+  delete fLinkUpArray  ;
+}
+
+//____________________________________________________________________________
+const TString AliPHOSTrackSegmentMakerv1::BranchName() const 
+{  
+  TString branchName(GetName() ) ;
+  branchName.Remove(branchName.Index(Version())-1) ;
+  return branchName ;
 }
 
 //____________________________________________________________________________
@@ -202,9 +220,6 @@ void  AliPHOSTrackSegmentMakerv1::Init()
   
   if ( strcmp(GetTitle(), "") == 0 )
     SetTitle("galice.root") ;
-
-  TString branchname = GetName() ;
-  branchname.Remove(branchname.Index(Version())-1) ;
     
   AliRunLoader* runget = AliRunLoader::GetRunLoader(fFolderName);
   if(runget == 0x0) 
@@ -228,7 +243,6 @@ void  AliPHOSTrackSegmentMakerv1::Init()
 
   // create a folder on the white board //YSAlice/WhiteBoard/RecPoints/PHOS/trackSegmentsName
   gime->LoadTracks("RECREATE");
-//  gime->PostTrackSegments();
 
 }
 
@@ -372,7 +386,8 @@ void  AliPHOSTrackSegmentMakerv1::MakePairs()
       } 
     }
   }
-  
+  delete [] emcExist ; 
+  delete [] cpvExist ; 
 }
 
 //____________________________________________________________________________
@@ -398,11 +413,8 @@ void  AliPHOSTrackSegmentMakerv1::Exec(Option_t * option)
   TBranch * branch = 0 ;  
   Bool_t phostsfound = kFALSE, tracksegmentmakerfound = kFALSE ; 
   
-  TString branchname = GetName() ;
-  branchname.Remove(branchname.Index(Version())-1) ;
-
   while ( (branch = static_cast<TBranch*>(next())) && (!phostsfound || !tracksegmentmakerfound) ) {
-    if ( (strcmp(branch->GetName(), "PHOSTS")==0) && (strcmp(branch->GetTitle(), branchname.Data())==0) ) 
+    if ( (strcmp(branch->GetName(), "PHOSTS")==0) && (strcmp(branch->GetTitle(), BranchName().Data())==0) ) 
       phostsfound = kTRUE ;
     
     else if ( (strcmp(branch->GetName(), "AliPHOSTrackSegmentMaker")==0) && (strcmp(branch->GetTitle(), GetName())==0) ) 
@@ -411,7 +423,7 @@ void  AliPHOSTrackSegmentMakerv1::Exec(Option_t * option)
 
   if ( phostsfound || tracksegmentmakerfound ) {
     cerr << "WARNING: AliPHOSTrackSegmentMakerv1::Exec -> TrackSegments and/or TrackSegmentMaker branch with name " 
-        << branchname.Data() << " already exits" << endl ;
+        << BranchName().Data() << " already exits" << endl ;
     return ; 
   }       
 
@@ -525,9 +537,6 @@ void AliPHOSTrackSegmentMakerv1::WriteTrackSegments(Int_t event)
      return ;
    } 
 
-  TString branchName(GetName() ) ;
-  branchName.Remove(branchName.Index(Version())-1) ;
-
   TClonesArray * trackSegments = gime->TrackSegments() ; 
   trackSegments->Expand(trackSegments->GetEntriesFast()) ;
 
@@ -537,8 +546,15 @@ void AliPHOSTrackSegmentMakerv1::WriteTrackSegments(Int_t event)
   Int_t bufferSize = 32000 ;    
   TBranch * tsBranch = gAlice->TreeR()->Branch("PHOSTS",&trackSegments,bufferSize);
 
-  tsBranch->SetTitle(branchName);
+  tsBranch->SetTitle(BranchName());
     
+  //Second -TSMaker
+  Int_t splitlevel = 0 ;
+  AliPHOSTrackSegmentMakerv1 * ts = this ;
+  TBranch * tsMakerBranch = gime->TreeR()->Branch("AliPHOSTrackSegmentMaker","AliPHOSTrackSegmentMakerv1",
+					  &ts,bufferSize,splitlevel);
+  tsMakerBranch->SetTitle(BranchName());
+
   tsBranch->Fill() ;  
   gime->WriteTracks("OVERWRITE");
   gime->WriteTracker("OVERWRITE");

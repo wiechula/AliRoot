@@ -37,9 +37,10 @@
 //  This TTask is normally called from Reconstructioner, but can as well be used in 
 //  standalone mode.
 // Use Case:
-//  root [0] AliPHOSClusterizerv1 * cl = new AliPHOSClusterizerv1("galice.root")
+//  root [0] AliPHOSClusterizerv1 * cl = new AliPHOSClusterizerv1("galice.root", "recpointsname", "digitsname")  
 //  Warning in <TDatabasePDG::TDatabasePDG>: object already instantiated
-//               //reads gAlice from header file "..."                      
+//               // reads gAlice from header file "galice.root", uses digits stored in the branch names "digitsname" (default = "Default")
+//               // and saves recpoints in branch named "recpointsname" (default = "digitsname")                       
 //  root [1] cl->ExecuteTask()  
 //               //finds RecPoints in all events stored in galice.root
 //  root [2] cl->SetDigitsBranch("digits2") 
@@ -107,11 +108,13 @@ ClassImp(AliPHOSClusterizerv1)
 
   fHeaderFileName          = "" ; 
   fDigitsBranchTitle       = "" ;
+  fFrom                    = "" ; 
+ 
   fRecPointsInRun          = 0 ;   
 }
 
 //____________________________________________________________________________
-AliPHOSClusterizerv1::AliPHOSClusterizerv1(const char* headerFile,const char* name)
+AliPHOSClusterizerv1::AliPHOSClusterizerv1(const char* headerFile,const char* name, const char * from)
 :AliPHOSClusterizer(headerFile, name)
 {
   // ctor with the indication of the file where header Tree and digits Tree are stored
@@ -141,14 +144,27 @@ AliPHOSClusterizerv1::AliPHOSClusterizerv1(const char* headerFile,const char* na
   clusterizerName.Append(Version()) ; 
   SetName(clusterizerName) ;
   fRecPointsInRun          = 0 ; 
-
+  if ( from == 0 ) 
+    fFrom = name ; 
+  else
+    fFrom = from ; 
   Init() ;
 
 }
+
 //____________________________________________________________________________
   AliPHOSClusterizerv1::~AliPHOSClusterizerv1()
 {
 }
+
+//____________________________________________________________________________
+const TString AliPHOSClusterizerv1::BranchName() const 
+{  
+  TString branchName(GetName() ) ;
+  branchName.Remove(branchName.Index(Version())-1) ;
+  return branchName ;
+}
+ 
 //____________________________________________________________________________
 Float_t  AliPHOSClusterizerv1::Calibrate(Int_t amp, Int_t absId) const
 {
@@ -220,7 +236,8 @@ void AliPHOSClusterizerv1::Exec(Option_t * option)
     
     MakeClusters() ;
     
-    if(fToUnfold)             MakeUnfolding() ;
+    if(fToUnfold)             
+      MakeUnfolding() ;
 
     WriteRecPoints(ievent) ;
 
@@ -243,8 +260,8 @@ void AliPHOSClusterizerv1::Exec(Option_t * option)
 }
 
 //____________________________________________________________________________
-Bool_t AliPHOSClusterizerv1::FindFit(AliPHOSEmcRecPoint * emcRP, int * maxAt, Float_t * maxAtEnergy,
-                                     Int_t nPar, Float_t * fitparameters) const
+Bool_t AliPHOSClusterizerv1::FindFit(AliPHOSEmcRecPoint * emcRP, AliPHOSDigit ** maxAt, Float_t * maxAtEnergy,
+				    Int_t nPar, Float_t * fitparameters) const
 { 
   // Calls TMinuit to fit the energy distribution of a cluster with several maxima 
   // The initial values for fitting procedure are set equal to the positions of local maxima.
@@ -283,7 +300,7 @@ Bool_t AliPHOSClusterizerv1::FindFit(AliPHOSEmcRecPoint * emcRP, int * maxAt, Fl
   const AliPHOSGeometry * geom = gime->PHOSGeometry() ; 
 
   for(iDigit = 0; iDigit < nDigits; iDigit++){
-    digit = (AliPHOSDigit *) maxAt[iDigit]; 
+    digit = maxAt[iDigit]; 
 
     Int_t relid[4] ;
     Float_t x = 0.;
@@ -473,8 +490,6 @@ void AliPHOSClusterizerv1::WriteRecPoints(Int_t event)
   // Creates new branches with given title
   // fills and writes into TreeR.
 
-  TString branchName(GetName() ) ;
-  branchName.Remove(branchName.Index(Version())-1) ;
 
   AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
   if (gime == 0x0)
@@ -492,7 +507,6 @@ void AliPHOSClusterizerv1::WriteRecPoints(Int_t event)
     ((AliPHOSEmcRecPoint *)emcRecPoints->At(index))->EvalAll(fW0,digits) ;
 
   emcRecPoints->Sort() ;
-
   for(index = 0; index < emcRecPoints->GetEntries(); index++)
     ((AliPHOSEmcRecPoint *)emcRecPoints->At(index))->SetIndexInList(index) ;
 
@@ -509,54 +523,29 @@ void AliPHOSClusterizerv1::WriteRecPoints(Int_t event)
 
   cpvRecPoints->Expand(cpvRecPoints->GetEntriesFast()) ;
   
-  //Make branches in TreeR for RecPoints and Clusterizer
-  char * filename = 0;
-  if(gSystem->Getenv("CONFIG_SPLIT_FILE")!=0){   //generating file name
-    filename = new char[strlen(gAlice->GetBaseFile())+20] ;
-    sprintf(filename,"%s/PHOS.Reco.root",gAlice->GetBaseFile()) ;
-  }
-  
-  //Make new branches
-  TDirectory *cwd = gDirectory;
-  
- 
   Int_t bufferSize = 32000 ;    
   Int_t splitlevel = 0 ;
 
   //First EMC
   TBranch * emcBranch = gime->TreeR()->Branch("PHOSEmcRP","TObjArray",&emcRecPoints,bufferSize,splitlevel);
-  emcBranch->SetTitle(branchName);
-  if (filename) {
-    emcBranch->SetFile(filename);
-    TIter next( emcBranch->GetListOfBranches());
-    TBranch * sb ;
-    while ((sb=(TBranch*)next())) {
-      sb->SetFile(filename);
-    }   
-    
-    cwd->cd();
-  }
+  emcBranch->SetTitle(BranchName());
     
   //Now CPV branch
   TBranch * cpvBranch = gime->TreeR()->Branch("PHOSCpvRP","TObjArray",&cpvRecPoints,bufferSize,splitlevel);
-  cpvBranch->SetTitle(branchName);
-  if (filename) {
-    cpvBranch->SetFile(filename);
-    TIter next( cpvBranch->GetListOfBranches());
-    TBranch * sb;
-    while ((sb=(TBranch*)next())) {
-      sb->SetFile(filename);
-    }   
-    cwd->cd();
-  } 
+  cpvBranch->SetTitle(BranchName());
     
   //And Finally  clusterizer branch
+  AliPHOSClusterizerv1 * cl = this ;
+  TBranch * clusterizerBranch = gime->TreeR()->Branch("AliPHOSClusterizer","AliPHOSClusterizerv1",
+					      &cl,bufferSize,splitlevel);
+  clusterizerBranch->SetTitle(BranchName());
+
   emcBranch        ->Fill() ;
   cpvBranch        ->Fill() ;
+  clusterizerBranch->Fill() ;
   
   gime->WriteRecPoints("OVERWRITE");
   gime->WriteReconstructioner("OVERWRITE");
-  
   
   
 }
@@ -566,8 +555,6 @@ void AliPHOSClusterizerv1::MakeClusters()
 {
   // Steering method to construct the clusters stored in a list of Reconstructed Points
   // A cluster is defined as a list of neighbour digits
-  TString branchName(GetName()) ; 
-  branchName.Remove(branchName.Index(Version())-1) ; 
 
   AliPHOSLoader* gime = dynamic_cast<AliPHOSLoader*>(fRunLoader->GetLoader("PHOSLoader"));
   if (gime == 0x0)
@@ -578,6 +565,7 @@ void AliPHOSClusterizerv1::MakeClusters()
 
   TObjArray * emcRecPoints = gime->EmcRecPoints() ; 
   TObjArray * cpvRecPoints = gime->CpvRecPoints() ; 
+
   emcRecPoints->Delete() ;
   cpvRecPoints->Delete() ;
   
@@ -716,7 +704,7 @@ void AliPHOSClusterizerv1::MakeUnfolding()
 	break ;
       
       Int_t nMultipl = emcRecPoint->GetMultiplicity() ; 
-      Int_t * maxAt = new Int_t[nMultipl] ;
+      AliPHOSDigit ** maxAt = new AliPHOSDigit*[nMultipl] ;
       Float_t * maxAtEnergy = new Float_t[nMultipl] ;
       Int_t nMax = emcRecPoint->GetNumberOfLocalMax(maxAt, maxAtEnergy,fEmcLocMaxCut,digits) ;
       
@@ -753,7 +741,7 @@ void AliPHOSClusterizerv1::MakeUnfolding()
       AliPHOSEmcRecPoint * emcRecPoint = (AliPHOSEmcRecPoint*) recPoint ; 
       
       Int_t nMultipl = emcRecPoint->GetMultiplicity() ; 
-      Int_t * maxAt = new Int_t[nMultipl] ;
+      AliPHOSDigit ** maxAt = new AliPHOSDigit*[nMultipl] ;
       Float_t * maxAtEnergy = new Float_t[nMultipl] ;
       Int_t nMax = emcRecPoint->GetNumberOfLocalMax(maxAt, maxAtEnergy,fCpvLocMaxCut,digits) ;
       
@@ -788,7 +776,9 @@ Double_t  AliPHOSClusterizerv1::ShowerShape(Double_t r)
 
 //____________________________________________________________________________
 void  AliPHOSClusterizerv1::UnfoldCluster(AliPHOSEmcRecPoint * iniEmc, 
- Int_t nMax,  int * maxAt,  Float_t * maxAtEnergy)
+						 Int_t nMax, 
+						 AliPHOSDigit ** maxAt, 
+						 Float_t * maxAtEnergy)
 { 
   // Performs the unfolding of a cluster with nMax overlapping showers 
 
@@ -904,7 +894,6 @@ void AliPHOSClusterizerv1::UnfoldingChiSquare(Int_t & nPar, Double_t * Grad, Dou
 {
   // Calculates the Chi square for the cluster unfolding minimization
   // Number of parameters, Gradient, Chi squared, parameters, what to do
-
 
   TList * toMinuit = (TList*) gMinuit->GetObjectFit() ;
 

@@ -12,8 +12,8 @@
  * about the suitability of this software for any purpose. It is          *
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
-/* $Id$ */
 
+/* $Id$ */
 
 //_________________________________________________________________________
 // Implementation version v0 of PHOS Manager class 
@@ -37,7 +37,6 @@
 
 // --- Standard library ---
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <strstream.h>
