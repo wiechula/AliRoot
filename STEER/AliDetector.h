@@ -79,7 +79,6 @@ protected:
   Int_t         fBufferSize;  //!buffer size for Tree detector branches
   TClonesArray *fHits;        //List of hits for one track only
   TClonesArray *fDigits;      //List of digits for this detector
-  char         *fDigitsFile;  //!File to store branches of digits tree for detector 
   TObjArray    *fPoints;      //!Array of points for each track (all tracks in memory)
   
   TClonesArray *fTrackReferences; //!list of track references - for one primary track only -MI

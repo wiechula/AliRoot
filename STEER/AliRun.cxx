@@ -17,6 +17,9 @@
 
 /*
 $Log$
+Revision 1.81.2.5  2002/06/28 16:45:17  hristov
+Few minor corrections
+
 Revision 1.81.2.4  2002/06/24 16:17:09  hristov
 First reset and then begin event
 
@@ -698,16 +701,23 @@ void AliRun::FinishEvent()
   
 }
 //_____________________________________________________________________________
+
 void AliRun::InitLoaders()
 {
   //creates list of getters
+  cout<<"AliRun::InitLoaders(): ";
   TIter next(fModules);
   AliModule *mod;
   while((mod = (AliModule*)next()))
    { 
      AliDetector *det = dynamic_cast<AliDetector*>(mod);
-     if (det) fRunLoader->AddLoader(det);
+     if (det) 
+      {
+        fRunLoader->AddLoader(det);
+        cout<<" "<<det->GetName();
+      }
    }
+  cout<<endl;
 }
 
 //_____________________________________________________________________________
@@ -750,8 +760,6 @@ void AliRun::FinishRun()
     detector->FinishRun();
   }
   
-  fRunLoader->UnloadHeader();
-  fRunLoader->UnloadKinematics();
   fRunLoader->CleanFolders();
   
 }
@@ -963,7 +971,7 @@ void AliRun::InitMC(const char *setup)
   
   InitLoaders();
   
-  fRunLoader->LoadHits("recreate","all");// all getters (detectors) recreate file for hits
+  fRunLoader->LoadHits("all","recreate");// all getters (detectors) recreate file for hits
 
   fRunLoader->CdGAFile();
 
@@ -1662,7 +1670,6 @@ void AliRun::Streamer(TBuffer &R__b)
   if (R__b.IsReading()) {
     if (!gAlice) gAlice = this;
     AliRun::Class()->ReadBuffer(R__b, this);
-    //
     gROOT->GetListOfBrowsables()->Add(this,"Run");
 
     gRandom = fRandom;
@@ -1710,7 +1717,9 @@ void AliRun::SetGenEventHeader(AliGenEventHeader* header)
     fRunLoader->GetHeader()->SetGenEventHeader(header);
 }
 
-Int_t AliRun::GetEvNumber() const 
+//___________________________________________________________________________
+
+Int_t AliRun::GetEvNumber() const
 { 
 //Returns number of current event  
   if (fRunLoader == 0x0)
@@ -1725,11 +1734,19 @@ Int_t AliRun::GetEvNumber() const
 void AliRun::SetRunLoader(AliRunLoader* rloader)
 {
   fRunLoader = rloader;
-
+  if (fRunLoader == 0x0) return;
+  
+  TString evfoldname;
+  TFolder* evfold = fRunLoader->GetEventFolder();
+  if (evfold) evfoldname = evfold->GetName();
+  else cout<<"AliRun::SetRunLoader() did not get Event Folder from Run Loader\n";
+  
+  
   TIter next(fModules);
   AliModule *module;
   while((module = (AliModule*)next())) 
    {
+     if (evfold) AliConfig::Instance()->Add(module,evfoldname);
      AliDetector* detector = dynamic_cast<AliDetector*>(module);
      if (detector)
       {
@@ -1742,7 +1759,21 @@ void AliRun::SetRunLoader(AliRunLoader* rloader)
          {
            cout<<"Setting loader for detector "<<detector->GetName()<<endl;
            detector->SetLoader(loader);
+           
          }
       }
    }
+}
+
+void AliRun::AddModule(AliModule* mod)
+{
+  if (mod == 0x0) return;
+  if (strlen(mod->GetName()) == 0) return;
+  if (GetModuleID(mod->GetName()) >= 0) return;
+  
+  cout<<"AliRun::AddModule("<<mod->GetName()<<")\n";
+  if (fRunLoader == 0x0) AliConfig::Instance()->Add(mod);
+  else AliConfig::Instance()->Add(mod,fRunLoader->GetEventFolder()->GetName());
+
+  Modules()->Add(mod);
 }

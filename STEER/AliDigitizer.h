@@ -30,14 +30,9 @@ class AliDigitizer: public TTask {
       
     virtual ~AliDigitizer();
     virtual Bool_t Init() {return kTRUE;}
-//    void    SetInputFoldersNames(TObjArray* foldnames);
     
  protected:
     AliRunDigitizer *fManager;
-    
-    TObjArray *fInputFoldersNames;
-    TString    fOutputFolderName;
-    
     ClassDef(AliDigitizer,1) // Base class for detector digitizers
 };
 

@@ -108,7 +108,8 @@ AliRunLoader::~AliRunLoader()
   
   RemoveEventFolder();
   //fEventFolder is deleted by the way of removing - TopAliceFolder owns it
-
+  delete fHeader;
+  delete fStack;
   delete fGAFile;
   delete fKineFile;
   delete fTrackRefsFile;
@@ -485,12 +486,6 @@ void AliRunLoader::MakeTree(Option_t *option)
     
 Int_t AliRunLoader::LoadgAlice()
 {
-// if (LoadHeader())
-//  {
-//    Error("LoadgAlice","LoadHeader returned error. Exiting");
-//    return 1;
-//  }
-
  AliRun* alirun = dynamic_cast<AliRun*>(fGAFile->Get(fgkGAliceName));
  if (alirun == 0x0)
   {
@@ -1062,12 +1057,14 @@ void AliRunLoader::AddLoader(AliLoader* loader)
  }
 /**************************************************************************/
 
-void AliRunLoader::AddLoader(AliModule* det)
+void AliRunLoader::AddLoader(AliDetector* det)
  {
 //Asks module (detector) ro make a Loader and stores in the array
    if (det == 0x0) return;
-   AliLoader* get = det->MakeLoader(fEventFolder->GetName());
-   if(get) 
+   AliLoader* get = det->GetLoader();//try to get loader
+   if (get == 0x0)  get = det->MakeLoader(fEventFolder->GetName());//if did not obtain, ask to make it
+
+   if (get) 
     {
       AddLoader(get);
       cout<<"AliRunLoader::AddLoader Detector: "<<det->GetName()<<" Loader :"<<get->GetName()<<endl;
@@ -1370,12 +1367,13 @@ void AliRunLoader::Clean(const TString& name)
 
 /*****************************************************************************/ 
 
-AliRunDigitizer* AliRunLoader::GetRunDigitizer()
+TTask* AliRunLoader::GetRunDigitizer()
 {
 //returns Run Digitizer from folder
 
- TFolder* topf = AliConfig::Instance()->GetTopFolder();
- return dynamic_cast<AliRunDigitizer*>(topf->FindObjectAny(AliConfig::Instance()->GetDigitizerTaskName()));
+ TFolder* topf = AliConfig::Instance()->GetTaskFolder();
+ TObject* obj = topf->FindObjectAny(AliConfig::Instance()->GetDigitizerTaskName());
+ return (obj)?dynamic_cast<TTask*>(obj):0x0;
 }
 /*****************************************************************************/ 
 
@@ -1383,25 +1381,42 @@ TTask* AliRunLoader::GetRunSDigitizer()
 {
 //returns SDigitizer Task from folder
 
- TFolder* topf = AliConfig::Instance()->GetTopFolder();
- return dynamic_cast<TTask*>(topf->FindObjectAny(AliConfig::Instance()->GetSDigitizerTaskName()));
+ TFolder* topf = AliConfig::Instance()->GetTaskFolder();
+ TObject* obj = topf->FindObjectAny(AliConfig::Instance()->GetSDigitizerTaskName());
+ return (obj)?dynamic_cast<TTask*>(obj):0x0;
 }
 /*****************************************************************************/ 
 
 TTask* AliRunLoader::GetRunReconstructioner()
 {
 //returns Reconstructioner Task from folder
- TFolder* topf = AliConfig::Instance()->GetTopFolder();
- return dynamic_cast<TTask*>(topf->FindObjectAny(AliConfig::Instance()->GetReconstructionerTaskName()));
+ TFolder* topf = AliConfig::Instance()->GetTaskFolder();
+ TObject* obj = topf->FindObjectAny(AliConfig::Instance()->GetReconstructionerTaskName());
+ return (obj)?dynamic_cast<TTask*>(obj):0x0;
 }
 /*****************************************************************************/ 
 
 TTask* AliRunLoader::GetRunTracker()
 {
 //returns Tracker Task from folder
- TFolder* topf = AliConfig::Instance()->GetTopFolder();
- return dynamic_cast<TTask*>(topf->FindObjectAny(AliConfig::Instance()->GetTrackerTaskName()));
+ TFolder* topf = AliConfig::Instance()->GetTaskFolder();
+ TObject* obj = topf->FindObjectAny(AliConfig::Instance()->GetTrackerTaskName());
+ return (obj)?dynamic_cast<TTask*>(obj):0x0;
 }
+/*****************************************************************************/ 
+TTask* AliRunLoader::GetRunQATask()
+{
+//returns Quality Assurance Task from folder
+ TFolder* topf = AliConfig::Instance()->GetTaskFolder();
+ if (topf == 0x0)
+  {
+    cerr<<"Error <AliRunLoader::GetRunQATask>: Can not get task folder from AliConfig\n";
+    return 0x0;
+  }
+ TObject* obj = topf->FindObjectAny(AliConfig::Instance()->GetQATaskName());
+ return (obj)?dynamic_cast<TTask*>(obj):0x0;
+}
+
 /*****************************************************************************/ 
 
 void AliRunLoader::SetCompressionLevel(Int_t cl)

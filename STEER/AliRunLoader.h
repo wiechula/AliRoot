@@ -104,7 +104,7 @@ class AliRunLoader: public TNamed
     
     
     void        AddLoader(AliLoader* loader);
-    void        AddLoader(AliModule* det);
+    void        AddLoader(AliDetector* det);
     AliLoader*  GetLoader(const char* detname) const;
     AliLoader*  GetLoader(AliDetector* det) const;
     Int_t       SetEventFolderName(const TString& name = AliConfig::fgkDefaultEventFolderName);//sets top folder name for this run; of alread
@@ -176,11 +176,12 @@ class AliRunLoader: public TNamed
   /******************************************/
     static AliRunLoader* GetRunLoader(const char* eventfoldername);
 
-    static AliRunDigitizer* GetRunDigitizer();
+//    static AliRunDigitizer* GetRunDigitizer();
+    static TTask*           GetRunDigitizer();
     static TTask*           GetRunSDigitizer();
     static TTask*           GetRunReconstructioner();
     static TTask*           GetRunTracker();
-    
+    static TTask*           GetRunQATask();
     
     static const TString   fgkRunLoaderName;
     static const TString   fgkHeaderContainerName;//default name of the kinematics container (TREE) name - TreeE

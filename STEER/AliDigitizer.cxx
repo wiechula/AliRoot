@@ -23,6 +23,9 @@
 
 /*
 $Log$
+Revision 1.3.4.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
 Revision 1.3  2001/11/14 14:50:33  jchudoba
 Pass custom name and title to the TTask base class
 
@@ -51,7 +54,7 @@ AliDigitizer::AliDigitizer(const Text_t* name, const Text_t* title)
 //
 // dummy default ctor with name and title
 //
-  fManager = 0;
+  fManager = 0x0;
 }
 
 AliDigitizer::AliDigitizer(AliRunDigitizer *manager, 

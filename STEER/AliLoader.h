@@ -1,4 +1,4 @@
-        #ifndef ALIGETTER_H
+#ifndef ALIGETTER_H
 #define ALIGETTER_H
 
 
@@ -55,6 +55,13 @@ class AliLoader: public TNamed
     void           UnloadDigits(){CleanDigits();CloseDigitsFile();}
     void           UnloadRecPoints(){CleanRecPoints();CloseRecPointsFile();}
     void           UnloadTracks(){CleanTracks();CloseTracksFile();}
+
+    virtual Int_t  ReloadHits();  //unload and load again Hits
+    virtual Int_t  ReloadSDigits(); //unload and load again 
+    virtual Int_t  ReloadDigits(); //unload and load again 
+    virtual Int_t  ReloadRecPoints(); //unload and load again 
+    virtual Int_t  ReloadTracks(); //unload and load again 
+    virtual Int_t  ReloadAll(); //unload and load again everything that was loaded 
     
   //these methods writes object from folder to proper file
     virtual Int_t  WriteHits(Option_t* opt=""); 
@@ -98,11 +105,11 @@ class AliLoader: public TNamed
     TFolder*       GetTasksFolder();
     TFolder*       GetQAFolder();
     
-    TTask*         SDigitizer();
+    TTask*         SDigitizer();//return detector SDigitizer()
     AliDigitizer*  Digitizer();
     TTask*         Reconstructioner();
     TTask*         Tracker();
-    
+    TTask*         QAtask(const char* name = 0x0);
 
     TObject**      SDigitizerRef();
     TObject**      DigitizerRef();
@@ -152,15 +159,17 @@ class AliLoader: public TNamed
     void          SetRecPointsFileOption(Option_t* newopt);//
     void          SetTracksFileOption(Option_t* newopt);//
     
-    virtual void  SetCompressionLevel(Int_t cl);
-    void          SetDirName(TString& name);
+    virtual void  SetCompressionLevel(Int_t cl);//Sets compression level in all the files
+    void          SetDirName(TString& name);//sets the directory name for all the I/O environment
     
-    const TString& GetDetectorName() const{return fDetectorName;}
+    const TString& GetDetectorName() const{return fDetectorName;}//returns the name of the detector
     AliRunLoader*  GetRunLoader();//gets the run-getter from event folder
     
     void          SetDigitsFileNameSuffix(const TString& suffix);//adds the suffix before ".root", 
                                                           //e.g. TPC.Digits.root -> TPC.DigitsMerged.root
-                                                          //made on Jiri Chudoba demand
+                                                              //made on Jiri Chudoba demand
+    
+    
    protected:
 
     /*********************************************/
@@ -205,7 +214,7 @@ class AliLoader: public TNamed
     /*********        D A T A          ************/
     /**********************************************/
    
-    TString       fDetectorName;
+    TString       fDetectorName;//detector name that this loader belongs to
     
     TString       fHitsFileName;  //name of file with hits
     TString       fSDigitsFileName;//name of file with SDigits 
@@ -275,8 +284,8 @@ class AliLoader: public TNamed
     /**********************************************/
    public:
     static TDirectory*    ChangeDir(TFile* file, Int_t eventno); //changes the root directory in "file" to directory corresponing to eventno
-    static Bool_t         TestFileOption(Option_t* opt);
-    const TString SetFileOffset(const TString& fname);//adds the proper number before .root
+    static Bool_t         TestFileOption(Option_t* opt);//checks is file is created from scratch
+    const TString SetFileOffset(const TString& fname);//adds the proper number before .root exttension suffix
 
     ClassDef(AliLoader,1)
  };

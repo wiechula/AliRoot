@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.18.4.3  2002/06/28 16:45:17  hristov
+Few minor corrections
+
 Revision 1.18.4.2  2002/06/06 14:18:33  hristov
 Merged with v3-08-02
 
@@ -104,8 +107,7 @@ AliModule::AliModule()
   fIdmate     = 0;
   fDebug      = 0;
   fEnable     = 1;
-  
-  AliConfig::Instance()->Add(this);//skowron 4.02.2002
+
 }
  
 //_____________________________________________________________________________
@@ -132,9 +134,9 @@ AliModule::AliModule(const char* name,const char *title):TNamed(name,title)
   }
   //
   // Add this Module to the list of Modules
-  gAlice->Modules()->Add(this);
-  //
-  //
+
+  gAlice->AddModule(this);
+
   SetMarkerColor(3);
   //
   // Allocate space for tracking media and material indexes
@@ -146,7 +148,6 @@ AliModule::AliModule(const char* name,const char *title):TNamed(name,title)
   fLoMedium = 65536;
   fHiMedium = 0;
 
-  AliConfig::Instance()->Add(this);    
     
   SetDebug(gAlice->GetDebug());
 

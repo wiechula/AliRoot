@@ -71,6 +71,7 @@ public:
    virtual  void  FlagTrack(Int_t track);
    void           AddEnergyDeposit(Int_t id, Float_t edep) 
                                        {fEventEnergy[id]+=edep;}
+   void           AddModule(AliModule* mod);
    Int_t          GetEvNumber() const;
    Int_t          GetRunNumber() const {return fRun;}
    void           SetRunNumber(Int_t run) {fRun=run;}

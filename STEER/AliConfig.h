@@ -6,6 +6,9 @@
 /* $Id$ */
 /* 
  * $Log$
+ * Revision 1.4.6.1  2002/05/31 09:37:59  hristov
+ * First set of changes done by Piotr
+ *
  * Revision 1.4  2001/10/05 12:11:40  hristov
  * iostream.h used instead of iostream (HP)
  *
@@ -77,6 +80,8 @@ private:
   
   // folders
   TFolder*              fTopFolder;
+  TFolder*              fTaskFolder;
+  TFolder*              fConstFolder;
 
   static const TString  fgkPDGFolderName; 
   static const TString  fgkGeneratorFolderName; 
@@ -93,15 +98,17 @@ private:
 
   TFolder*              BuildEventFolder(const char* name,const char* tilte);
   
-  TFolder*              GetTopFolder();
-  
+  TFolder*              GetTopFolder(){return fTopFolder;}
+  TFolder*              GetTaskFolder(){return fTaskFolder;}
+  TFolder*              GetConstFolder(){return fConstFolder;}
+
   static const TString& GetModulesFolderName(){return fgkModuleFolderName;}
   
-  const TString&        GetQATaskName() const; //returns path to QA tasks
-  const TString&        GetDigitizerTaskName () const;
-  const TString&        GetSDigitizerTaskName () const;
-  const TString&        GetReconstructionerTaskName () const;
-  const TString&        GetTrackerTaskName () const;
+  TString               GetQATaskName() const; //returns path to QA tasks
+  TString               GetDigitizerTaskName () const;
+  TString               GetSDigitizerTaskName () const;
+  TString               GetReconstructionerTaskName () const;
+  TString               GetTrackerTaskName () const;
   
   
   const TString&        GetQAFolderName() const; //returns path to folder with QA output

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.18.2.2  2002/06/06 14:18:33  hristov
+Merged with v3-08-02
+
 Revision 1.18.2.1  2002/05/31 09:37:59  hristov
 First set of changes done by Piotr
 
@@ -108,9 +111,9 @@ AliGenerator::AliGenerator()
   // Default constructor
   //
     if (gAlice) {
-	if (gAlice->GetDebug()>0)
-	    printf("\n AliGenerator Default Constructor\n\n");
-	gAlice->SetGenerator(this);
+      if (gAlice->GetDebug()>0)
+       printf("\n AliGenerator Default Constructor\n\n");
+       gAlice->SetGenerator(this);
     }
 
     SetThetaRange(); ResetBit(kThetaRange);

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.16.6.4  2002/06/28 16:45:17  hristov
+Few minor corrections
+
 Revision 1.16.6.3  2002/06/18 10:18:31  hristov
 Important update (P.Skowronski)
 
@@ -122,7 +125,6 @@ AliDetector::AliDetector()
   fDigits     = 0;
   fTimeGate   = 200.e-9;
   fBufferSize = 16000;
-  fDigitsFile = 0;
   fLoader     = 0x0; //skowron
 
 }
@@ -145,7 +147,6 @@ AliDetector::AliDetector(const char* name,const char *title):AliModule(name,titl
   fNdigits    = 0;
   fPoints     = 0;
   fBufferSize = 16000;
-  fDigitsFile = 0;
   fLoader     = 0x0; //skowron
 
   AliConfig::Instance()->Add(this);
@@ -176,7 +177,6 @@ AliDetector::~AliDetector()
     delete fDigits;
     fDigits     = 0;
   }
-  if (fDigitsFile) delete [] fDigitsFile;
 
   if (fLoader)
    {
