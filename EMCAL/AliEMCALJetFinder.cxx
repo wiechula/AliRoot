@@ -1473,7 +1473,7 @@ Float_t AliEMCALJetFinder::PropagatePhi(Float_t pt, Float_t charge, Bool_t& curl
   static Float_t b = 0.0, rEMCAL = -1.0;
   if(rEMCAL<0) {
 // Get field in kGS
-    b =  gAlice->Field()->SolenoidField();
+    b =  ((AliMagFCM*) gAlice->Field())->SolenoidField();
 // Get EMCAL radius in cm 
     rEMCAL = AliEMCALGeometry::GetInstance()->GetIPDistance();
     printf("\nMagnetic field %f rEMCAL %f ", b, rEMCAL);
