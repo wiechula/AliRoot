@@ -19,7 +19,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 // --- ROOT system ---
-
+#include "TPad.h"
 // --- Standard library ---
 
 #include <iostream>
@@ -45,7 +45,7 @@ AliPHOSPpsdRecPoint::AliPHOSPpsdRecPoint(void)
 //____________________________________________________________________________
 AliPHOSPpsdRecPoint::~AliPHOSPpsdRecPoint(void) // dtor
 { 
-  delete fDigitsList ; 
+  //dtor  
 }
 
 //____________________________________________________________________________
@@ -212,6 +212,31 @@ Bool_t AliPHOSPpsdRecPoint::GetUp()
   
   return up ;
 }
+//______________________________________________________________________________
+void AliPHOSPpsdRecPoint::Paint(Option_t *)
+{
+//*-*-*-*-*-*-*-*-*-*-*Paint this ALiRecPoint as a TMarker  with its current attributes*-*-*-*-*-*-*
+//*-*                  =============================================
+   TVector3 pos(0.,0.,0.) ;
+   GetLocalPosition(pos) ;
+   Coord_t x = pos.X() ;
+   Coord_t y = pos.Z() ;
+   Color_t MarkerColor = 1 ;
+   Size_t  MarkerSize = 1. ;
+   Style_t MarkerStyle = 2 ;
+   if (GetUp()) 
+     MarkerStyle = 3 ;
+
+   if (!gPad->IsBatch()) {
+     gVirtualX->SetMarkerColor(MarkerColor);
+     gVirtualX->SetMarkerSize (MarkerSize);
+     gVirtualX->SetMarkerStyle(MarkerStyle);
+   }
+   gPad->SetAttMarkerPS(MarkerColor,MarkerStyle,MarkerSize);
+   gPad->PaintPolyMarker(1,&x,&y,"");
+
+
+}
 
 //____________________________________________________________________________
 void AliPHOSPpsdRecPoint::Print(Option_t * option) 
@@ -219,13 +244,23 @@ void AliPHOSPpsdRecPoint::Print(Option_t * option)
   cout << "AliPHOSPpsdRecPoint: " << endl ;
   
   AliPHOSDigit * digit ; 
- 
   Int_t iDigit;
+  AliPHOSGeometry * PHOSGeom =  (AliPHOSGeometry *) fGeom ;
+
+  Float_t xi ;
+  Float_t zi ;
+  Int_t relid[4] ; 
 
   for(iDigit=0; iDigit<fMulDigit; iDigit++) {
     digit = (AliPHOSDigit *) fDigitsList[iDigit];
-    cout << "     digit Id          = " << digit->GetId()  
-         << "     digit Energy      = " << digit->GetAmp() << endl ;
+    PHOSGeom->AbsToRelNumbering(digit->GetId(), relid) ;
+    PHOSGeom->RelPosInModule(relid, xi, zi);
+    cout << " Id = " << digit->GetId() ;  
+    cout << "  Phos mod = " << relid[0] ;  
+    cout << "  PPSD mod = " << relid[1] ;  
+    cout << "  x = " << xi ;  
+    cout << "  z = " << zi ;  
+    cout << "   Energy = " << digit->GetAmp() << endl ;
   }
   cout << "       Multiplicity    = " << fMulDigit  << endl ;
 }

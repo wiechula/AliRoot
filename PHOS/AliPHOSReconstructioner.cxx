@@ -56,7 +56,9 @@ AliPHOSReconstructioner::~AliPHOSReconstructioner()
 //____________________________________________________________________________
 void AliPHOSReconstructioner::Make(TClonesArray * dl, RecPointsList * emccl, RecPointsList * ppsdl, TrackSegmentsList * trsl)
 {
+  cout << "Make1" << endl;
   fClusterizer->MakeClusters(dl, emccl, ppsdl);
-
+  cout << "Make2" << endl;
   fTrackSegmentMaker->MakeTrackSegments(dl, emccl, ppsdl, trsl) ;
+  cout << "Make3" << endl;
 }

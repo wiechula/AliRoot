@@ -149,24 +149,29 @@ void  AliPHOSTrackSegmentMakerv1::FillOneModule(DigitsList * Dl, RecPointsList *
   AliPHOSEmcRecPoint *  emcRecPoint  ; 
   AliPHOSPpsdRecPoint * ppsdRecPoint ;
   Int_t index ;
-
+  cout << "Fill 1" << endl ;
   Int_t NemcUnfolded = emcIn->GetEntries() ;
   for(index = emcStopedAt; index < NemcUnfolded; index++){
     emcRecPoint = (AliPHOSEmcRecPoint *) (*emcIn)[index] ;
-    
+    cout << "Fill 2" << endl ;
+   
     if(emcRecPoint->GetPHOSMod() != PHOSMod )  
        break ;
+    
     
     Int_t NMultipl = emcRecPoint->GetMultiplicity() ; 
     int maxAt[NMultipl] ;
     Float_t maxAtEnergy[NMultipl] ;
     Int_t Nmax = emcRecPoint->GetNumberOfLocalMax(maxAt, maxAtEnergy) ;
 
+    
+
     if(Nmax <= 1)     // if cluster is very flat, so that no prononsed maximum, then Nmax = 0 
       emcOut->Add(emcRecPoint) ;
     else {
       UnfoldClusters(Dl, emcIn, emcRecPoint, Nmax, maxAt, maxAtEnergy, emcOut) ;
       emcIn->Remove(emcRecPoint); 
+      cout << "Fill 3" << endl ;
       emcIn->Compress() ;
       NemcUnfolded-- ;
       index-- ;
@@ -370,11 +375,14 @@ void  AliPHOSTrackSegmentMakerv1::MakeTrackSegments(DigitsList * DL, RecPointsLi
   AliPHOSGeometry * geom = AliPHOSGeometry::GetInstance() ;
   
   while(PHOSMod <= geom->GetNModules() ){
+
+    cout << PHOSMod << " Track1 " << endl ;
     
     FillOneModule(DL, emcl, EmcRecPoints, ppsdl, PpsdRecPointsUp, PpsdRecPointsLow, PHOSMod , emcStopedAt, ppsdStopedAt) ;
-   
+    cout << PHOSMod << " Track2 " << endl ;
     MakeLinks(EmcRecPoints, PpsdRecPointsUp, PpsdRecPointsLow, LinkLowArray, LinkUpArray) ; 
 
+    cout << PHOSMod << " Track3 " << endl ;
     MakePairs(EmcRecPoints, PpsdRecPointsUp, PpsdRecPointsLow, LinkLowArray, LinkUpArray, trsl) ;
  
     EmcRecPoints->Clear() ;
@@ -487,7 +495,7 @@ void  AliPHOSTrackSegmentMakerv1::UnfoldClusters(DigitsList * DL, RecPointsList 
       Distance =  TMath::Sqrt(Distance) ;
       Ratio = Epar * ShowerShape(Distance) / Efit[iDigit] ; 
       eDigit = emcEnergies[iDigit] * Ratio ;
-      emcRP->AddDigit( *digit,eDigit ) ;
+      emcRP->AddDigit( *digit, eDigit ) ;
     }
 
     emcList->Add(emcRP) ;

@@ -36,6 +36,7 @@ public:
   Float_t     GetDispersion() ;                               // computes the dispersion of the shower
   void        GetElipsAxis(Float_t * lambda) ;                // computes the axis of shower ellipsoide
   Float_t *   GetEnergiesList(){return fEnergyList ;} 
+  virtual void ExecuteEvent(Int_t event, Int_t px, Int_t py) ; 
   Float_t     GetLocMaxCut () {return fLocMaxCut ; }
   Float_t     GetLogWeightCut (){return fW0 ; }
   Float_t     GetMaximalEnergy(void) ;                        // get the highest energy in the cluster

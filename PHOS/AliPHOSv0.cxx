@@ -1026,7 +1026,7 @@ void AliPHOSv0::CreateGeometryforPPSD()
 
 //___________________________________________________________________________
 Int_t AliPHOSv0::Digitize(Float_t Energy){
-  Float_t fB = 10000000. ;
+  Float_t fB = 100000000. ;
   Float_t fA = 0. ;
   Int_t chan = Int_t(fA + Energy*fB ) ;
   return chan ;
@@ -1097,33 +1097,36 @@ void AliPHOSv0::Reconstruction(AliPHOSReconstructioner & Reconstructioner)
   // reinitializes the existing RecPoint Lists and steers the reconstruction processes
 
   fReconstructioner = &Reconstructioner ;
-
+  cout << "Hola1" << endl;
   if (fEmcClusters) { 
     fEmcClusters->Delete() ; 
     delete fEmcClusters ;
     fEmcClusters = 0 ; 
-  }
-  else 
-    fEmcClusters= new RecPointsList("AliPHOSEmcRecPoint", 100) ;
 
+  }
+  fEmcClusters= new RecPointsList("AliPHOSEmcRecPoint", 100) ;
+ 
+  cout << "Hola2" << endl;
   if (fPpsdClusters) { 
     fPpsdClusters->Delete() ; 
     delete fPpsdClusters ; 
     fPpsdClusters = 0 ; 
   }
-  else
-    fPpsdClusters = new RecPointsList("AliPHOSPpsdRecPoint", 100) ;
+  fPpsdClusters = new RecPointsList("AliPHOSPpsdRecPoint", 100) ;
 
+
+  cout << "Hola3" << endl;
   if (fTrackSegments) { 
-    fTrackSegments->Delete() ; 
+   fTrackSegments->Print(""); 
+   fTrackSegments->Delete() ; 
     delete fTrackSegments ; 
     fTrackSegments = 0 ; 
   }
-  else
-    fTrackSegments = new TObjArray(100) ;
-  
+  fTrackSegments = new TObjArray(100) ;
+
+  cout << "Hola4" << endl;
   fReconstructioner->Make(fDigits, fEmcClusters, fPpsdClusters, fTrackSegments);
-  
+  cout << "Hola5" << endl;
 }
 
 //____________________________________________________________________________
