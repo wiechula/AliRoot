@@ -17,18 +17,14 @@
 #include <G4TrackingManager.hh>
 #include <G4SteppingManager.hh>
 
-/*
-#include <TTree.h>
-#include <TParticle.h>
-#include <TClonesArray.h>
-*/
-
 // static data members
 AliTrackingAction* AliTrackingAction::fgInstance = 0;
 
 AliTrackingAction::AliTrackingAction()
   : fPrimaryTrackID(0),
     fVerboseLevel(2),
+    fNewVerboseLevel(0),
+    fNewVerboseTrackID(-1),
     fSavePrimaries(true),
     fTrackCounter(0)
 {
@@ -101,6 +97,7 @@ void AliTrackingAction::PrepareNewEvent()
   stepManager->SetSteppingManager(fpTrackingManager->GetSteppingManager());
 }
 
+#include <G4UImanager.hh>
 void AliTrackingAction::PreTrackingAction(const G4Track* aTrack)
 {
 // Called by G4 kernel before starting tracking.
@@ -139,12 +136,22 @@ void AliTrackingAction::PreTrackingAction(const G4Track* aTrack)
     // finish previous primary track
     FinishPrimaryTrack();
     fPrimaryTrackID = aTrack->GetTrackID();
+    
+    // begin this primary track
+    gAlice->BeginPrimary();
   }
   else { 
     // save secondary particles info 
     SaveTrack(aTrack);
   }
   
+  // verbose
+  if (trackID == fNewVerboseTrackID) {
+      G4String command = "/tracking/verbose ";
+      AliGlobals::AppendNumberToString(command, fNewVerboseLevel);
+      G4UImanager::GetUIpointer()->ApplyCommand(command);
+  }    
+
   // aliroot pre track actions
   gAlice->PreTrack();
 }
@@ -284,3 +291,20 @@ void AliTrackingAction::SaveTrack(const G4Track* track)
                    
 }
 
+void AliTrackingAction::SetNewVerboseLevel(G4int level)
+{ 
+// Set the new verbose level that will be set when the track with 
+// specified track ID (fNewVerboseTrackID) starts tracking.
+// ---
+
+  fNewVerboseLevel = level;  
+}
+
+void AliTrackingAction::SetNewVerboseTrackID(G4int trackID)
+{ 
+// Set the trackID for which the new verbose level (fNewVerboseLevel)
+// will be applied.
+// ---
+
+  fNewVerboseTrackID = trackID; 
+}
