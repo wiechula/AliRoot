@@ -4,8 +4,7 @@ AliHBTCorrelFctn.cxx  AliHBTPairCut.cxx      AliHBTReader.cxx            AliHBTR
 AliHBTEvent.cxx       AliHBTParticle.cxx     AliHBTRun.cxx\
 AliHBTFunction.cxx    AliHBTParticleCut.cxx  \
 AliHBTReaderITSv1.cxx AliHBTReaderITSv2.cxx AliHBTReaderKineTree.cxx\
-AliHBTTwoTrackEffFctn.cxx
-
+AliHBTTwoTrackEffFctn.cxx AliHBTReaderInternal.cxx
 
 HDRS:= $(SRCS:.cxx=.h) 
 

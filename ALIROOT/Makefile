@@ -1,5 +1,5 @@
+## $Id$ ##
 ############################### ALIROOT Makefile ##############################
-
 # Include machine specific definitions
 
 include $(ALICE_ROOT)/conf/GeneralDef
@@ -23,7 +23,7 @@ DICTO		= $(DICT:.cxx=.o)
 
 # FORTRAN Sources
 
-FSRCS		= loadmod.F
+FSRCS		= #loadmod.F
 
 # FORTRAN Objectrs
 
@@ -31,7 +31,7 @@ FOBJS		= $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Sources
 
-CSRCS		= dummies.c
+CSRCS		= #dummies.c
 
 # C Objects
 
@@ -53,13 +53,13 @@ ALLOBJS		= $(OBJS) $(FOBJS) $(COBJS)
 # C++ compilation flags
 
 CXXFLAGS	= $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include
- 
+
 # FORTRAN compilation flags
 
 FFLAGS		= $(FOPT)
 
 ##### TARGETS #####
- 
+
 # Target
 
 PROGRAM		= $(BINDIR)/aliroot
@@ -68,10 +68,13 @@ default:	$(PROGRAM)
 
 depend:		$(ALLSRCS)
 
-$(BINDIR)/aliroot:	$(OBJS) $(COBJS) $(FOBJS)
+#$(BINDIR)/aliroot:	$(OBJS) $(COBJS) $(FOBJS)
+$(BINDIR)/aliroot:	$(OBJS) 
 
-LIBS = $(ALILIBS) $(G3LIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia6 -lpythia6 -lpdf \
-					-lTHijing -lhijing -lTMevSim -lmevsim -lTHbtp -lHBTP 
+#LIBS = $(ALILIBS) $(G3LIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia6 -lpythia6 -lpdf \
+#					-lTHijing -lhijing -lTMevSim -lmevsim 
+LIBS = $(ALILIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia6 -lpythia6 -lpdf \
+					-lTHijing -lhijing -lTMevSim -lmevsim 
 
 TOCLEAN		= $(PROGRAM) $(OBJS) $(COBJS) $(FOBJS)
 

@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.22  2002/05/22 13:48:43  morsch
+Pdg code added to track list.
+
+Revision 1.21  2002/04/27 07:43:08  morsch
+Calculation of fDphi corrected (Renan Cabrera)
+
+Revision 1.20  2002/03/12 01:06:23  pavlinov
+Testin output from generator
+
 Revision 1.19  2002/02/27 00:46:33  pavlinov
 Added method FillFromParticles()
 
@@ -113,6 +122,7 @@ Revision 1.3  2002/01/18 05:07:56  morsch
 #include "AliEMCAL.h"
 #include "AliHeader.h"
 #include "AliPDG.h"
+#include "AliMC.h"
 
 // Interface to FORTRAN
 #include "Ecommon.h"
@@ -133,11 +143,13 @@ AliEMCALJetFinder::AliEMCALJetFinder()
     fPtT              = 0;
     fEtaT             = 0;
     fPhiT             = 0;
-
+    fPdgT             = 0;
+    
     fTrackListB       = 0;
     fPtB              = 0;
     fEtaB             = 0;
     fPhiB             = 0;
+    fPdgB             = 0;
 
     fHCorrection      = 0;
     fHadronCorrector  = 0;
@@ -172,11 +184,13 @@ AliEMCALJetFinder::AliEMCALJetFinder(const char* name, const char *title)
     fPtT        = 0;
     fEtaT       = 0;
     fPhiT       = 0;
+    fPdgT       = 0;
 
     fTrackListB       = 0;
     fPtB        = 0;
     fEtaB       = 0;
     fPhiB       = 0;
+    fPdgB       = 0;
 
     fHCorrection      = 0;
     fHadronCorrector  = 0;
@@ -223,12 +237,11 @@ AliEMCALJetFinder::~AliEMCALJetFinder()
 
 #ifndef WIN32
 # define jet_finder_ua1 jet_finder_ua1_
-# define sgpdge sgpdge_
 # define hf1 hf1_
 # define type_of_call
 
 #else
-# define jet_finder_ua1 J
+# define jet_finder_ua1 JET_FINDER_UA1
 # define hf1 HF1
 # define type_of_call _stdcall
 #endif
@@ -241,9 +254,7 @@ jet_finder_ua1(Int_t& ncell, Int_t& ncell_tot,
 	       Float_t& prec_bg,  Int_t& ierror);
 
 extern "C" void type_of_call hf1(Int_t& id, Float_t& x, Float_t& wgt);
-// PAI's staff 
-extern "C" void  type_of_call sgpdge(Int_t &i, Int_t &pdggea);
-// int    pycomp_(int*    kf); see $ROOTSYS/include/TPythia6Calls.h
+
 
 void AliEMCALJetFinder::Init()
 {
@@ -265,7 +276,7 @@ void AliEMCALJetFinder::Init()
     fPhiMax  = geom->GetArm1PhiMax()*TMath::Pi()/180.;
     fEtaMin  = geom->GetArm1EtaMin();
     fEtaMax  = geom->GetArm1EtaMax();
-    fDphi    = (fPhiMax-fPhiMin)/fNbinEta;
+    fDphi    = (fPhiMax-fPhiMin)/fNbinPhi;
     fDeta    = (fEtaMax-fEtaMin)/fNbinEta;
     fNtot    = fNbinPhi*fNbinEta;
 //
@@ -636,11 +647,13 @@ void AliEMCALJetFinder::FillFromTracks(Int_t flag, Int_t ich)
     if (fPtT)       delete[] fPtT;
     if (fEtaT)      delete[] fEtaT;
     if (fPhiT)      delete[] fPhiT;
+    if (fPdgT)      delete[] fPdgT;
     
     fTrackList = new Int_t  [npart];
     fPtT       = new Float_t[npart];
     fEtaT      = new Float_t[npart];
     fPhiT      = new Float_t[npart];
+    fPdgT      = new Int_t[npart];
 
     fNt   = npart;
     fNtS  = 0;
@@ -680,6 +693,8 @@ void AliEMCALJetFinder::FillFromTracks(Int_t flag, Int_t ich)
 	fPtT[part]       = pT; // must be change after correction for resolution !!!
 	fEtaT[part]      = eta;
 	fPhiT[part]      = phi;
+	fPdgT[part]      = mpart;
+	
 
 	if (part < 2) continue;
 
@@ -980,10 +995,12 @@ void AliEMCALJetFinder::FillFromHitFlaggedTracks(Int_t flag)
     if (fPtT)       delete[] fPtT;   
     if (fEtaT)      delete[] fEtaT;    
     if (fPhiT)      delete[] fPhiT;   
+    if (fPdgT)      delete[] fPdgT;   
    
     fPtT       = new Float_t[ntracks];
     fEtaT      = new Float_t[ntracks];
     fPhiT      = new Float_t[ntracks];
+    fPdgT      = new Int_t[ntracks];
 
     fNt   = ntracks;
     fNtS  = 0;
@@ -998,7 +1015,8 @@ void AliEMCALJetFinder::FillFromHitFlaggedTracks(Int_t flag)
 	  fPtT[track]       = pT;
 	  fEtaT[track]      = eta;
 	  fPhiT[track]      = phi;
-
+	  fPdgT[track]      = MPart->GetPdgCode();
+	  
 	  if (track < 2) continue;	//Colliding particles?
 	  if (pT == 0 || pT < fPtCut) continue;
 	  fNtS++;
@@ -1052,16 +1070,18 @@ void AliEMCALJetFinder::FillFromParticles()
         e       = MPart->Energy();
 
 // see pyedit in Pythia's text
-        sgpdge(mpart, geantPdg);
-        Int_t kc = pycomp_(&mpart);
-        TString name = GetPythiaParticleName(mpart);
+        geantPdg = mpart;
+//        Int_t kc = pycomp_(&mpart);
+//        TString name = GetPythiaParticleName(mpart);
 	//        printf(" mpart %6.6i;kc %6.6i -> gid %3.3i",mpart,kc,geantPdg);
         //printf(" (%s)\n", name.Data());
-        printf("%5i: %5i(%2i) px %5.1f py %5.1f pz %6.1f e %6.1f childs %5i,%5i %s\n", 
-        part, mpart, geantPdg, px, py, pz, e, child1, child2, name.Data());
+	if (IsThisPartonsOrDiQuark(mpart)) continue;
+        printf("%5i: %5i(%2i) px %5.1f py %5.1f pz %6.1f e %6.1f childs %5i,%5i \n", 
+        part, mpart, geantPdg, px, py, pz, e, child1, child2);
 	
 //  exclude partons (21 - gluon, 92 - string) 
-	if (IsThisPartonsOrDiQuark(mpart)) continue;
+	
+
 // exclude neutrinous also ??
 	if (fDebug >= 11 && pT>0.01) 
 	printf("\n part:%5d mpart %5d eta %9.2f phi %9.2f pT %9.2f ",
@@ -1070,7 +1090,8 @@ void AliEMCALJetFinder::FillFromParticles()
 	fPtT[part]       = pT;
 	fEtaT[part]      = eta;
 	fPhiT[part]      = phi;
-
+	fPdgT[part]      = mpart;
+	
 // final state only
  	if (child1 >= 0 && child1 < npart) continue;
 
@@ -1284,11 +1305,13 @@ void AliEMCALJetFinder::SaveBackgroundEvent()
     if (fPtB)        delete[] fPtB;   
     if (fEtaB)       delete[] fEtaB;    
     if (fPhiB)       delete[] fPhiB;   
+    if (fPdgB)       delete[] fPdgB;   
     if (fTrackListB) delete[] fTrackListB;   
    
     fPtB          = new Float_t[fNtS];
     fEtaB         = new Float_t[fNtS];
     fPhiB         = new Float_t[fNtS];
+    fPdgB         = new Int_t  [fNtS];
     fTrackListB   = new Int_t  [fNtS];
     
     fNtB = 0;
@@ -1298,6 +1321,8 @@ void AliEMCALJetFinder::SaveBackgroundEvent()
 	fPtB [fNtB]       = fPtT [i];
 	fEtaB[fNtB]       = fEtaT[i];
 	fPhiB[fNtB]       = fPhiT[i];
+	fPdgB[fNtB]       = fPdgT[i];
+
 	fTrackListB[fNtB] = 1;
 	fNtB++;
     }
@@ -1373,6 +1398,8 @@ void AliEMCALJetFinder::FindTracksInJetCone()
 	Float_t* ptT  = new Float_t[nT0];
 	Float_t* etaT = new Float_t[nT0];
 	Float_t* phiT = new Float_t[nT0];
+	Int_t*   pdgT = new Int_t[nT0];
+
 	Int_t iT = 0;
 	Int_t j;
 	
@@ -1389,10 +1416,12 @@ void AliEMCALJetFinder::FindTracksInJetCone()
 		    ptT [j+1]  = ptT [j];
 		    etaT[j+1]  = etaT[j];
 		    phiT[j+1]  = phiT[j];
+		    pdgT[j+1]  = pdgT[j];
 		}
 		ptT [index] = fPtT [part];
 		etaT[index] = fEtaT[part];
 		phiT[index] = fPhiT[part];
+		pdgT[index] = fPdgT[part];
 		iT++;
 	    } // particle associated
 	    if (iT > nT0) break;
@@ -1413,20 +1442,24 @@ void AliEMCALJetFinder::FindTracksInJetCone()
 			ptT [j+1]  = ptT [j];
 			etaT[j+1]  = etaT[j];
 			phiT[j+1]  = phiT[j];
+			pdgT[j+1]  = pdgT[j];
 		    }
 		    ptT [index] = fPtB [part];
 		    etaT[index] = fEtaB[part];
 		    phiT[index] = fPhiB[part];
+		    pdgT[index] = fPdgB[part];
 		    iT++;
 		} // particle associated
 		if (iT > nT0) break;
 	    } // particle loop
 	} // Background available ?
 
-	fJetT[nj]->SetTrackList(nT0, ptT, etaT, phiT);
+	fJetT[nj]->SetTrackList(nT0, ptT, etaT, phiT, pdgT);
 	delete[] ptT;
 	delete[] etaT;
 	delete[] phiT;
+	delete[] pdgT;
+	
     } // jet loop loop
 }
 
@@ -1598,12 +1631,14 @@ void AliEMCALJetFinder::RearrangeParticlesMemory(Int_t npart)
     if (fPtT)       delete[] fPtT;
     if (fEtaT)      delete[] fEtaT;
     if (fPhiT)      delete[] fPhiT;
+    if (fPdgT)      delete[] fPdgT;
     
     if(npart>0) { 
        fTrackList = new Int_t  [npart];
        fPtT       = new Float_t[npart];
        fEtaT      = new Float_t[npart];
        fPhiT      = new Float_t[npart];
+       fPdgT      = new Int_t[npart];
     } else {
        printf("AliEMCALJetFinder::RearrangeParticlesMemory : npart = %d\n", npart);
     }

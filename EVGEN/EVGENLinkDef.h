@@ -16,6 +16,7 @@
 #pragma link C++ class  AliGenHIJINGparaBa+;
 #pragma link C++ class  AliGenFixed+;
 #pragma link C++ class  AliGenBox+;
+#pragma link C++ class  AliGenThetaSlice+;
 #pragma link C++ class  AliGenParam+;
 #pragma link C++ class  AliGenPythia+;
 #pragma link C++ class  AliGenCocktail+;
@@ -38,7 +39,7 @@
 #pragma link C++ class  AliGenHijingEventHeader+;
 #pragma link C++ class  AliGenPythiaEventHeader+;
 #pragma link C++ class  AliGenHijing+;
-#pragma link C++ class  AliDecayer+;
+//#pragma link C++ class  AliDecayer+;
 #pragma link C++ class  AliDecayerPythia+;
 #pragma link C++ class  AliMevSimConfig+;
 #pragma link C++ class  AliMevSimParticle+;
@@ -52,6 +53,8 @@
 #pragma link C++ class  AliGenReaderEcalJets++;
 #pragma link C++ class  AliGenGeVSim+;
 #pragma link C++ class  AliGeVSimParticle+;
+#pragma link C++ class  AliGenBeamGas+;
+#pragma link C++ class  AliGenAfterBurnerFlow+;
 #endif
 
 

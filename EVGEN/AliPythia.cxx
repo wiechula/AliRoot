@@ -15,6 +15,22 @@
 
 /*
 $Log$
+Revision 1.24  2002/05/22 13:22:53  morsch
+Process kPyMbNonDiffr added.
+
+Revision 1.23  2002/05/06 07:17:29  morsch
+Pyr gives random number r in interval 0 < r < 1.
+
+Revision 1.22  2002/04/26 10:28:48  morsch
+Option kPyBeautyPbMNR added (N. Carrer).
+
+Revision 1.21  2002/03/25 14:46:16  morsch
+Case  kPyD0PbMNR added (N. Carrer).
+
+Revision 1.20  2002/03/03 13:48:50  morsch
+Option  kPyCharmPbMNR added. Produce charm pairs in agreement with MNR
+NLO calculations (Nicola Carrer).
+
 Revision 1.19  2002/02/20 08:52:20  morsch
 Correct documentation of SetNuclei method.
 
@@ -175,7 +191,21 @@ void AliPythia::ProcInit(Process_t process, Float_t energy, StrucFunc_t strucfun
 	SetPARP(82,3.47);   // set value pT_0  for turn-off of the cross section of                  
                             // multiple interaction at a reference energy = 14000 GeV
 	SetPARP(89,14000.); // reference energy for the above parameter
-	SetPARP(90,0.174);  // set exponent for energy dependence of pT_0 
+	SetPARP(90,0.174);  // set exponent for energy dependence of pT_0
+    case kPyMbNonDiffr:
+// Minimum Bias pp-Collisions
+//
+//   
+//      select Pythia min. bias model
+	SetMSEL(0);
+	SetMSUB(95,1);	    // low pt production
+	SetMSTP(81,1);      // multiple interactions switched on
+	SetMSTP(82,3);      // model with varying impact param. & a single Gaussian
+	SetPARP(82,3.47);   // set value pT_0  for turn-off of the cross section of                  
+                            // multiple interaction at a reference energy = 14000 GeV
+	SetPARP(89,14000.); // reference energy for the above parameter
+	SetPARP(90,0.174);  // set exponent for energy dependence of pT_0
+ 
 	break;
     case kPyJets:
 	SetMSEL(1);
@@ -194,6 +224,7 @@ void AliPythia::ProcInit(Process_t process, Float_t energy, StrucFunc_t strucfun
 	SetMSEL(10);
 	break;
     case kPyCharmPbMNR:
+    case kPyD0PbMNR:
       // Tuning of Pythia parameters aimed to get a resonable agreement
       // between with the NLO calculation by Mangano, Nason, Ridolfi for the
       // c-cbar single inclusive and double differential distributions.
@@ -228,6 +259,45 @@ void AliPythia::ProcInit(Process_t process, Float_t energy, StrucFunc_t strucfun
 
       // Set c-quark mass
       SetPMAS(4,1,1.2);
+
+      break;
+    case kPyBeautyPbMNR:
+      // Tuning of Pythia parameters aimed to get a resonable agreement
+      // between with the NLO calculation by Mangano, Nason, Ridolfi for the
+      // b-bbar single inclusive and double differential distributions.
+      // This parameter settings are meant to work with Pb-Pb collisions
+      // (AliGenPythia::SetNuclei) and with kCTEQ4L PDFs.
+      // To get a good agreement the minimum ptHard (AliGenPythia::SetPtHard)
+      // has to be set to 2.75GeV. Example in ConfigBeautyPPR.C.
+
+      // All QCD processes
+      SetMSEL(1);
+
+      // No multiple interactions
+      SetMSTP(81,0);
+      SetPARP(81,0.0);
+      SetPARP(82,0.0);
+
+      // Initial/final parton shower on (Pythia default)
+      SetMSTP(61,1);
+      SetMSTP(71,1);
+
+      // 2nd order alpha_s
+      SetMSTP(2,2);
+
+      // QCD scales
+      SetMSTP(32,2);
+      SetPARP(34,1.0);
+      SetPARP(67,1.0);
+      SetPARP(71,1.0);
+
+      // Intrinsic <kT^2>
+      SetMSTP(91,1);
+      SetPARP(91,2.035);
+      SetPARP(93,10.17);
+
+      // Set b-quark mass
+      SetPMAS(5,1,4.75);
 
       break;
     }
@@ -331,7 +401,12 @@ void  AliPythia::SetDecayTable()
 #endif
 
 extern "C" {
-  Double_t pyr(Int_t*) {return sRandom->Rndm();}
+  Double_t pyr(Int_t*) 
+{
+      Float_t r;
+      do r=sRandom->Rndm(); while(0 >= r || r >= 1);
+      return r;
+}
   void pyrset(Int_t*,Int_t*) {}
   void pyrget(Int_t*,Int_t*) {}
 }

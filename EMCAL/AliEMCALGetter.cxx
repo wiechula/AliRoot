@@ -77,6 +77,7 @@
 ClassImp(AliEMCALGetter)
   
   AliEMCALGetter * AliEMCALGetter::fgObjGetter = 0 ; 
+  TFile * AliEMCALGetter::fFile = 0 ; 
 
 //____________________________________________________________________________ 
 AliEMCALGetter::AliEMCALGetter(const char* headerFile, const char* branchTitle, const Option_t * rw)
@@ -103,43 +104,66 @@ AliEMCALGetter::AliEMCALGetter(const char* headerFile, const char* branchTitle, 
   //fQAFolder      = dynamic_cast<TFolder*>(gROOT->FindObjectAny("Folders/Run/Conditions/QA")); 
   fTasksFolder   = dynamic_cast<TFolder*>(gROOT->FindObjectAny("Folders/Tasks")) ; 
 
+  fFailed = kFALSE ; 
+ 		   
   if ( fHeaderFile != "aliroot"  ) { // to call the getter without a file
 
     //open headers file
-    TFile * file = static_cast<TFile*>(gROOT->GetFile(fHeaderFile.Data() ) ) ;
-    
-    if(file == 0){    //if file was not opened yet, read gAlice
-      if(fHeaderFile.Contains("rfio")) // if we read file using HPSS
-	file =	TFile::Open(fHeaderFile.Data(),rw) ;
-      else
-	file = new TFile(fHeaderFile.Data(),rw) ;
-      
-      if (!file->IsOpen()) {
-	cerr << "ERROR : AliEMCALGetter::AliEMCALGetter -> Cannot open " << fHeaderFile.Data() << endl ; 
+    fFile = static_cast<TFile*>(gROOT->GetFile(fHeaderFile.Data() ) ) ;
+    if(!fFile){    //if file was not opened yet, read gAlice
+      if ( fHeaderFile.Contains("_") ) {
+	cerr << "AliPHOSGetter::AliPHOSGetter -> Invalid file name (_ not allowed) " << fHeaderFile.Data() << endl ;
 	abort() ; 
       }
+      fFile =	TFile::Open(fHeaderFile.Data(),rw) ;   
       
-      gAlice = static_cast<AliRun *>(file->Get("gAlice")) ;
+      if (!fFile->IsOpen()) {
+	cerr << "ERROR : AliEMCALGetter::AliEMCALGetter -> Cannot open " << fHeaderFile.Data() << endl ; 
+       	fFailed = kTRUE ;
+        return ;  
+      }
+      
+      gAlice = static_cast<AliRun *>(fFile->Get("gAlice")) ;
     }
   }
 
   if (!gAlice) {
     cerr << "ERROR : AliEMCALGetter::AliEMCALGetter -> Cannot find gAlice in " << fHeaderFile.Data() << endl ; 
-    abort() ; 
+    fFailed = kTRUE ;
+    return ; 
   }
   if (!EMCAL()) {
     if (fDebug)
       cout << "INFO: AliEMCALGetter -> Posting EMCAL to Folders" << endl ; 
-    AliConfig * conf = AliConfig::Instance() ; 
-    conf->Add(static_cast<AliDetector*>(gAlice->GetDetector("EMCAL"))) ; 
-    conf->Add(static_cast<AliModule*>(gAlice->GetDetector("EMCAL"))) ; 
+    if (gAlice->GetDetector("EMCAL")) {
+      AliConfig * conf = AliConfig::Instance() ;
+      conf->Add(static_cast<AliDetector*>(gAlice->GetDetector("EMCAL"))) ; 
+      conf->Add(static_cast<AliModule*>(gAlice->GetDetector("EMCAL"))) ;
+    }
+    else 
+      cerr << "ERROR: AliEMCALGetter -> detector EMCAL not found" << endl ;
   }
   
   fDebug=0;
 }
 //____________________________________________________________________________ 
-AliEMCALGetter::~AliEMCALGetter(){
+AliEMCALGetter::~AliEMCALGetter()
+{
+  if (fPrimaries) {
+    fPrimaries->Delete() ; 
+    delete fPrimaries ; 
+  }
 
+  TFolder * emcalF = dynamic_cast<TFolder *>(fSDigitsFolder->FindObject("EMCAL")) ;
+  TCollection * folderslist = emcalF->GetListOfFolders() ; 
+  TIter next(folderslist) ; 
+  TFolder * folder = 0 ; 
+  while ( (folder = static_cast<TFolder*>(next())) ) 
+    emcalF->Remove(folder) ; 
+
+  fFile->Close() ;  
+  delete fFile ; 
+  fFile = 0 ;
 }
 
 //____________________________________________________________________________ 
@@ -171,13 +195,18 @@ AliEMCALGetter * AliEMCALGetter::GetInstance(const char* headerFile,
 
   if ( fgObjGetter )    
     if((fgObjGetter->fBranchTitle.CompareTo(branchTitle) == 0) && 
-       (fgObjGetter->fHeaderFile.CompareTo(headerFile)==0))
+       (fgObjGetter->fHeaderFile.CompareTo(headerFile)==0)) {
       return fgObjGetter ;
+      fFile->cd() ; 
+    }
     else
-      fgObjGetter->~AliEMCALGetter() ;  // delete it if already exists another version
+      fgObjGetter->~AliEMCALGetter() ;  // delete it already exists another version
   
   fgObjGetter = new AliEMCALGetter(headerFile,branchTitle, rw) ; 
-  
+
+  if (fgObjGetter->HasFailed() ) 
+    fgObjGetter = 0 ; 
+
   // Posts a few item to the white board (folders)
   // fgObjGetter->CreateWhiteBoard() ;
     
@@ -610,19 +639,20 @@ TObject ** AliEMCALGetter::TowerRecPointsRef(const char * name) const
    
   if ( !fRecoFolder ) {
     cerr << "ERROR: AliEMCALGetter::TowerRecPointsRef -> Folder //" << fRecoFolder << " not found!" << endl;
-    return 0 ; 
+    abort() ; 
   }    
 
   TFolder * towerFolder  = dynamic_cast<TFolder*>(fRecoFolder->FindObject("EMCAL/TowerRecPoints")) ; 
   if ( !towerFolder ) {
     cerr << "ERROR: AliEMCALGetter::TowerRecPointsRef -> Folder //" << fRecoFolder << "/EMCAL/TowerRecPoints/ not found!" << endl;
-    return 0;
+    abort() ;
   }    
 
 
   TObject * trp = towerFolder->FindObject(name ) ;
   if ( !trp )   {
-    return 0 ;
+    cerr << "ERROR: AliEMCALGetter::TowerRecPointsRef -> Object " << name << " not found!" << endl  ;
+    abort() ; 
   }
   return towerFolder->GetListOfFolders()->GetObjectRef(trp) ;
 
@@ -636,18 +666,19 @@ TObject ** AliEMCALGetter::PreShoRecPointsRef(const char * name) const
    
   if ( !fRecoFolder ) {
     cerr << "ERROR: AliEMCALGetter::PreShoRecPointsRef -> Folder //" << fRecoFolder << " not found!" << endl;
-    return 0 ; 
+    abort() ; 
   }    
 
   TFolder * preshoFolder  = dynamic_cast<TFolder*>(fRecoFolder->FindObject("EMCAL/PreShoRecPoints")) ; 
   if ( !preshoFolder ) {
     cerr << "ERROR: AliEMCALGetter::PreShoRecPointsRef -> Folder //" << fRecoFolder << "/EMCAL/PreShoRecPoints/" << endl;
-    return 0;
+    abort() ;
   }    
 
   TObject * prp = preshoFolder->FindObject(name ) ;
   if ( !prp )   {
-    return 0 ;
+    cerr << "ERROR: AliEMCALGetter::PreShoRecPointsRef -> Object " << name << " not found! " << endl ; 
+    abort() ;
   }
   return preshoFolder->GetListOfFolders()->GetObjectRef(prp) ;
 
@@ -695,13 +726,13 @@ TObject ** AliEMCALGetter::ClusterizerRef(const char * name) const
 
   if ( !tasks ) {
     cerr << "ERROR: AliEMCALGetter::Post RerRef -> Task //" << fTasksFolder << "/Reconstructioner not found!" << endl;
-    return kFALSE ;
+    abort() ;
   }        
         
   TTask * emcal = dynamic_cast<TTask*>(tasks->GetListOfTasks()->FindObject("EMCAL")) ; 
   if ( !emcal )  {
     cerr <<"WARNING: AliEMCALGetter::Post RerRef -> //" << fTasksFolder << "/Reconstructioner/EMCAL" << endl; 
-    return 0 ; 
+    abort() ; 
   }   
 
   TList * l = emcal->GetListOfTasks() ; 
@@ -720,8 +751,10 @@ TObject ** AliEMCALGetter::ClusterizerRef(const char * name) const
 
   if(clu) 
     return l->GetObjectRef(clu) ;
-  else
-    return 0 ;
+  else {
+    cerr << "ERROR: AliEMCALGetter::Post RerRef -> task " << task->GetName() << " not found! " << endl ; 
+    abort() ;
+  }
 }
 
 //____________________________________________________________________________ 
@@ -798,18 +831,19 @@ TObject ** AliEMCALGetter::TrackSegmentsRef(const char * name) const
 
  if ( !fRecoFolder ) {
     cerr << "ERROR: AliEMCALGetter::TrackSegmentsRef -> Folder //" << fRecoFolder << "not found!" << endl;
-    return 0 ; 
+    abort() ; 
   }    
 
   TFolder * emcalFolder  = dynamic_cast<TFolder*>(fRecoFolder->FindObject("EMCAL/TrackSegments")) ; 
   if ( !emcalFolder ) {
     cerr << "ERROR: AliEMCALGetter::TrackSegmentsRef -> Folder //" << fRecoFolder << "/EMCAL/TrackSegments/ not found!" << endl;
-    return 0;
+    abort();
   }    
   
   TObject * tss =  emcalFolder->FindObject(name) ;
   if (!tss) {
-    return 0 ;  
+    cerr << "ERROR: AliEMCALGetter::TrackSegmentsRef -> object " << name << " not found! " << endl ;  
+    abort() ;  
   }
   return emcalFolder->GetListOfFolders()->GetObjectRef(tss) ;
 } 
@@ -891,14 +925,14 @@ TObject ** AliEMCALGetter::TSMakerRef(const char * name) const
   TTask * tasks  = dynamic_cast<TTask*>(fTasksFolder->FindObject("Reconstructioner")) ; 
 
   if ( !tasks ) {
-    cerr << "ERROR: AliEMCALGetter::Post TerRef -> Task //" << fTasksFolder << "/Reconstructioner not found!" << endl;
-    return kFALSE ;
+    cerr << "ERROR: AliEMCALGetter::TSLakerRef TerRef -> Task //" << fTasksFolder << "/Reconstructioner not found!" << endl;
+    abort() ;
   }        
         
   TTask * emcal = dynamic_cast<TTask*>(tasks->GetListOfTasks()->FindObject("EMCAL")) ; 
   if ( !emcal )  {
-    cerr <<"WARNING: AliEMCALGetter::Post TerRef -> //" << fTasksFolder << "/Reconstructioner/EMCAL not found!" << endl; 
-    return 0 ; 
+    cerr <<"WARNING: AliEMCALGetter::TSMakerRef TerRef -> //" << fTasksFolder << "/Reconstructioner/EMCAL not found!" << endl; 
+    abort() ; 
   }   
 
   TList * l = emcal->GetListOfTasks() ; 
@@ -917,9 +951,10 @@ TObject ** AliEMCALGetter::TSMakerRef(const char * name) const
   
   if(tsm) 
     return l->GetObjectRef(tsm) ;
-  else
-    return 0 ;
-  
+  else {
+    cerr << "ERROR: AliEMCALGetter::TSLakerRef -> task " << task->GetName() << " not found! " << endl ; 
+    abort() ;
+  }
 } 
 
 //____________________________________________________________________________ 
@@ -964,18 +999,19 @@ TObject ** AliEMCALGetter::RecParticlesRef(const char * name) const
 
  if ( !fRecoFolder ) {
     cerr << "ERROR: AliEMCALGetter::RecParticlesRef -> Folder//" << fRecoFolder << " not found!" << endl; 
-    return 0 ; 
+    abort() ; 
   }    
 
   TFolder * emcalFolder  = dynamic_cast<TFolder*>(fRecoFolder->FindObject("EMCAL/RecParticles")) ; 
   if ( !emcalFolder ) {
     cerr << "ERROR: AliEMCALGetter::RecParticlesRef -> Folder //" << fRecoFolder << "/EMCAL/RecParticles/ not found!" << endl;
-    return 0;
+    abort() ;
   }    
 
-  TObject * tss =  emcalFolder->FindObject(name  ) ;
+  TObject * tss =  emcalFolder->FindObject(name) ;
   if (!tss) {
-    return 0 ;  
+    cerr << "ERROR: AliEMCALGetter::RecParticlesRef -> object " << name << " not found! " << endl ; 
+    abort() ;  
   }
   return emcalFolder->GetListOfFolders()->GetObjectRef(tss) ;
 }
@@ -1061,14 +1097,14 @@ TObject ** AliEMCALGetter::PIDRef(const char * name) const
   TTask * tasks  = dynamic_cast<TTask*>(fTasksFolder->FindObject("Reconstructioner")) ; 
 
   if ( !tasks ) {
-    cerr << "ERROR: AliEMCALGetter::Post PerRef -> Task //" << fTasksFolder << "/Reconstructioner not found!" << endl;
-    return kFALSE ;
+    cerr << "ERROR: AliEMCALGetter::PIDRef PerRef -> Task //" << fTasksFolder << "/Reconstructioner not found!" << endl;
+    abort() ;
   }        
         
   TTask * emcal = dynamic_cast<TTask*>(tasks->GetListOfTasks()->FindObject("EMCAL")) ; 
   if ( !emcal )  {
-    cerr <<"WARNING: AliEMCALGetter::Post PerRef -> //" << fTasksFolder << "/ReconstructionerEMCAL not found!" << endl; 
-    return 0 ; 
+    cerr <<"WARNING: AliEMCALGetter::PIDRef PerRef -> //" << fTasksFolder << "/ReconstructionerEMCAL not found!" << endl; 
+    abort() ; 
   }   
   
   TList * l = emcal->GetListOfTasks() ; 
@@ -1087,9 +1123,10 @@ TObject ** AliEMCALGetter::PIDRef(const char * name) const
   
   if(pid) 
     return l->GetObjectRef(pid) ;
-  else
-    return 0 ;
-  
+  else {
+    cerr << "ERROR: AliEMCALGetter::PIDRef -> task " << task->GetName() << " not found! " << endl ;  
+    abort() ;
+  }
 } 
 
 //____________________________________________________________________________ 
@@ -1117,14 +1154,14 @@ TObject ** AliEMCALGetter::AlarmsRef(void) const
   
   // the hierarchy is //Folders/Run/Conditions/QA/EMCAL
   if ( !fQAFolder ) {
-    cerr << "ERROR: AliEMCALGetter::Post QRef -> Folder //" << fQAFolder << " not found!" << endl;
-    return 0;
+    cerr << "ERROR: AliEMCALGetter::AlarmsRef QRef -> Folder //" << fQAFolder << " not found!" << endl;
+    abort() ;
   }    
  
   TFolder * emcalFolder = dynamic_cast<TFolder *>(fQAFolder->FindObject("EMCAL")) ;
   if ( !emcalFolder ) {
-    cerr << "ERROR: AliEMCALGetter::Post QRef -> Folder //" << fQAFolder << "/EMCAL/ not found!" << endl;
-    return 0;
+    cerr << "ERROR: AliEMCALGetter::AlarmsRef QRef -> Folder //" << fQAFolder << "/EMCAL/ not found!" << endl;
+    abort() ;
   }
    
   return fQAFolder->GetListOfFolders()->GetObjectRef(emcalFolder) ;

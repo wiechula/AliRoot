@@ -1,3 +1,4 @@
+## $Id$ ##
 ############################### EVGEN Makefile ################################
 
 # Include machine specific definitions
@@ -21,13 +22,15 @@ SRCS          = AliGenHIJINGpara.cxx AliGenHIJINGparaBa.cxx \
 		AliGenGSIlib.cxx AliGenPMDlib.cxx AliGenSTRANGElib.cxx \
 	        AliGenHijing.cxx \
 		AliGenHijingEventHeader.cxx AliGenPythiaEventHeader.cxx \
-		AliDecayer.cxx AliDecayerPythia.cxx \
+		AliDecayerPythia.cxx \
                 AliGenMevSim.cxx AliMevSimParticle.cxx AliMevSimConfig.cxx \
 	        AliGenMC.cxx AliGenCocktailAfterBurner.cxx \
-                AliGenHBTprocessor.cxx \
 		AliGenReader.cxx AliGenReaderCwn.cxx AliGenReaderTreeK.cxx \
 		AliGenReaderEcalHijing.cxx AliGenReaderEcalJets.cxx \
-		AliGeVSimParticle.cxx AliGenGeVSim.cxx
+		AliGeVSimParticle.cxx AliGenGeVSim.cxx AliGenBeamGas.cxx \
+		AliGeVSimParticle.cxx AliGenGeVSim.cxx \
+		AliGenAfterBurnerFlow.cxx
+
 
 
 # C++ Headers

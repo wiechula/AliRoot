@@ -61,6 +61,7 @@ class AliEMCALGetter : public TObject {
   
   virtual ~AliEMCALGetter() ; 
   
+  const Bool_t HasFailed(void) const {return fFailed ;} 
   Bool_t PostHits(void ) const ;  
   Bool_t PostSDigits(      const char * name,  const char * file = 0) const ;  
   Bool_t PostDigits(       const char * name ) const ;  
@@ -199,6 +200,7 @@ class AliEMCALGetter : public TObject {
 
  private:
 
+  static TFile *        fFile ;              //!
   TString        fHeaderFile ;        //! File in which gAlice lives
   TString        fBranchTitle ;       //!
   //TString        fTrackSegmentsTitle ;//! 
@@ -207,6 +209,7 @@ class AliEMCALGetter : public TObject {
   TString        fDigitsTitle ;       //!
   TString        fSDigitsTitle ;      //!
 
+  Bool_t         fFailed ;            //! true if file is not opened and/or galice not found
   Int_t          fDebug ;             // Debug level
 
   Int_t          fNPrimaries ;        //! # of primaries

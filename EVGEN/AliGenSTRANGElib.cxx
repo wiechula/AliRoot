@@ -36,6 +36,12 @@
 
 /*
 $Log$
+Revision 1.2  2002/04/17 12:48:54  morsch
+const added.
+
+Revision 1.1  2001/12/04 18:06:39  morsch
+AliGenSTRANGElib.cxx first commit.
+
 */
 
 #include "TMath.h"
@@ -309,7 +315,7 @@ ClassImp(AliGenSTRANGElib)
 
 
 typedef Double_t (*GenFunc) (Double_t*,  Double_t*);
- GenFunc AliGenSTRANGElib::GetPt(Int_t param, const char* tname)
+ GenFunc AliGenSTRANGElib::GetPt(Int_t param, const char* tname) const
 {
 // Return pinter to pT parameterisation
     GenFunc func;
@@ -338,7 +344,7 @@ typedef Double_t (*GenFunc) (Double_t*,  Double_t*);
     return func;
 }
 
- GenFunc AliGenSTRANGElib::GetY(Int_t param, const char* tname)
+ GenFunc AliGenSTRANGElib::GetY(Int_t param, const char* tname) const
 {
 // Return pointer to Y parameterisation
     GenFunc func;
@@ -366,7 +372,7 @@ typedef Double_t (*GenFunc) (Double_t*,  Double_t*);
     return func;
 }
 typedef Int_t (*GenFuncIp) (TRandom *);
- GenFuncIp AliGenSTRANGElib::GetIp(Int_t param,  const char* tname)
+ GenFuncIp AliGenSTRANGElib::GetIp(Int_t param,  const char* tname) const
 {
 // Return pointer to particle composition
     GenFuncIp func;

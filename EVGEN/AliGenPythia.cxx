@@ -15,6 +15,21 @@
 
 /*
 $Log$
+Revision 1.57  2002/05/22 13:22:53  morsch
+Process kPyMbNonDiffr added.
+
+Revision 1.56  2002/04/26 10:30:01  morsch
+Option kPyBeautyPbMNR added. (N. Carrer).
+
+Revision 1.55  2002/04/17 10:23:56  morsch
+Coding Rule violations corrected.
+
+Revision 1.54  2002/03/28 11:49:10  morsch
+Pass status code in SetTrack.
+
+Revision 1.53  2002/03/25 14:51:13  morsch
+New stack-fill and count options introduced (N. Carrer).
+
 Revision 1.51  2002/03/06 08:46:57  morsch
 - Loop until np-1
 - delete dyn. alloc. arrays (N. Carrer)
@@ -153,6 +168,17 @@ Revision 1.11  1999/09/29 09:24:14  fca
 Introduction of the Copyright and cvs Log
 */
 
+//
+// Generator using the TPythia interface (via AliPythia)
+// to generate pp collisions.
+// Using SetNuclei() also nuclear modifications to the structure functions
+// can be taken into account. This makes, of course, only sense for the
+// generation of the products of hard processes (heavy flavor, jets ...)
+//
+// andreas.morsch@cern.ch
+//
+
+
 #include "AliGenPythia.h"
 #include "AliGenPythiaEventHeader.h"
 #include "AliDecayerPythia.h"
@@ -203,11 +229,19 @@ AliGenPythia::AliGenPythia(Int_t npart)
     SetEventListRange();
     SetJetPhiRange();
     SetJetEtaRange();
+    // Options determining what to keep in the stack (Heavy flavour generation)
+    fStackFillOpt = kFlavorSelection; // Keep particle with selected flavor
+    fFeedDownOpt = kTRUE;             // allow feed down from higher family
+    // Fragmentation on/off
+    fFragmentation = kTRUE;
+    // Default counting mode
+    fCountMode = kCountAll;
 }
 
 AliGenPythia::AliGenPythia(const AliGenPythia & Pythia)
 {
 // copy constructor
+    Pythia.Copy(*this);
 }
 
 AliGenPythia::~AliGenPythia()
@@ -240,6 +274,13 @@ void AliGenPythia::Init()
     fPythia->SetCKIN(3,fPtHardMin);
     fPythia->SetCKIN(4,fPtHardMax);    
     if (fNucA1 > 0 && fNucA2 > 0) fPythia->SetNuclei(fNucA1, fNucA2);  
+    // Fragmentation?
+    if (fFragmentation) {
+      fPythia->SetMSTP(111,1);
+    } else {
+      fPythia->SetMSTP(111,0);
+    }
+
     fPythia->ProcInit(fProcess,fEnergyCMS,fStrucFunc);
 
     //    fPythia->Pylist(0);
@@ -256,7 +297,12 @@ void AliGenPythia::Init()
 	fParentSelect[3] =  4122;
 	fFlavorSelect    =  4;	
 	break;
+    case kPyD0PbMNR:
+	fParentSelect[0] =   421;
+	fFlavorSelect    =   4;	
+	break;
     case kPyBeauty:
+    case kPyBeautyPbMNR:
 	fParentSelect[0]=  511;
 	fParentSelect[1]=  521;
 	fParentSelect[2]=  531;
@@ -281,6 +327,7 @@ void AliGenPythia::Init()
 	fParentSelect[0] = 443;
 	break;
     case kPyMb:
+    case kPyMbNonDiffr:
     case kPyJets:
     case kPyDirectGamma:
 	break;
@@ -345,10 +392,14 @@ void AliGenPythia::Generate()
 	for (i=0; i< np; i++) {
 	    pParent[i]   = -1;
 	    pSelected[i] =  0;
+	    trackIt[i]   =  0;
 	}
-	printf("\n **************************************************%d\n",np);
-	Int_t nc = 0;
-	if (fProcess != kPyMb && fProcess != kPyJets && fProcess != kPyDirectGamma) {
+	// printf("\n **************************************************%d\n",np);
+	Int_t nc = 0;        // Total n. of selected particles
+	Int_t nParents = 0;  // Selected parents
+	Int_t nTkbles = 0;   // Trackable particles
+	if (fProcess != kPyMb && fProcess != kPyJets && fProcess != kPyDirectGamma &&
+	    fProcess != kPyMbNonDiffr) {
 	    
 	    for (i = 0; i<np; i++) {
 		iparticle = (TParticle *) fParticles->At(i);
@@ -376,25 +427,44 @@ void AliGenPythia::Generate()
 		    kfMo = TMath::Abs(mother->GetPdgCode());
 		}
 //		printf("\n particle (all)  %d %d %d", i, pSelected[i], kf);
-		if (kfl >= fFlavorSelect) { 
+		// What to keep in Stack?
+		Bool_t flavorOK = kFALSE;
+		Bool_t selectOK = kFALSE;
+		if (fFeedDownOpt) {
+		  if (kfl >= fFlavorSelect) flavorOK = kTRUE;
+		} else {
+		  if (kfl > fFlavorSelect) {
+		    nc = -1;
+		    break;
+		  }
+		  if (kfl == fFlavorSelect) flavorOK = kTRUE;
+		}
+		switch (fStackFillOpt) {
+		case kFlavorSelection:
+		  selectOK = kTRUE;
+		  break;
+		case kParentSelection:
+		  if (ParentSelected(kf) || kf <= 10) selectOK = kTRUE;
+		  break;
+		}
+		if (flavorOK && selectOK) { 
 //
 // Heavy flavor hadron or quark
 //
 // Kinematic seletion on final state heavy flavor mesons
 		    if (ParentSelected(kf) && !KinematicSelection(iparticle, 0)) 
 		    {
-			nc = -1;
-			break;
+		      continue;
 		    }
 		    pSelected[i] = 1;
+		    if (ParentSelected(kf)) ++nParents; // Update parent count
 //		    printf("\n particle (HF)  %d %d %d", i, pSelected[i], kf);
 		} else {
 // Kinematic seletion on decay products
 		    if (fCutOnChild && ParentSelected(kfMo) && ChildSelected(kf) 
 			&& !KinematicSelection(iparticle, 1))
 		    {
-			nc = -1;
-			break;
+		      continue;
 		    }
 //
 // Decay products 
@@ -422,6 +492,8 @@ void AliGenPythia::Generate()
 		}
 		if (pSelected[i] == -1) pSelected[i] = 0;
 		if (!pSelected[i]) continue;
+		// Count quarks only if you did not include fragmentation
+		if (fFragmentation && kf <= 10) continue;
 		nc++;
 // Decision on tracking
 		trackIt[i] = 0;
@@ -436,16 +508,17 @@ void AliGenPythia::Generate()
 		} else {
 		    if (ParentSelected(kf)) trackIt[i] = 0;
 		}
+		if (trackIt[i] == 1) ++nTkbles; // Update trackable counter
 //
 //
 
   	    } // particle selection loop
-	    if (nc > -1) {
+	    if (nc > 0) {
 		for (i = 0; i<np; i++) {
 		    if (!pSelected[i]) continue;
 		    TParticle *  iparticle = (TParticle *) fParticles->At(i);
 		    kf = CheckPDGCode(iparticle->GetPdgCode());
-		    Int_t ks = iparticle->GetStatusCode();
+		    Int_t ks = iparticle->GetStatusCode();  
 		    p[0] = iparticle->Px();
 		    p[1] = iparticle->Py();
 		    p[2] = iparticle->Pz();
@@ -456,7 +529,7 @@ void AliGenPythia::Generate()
 		    Int_t ipa     = iparticle->GetFirstMother()-1;
 		    Int_t iparent = (ipa > -1) ? pParent[ipa] : -1;
 		    SetTrack(fTrackIt*trackIt[i] ,
-				     iparent, kf, p, origin, polar, tof, kPPrimary, nt, 1, ks);
+				     iparent, kf, p, origin, polar, tof, kPPrimary, nt, 1., ks);
 		    pParent[i] = nt;
 		    KeepTrack(nt); 
 		} //  SetTrack loop
@@ -470,7 +543,20 @@ void AliGenPythia::Generate()
 	if (trackIt)   delete[] trackIt;
 
 	if (nc > 0) {
-	    jev+=nc;
+	  switch (fCountMode) {
+	  case kCountAll:
+	    // printf(" Count all \n");
+	    jev += nc;
+	    break;
+	  case kCountParents:
+	    // printf(" Count parents \n");
+	    jev += nParents;
+	    break;
+	  case kCountTrackables:
+	    // printf(" Count trackable \n");
+	    jev += nTkbles;
+	    break;
+	  }
 	    if (jev >= fNpart || fNpart == -1) {
 		fKineBias=Float_t(fNpart)/Float_t(fTrials);
 		printf("\n Trials: %i %i %i\n",fTrials, fNpart, jev);
@@ -488,6 +574,9 @@ void AliGenPythia::Generate()
 
 Int_t  AliGenPythia::GenerateMB()
 {
+//
+// Min Bias selection and other global selections
+//
     Int_t i, kf, nt, iparent;
     Int_t nc = 0;
     Float_t p[3];
@@ -571,7 +660,7 @@ void AliGenPythia::SetNuclei(Int_t a1, Int_t a2)
 }
 
 
-void AliGenPythia::MakeHeader()
+void AliGenPythia::MakeHeader() const
 {
 // Builds the event header, to be called after each event
     AliGenEventHeader* header = new AliGenPythiaEventHeader("Pythia");
@@ -582,7 +671,7 @@ void AliGenPythia::MakeHeader()
 }
 	
 
-Bool_t AliGenPythia::CheckTrigger(TParticle* jet1, TParticle* jet2)
+Bool_t AliGenPythia::CheckTrigger(TParticle* jet1, TParticle* jet2) const
 {
 // Check the kinematic trigger condition
 //

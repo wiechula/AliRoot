@@ -5,10 +5,18 @@
 
 /* $Id$ */
 
+//
+// Generator using the TPythia interface (via AliPythia)
+// to generate pp collisions.
+// Using SetNuclei() also nuclear modifications to the structure functions
+// can be taken into account. This makes, of course, only sense for the
+// generation of the products of hard processes (heavy flavor, jets ...)
+//
+// andreas.morsch@cern.ch
+//
 
 #include "AliGenMC.h"
 #include "AliPythia.h"
-#include "TArrayF.h"
 
 class AliPythia;
 class TParticle;
@@ -16,6 +24,10 @@ class TParticle;
 class AliGenPythia : public AliGenMC
 {
  public:
+
+  typedef enum {kFlavorSelection, kParentSelection} StackFillOpt_t;
+  typedef enum {kCountAll, kCountParents, kCountTrackables} CountMode_t;
+
     AliGenPythia();
     AliGenPythia(Int_t npart);
     AliGenPythia(const AliGenPythia &Pythia);
@@ -28,7 +40,7 @@ class AliGenPythia : public AliGenMC
     // select process type
     virtual void    SetProcess(Process_t proc = kPyCharm) {fProcess = proc;}
     // select structure function
-    virtual void    SetStrucFunc(StrucFunc_t func = kGRV_HO) {fStrucFunc = func;}
+    virtual void    SetStrucFunc(StrucFunc_t func = kGRVHO) {fStrucFunc = func;}
     // select pt of hard scattering 
     virtual void    SetPtHard(Float_t ptmin = 0, Float_t ptmax = 1.e10)
 	{fPtHardMin = ptmin; fPtHardMax = ptmax; }
@@ -44,18 +56,37 @@ class AliGenPythia : public AliGenMC
 	{fEtaMinGamma = etamin; fEtaMaxGamma = etamax;}
     virtual void    SetGammaPhiRange(Float_t phimin = -180., Float_t phimax = 180.)
 	{fPhiMinGamma = TMath::Pi()*phimin/180.; fPhiMaxGamma = TMath::Pi()*phimax/180.;}
+    // Set option for feed down from higher family
+    virtual void SetFeedDownHigherFamily(Bool_t opt) {
+      fFeedDownOpt = opt;
+    }
+    // Set option for selecting particles kept in stack according to flavor
+    // or to parent selection
+    virtual void SetStackFillOpt(StackFillOpt_t opt) {
+      fStackFillOpt = opt;
+    }
+    // Set fragmentation option
+    virtual void SetFragmentation(const Bool_t opt) {
+      fFragmentation = opt;
+    }
+    // Set counting mode
+    virtual void SetCountMode(const CountMode_t mode) {
+      fCountMode = mode;
+    }
     
     // get cross section of process
-    virtual Float_t GetXsection() {return fXsection;}      
+    virtual Float_t GetXsection() const {return fXsection;}      
     virtual void    FinishRun();
-    Bool_t CheckTrigger(TParticle* jet1, TParticle* jet2);
+    Bool_t CheckTrigger(TParticle* jet1, TParticle* jet2) const;
     
     // Assignment Operator
     AliGenPythia & operator=(const AliGenPythia & rhs);
- private:
-    Int_t  GenerateMB();
-    virtual void    MakeHeader();    
  protected:
+    // adjust the weight from kinematic cuts
+    void   AdjustWeights();
+    Int_t  GenerateMB();
+    void   MakeHeader() const;    
+
     TClonesArray* fParticles;     //Particle  List
     
     Process_t   fProcess;         //Process type
@@ -74,21 +105,34 @@ class AliGenPythia : public AliGenMC
     AliDecayer  *fDecayer;        //!Pointer to the decayer instance
     Int_t       fDebugEventFirst; //!First event to debug
     Int_t       fDebugEventLast;  //!Last  event to debug
-    Float_t     fEtaMinJet;      // Minimum eta of triggered Jet
-    Float_t     fEtaMaxJet;      // Maximum eta of triggered Jet
-    Float_t     fPhiMinJet;      // Minimum phi of triggered Jet
-    Float_t     fPhiMaxJet;      // Maximum phi of triggered Jet
+    Float_t     fEtaMinJet;       //Minimum eta of triggered Jet
+    Float_t     fEtaMaxJet;       //Maximum eta of triggered Jet
+    Float_t     fPhiMinJet;       //Minimum phi of triggered Jet
+    Float_t     fPhiMaxJet;       //Maximum phi of triggered Jet
 
-    Float_t     fEtaMinGamma;    // Minimum eta of triggered gamma
-    Float_t     fEtaMaxGamma;    // Maximum eta of triggered gamma
-    Float_t     fPhiMinGamma;    // Minimum phi of triggered gamma
-    Float_t     fPhiMaxGamma;    // Maximum phi of triggered gamma
+    Float_t     fEtaMinGamma;     // Minimum eta of triggered gamma
+    Float_t     fEtaMaxGamma;     // Maximum eta of triggered gamma
+    Float_t     fPhiMinGamma;     // Minimum phi of triggered gamma
+    Float_t     fPhiMaxGamma;     // Maximum phi of triggered gamma
 
- private:
-    // adjust the weight from kinematic cuts
-    void   AdjustWeights();
+    StackFillOpt_t fStackFillOpt; // Stack filling with all particles with
+                                  // that flavour or only with selected
+                                  // parents and their decays
+    Bool_t fFeedDownOpt;          // Option to set feed down from higher
+                                  // quark families (e.g. b->c)
+    Bool_t fFragmentation;        // Option to activate fragmentation by Pythia
+    //
+
+    CountMode_t fCountMode;        // Options for counting when the event will be finished.
+    // fCountMode = kCountAll         --> All particles that end up in the
+    //                                    stack are counted
+    // fCountMode = kCountParents     --> Only selected parents are counted
+    // fCountMode = kCountTrackabless --> Only particles flagged for tracking
+    //                                     are counted
+    //
 
     ClassDef(AliGenPythia,2) // AliGenerator interface to Pythia
+
 };
 #endif
 

@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.15  2002/04/17 10:11:51  morsch
+Coding Rule violations corrected.
+
+Revision 1.14  2002/02/22 17:26:43  morsch
+Eta and omega added.
+
 Revision 1.13  2001/03/27 11:01:04  morsch
 Charm pt-distribution corrected. More realistic y-distribution for pi and K.
 
@@ -43,6 +49,15 @@ Revision 1.6  1999/09/29 09:24:14  fca
 Introduction of the Copyright and cvs Log
 
 */
+
+// Library class for particle pt and y distributions used for 
+// muon spectrometer simulations.
+// To be used with AliGenParam.
+// The following particle typed can be simulated:
+// pi, K, phi, omega, eta, J/Psi, Upsilon, charm and beauty mesons. 
+//
+// andreas.morsch@cern.ch
+//
 
 #include "TMath.h"
 #include "TRandom.h"
@@ -418,7 +433,7 @@ Int_t AliGenMUONlib::IpBeauty(TRandom *ran)
 }
 
 typedef Double_t (*GenFunc) (Double_t*,  Double_t*);
-GenFunc AliGenMUONlib::GetPt(Int_t param,  const char* tname)
+GenFunc AliGenMUONlib::GetPt(Int_t param,  const char* tname) const
 {
 // Return pointer to pT parameterisation
     GenFunc func;
@@ -458,7 +473,7 @@ GenFunc AliGenMUONlib::GetPt(Int_t param,  const char* tname)
     return func;
 }
 
-GenFunc AliGenMUONlib::GetY(Int_t param, const char* tname)
+GenFunc AliGenMUONlib::GetY(Int_t param, const char* tname) const
 {
 // Return pointer to y- parameterisation
     GenFunc func;
@@ -498,7 +513,7 @@ GenFunc AliGenMUONlib::GetY(Int_t param, const char* tname)
     return func;
 }
 typedef Int_t (*GenFuncIp) (TRandom *);
-GenFuncIp AliGenMUONlib::GetIp(Int_t param,  const char* tname)
+GenFuncIp AliGenMUONlib::GetIp(Int_t param,  const char* tname) const
 {
 // Return pointer to particle type parameterisation
     GenFuncIp func;
