@@ -57,14 +57,18 @@ AliFMDReconstruction::AliFMDReconstruction():TTask("AliFMDReconstruction","")
 }
 //____________________________________________________________________________ 
 
-AliFMDReconstruction::AliFMDReconstruction(char* HeaderFile, char *ReconstParticlesFile):TTask("AliFMDReconstruction","")
+AliFMDReconstruction::AliFMDReconstruction(AliRunLoader* rl):TTask("AliFMDReconstruction","")
 {
+
+  if (rl == 0x0)
+   {
+     Fatal("AliFMDReconstruction","Argument AliRunLoader* is null!");
+     return;
+   }
+   
   fNevents = 0 ;    // Number of events to rreconnstraction, 0 means all events in current file
-  fReconstParticlesFile=ReconstParticlesFile ;
-  
-  fHeadersFile=HeaderFile;
-  
-  fRunLoader = AliRunLoader::Open(fHeadersFile);//Load event in default folder
+
+  fRunLoader = rl;
   AliLoader* gime = fRunLoader->GetLoader("FMDLoader");
   if (gime == 0x0)
    {
@@ -79,7 +83,6 @@ AliFMDReconstruction::AliFMDReconstruction(char* HeaderFile, char *ReconstPartic
 
 AliFMDReconstruction::~AliFMDReconstruction()
 {
- delete fRunLoader;
 }
 
 //____________________________________________________________________________
@@ -88,7 +91,7 @@ void AliFMDReconstruction::Exec(Option_t *option)
 { 
  //Collects all digits in the same active volume into number of particles
   
-  if (fRunLoader)
+  if (fRunLoader == 0x0)
    {
     Error("Exec","Run Loader loader is NULL - Session not opened");
     return;
@@ -201,21 +204,4 @@ void AliFMDReconstruction::Exec(Option_t *option)
 }
 //__________________________________________________________________
 
-void AliFMDReconstruction::SetReconstParticlesFile(char * file )
-{
-   if (!fReconstParticlesFile.IsNull()) 
-    cout<<"\nChanging reconstructed particles file from "<<
-      (char *) fReconstParticlesFile.Data()<< " to "<<file<<endl;
-    fReconstParticlesFile=file;
-}
-//__________________________________________________________________
-void AliFMDReconstruction::Print(Option_t* option)const
-{
-  cout<<"------------------- "<<GetName() <<" -------------"<< endl ;
-  if(fReconstParticlesFile.IsNull())
-    cout<<"\nWriting reconstructed particles to file"<<endl ;
-  else
-    cout<<"\nWriting reconstructed particles to file  "<<
-      (char*) fReconstParticlesFile.Data() << endl ;
-}
 

@@ -18,19 +18,16 @@ class AliFMDReconstruction: public TTask
 {
  public:
   AliFMDReconstruction() ; 
-  AliFMDReconstruction(char* HeaderFile,char *SdigitsFile = 0) ; 
+  AliFMDReconstruction(AliRunLoader* rl) ; 
   virtual ~AliFMDReconstruction();
-  char *GetReconstParticlesFile()const{return (char*) fReconstParticlesFile.Data();}  
+
   virtual void  Exec(Option_t *option); 
   void SetNEvents(Int_t Nevents){fNevents = Nevents;}
   Stat_t GetNEvents(){return fNevents;}
-  void SetReconstParticlesFile(char * file ) ;
-  virtual void Print(Option_t* option) const ;   
 
  private:
   Int_t   fNevents ;                         // Number of events
-  TString fReconstParticlesFile;             //output file 
-  TString fHeadersFile ;                     //input file
+
   AliRunLoader* fRunLoader;  //!Run Loader of that event
   ClassDef(AliFMDReconstruction,2) 
 };

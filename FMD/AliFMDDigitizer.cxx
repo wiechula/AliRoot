@@ -111,6 +111,17 @@ void AliFMDDigitizer::Exec(Option_t* option)
   TBranch *brHits=0;
   // fHits = new TClonesArray ("AliFMDhit", 1000);
 
+  if (gAlice == 0x0)
+   {
+      inRL = AliRunLoader::GetRunLoader(fManager->GetInputFolderName(0));
+      if (inRL == 0x0)
+       {
+         Error("Exec","Can not find Run Loader for input stream 0");
+         return;
+       }
+      inRL->LoadgAlice();
+      gAlice = inRL->GetAliRun();
+   }  
   AliFMD * fFMD = (AliFMD *) gAlice->GetDetector("FMD") ;
 
 // Loop over files to digitize
@@ -128,9 +139,13 @@ void AliFMDDigitizer::Exec(Option_t* option)
       ingime = inRL->GetLoader("FMDLoader");
       ingime->LoadHits("READ");//probably it is necessary to load them before
 
-
-
+      
       TH = ingime->TreeH();
+      if (TH == 0x0)
+       {
+         ingime->LoadHits("read");
+         TH = ingime->TreeH();
+       }
       brHits = TH->GetBranch("FMD");
       if (brHits) {
         fFMD->SetHitsAddressBranch(brHits);

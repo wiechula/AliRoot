@@ -48,6 +48,7 @@
 #include <TLorentzVector.h>
 #include "AliFMDv1.h"
 #include "AliRun.h"
+#include "AliLoader.h"
 #include "AliMC.h"
 #include "AliDetector.h"
 #include <iostream.h>
@@ -278,21 +279,15 @@ void AliFMD::MakeBranch (Option_t * option, const char *file)
   
   if (cS){
 
-    MakeBranchInTree(gAlice->TreeS(), 
-		     branchname,&fSDigits, 
-    		     kBufferSize, file);
+    MakeBranchInTree(fLoader->TreeS(), branchname,&fSDigits, kBufferSize, file);
   }
   if (cD){
 
-    MakeBranchInTree(gAlice->TreeD(), 
-		     branchname,&fDigits, 
-    		     kBufferSize, file);
-    cout<<" tree "<<gAlice->TreeD()<<" "<<branchname<<" "<<&fDigits<<endl;
+    MakeBranchInTree(fLoader->TreeD(), branchname,&fDigits, kBufferSize, file);
+    cout<<" tree "<<fLoader->TreeD()<<" "<<branchname<<" "<<&fDigits<<endl;
   }
   if (cR){
-    MakeBranchInTree(gAlice->TreeR(), 
-		     branchname,&fReconParticles,
-    		     kBufferSize, file);
+    MakeBranchInTree(fLoader->TreeR(),  branchname,&fReconParticles, kBufferSize, file);
   }
   
 }
@@ -305,7 +300,7 @@ void AliFMD::SetTreeAddress ()
   AliDetector::SetTreeAddress ();
 
   TBranch *branch;
-  TTree *treeD = gAlice->TreeD ();
+  TTree *treeD = fLoader->TreeD ();
 
 
   if (treeD)
@@ -321,16 +316,16 @@ void AliFMD::SetTreeAddress ()
   if (fSDigits)
     //  fSDigits->Clear ();
 
-  if (gAlice->TreeS () && fSDigits)
+  if (fLoader->TreeS () && fSDigits)
     {
-      branch = gAlice->TreeS ()->GetBranch ("FMD");
+      branch = fLoader->TreeS ()->GetBranch ("FMD");
       if (branch)
 	branch->SetAddress (&fSDigits);
     }
 
-  if (gAlice->TreeR() && fReconParticles) 
+  if (fLoader->TreeR() && fReconParticles) 
     {
-      branch = gAlice->TreeR()->GetBranch("FMD"); 
+      branch = fLoader->TreeR()->GetBranch("FMD"); 
       if (branch) branch->SetAddress(&fReconParticles) ;
     }   
 }
@@ -433,11 +428,7 @@ void AliFMD::Hits2SDigits ()
 
 void AliFMD::Digits2Reco()
 {
-  char * fileReconParticles=0;
-  char * fileHeader=0;
-  AliFMDReconstruction * reconstruction =
-    new AliFMDReconstruction(fileHeader,fileReconParticles) ;
-  //  fReconParticles=new TClonesArray("AliFMDReconstParticles",1000);
+  AliFMDReconstruction * reconstruction =  new AliFMDReconstruction(fLoader->GetRunLoader());
   reconstruction->Exec("");
   delete  reconstruction;
 }
@@ -448,16 +439,12 @@ void AliFMD::MakeBranchInTreeD(TTree *treeD, const char *file)
     //
     // Create TreeD branches for the MUON.
     //
-
     const Int_t kBufferSize = 4000;
     char branchname[20];
-    
-
     sprintf(branchname,"%s",GetName());	
-    if(treeD){
-    MakeBranchInTree(treeD, 
-		     branchname,&fDigits, 
-    		     kBufferSize, file);
-    }
+    if(treeD)
+     {
+       MakeBranchInTree(treeD,  branchname,&fDigits, kBufferSize, file);
+     }
 }
 
