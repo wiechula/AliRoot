@@ -140,7 +140,7 @@ class AliLoader: public TNamed
     virtual void  CleanReconstructioner();
     virtual void  CleanTracker();
     
-    void          SetCompressionLevel(Int_t cl);
+    virtual void  SetCompressionLevel(Int_t cl);
     void          SetDirName(TString& name);
     
     const TString& GetDetectorName() const{return fDetectorName;}
