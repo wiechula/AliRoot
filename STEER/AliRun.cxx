@@ -1160,6 +1160,7 @@ void AliRun::Reset(Int_t run, Int_t idevent)
   if(fTreeK) fTreeK->Reset();
   if(fTreeH) fTreeH->Reset();
   if(fTreeD) fTreeD->Reset();
+  if(fTreeR) fTreeR->Reset();
 }
 
 //_____________________________________________________________________________
