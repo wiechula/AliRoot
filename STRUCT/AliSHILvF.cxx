@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.13  2002/05/02 12:50:06  morsch
+For G4: gMC->VolId(...) replaced by gAlice->GetModule(...).
+
+Revision 1.12  2002/01/21 11:31:21  morsch
+ALIFE output only on demand.
+
 Revision 1.11  2001/11/17 01:29:21  morsch
 Obsolete and wrong volume YXO5 removed.
 
@@ -1406,7 +1412,7 @@ enum {kC=1705, kAl=1708, kFe=1709, kCu=1710, kW=1711, kPb=1712,
 
 //
 
-  if (gMC->VolId("HUP2")) {
+  if (gAlice->GetModule("HALL")) {
       gMC->Gspos("YAEM", 1, "HUP2", 0., 0., 0., 0, "ONLY");
   } else {
       dz=zvac12+60.;

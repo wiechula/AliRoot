@@ -15,6 +15,12 @@
 
 /* 
    $Log$
+   Revision 1.4  2002/05/28 07:53:10  morsch
+   Wrong order of arguments in for-statement corrected.
+
+   Revision 1.3  2001/12/05 14:53:34  hristov
+   Destructor corrected
+
    Revision 1.2  2001/11/07 14:50:31  hristov
    Minor correction of the Log part
 
@@ -73,20 +79,20 @@ AliRICHDigitizer::AliRICHDigitizer(AliRunDigitizer* manager)
 AliRICHDigitizer::~AliRICHDigitizer()
 {
 // Destructor
-  if (fHits) {
-    fHits->Delete();
-    delete fHits;
-  }
-  if (fSDigits) {
-    fSDigits->Delete();
-    delete fSDigits;
-  }
-  for (Int_t i=0; i++; i<kNCH )
-    delete fHitMap[i];
-  delete [] fHitMap;
-  if (fTDList) {
-    fTDList->Delete();
-    delete fTDList;
+    if (fHits) {
+	fHits->Delete();
+	delete fHits;
+    }
+    if (fSDigits) {
+	fSDigits->Delete();
+	delete fSDigits;
+    }
+    for (Int_t i=0; i<kNCH; i++ )
+	delete fHitMap[i];
+    delete [] fHitMap;
+    if (fTDList) {
+	fTDList->Delete();
+	delete fTDList;
   }
 }
 

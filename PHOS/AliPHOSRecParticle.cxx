@@ -31,6 +31,8 @@
 // --- AliRoot header files ---
 
 #include "AliPHOSRecParticle.h"
+#include "AliPHOSGetter.h" 
+#include "TParticle.h"
 
 ClassImp(AliPHOSRecParticle)
 
@@ -41,6 +43,7 @@ ClassImp(AliPHOSRecParticle)
   // copy ctor
 
   fPHOSTrackSegment = rp.fPHOSTrackSegment ; 
+  fDebug            = kFALSE ; 
   fType             = rp.fType ; 
   fIndexInList      = rp.fIndexInList ;
 
@@ -66,6 +69,35 @@ ClassImp(AliPHOSRecParticle)
   
 }
 
+//____________________________________________________________________________
+const Int_t AliPHOSRecParticle::GetNPrimaries() const  
+{ 
 
+  Int_t rv = 0 ;
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  gime->EmcRecPoint(gime->TrackSegment(GetPHOSTSIndex())->GetEmcIndex())->GetPrimaries(rv) ; 
+  return rv ; 
+}
 
+//____________________________________________________________________________
+const TParticle * AliPHOSRecParticle::GetPrimary(Int_t index) const  
+{
+  if ( index > GetNPrimaries() ) { 
+    if (fDebug) 
+      cout << "WARNING : AliPHOSRecParticle::GetPrimary -> " << index << " is larger that the number of primaries " 
+	   <<  GetNPrimaries() << endl ;
+    return 0 ; 
+  } else { 
+    Int_t dummy ; 
+    AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+    Int_t primaryindex = gime->EmcRecPoint(gime->TrackSegment(GetPHOSTSIndex())->GetEmcIndex())->GetPrimaries(dummy)[index] ; 
+    if (primaryindex >= 10000000) { // it comes from backgroundfile 
+      if (fDebug) 
+	cout << "WARNING : AliPHOSRecParticle::GetPrimary -> not a signal primary" << endl ;
+      return 0 ; 
+    } else 
+      return gime->Primary(primaryindex) ; 
+  } 
+  return 0 ; 
+}
 

@@ -15,6 +15,9 @@
 
 /*
   $Log$
+  Revision 1.8  2001/05/16 14:57:20  alibrary
+  New files for folders and Stack
+
   Revision 1.7  2001/05/10 12:28:26  jbarbosa
   Repositioned the RICH modules.
 
@@ -85,7 +88,7 @@
 #include "AliRun.h"
 #include "AliMC.h"
 #include "iostream.h"
-#include "AliCallf77.h"
+//#include "AliCallf77.h"
 #include "AliConst.h" 
 #include "AliPDG.h" 
 

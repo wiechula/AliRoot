@@ -40,7 +40,6 @@
 
 // --- Standard library ---
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <strstream.h>
@@ -132,8 +131,10 @@ AliPHOSv1::AliPHOSv1(const char *name, const char *title):
   // create checkables 
   fQAHitsMul   = new AliPHOSQAIntCheckable("HitsM") ; 
   fQATotEner   = new AliPHOSQAFloatCheckable("TotEn") ; 
-  fQAHitsMulB  = new TClonesArray("AliPHOSQAIntCheckable",nb) ; 
+  fQAHitsMulB  = new TClonesArray("AliPHOSQAIntCheckable",nb) ;
+  fQAHitsMulB->SetOwner() ; 
   fQATotEnerB  = new TClonesArray("AliPHOSQAFloatCheckable", nb); 
+  fQATotEnerB->SetOwner() ; 
   char tempo[20]  ; 
   Int_t i ; 
   for ( i = 0 ; i < nb ; i++ ) {
@@ -168,8 +169,19 @@ AliPHOSv1::~AliPHOSv1()
     delete fHits ;
     fHits = 0 ; 
   }
-  if (fTreeQA) 
-    delete fTreeQA ; 
+  
+  delete fTreeQA ; 
+
+  if ( fQAHitsMulB ) {
+    fQAHitsMulB->Delete() ;
+    delete fQAHitsMulB ; 
+  }
+
+  if ( fQATotEnerB ) {
+    fQATotEnerB->Delete() ;
+    delete fQATotEnerB ; 
+  }
+ 
 }
 
 //____________________________________________________________________________

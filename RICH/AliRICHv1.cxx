@@ -15,6 +15,9 @@
 
 /*
   $Log$
+  Revision 1.16  2001/10/10 11:29:17  morsch
+  Use segmentation v1 and wire sag as default. It does not work otherwise. Why ?
+
   Revision 1.15  2001/08/30 09:51:23  hristov
   The operator[] is replaced by At() or AddAt() in case of TObjArray.
 
@@ -102,7 +105,7 @@
 #include "AliRun.h"
 #include "AliMC.h"
 #include "iostream.h"
-#include "AliCallf77.h"
+//#include "AliCallf77.h"
 #include "AliConst.h" 
 #include "AliPDG.h" 
 

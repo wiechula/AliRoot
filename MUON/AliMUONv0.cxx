@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.20  2001/10/30 12:18:45  morsch
+Place station 3 into DDIP only if DDIP is present.
+
 Revision 1.19  2001/07/17 09:51:38  morsch
 Place station 3 inside Dipole.
 
@@ -89,7 +92,7 @@ Gammas and neutrons are also scored in the stepmanager
 #include "AliMagF.h"
 #include "AliMUONHit.h"
 #include "AliMUONPadHit.h"
-#include "AliCallf77.h"
+//#include "AliCallf77.h"
 #include "AliConst.h" 
 #include "AliMUONConstants.h"
 #include "AliMUONFactory.h"

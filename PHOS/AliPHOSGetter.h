@@ -61,6 +61,10 @@ class AliPHOSGetter : public TObject {
   
   virtual ~AliPHOSGetter() ; 
   
+  void ListBranches(Int_t event=0) const ;
+  void NewBranch(TString name, Int_t event = 0) ; 
+  Bool_t AliPHOSGetter::NewFile(TString name) ;
+  const Bool_t HasFailed() const { return fFailed ; }
   Bool_t PostPrimaries(void ) const ;  
   Bool_t PostHits(void ) const ;  
   Bool_t PostSDigits(      const char * name,  const char * file = 0) const ;  
@@ -82,7 +86,7 @@ class AliPHOSGetter : public TObject {
   Bool_t PostQA   (void) const ;
   
 
-  void   Event(const Int_t event, const char * opt = "HSDRQP") ;    
+  void   Event(const Int_t event, const char * opt = "HSDRP") ;    
   void   Track(Int_t itrack) ;
 
   //Method to be used when digitizing under AliRunDigitizer, who opens all files etc.
@@ -182,18 +186,19 @@ class AliPHOSGetter : public TObject {
   }
   
   TFolder * SDigitsFolder() { return dynamic_cast<TFolder*>(fSDigitsFolder->FindObject("PHOS")) ; }
+
+  void SetRecParticlesTitle(const TString title) { fRecParticlesTitle = title ; }
   
 private:
   
   AliPHOSGetter(const char* headerFile, const char* branchTitle ="Default") ; 
-  void CreateWhiteBoard() const ; 
   TObject * ReturnO(TString what, TString name=0, TString file=0) const ; 
   const TTask * ReturnT(TString what,TString name=0) const ; 
   void DefineBranchTitles(char* branch, char* branchTitle) ;
-  void ReadTreeD() ;
-  void ReadTreeH() ;
-  void ReadTreeR() ;
-  void ReadTreeS(Int_t event) ;
+  Int_t ReadTreeD() ;
+  Int_t ReadTreeH() ;
+  Int_t ReadTreeR(Bool_t any=kFALSE) ;
+  Int_t ReadTreeS(Int_t event) ;
   void ReadTreeQA() ;
   void ReadPrimaries() ;
 
@@ -215,14 +220,17 @@ private:
 
  private:
 
+  static TFile *        fFile;               //! 
   TString        fHeaderFile ;        //! File in which gAlice lives
   TString        fBranchTitle ;       //!
   TString        fTrackSegmentsTitle ;//! 
   TString        fRecPointsTitle ;    //!
   TString        fRecParticlesTitle ; //!
-  TString        fDigitsTitle ;       //!
+  TString        fDigitsTitle ;       //! TDirectory tempo(gDirectory) ; 
+
   TString        fSDigitsTitle ;      //!
 
+  Bool_t         fFailed ;            //! set if file not opend or galice not found
   Int_t          fDebug ;             // Debug level
 
   Int_t          fNPrimaries ;        //! # of primaries

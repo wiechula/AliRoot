@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.32  2002/05/02 12:51:10  morsch
+For G4: gMC->VolId(...) replaced by gAlice->GetModule(...).
+
+Revision 1.31  2002/03/13 07:55:04  jchudoba
+Correction of the errourness last commit.
+
 Revision 1.29  2001/06/21 14:54:37  morsch
 Put volumes of station 3 into DIPO if present. (A. de Falco)
 
@@ -155,7 +161,7 @@ Log messages included.
 #include "AliRun.h"
 #include "AliMC.h"
 #include "AliMagF.h"
-#include "AliCallf77.h"
+//#include "AliCallf77.h"
 #include "AliConst.h" 
 #include "AliMUONChamber.h"
 #include "AliMUONHit.h"
@@ -626,6 +632,7 @@ void AliMUONv1::CreateGeometry()
      const Int_t slatMaterial = idAir;
      const Float_t dSlatLength = vFrameLength; // border on left and right 
 
+     Float_t* ubuf = 0;
      Float_t spar[3];  
      Int_t i, j;
 
@@ -677,7 +684,7 @@ void AliMUONv1::CreateGeometry()
      Float_t zoffs5 = 0;
      Float_t zoffs6 = 0;
 
-     if (gMC->VolId("DDIP")) {
+     if (gAlice->GetModule("DIPO")) {
        slats5Mother="DDIP";
        slats6Mother="DDIP";
 
@@ -793,8 +800,8 @@ void AliMUONv1::CreateGeometry()
      gMC->Gsvolu("S06P","BOX",pcbMaterial,pcbpar,3);
  
      // create the sensitive volumes,
-     gMC->Gsvolu("S05G","BOX",sensMaterial,0,0);
-     gMC->Gsvolu("S06G","BOX",sensMaterial,0,0);
+     gMC->Gsvolu("S05G","BOX",sensMaterial,ubuf,0);
+     gMC->Gsvolu("S06G","BOX",sensMaterial,ubuf,0);
 
 
      // create the vertical frame volume 
@@ -1024,8 +1031,8 @@ void AliMUONv1::CreateGeometry()
  
      // create the sensitive volumes,
 
-     gMC->Gsvolu("S07G","BOX",sensMaterial,0,0);
-     gMC->Gsvolu("S08G","BOX",sensMaterial,0,0);
+     gMC->Gsvolu("S07G","BOX",sensMaterial,ubuf,0);
+     gMC->Gsvolu("S08G","BOX",sensMaterial,ubuf,0);
 
      // create the vertical frame volume 
 
@@ -1227,8 +1234,8 @@ void AliMUONv1::CreateGeometry()
  
      // create the sensitive volumes,
 
-     gMC->Gsvolu("S09G","BOX",sensMaterial,0,0);
-     gMC->Gsvolu("S10G","BOX",sensMaterial,0,0);
+     gMC->Gsvolu("S09G","BOX",sensMaterial,ubuf,0);
+     gMC->Gsvolu("S10G","BOX",sensMaterial,ubuf,0);
 
      // create the vertical frame volume 
 
