@@ -12,7 +12,7 @@
 #include <G4Colour.hh>
 #include <G4VisAttributes.hh>
 #endif //ALICE_VISUALIZE
-#include <globals.hh>
+#include <G4LogicalVolume.hh>
 
 AliLVStructure::AliLVStructure(G4String path)
   : fPathName(path),
@@ -152,7 +152,7 @@ void AliLVStructure::AddNewVolume(G4LogicalVolume* lv,
     G4LogicalVolume* targetLV = GetVolume(lv->GetName());
     if (targetLV != 0) {
       // G4cout << lv->GetName() << " had already stored in "
-      //        << fPathName << endl;
+      //        << fPathName << G4endl;
     }
     else {
       fLogicalVolumes.insert(lv);
@@ -213,7 +213,7 @@ void AliLVStructure::ListTree() const
 
   for (G4int i=0; i<fLogicalVolumes.entries(); i++) {
     G4LogicalVolume* lv = fLogicalVolumes(i);
-    G4cout << fPathName << lv->GetName() << endl;
+    G4cout << fPathName << lv->GetName() << G4endl;
   }
   for (G4int j=0; j<fStructures.entries(); j++) { 
     fStructures(j)->ListTree(); 
@@ -229,7 +229,7 @@ void AliLVStructure::ListTreeLong() const
   for (G4int i=0; i<fLogicalVolumes.entries(); i++) {
     G4LogicalVolume* lv = fLogicalVolumes(i);
     G4cout << fPathName << lv->GetName() 
-           << " (" << lv->GetNoDaughters() << ")" << endl;
+           << " (" << lv->GetNoDaughters() << ")" << G4endl;
   }
   for (G4int j=0; j<fStructures.entries(); j++) { 
     fStructures(j)->ListTreeLong(); 
@@ -257,8 +257,14 @@ void AliLVStructure::SetTreeVisibility(G4bool visibility)
   for (G4int i=0; i<fLogicalVolumes.entries(); i++) {
     G4LogicalVolume* lv = fLogicalVolumes(i);
 
-    const G4VisAttributes* kpVisAttributes = lv->GetVisAttributes ();
-    G4VisAttributes* newVisAttributes = new G4VisAttributes(kpVisAttributes); 
+    const G4VisAttributes* kpVisAttributes = lv->GetVisAttributes();
+    G4VisAttributes* newVisAttributes; 
+    if (kpVisAttributes) {
+      G4Colour colour   = kpVisAttributes->GetColour();
+      newVisAttributes = new G4VisAttributes(colour); 
+    }
+    else
+      newVisAttributes = new G4VisAttributes();
     delete kpVisAttributes;
 
     newVisAttributes->SetVisibility(visibility); 
@@ -280,7 +286,13 @@ void AliLVStructure::SetTreeColour(G4String colName)
     G4LogicalVolume* lv = fLogicalVolumes(i);
 
     const G4VisAttributes* kpVisAttributes = lv->GetVisAttributes ();
-    G4VisAttributes* newVisAttributes = new G4VisAttributes(kpVisAttributes); 
+    G4VisAttributes* newVisAttributes; 
+    if (kpVisAttributes) {
+      G4bool oldVisibility = kpVisAttributes->IsVisible();
+      newVisAttributes = new G4VisAttributes(oldVisibility); 
+    }
+    else
+      newVisAttributes = new G4VisAttributes();
     delete kpVisAttributes;
 
     AliColourStore* pColours = AliColourStore::Instance();

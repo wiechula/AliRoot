@@ -1,5 +1,10 @@
-#ifndef PIPEv0_H
-#define PIPEv0_H
+#ifndef ALIPIPEV0_H
+#define ALIPIPEV0_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 /////////////////////////////////////////////////////////
 //  Manager and class for detector: PIPE  version 0    //
 /////////////////////////////////////////////////////////
@@ -15,8 +20,10 @@ public:
   virtual void   CreateGeometry();
   virtual void   CreateMaterials();
   virtual Int_t  IsVersion() const {return 0;}
-  virtual void  DrawDetector();
-   
+  virtual void  DrawModule();
+ private:
+  virtual void  Undulation(char *undul, Float_t pitch, Float_t thick, Float_t zundul, Float_t rundul,
+                           char (*cone)[5]);
    ClassDef(AliPIPEv0,1)  //Class for PIPE version 0
 };
  

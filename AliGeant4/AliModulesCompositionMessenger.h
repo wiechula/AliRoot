@@ -52,8 +52,11 @@ class AliModulesCompositionMessenger: public G4UImessenger
     G4UIcmdWithoutParameter*    fListAvailableCmd;    //command: listAvailable
     G4UIcmdWithADoubleAndUnit*  fFieldValueCmd;       //command: fieldValue
     G4UIcmdWithABool*           fSetAllSensitiveCmd;  //command: setAllSensitive   
+    G4UIcmdWithABool*           fForceAllSensitiveCmd;//command: forceAllSensitive   
     G4UIcmdWithABool*           fSetReadGeometryCmd;  //command: readGeometry   
     G4UIcmdWithABool*           fSetWriteGeometryCmd; //command: writeGeometry    
+    G4UIcmdWithoutParameter*    fPrintMaterialsCmd;   //command: printMatrials     
+    G4UIcmdWithoutParameter*    fGenerateXMLCmd;      //command: generateXML
 };
 
 #endif //ALI_MODULES_COMPOSITION_MESSENGER_H

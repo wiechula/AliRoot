@@ -1,5 +1,10 @@
 #ifndef CASTOR_H
 #define CASTOR_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
 //  Manager and hits classes for set:CASTOR     //
 ////////////////////////////////////////////////
@@ -20,7 +25,7 @@ public:
   virtual void  CreateMaterials() {}
   virtual Int_t IsVersion() const =0;
   Int_t         DistancetoPrimitive(Int_t px, Int_t py);
-  virtual void  DrawDetector()=0;
+  virtual void  DrawModule()=0;
   virtual void  StepManager()=0;
   
   ClassDef(AliCASTOR,1)  // CASTOR detector class
@@ -49,7 +54,7 @@ public:
   virtual void  CreateGeometry();
   virtual void  CreateMaterials();
   virtual void  Init();
-  virtual void  DrawDetector();
+  virtual void  DrawModule();
   virtual Int_t IsVersion() const {return 1;}
   virtual void  StepManager();
  

@@ -2,8 +2,17 @@
 * $Id$
 *
 * $Log$
-* Revision 1.1.1.6  1997/07/13 13:22:18  cernlib
-* Import version 7.09
+* Revision 1.1.1.7  2000/04/19 13:27:39  mclareni
+* Import version 8.04
+*
+* Revision 1.10  2000/04/17 18:54:44  plothow
+* version 8.04: small mods, dlog to log
+*
+* Revision 1.9  2000/04/15 14:10:38  plothow
+* Version 8.03: Nuclear PDFs introduced
+*
+* Revision 1.8  2000/04/09 10:06:17  plothow
+* new version 8.00 - MRS 98 and 99, CTEQ5 and GRV98 added
 *
 * Revision 1.7  1997/07/02 15:02:58  pdflib
 * potential bug removed in GRSGALO
@@ -25,7 +34,7 @@
 *
 *
 *  GENERAL INFORMATION
-C PDF      7.09      970702 16.05 CERN Program Library     W5051 PDF
+C PDF      8.04     2000-04-17  12.24  CERN Program Library     W5051 PDF
 C          Structure Functions Package
 C          Author: H. Plothow-Besch
 C

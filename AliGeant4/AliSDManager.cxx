@@ -8,14 +8,12 @@
 #include "AliSensitiveDetector.h"
 #include "AliLegoSensitiveDetector.h"
 #include "AliGlobals.h"
-#include "AliFiles.h"
 #include "AliRun.h"
+#include "AliModule.h"
 
-#include "TG4GeometryManager.h"
+#include "TG4GeometryServices.h"
 
-#include <G3SensVolVector.hh>
 #include <G4SDManager.hh>
-#include <G4UImanager.hh>
 #include <G4LogicalVolume.hh>
 #include <G4LogicalVolumeStore.hh>
 
@@ -32,7 +30,9 @@ AliSDManager* AliSDManager::Instance()
   return fgInstance;
 }  
     
-AliSDManager::AliSDManager() {
+AliSDManager::AliSDManager()
+  : fNofLVWithSD(0)
+{
 //
   //fMessenger = new AliSDMessenger(this);
   fgInstance = this;
@@ -70,14 +70,14 @@ void AliSDManager::CreateLegoSD(G4LogicalVolume* lv, AliLego* lego) const
 // with the lego sensitive detector.
 // ---
 
-  TG4GeometryManager* pGeometryManager = TG4GeometryManager::Instance();
+  TG4GeometryServices* geometryServices = TG4GeometryServices::Instance();
   G4SDManager* pSDManager = G4SDManager::GetSDMpointer();
 
   G4String lvName = lv->GetName(); 
   G4String sdName = "/Alice/lego/" + lvName;
 
   // cut copy number from sdName
-  pGeometryManager->G4ToG3VolumeName(sdName);
+  geometryServices->G4ToG3VolumeName(sdName);
   
   // retrieve the standard sensitive detector
   G4VSensitiveDetector* sd = lv->GetSensitiveDetector();
@@ -92,7 +92,7 @@ void AliSDManager::CreateLegoSD(G4LogicalVolume* lv, AliLego* lego) const
     pSDManager->AddNewDetector(legoSD);
     // add verbose
     G4cout << "Lego sensitive detector " << sdName 
-         << ") has been created." << endl;
+         << ") has been created." << G4endl;
     legoVSD = legoSD;  
   }	  
   lv->SetSensitiveDetector(legoVSD);	     
@@ -134,7 +134,7 @@ void AliSDManager::CreateSD(G4LogicalVolume* lv, AliModule* module) const
 // Creates/retrieves a sensitive detector for the logical volume.
 // ---
 
-  TG4GeometryManager* pGeometryManager = TG4GeometryManager::Instance();
+  TG4GeometryServices* geometryServices = TG4GeometryServices::Instance();
   G4SDManager* pSDManager = G4SDManager::GetSDMpointer();
 
   G4String lvName = lv->GetName(); 
@@ -143,7 +143,7 @@ void AliSDManager::CreateSD(G4LogicalVolume* lv, AliModule* module) const
   G4String sdName = "/Alice/" + moduleName + "/" + lvName;
 
   // cut copy number from sdName
-  pGeometryManager->G4ToG3VolumeName(sdName);
+  geometryServices->G4ToG3VolumeName(sdName);
   
   // create/retrieve the sensitive detector
   G4VSensitiveDetector* sd = 0; 
@@ -154,7 +154,7 @@ void AliSDManager::CreateSD(G4LogicalVolume* lv, AliModule* module) const
     pSDManager->AddNewDetector(asd);
     // add verbose
     G4cout << "Sensitive detector " << sdName << "(" 
-           << asd->GetID() << ") has been created." << endl;
+           << asd->GetID() << ") has been created." << G4endl;
     sd = asd;  
   }	
   lv->SetSensitiveDetector(sd);	     
@@ -166,21 +166,22 @@ AliModule* AliSDManager::FindAliModule(G4LogicalVolume* lv) const
 // ---
 
   // geometry manager
-  TG4GeometryManager* pGeometryManager = TG4GeometryManager::Instance();
+  TG4GeometryServices* geometryServices = TG4GeometryServices::Instance();
 
   // get g3 volume name
   G4String g3Name = lv->GetName();
-  pGeometryManager->G4ToG3VolumeName(g3Name);
+  geometryServices->G4ToG3VolumeName(g3Name);
   
   // get module name from the map
-  G4String moduleName = pGeometryManager->GetMapSecond(g3Name);
+  G4String moduleName = geometryServices->GetMapSecond(g3Name);
   
   // find module from gAlice
   AliModule* module = gAlice->GetModule(moduleName);
   if (!module) {
-    G4String text = "AliSDManager::Configure:\n";
+    G4String text = "AliSDManager::FindAliModule:\n";
     text = text + "    AliModule " + moduleName;
-    text = text + " has not been found in gAlice.";
+    text = text + " (mapped from logical volume " + lv->GetName() + ")\n";
+    text = text + "    has not been found in gAlice.";
     AliGlobals::Exception(text);
   }  
    

@@ -46,10 +46,16 @@
 #ifndef WIN32
 # define hijset hijset_
 # define hijing hijing_
+# define profile profile_
+# define rluget_hijing rluget_hijing_
+# define rluset_hijing rluset_hijing_
 # define type_of_call
 #else
 # define hijset HIJSET
 # define hijing HIJING
+# define profile PROFILE
+# define rluget_hijing RLUGET_HIJING
+# define rluset_hijing RLUSET_HIJING
 # define type_of_call _stdcall
 #endif
 
@@ -64,10 +70,17 @@ extern "C" void type_of_call hijset(Float_t & , const char *,
 				   Int_t & , Int_t &, Int_t &,
 				   Int_t &, const int, 
 				   const int, const int);
+extern "C" float type_of_call profile(Float_t &);
+
 //extern "C" void type_of_call hijing(const char *frame, float &bmin,
 //                                   float &bmax, Long_t l_frame);
-extern "C" void type_of_call hijing(const char *, Float_t &,
+extern "C" void type_of_call hijing(const char *, Float_t  &,
                                    Float_t &, const int);
+
+extern "C" void type_of_call rluget_hijing(Int_t & lfn, Int_t & move);
+
+extern "C" void type_of_call rluset_hijing(Int_t & lfn, Int_t & move);
+
 #else
 //extern "C" void type_of_call hijset(float &efrm, const char *frame, 
 //				   Long_t l_frame, const char *proj, 
@@ -78,6 +91,8 @@ extern "C" void type_of_call hijing(const char *, Float_t &,
 //extern "C" void type_of_call hijing(const char *frame, Long_t l_frame, 
 //				   float &bmin, float &bmax);
 #endif
+
+
 
 ClassImp(THijing)
 
@@ -227,54 +242,71 @@ Int_t THijing::ImportParticles(TClonesArray *particles, Option_t *option)
   TClonesArray &Particles = *particles;
   Particles.Clear();
   Int_t numpart = HIMAIN1.natt;
+  printf("\n THijing: HIJING stack contains %d particles.", numpart);
+  printf("\n THijing: Total energy:         %f           ", HIMAIN1.eatt);
+  printf("\n THijing: Number of hard scatterings: %d     ", HIMAIN1.jatt);
+  Int_t nump = 0;
   if (!strcmp(option,"") || !strcmp(option,"Final")) {
-    for (Int_t i = 0; i<=numpart; i++) {
-	if (HIMAIN2.katt[3][i] == 1) {
+      for (Int_t i = 0; i<=numpart; i++) {
+	  
+	  if (HIMAIN2.katt[3][i] == 1) {
 //
 //  Use the common block values for the TParticle constructor
 //
-	  new(Particles[i]) TParticle(
-			      HIMAIN2.katt[0][i] ,
-			      HIMAIN2.katt[1][i] ,
-			      HIMAIN2.katt[2][i] ,
-			      -1,
-			      -1,
-			      -1,
-
-			      HIMAIN2.patt[0][i] ,
-			      HIMAIN2.patt[1][i] ,
-			      HIMAIN2.patt[2][i] ,
-			      HIMAIN2.patt[3][i] ,
-
-			      0,
-			      0,
-			      0,
-			      0);
-	}
-    }
+	    nump++;
+	    new(Particles[i]) TParticle(
+		  HIMAIN2.katt[0][i] ,
+		  HIMAIN2.katt[1][i] ,
+		  -1 ,
+		  -1,
+		  -1,
+		  -1,
+		  
+		  HIMAIN2.patt[0][i] ,
+		  HIMAIN2.patt[1][i] ,
+		  HIMAIN2.patt[2][i] ,
+		  HIMAIN2.patt[3][i] ,
+		  
+		  0,
+		  0,
+		  0,
+		  0);
+	  }
+      }
   }
   else if (!strcmp(option,"All")) {
-    for (Int_t i = 0; i<=numpart; i++) {
+      nump=numpart; 
+      for (Int_t i = 0; i<=numpart; i++) {
+
+	  Int_t iParent = HIMAIN2.katt[2][i]-1;
+	  
+	  if (iParent >= 0) {
+	      TParticle *mother = (TParticle*) (Particles.UncheckedAt(iParent));	   
+	      mother->SetLastDaughter(i);
+	      if (mother->GetFirstDaughter()==-1)
+		  mother->SetFirstDaughter(i);
+	  }
+
 	  new(Particles[i]) TParticle(
-			      HIMAIN2.katt[0][i] ,
-			      HIMAIN2.katt[1][i] ,
-			      HIMAIN2.katt[2][i] ,
-			      -1,
-			      -1,
-			      -1,
-
-			      HIMAIN2.patt[0][i] ,
-			      HIMAIN2.patt[1][i] ,
-			      HIMAIN2.patt[2][i] ,
-			      HIMAIN2.patt[3][i] ,
-
-			      0,
-			      0,
-			      0,
-			      0);
-    }
+	      HIMAIN2.katt[0][i] ,
+	      HIMAIN2.katt[1][i] ,
+	      iParent,
+	      -1,
+	      -1,
+	      -1,
+	      
+	      HIMAIN2.patt[0][i] ,
+	      HIMAIN2.patt[1][i] ,
+	      HIMAIN2.patt[2][i] ,
+	      HIMAIN2.patt[3][i] ,
+	      
+	      0,
+	      0,
+	      0,
+	      0);
+      }
   }
-  return numpart;
+  return nump;
 }
 
 //______________________________________________________________________________
@@ -548,9 +580,9 @@ Float_t  THijing::GetBB() const
 //______________________________________________________________________________
 Int_t THijing::GetKATT(Int_t key1, Int_t key2) const
 {
-   if ( key1<1 || key1>130000 ) {
+   if ( key1<1 || key1>200000 ) {
       printf("ERROR in THijing::GetKATT(key1,key2):\n");
-      printf("      key1=%i is out of range [1..130000]\n",key1);
+      printf("      key1=%i is out of range [1..200000]\n",key1);
       return 0;
    }
 
@@ -1049,33 +1081,33 @@ void THijing::Initialize()
 // via SetEFRM, SetFRAME, SetPROJ, SetTARG, SetIAP, SetIZP, SetIAT, SetIZT      //
 //////////////////////////////////////////////////////////////////////////////////
 
-   if ( (!strcmp(fFrame.Data(), "CMS"  )) &&
-        (!strcmp(fFrame.Data(), "LAB"  ))){
+   if ( (!strcmp(fFrame.Data(), "CMS     "  )) &&
+        (!strcmp(fFrame.Data(), "LAB     "  ))){
       printf("WARNING! In THijing:Initialize():\n");
       printf(" specified frame=%s is neither CMS or LAB\n",fFrame.Data());
       printf(" resetting to default \"CMS\" .");
       fFrame="CMS";
    }
 
-   if ( (!strcmp(fProj.Data(), "A"     )) &&
-        (!strcmp(fProj.Data(), "P"     )) &&
-        (!strcmp(fProj.Data(), "PBAR"  ))){
+   if ( (!strcmp(fProj.Data(), "A       "     )) &&
+        (!strcmp(fProj.Data(), "P       "     )) &&
+        (!strcmp(fProj.Data(), "PBAR    "  ))){
       printf("WARNING! In THijing:Initialize():\n");
       printf(" specified projectile=%s is neither A, P or PBAR\n",fProj.Data());
       printf(" resetting to default \"A\" .");
       fProj="A";
    }
 
-   if ( (!strcmp(fTarg.Data(), "A"     )) &&
-        (!strcmp(fTarg.Data(), "P"     )) &&
-        (!strcmp(fTarg.Data(), "PBAR"  ))){
+   if ( (!strcmp(fTarg.Data(), "A       "     )) &&
+        (!strcmp(fTarg.Data(), "P       "     )) &&
+        (!strcmp(fTarg.Data(), "PBAR    "  ))){
       printf("WARNING! In THijing:Initialize():\n");
       printf(" specified target=%s is neither A, P or PBAR\n",fTarg.Data());
       printf(" resetting to default \"A\" .");
       fTarg="A";
    }
 
-
+   printf(" %s-%s at %f GeV \n",fProj.Data(),fTarg.Data(),fEfrm);
 
    Hijset(fEfrm,fFrame.Data(),fProj.Data(),fTarg.Data(),fIap,fIzp,fIat,fIzt);
 
@@ -1122,3 +1154,25 @@ void THijing::Hijing(const char *frame, float bmin, float bmax)
   hijing(frame, s1, bmin, bmax);
 #endif
 }
+
+
+Float_t  THijing::Profile(float b)
+{
+// Call HIJING routine PROFILE 
+  return profile(b);
+}
+
+
+void  THijing::Rluget(Int_t lfn, Int_t move)
+{
+// write seed to file
+  rluget_hijing(lfn, move);
+}
+
+
+void  THijing::Rluset(Int_t lfn, Int_t move)
+{
+// read seed from file 
+  rluset_hijing(lfn, move);
+}
+

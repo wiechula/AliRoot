@@ -19,8 +19,6 @@
 #include <G4Run.hh>
 #include <G4UImanager.hh>
 
-#include <TFile.h>
-
 AliRunAction::AliRunAction()
   : fRunID(-1),
     fVerboseLevel(0)
@@ -79,7 +77,7 @@ void AliRunAction::BeginOfRunAction(const G4Run* run)
     G4UImanager::GetUIpointer()->ApplyCommand("/aliGenerator/set AliGenerator");
   }  
 
-  G4cout << "### Run " << run->GetRunID() << " start." << endl;
+  G4cout << "### Run " << run->GetRunID() << " start." << G4endl;
   fTimer->Start();
 }
 
@@ -99,5 +97,5 @@ void AliRunAction::EndOfRunAction(const G4Run* run)
   }  
 
   G4cout << "Number of events = " << run->GetNumberOfEvent() 
-         << " " << *fTimer << endl;
+         << " " << *fTimer << G4endl;
 }    

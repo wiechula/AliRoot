@@ -8,14 +8,14 @@
 #include "AliRun.h"
 #include "AliGlobals.h"  
 #include "TG4StepManager.h"
+#include "TG4PhysicsManager.h"
 
 #include <G4TrackingManager.hh>
 #include <G4Track.hh>
-#include <G4Event.hh>
-#include <G4SDManager.hh>
-#include <G4VHitsCollection.hh>
 
+#include <TTree.h>
 #include <TParticle.h>
+#include <TClonesArray.h>
 
 // static data members
 AliTrackingAction* AliTrackingAction::fgInstance = 0;
@@ -33,6 +33,7 @@ AliTrackingAction::AliTrackingAction()
     fSavePrimaries(true),
     fPrimariesCounter(0),
     fParticlesCounter(0),
+    fTrackCounter(0),
     fLastParticleIndex(-1)
 {
 //
@@ -74,6 +75,8 @@ void AliTrackingAction::PrepareNewEvent()
 // Called by G4 kernel at the beginning of event.
 // ---
 
+  fTrackCounter = 0;
+
   // aliroot
   if (!fParticles) fParticles = gAlice->Particles();
 
@@ -93,7 +96,7 @@ void AliTrackingAction::PrepareNewEvent()
   pStepManager->SetSteppingManager(pG4StepManager);
 }
 
-void AliTrackingAction::PreUserTrackingAction(const G4Track* aTrack)
+void AliTrackingAction::PreTrackingAction(const G4Track* aTrack)
 {
 // Called by G4 kernel before starting tracking.
 // ---
@@ -120,25 +123,20 @@ void AliTrackingAction::PreUserTrackingAction(const G4Track* aTrack)
   }
   else { 
     // save secondary particles info 
-    // improve this later with retrieving the generation process
-    // (primary particles are stored 
-    //  by AlStackingAction in ClassifyNewTrack() method)
-    G4String origin = "secondary"; 
-    SaveParticle(aTrack, origin);
-  };
+    SaveParticle(aTrack);
+  }
+  
+  gAlice->PreTrack();
 }
 
-void AliTrackingAction::PostUserTrackingAction(const G4Track* aTrack)
+void AliTrackingAction::PostTrackingAction(const G4Track* aTrack)
 {
 // Called by G4 kernel after finishing tracking.
 // ---
 
-  G4String particleName 
-    = aTrack->GetDynamicParticle()->GetDefinition()->GetParticleName();
-  if (particleName == "opticalphoton") {
-    G4cout << "$$$ Track " <<  aTrack->GetTrackID()
-           << " is optical photon." << endl;
-  }	                
+  fTrackCounter++;
+
+  gAlice->PostTrack();
 }
 
 void AliTrackingAction::SaveAndDestroyTrack()
@@ -152,13 +150,13 @@ void AliTrackingAction::SaveAndDestroyTrack()
   if (fPrimaryTrackID>0)
   {
      if (fVerboseLevel == 3) { 
-       G4cout << "$$$ Primary track " << fPrimaryTrackID << endl;
+       G4cout << "$$$ Primary track " << fPrimaryTrackID << G4endl;
      } 
      else if ( fVerboseLevel == 2 &&  fPrimaryTrackID % 10 == 0 ) {
-         G4cout << "$$$ Primary track " << fPrimaryTrackID  << endl;
+         G4cout << "$$$ Primary track " << fPrimaryTrackID  << G4endl;
      } 
      else if ( fVerboseLevel == 1 &&  fPrimaryTrackID % 100 == 0 ) {
-         G4cout << "$$$ Primary track " << fPrimaryTrackID  << endl;
+         G4cout << "$$$ Primary track " << fPrimaryTrackID  << G4endl;
      } 
      
      // aliroot
@@ -178,8 +176,7 @@ void AliTrackingAction::SaveAndDestroyTrack()
    fPrimaryTrackID = 0;
 }  
 
-void AliTrackingAction::SaveParticle(const G4Track* track, 
-                                     G4String processName)
+void AliTrackingAction::SaveParticle(const G4Track* track)
 {
 // Converts G4track to TParticle and saves it in AliRun::fParticles
 // array.
@@ -241,7 +238,7 @@ void AliTrackingAction::SaveParticle(const G4Track* track,
   G4double polY = polarization.y();
   G4double polZ = polarization.z();
 
-  // aliroot
+  // create TParticle
   TClonesArray& theCollectionRef = *fParticles;
   G4int nofParticles = theCollectionRef.GetEntriesFast();
   TParticle* particle 
@@ -249,7 +246,21 @@ void AliTrackingAction::SaveParticle(const G4Track* track,
        TParticle(pdg, ks, motherIndex1, motherIndex1, 
          firstDaughter, lastDaughter, px, py, pz, e, vx, vy, vz, t);
   particle->SetPolarisation(polX, polY, polZ);
-  particle->SetBit(Keep_Bit, false); 
+  particle->SetBit(kKeepBit, false); 
+  
+  // set production process
+  AliMCProcess mcProcess;  
+  const G4VProcess* kpProcess = track->GetCreatorProcess();
+  if (!kpProcess) {
+    mcProcess = kPPrimary;
+  }
+  else {  
+    TG4PhysicsManager* pPhysicsManager = TG4PhysicsManager::Instance();
+    mcProcess = pPhysicsManager->GetMCProcess(kpProcess);  
+    // distinguish kPDeltaRay from kPEnergyLoss  
+    if (mcProcess == kPEnergyLoss) mcProcess = kPDeltaRay;
+  }  
+  particle->SetUniqueID(mcProcess);  
 }
 
 G4int AliTrackingAction::GetParticleIndex(G4int trackID)

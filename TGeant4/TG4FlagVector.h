@@ -14,6 +14,8 @@ class G4VProcess;
 
 class TG4FlagVector
 {
+  typedef G4RWTValOrderedVector<TG3FlagValue> TG3FlagVector;
+
   public:
     TG4FlagVector();
     TG4FlagVector(const TG4FlagVector& right);

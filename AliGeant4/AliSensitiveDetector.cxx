@@ -6,13 +6,15 @@
 #include "AliSensitiveDetector.h"
 #include "AliModule.h" 
 #include "AliRun.h"
+#include "AliMCQA.h"
 
-#include "TG4StepManager.h"
+#include "TG3Units.h"
 
 AliSensitiveDetector::AliSensitiveDetector(G4String sdName, AliModule* module)
   : TG4VSensitiveDetector(sdName),
     fModule(module),
-    fStepManager(TG4StepManager::Instance())
+    fModuleID(0),
+    fMCQA(0)
 {
 //
 }
@@ -21,7 +23,8 @@ AliSensitiveDetector::AliSensitiveDetector(G4String sdName, AliModule* module,
                                            G4int id)
   : TG4VSensitiveDetector(sdName, id),
     fModule(module),
-    fStepManager(TG4StepManager::Instance())
+    fModuleID(0),
+    fMCQA(0)
 {
 //
 }
@@ -31,7 +34,6 @@ AliSensitiveDetector::AliSensitiveDetector(const AliSensitiveDetector& right)
 {
 //
   fModule = right.fModule;
-  fStepManager = right.fStepManager;
 }  
   
 AliSensitiveDetector::AliSensitiveDetector(){
@@ -54,54 +56,38 @@ AliSensitiveDetector::operator=(const AliSensitiveDetector& right)
   TG4VSensitiveDetector::operator=(right);
 
   fModule = right.fModule;
-  fStepManager = right.fStepManager;
 
   return *this;  
 }    
           
 // public methods
 
-void AliSensitiveDetector::Initialize(G4HCofThisEvent* hc)
+void AliSensitiveDetector::Initialize(G4HCofThisEvent*HCE) 
 {
-// This method is called at the beginning of event action
+// This method is called by G4 kernel at the beginning of event action
 // before user defined BeginOfEventAction() method.
-}
+// ---
 
-G4bool AliSensitiveDetector::ProcessHits(G4Step* step, G4TouchableHistory*)
+  fModuleID = gAlice->GetModuleID(fModule->GetName());
+  fMCQA = gAlice->GetMCQA();
+}  
+  
+  
+void AliSensitiveDetector::UserProcessHits(const G4Track* track, 
+                                           const G4Step* step)
 {
-// Calls StepManager of associated AliModules.
+// Calls StepManager of associated AliModule.
 // ---
 
   // add energy deposit of the current step
   // directly to AliRun
-  G4int copy;
-  gAlice->AddEnergyDeposit(fID, step->GetTotalEnergyDeposit());
+  if (step) 
+    gAlice->AddEnergyDeposit(
+      fID, step->GetTotalEnergyDeposit()/TG3Units::Energy());
+      
+  fMCQA->StepManager(fModuleID);   
 
-  // parent ID -> shunt
-  G4int parentID
-    = step->GetTrack()->GetParentID();
-  Int_t shunt = 0;
-  if (parentID==0) shunt = 1;
-  fModule->SetIshunt(shunt);
-
-  // let AliModule process step
-  fStepManager->SetStep(step);
+  // let AliModule process the step
   fModule->StepManager();
-
-  return true;
 }
 
-void AliSensitiveDetector::EndOfEvent(G4HCofThisEvent* hce){
-//
-}
-
-//void AliSensitiveDetector::clear()
-//{} 
-
-void AliSensitiveDetector::PrintAll() {
-//
-} 
-
-void AliSensitiveDetector::DrawAll() {
-//
-} 

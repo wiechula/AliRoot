@@ -5,6 +5,7 @@
 
 #include "AliDetConstruction.h"
 #include "AliSingleModuleConstruction.h"
+#include "AliDetSwitch.h"
 #include "AliGlobals.h"
 #include "AliRun.h"
 #include "AliModule.h"
@@ -13,7 +14,9 @@ AliDetConstruction::AliDetConstruction()
   : fTopVolumeName("ALIC")
 {
   // initialize det switch vector: 
-  // moduleName nofVersions defaultVersion [type isStandalone] 
+  // moduleName nofVersions defaultVersion [type isStandalone]     
+        // det switch objects are deleted in
+	// tbe base class (AliModulesCompositions) destructor
 
   AliDetSwitch* detSwitch;
   detSwitch = new AliDetSwitch("ABSO",   1, 0, kStructure);
@@ -36,17 +39,17 @@ AliDetConstruction::AliDetConstruction()
   AddDetSwitch(detSwitch); 
   detSwitch = new AliDetSwitch("ITS",    6, 5);
   AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("MUON",   1, 0);
+  detSwitch = new AliDetSwitch("MUON",   2, 0);
   AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("PHOS",   2, 0);
+  detSwitch = new AliDetSwitch("PHOS",   5, 1);
   AddDetSwitch(detSwitch); 
   detSwitch = new AliDetSwitch("PMD",    3, 0);
   AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("RICH",   1, 0);
+  detSwitch = new AliDetSwitch("RICH",   3, 1);
   AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("START",  1, 0);
+  detSwitch = new AliDetSwitch("START",  2, 1);
   AddDetSwitch(detSwitch); 
-  detSwitch = new AliDetSwitch("TOF",    7, 1, kDetector, false);
+  detSwitch = new AliDetSwitch("TOF",    5, 1, kDetector, false);
   AddDetSwitch(detSwitch); 
   detSwitch = new AliDetSwitch("TPC",    4, 1);
   AddDetSwitch(detSwitch); 
@@ -118,7 +121,7 @@ void AliDetConstruction::BuildDetectors()
     AddMoreModuleConstruction(modName, modVersion);
 
     G4cout << "Created module construction for " 
-           << modName << "v" << modVersion << "." << endl;   
+           << modName << "v" << modVersion << "." << G4endl;   
   }
   
   // do not process Config.C 
@@ -213,51 +216,6 @@ void AliDetConstruction::CheckDetDependencies()
       AliGlobals::Warning(text);
     }  
   }
-/*  
-  if (verTRD > -1 && verTOF > -1) {
-    // both TRD and TOF 
-    if (verTOF == 2 || verTOF == 3 || verTOF == 5 || verTOF == 6) {
-      G4String text = "AliDetConstruction::CheckDetDependencies: \n";
-      text = text + "    Switched TOF and TRD require different FRAME versions."; 
-      AliGlobals::Exception(text);
-    }  
-    if (verFRAME != 0) {
-      detSwitchFRAME->SwitchOn(0);
-      G4String text = "AliDetConstruction::CheckDetDependencies: \n";
-      text = text + "    Switched TOF and TRD require FRAME v0.\n"; 
-      text = text + "    The det switch for FRAME has been changed."; 
-      AliGlobals::Warning(text);
-    }  
-  }
-  else if (verTRD > -1 && verTOF == -1)   {
-    // only TRD
-    if (verFRAME != 0) {
-      detSwitchFRAME->SwitchOn(0);
-      G4String text = "AliDetConstruction::CheckDetDependencies: \n";
-      text = text + "    Switched TRD requires FRAME v0.\n"; 
-      text = text + "    The det switch for FRAME has been changed."; 
-      AliGlobals::Warning(text);
-    }          
-  }  
-  else if (verTRD == -1 && verTOF > -1)   {
-    // only TOF
-    if ((verTOF == 0 || verTOF == 1 || verTOF == 4) && (verFRAME !=0)) {
-      detSwitchFRAME->SwitchOn(0);
-      G4String text = "AliDetConstruction::CheckDetDependencies: \n";
-      text = text + "    Switched TOF requires FRAME v0.\n"; 
-      text = text + "    The det switch for FRAME has been changed."; 
-      AliGlobals::Warning(text);
-    }
-    if ((verTOF == 2 || verTOF == 3 || verTOF == 5 || verTOF == 6) &&
-        (verFRAME != 1)) {
-      detSwitchFRAME->SwitchOn(1);
-      G4String text = "AliDetConstruction::CheckDetDependencies: \n";
-      text = text + "    Switched TOF requires FRAME v1.\n"; 
-      text = text + "    The det switch for FRAME has been changed."; 
-      AliGlobals::Warning(text);
-    }
-  }
-*/    
 }  
 
 // public methods

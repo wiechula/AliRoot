@@ -1,3 +1,25 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.3  1999/09/29 09:24:07  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 //////////////////////////////////////////////////////////////////////////
 //                                                                      //
 // aliroot                                                              //
@@ -10,7 +32,7 @@
 // developed.                                                           //
 //Begin_Html
 /*
-<img src="gif/newg.gif">
+<img src="picts/newg.gif">
 */
 //End_Html
 //////////////////////////////////////////////////////////////////////////
@@ -56,16 +78,15 @@ int main(int argc, char **argv)
   // run and event number, the number of vertices, tracks and primary tracks
   // in the event.
   //
-  new AliRun("gAlice"," The Alice Geant3-based MonteCarlo");
+  new AliRun("gAlice","The ALICE Off-line Simulation Framework");
   
   // Start interactive geant
   
   TRint *theApp = new TRint("aliroot", &argc, argv, 0, 0);
   
-  // --- Initialisation of the GALICE package ---
+  // --- Start the event loop ---
   theApp->Run();
   
-  // --- Simulation of all events ---
   return(0);
 }
 

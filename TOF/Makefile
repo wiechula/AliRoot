@@ -9,7 +9,7 @@ PACKAGE = TOF
 
 # C++ sources
 
-SRCS  = AliTOF.cxx	AliTOFv0.cxx      AliTOFv1.cxx    AliTOFv2.cxx AliTOFv3.cxx 
+SRCS  = AliTOF.cxx  AliTOFv0.cxx  AliTOFv1.cxx  AliTOFv2.cxx AliTOFv3.cxx AliTOFv4.cxx AliTOFD.cxx
 
 # C++ Headers
 
@@ -19,19 +19,19 @@ HDRS          = $(SRCS:.cxx=.h) TOFLinkDef.h
 
 DICT          = TOFCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.f=.o)
+FOBJS         = $(patsubst %.f,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -45,12 +45,12 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libTOF.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libTOF.a
+SLIBRARY	= $(LIBDIR)/libTOF.$(SL)
+ALIBRARY	= $(LIBDIR)/libTOF.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libTOF.$(SL):	$(OBJS)
+$(LIBDIR)/libTOF.$(SL):	$(OBJS)
 
 $(DICT):			$(HDRS)
 
@@ -58,10 +58,12 @@ depend:				$(SRCS)
 
 TOCLEAN			= $(OBJS) *Cint.cxx *Cint.h
 
+CHECKS		        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
 ############################### General Macros ################################
 
 include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 

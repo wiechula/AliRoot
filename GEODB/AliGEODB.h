@@ -1,5 +1,10 @@
 #ifndef AliGEODB_H 
 #define AliGEODB_H 
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 //////////////////////////////////////////////// 
 //  C++ interface to Geant3 basic routines    // 
 //////////////////////////////////////////////// 
@@ -48,7 +53,7 @@ public:
   Bool_t TrackAlive() const;
   Int_t   NSecondaries() const;
   Int_t   CurrentEvent() const;
-  void    ProdProcess(char*) const;
+  AliMCProcess  ProdProcess() const;
   void    GetSecondary(Int_t, Int_t&, Float_t*, Float_t*);
   void   StopTrack();
   void   StopEvent();

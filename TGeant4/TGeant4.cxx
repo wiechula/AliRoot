@@ -12,6 +12,8 @@
 #include "TG4RunManager.h"
 #include "TG4Globals.h"
 
+#include "AliDecayer.h"
+
 TGeant4::TGeant4(const char* name, const char* title,
                  TG4VRunConfiguration* configuration, int argc, char** argv)
   : AliMC(name, title),
@@ -170,13 +172,6 @@ void TGeant4::Gstpar(Int_t itmed, const char *param, Float_t parval) {
   fGeometryManager->Gstpar(itmed, param, parval); 
 }    
 
-void TGeant4::Gsckov(Int_t itmed, Int_t npckov, Float_t *ppckov,
-	             Float_t *absco, Float_t *effic, Float_t *rindex) {
-//
-
-  fGeometryManager->Gsckov(itmed, npckov, ppckov, absco, effic, rindex);
-}		     		      
-
 Int_t TGeant4::Gsvolu(const char *name, const char *shape, Int_t nmed,  
                          Float_t *upar, Int_t np)  {
 //
@@ -226,6 +221,12 @@ void TGeant4::Gsposp(const char *name, Int_t nr, const char *mother,
   fGeometryManager->Gsposp(name, nr, mother, x, y, z, irot, konly, upar, np); 
 } 
 
+void TGeant4::SetCerenkov(Int_t itmed, Int_t npckov, Float_t *ppckov,
+                  Float_t *absco, Float_t *effic, Float_t *rindex) {
+//
+  fGeometryManager->SetCerenkov(itmed, npckov, ppckov, absco, effic, rindex);
+}  
+    
 void TGeant4::WriteEuclid(const char* fileName, const char* topVol, 
                           Int_t number, Int_t nlevel) {
 //
@@ -246,6 +247,13 @@ Int_t TGeant4::NofVolumes() const {
 //
   return fGeometryManager->NofVolumes(); 
 } 
+
+Int_t TGeant4::VolId2Mate(Int_t id) const {
+//
+  return fGeometryManager->VolId2Mate(id); 
+} 
+
+
 
 // methods for physics management
 // ------------------------------------------------
@@ -270,6 +278,18 @@ Float_t TGeant4::Xsec(char* reac, Float_t energy, Int_t part, Int_t mate) {
   return fPhysicsManager->Xsec(reac, energy, part, mate);
 }  
 
+void TGeant4::SetExternalDecayer(AliDecayer* decayer) {
+//
+  TG4Globals:: Warning("TGeant4::SetExternalDecayer() is not implemented."); 
+}
+
+AliDecayer* TGeant4::Decayer() const {
+//
+  TG4Globals:: Warning("TGeant4::Decayer() is not implemented.");
+  return 0; 
+}
+  
+
 Int_t TGeant4::IdFromPDG(Int_t pdgID) const { 
 //
   return fPhysicsManager->IdFromPDG(pdgID);
@@ -288,11 +308,6 @@ void TGeant4::DefineParticles() {
 // methods for step management
 // ------------------------------------------------
 // inlined (in TGeant4.icc)
-
-void TGeant4::Rndm(Float_t* array, const Int_t size) const { 
-// 
-  fStepManager->Rndm(array, size); 
-} 
 
 // methods for visualization
 // ------------------------------------------------
@@ -360,7 +375,7 @@ void TGeant4::StartGeantUI() {
 
 void TGeant4::StartRootUI() {
 //
-  fRunManager->StartGeantUI();
+  fRunManager->StartRootUI();
 }  
 
 void TGeant4::ProcessGeantMacro(const char* macroName) {
@@ -418,9 +433,9 @@ void TGeant4::Gtreve() {
   TG4Globals:: Warning("TGeant4::Gtreve() is not implemented."); 
 }
 
-void TGeant4::Gtreve_root() { 
+void TGeant4::GtreveRoot() { 
 //
-  TG4Globals:: Warning("TGeant4::Gtreve_root() is not implemented."); 
+  TG4Globals:: Warning("TGeant4::GtreveRoot() is not implemented."); 
 }
 
 void TGeant4::Gckmat(Int_t itmed, char* natmed) { 

@@ -6,15 +6,14 @@
 #include "AliSingleModuleConstruction.h"
 #include "AliSingleModuleConstructionMessenger.h"
 #include "AliSDManager.h"
-#include "AliSensitiveDetector.h"
 #include "AliGlobals.h"
 #include "AliFiles.h"
 #include "AliRun.h"
+#include "AliModule.h"
 
 #include "TG4GeometryManager.h"
 
 #include <G3SensVolVector.hh>
-#include <G4SDManager.hh>
 #include <G4UImanager.hh>
 //#include <G4Element.hh>
 #include <G4LogicalVolume.hh>
@@ -232,12 +231,12 @@ void AliSingleModuleConstruction::Construct()
 
   // print default element table
   // const G4ElementTable* table = G4Element::GetElementTable();
-  // G4cout << "Default elemnt table: " << endl;
+  // G4cout << "Default elemnt table: " << G4endl;
   // for (G4int i=0; i<table->entries(); i++) {
-  //   G4cout << *(*table)[i] << endl;
+  //   G4cout << *(*table)[i] << G4endl;
   // }  
 
-  Configure();
+  // Configure();
 
   // get geometry manager
   TG4GeometryManager* pGeometryManager = TG4GeometryManager::Instance();
@@ -263,6 +262,9 @@ void AliSingleModuleConstruction::Construct()
 
     // construct G3 geometry
     fAliModule->CreateGeometry();
+        
+    if (fWriteGeometry) 
+      pGeometryManager->CloseOutFile();
   }  
   
   // construct G4 geometry
@@ -279,12 +281,15 @@ void AliSingleModuleConstruction::Construct()
   // build sensitive detectors table
   fAliModule->Init();
 
+  // construct geometry for display
+  fAliModule->BuildGeometry();
+
   // reset TG4GeometryManager 
   pGeometryManager->ClearG3Tables();
   
   // print current total number of logical volumes
   G4cout << "Current total number of sensitive volumes: "
-         << pGeometryManager->NofVolumes() << endl;
+         << pGeometryManager->NofVolumes() << G4endl;
 
 #ifdef ALICE_VISUALIZE
   if (GetDetFrame()) {

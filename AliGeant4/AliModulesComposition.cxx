@@ -7,21 +7,25 @@
 #include "AliModulesCompositionMessenger.h"
 #include "AliSingleModuleConstruction.h"
 #include "AliMoreModulesConstruction.h"
+#include "AliDetSwitch.h"
 #include "AliMagneticField.h"
 #include "AliGlobals.h"
 
-#include <G4UniformMagField.hh>
-#include <G4FieldManager.hh>
-#include <G4TransportationManager.hh>
+#include "TG4GeometryManager.h"
+#include "TG4XMLGeometryGenerator.h"
+
+#include <G4Material.hh>
+#include <G4VPhysicalVolume.hh>
 
 AliModulesComposition::AliModulesComposition()
   : fAllLVSensitive(false),
+    fForceAllLVSensitive(true),
     fReadGeometry(false),
-    fWriteGeometry(false)    
+    fWriteGeometry(false),
+    fMagneticField(0)    
 {
 //
   fMoreModulesConstruction = new AliMoreModulesConstruction();
-  fMagneticField = new AliMagneticField();
   fMessenger = new AliModulesCompositionMessenger(this);
 }
 
@@ -104,17 +108,36 @@ void AliModulesComposition::ConstructModules()
   // one module constructions
   G4int nofDets = fModuleConstructionVector.entries();
   for (G4int i=0; i<nofDets; i++) {
+    fModuleConstructionVector[i]->Configure();
+  }  
+  if (fForceAllLVSensitive)
+    SetAllLVSensitiveToModules(fForceAllLVSensitive);
+      // override the setAllLVSensitive by Config.in macro
+      // if required
+     
+  for (G4int i=0; i<nofDets; i++) {
     G4cout << "Module " << fModuleConstructionVector[i]->GetDetName()
-           << " will be constructed now." << endl;
+           << " will be constructed now." << G4endl;
     fModuleConstructionVector[i]->Construct();
   }  
     
   // more modules construction
   G4int nofModules = fMoreModulesConstruction->GetNofModules();
   if (nofModules>0) {
-    G4cout << "Dependent modules will be constructed now." << endl;
+    fMoreModulesConstruction->Configure();
+    if (fForceAllLVSensitive)
+      SetAllLVSensitiveToModules(fForceAllLVSensitive);
+        // override the setAllLVSensitive by Config.in macro
+        // if required
+
+    G4cout << "Dependent modules will be constructed now." << G4endl;
     fMoreModulesConstruction->Construct();
   }  
+    
+  // fill medium Id vector
+  TG4GeometryManager::Instance()->FillMediumIdVector();
+        // this step can be done only after the sensitive
+        // detectors have been created
 }  
 
 void AliModulesComposition::SetReadGeometryToModules(G4bool readGeometry)
@@ -165,16 +188,8 @@ void AliModulesComposition::SetAllLVSensitiveToModules(G4bool allSensitive)
   // single module constructions
   G4int nofDets = fModuleConstructionVector.entries();
   G4int i;
-  for (i=0; i<nofDets; i++) {
-    AliSingleModuleConstruction* moduleConstruction
-      = dynamic_cast<AliSingleModuleConstruction*>(fModuleConstructionVector[i]);
-    if (!moduleConstruction) {
-      G4String text = "AliModulesComposition::SetProcessConfig: \n";
-      text = text + "    Unknown module construction type.";
-      AliGlobals::Exception(text);
-    }      
-    moduleConstruction->SetAllLVSensitive(allSensitive);
-  }  
+  for (i=0; i<nofDets; i++)
+    fModuleConstructionVector[i]->SetAllLVSensitive(allSensitive);
 
   // more modules construction
   nofDets = fMoreModulesConstruction->GetNofModules();
@@ -193,16 +208,8 @@ void AliModulesComposition::SetProcessConfigToModules(G4bool processConfig)
   // single module constructions
   G4int nofDets = fModuleConstructionVector.entries();
   G4int i;
-  for (i=0; i<nofDets; i++) {
-    AliSingleModuleConstruction* moduleConstruction
-      = dynamic_cast<AliSingleModuleConstruction*>(fModuleConstructionVector[i]);
-    if (!moduleConstruction) {
-      G4String text = "AliModulesComposition::SetProcessConfig: \n";
-      text = text + "    Unknown module construction type.";
-      AliGlobals::Exception(text);
-    }      
-    moduleConstruction->SetProcessConfig(processConfig);
-  }  
+  for (i=0; i<nofDets; i++)
+    fModuleConstructionVector[i]->SetProcessConfig(processConfig);
   
   // more modules construction
   nofDets = fMoreModulesConstruction->GetNofModules();
@@ -312,9 +319,9 @@ void AliModulesComposition::PrintSwitchedDets() const
 
   G4String svList = GetSwitchedDetsList();
     
-  G4cout << "Switched Alice detectors: " << endl;
-  G4cout << "--------------------------" << endl;
-  G4cout << svList << endl;
+  G4cout << "Switched Alice detectors: " << G4endl;
+  G4cout << "--------------------------" << G4endl;
+  G4cout << svList << G4endl;
 }
 
 void AliModulesComposition::PrintAvailableDets() const
@@ -324,10 +331,67 @@ void AliModulesComposition::PrintAvailableDets() const
 
   G4String avList = GetAvailableDetsList();
     
-  G4cout << "Available Alice detectors: " << endl;
-  G4cout << "---------------------------" << endl;
-  G4cout << avList << endl;
+  G4cout << "Available Alice detectors: " << G4endl;
+  G4cout << "---------------------------" << G4endl;
+  G4cout << avList << G4endl;
 }
+
+void AliModulesComposition::PrintMaterials() const
+{
+// Prints all materials.
+// ---
+
+  const G4MaterialTable* matTable = G4Material::GetMaterialTable();
+  G4cout << *matTable;
+}
+
+void AliModulesComposition::GenerateXMLGeometry() const 
+{
+// Generates XML geometry file from the top volume.
+// The file name is set according the last switched detector
+// registered in the det switch vector.
+// ---
+
+  G4VPhysicalVolume* world = AliSingleModuleConstruction::GetWorld();
+
+  // set filename
+  G4String detName;
+  G4String version = "v";
+  G4String filePath= getenv("AG4_INSTALL");   
+  filePath = filePath + "/xml/";  
+  for (G4int i=fDetSwitchVector.entries()-1; i>=0; i--) {
+    G4int versionNumber = fDetSwitchVector[i]->GetSwitchedVersion();
+    if (versionNumber > -1) {
+      detName = fDetSwitchVector[i]->GetDetName();
+      AliGlobals::AppendNumberToString(version, versionNumber); 
+      filePath = filePath + detName + version + ".xml";
+      break;
+    }  
+  }  
+  
+  // set top volume name
+  G4String topName = world->GetName() + "_comp";
+  
+  // generate XML
+  
+  TG4XMLGeometryGenerator xml;
+  xml.OpenFile(filePath);
+
+  // generate materials 
+  // not yet implemented
+  // xml.GenerateMaterials(version, "today", "Generated from G4",
+  //                     "v4", world->GetLogicalVolume());
+
+  // generate volumes tree
+  xml.GenerateSection(detName, version, "today", "Generated from Geant4",
+                      topName, world->GetLogicalVolume());
+  xml.CloseFile();
+  
+  // set verbose
+  G4cout << "File " << detName << version << ".xml has been generated." 
+         << G4endl;
+}  
+
 
 G4String AliModulesComposition::GetSwitchedDetsList() const
 { 
@@ -446,6 +510,10 @@ void AliModulesComposition::SetMagField(G4double fieldValue)
 // Sets uniform magnetic field to specified value.
 // ---
 
+  // create fields if it does not exist
+  if (!fMagneticField) fMagneticField = new AliMagneticField();
+  
+  // set value
   fMagneticField->SetFieldValue(fieldValue);
 }
 

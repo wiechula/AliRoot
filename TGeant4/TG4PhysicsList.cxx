@@ -8,29 +8,20 @@
 #include "TG4PhysicsList.h"
 #include "TG4PhysicsListMessenger.h"
 #include "TG4PhysicsManager.h"
-#include "TG4CutVector.h"
 #include "TG4FlagVector.h"
 #include "TG4SpecialCuts.h"
 #include "TG4SpecialFlags.h"
 
 #include <G4ParticleDefinition.hh>
-#include <G4ParticleWithCuts.hh>
 #include <G4ProcessManager.hh>
 #include <G4ProcessVector.hh>
-#include <G4ParticleTypes.hh>
-#include <G4ParticleTable.hh>
 #include <G4BosonConstructor.hh>
 #include <G4LeptonConstructor.hh>
 #include <G4MesonConstructor.hh>
 #include <G4BaryonConstructor.hh>
 #include <G4IonConstructor.hh>
 #include <G4ShortLivedConstructor.hh>
-#include <G4Material.hh>
-#include <G4MaterialTable.hh>
 #include <G4ProcessTable.hh>
-//#include <G4ios.hh>
-
-#include <g4std/iomanip>
 
 
 TG4PhysicsList::TG4PhysicsList()
@@ -130,7 +121,7 @@ void TG4PhysicsList::SetProcessActivation()
 // to the setup in TG4PhysicsManager::fFlagVector.
 // ---
 
-  G4cout << "TG4PhysicsList::SetProcessActivation() start" << endl;
+  G4cout << "TG4PhysicsList::SetProcessActivation() start" << G4endl;
   
   TG4PhysicsManager* physicsManager = TG4PhysicsManager::Instance();
   TG4FlagVector* flagVector = physicsManager->GetFlagVector();
@@ -138,7 +129,7 @@ void TG4PhysicsList::SetProcessActivation()
   // uncomment following lines to print
   // the flagVector values
   //for (G4int i=0; i<kNoG3Flags; i++)
-  //{ cout << i << " flag: " << (*flagVector)[i] << endl; }
+  //{ cout << i << " flag: " << (*flagVector)[i] << G4endl; }
 
   if (flagVector) {
     theParticleIterator->reset();
@@ -155,7 +146,7 @@ void TG4PhysicsList::SetProcessActivation()
             (processManager->GetProcessActivation(i))) {
           if (verboseLevel>1) {
              G4cout << "Set process inactivation for " 
-                    << (*processVector)[i]->GetProcessName() << endl;
+                    << (*processVector)[i]->GetProcessName() << G4endl;
           }
           processManager->SetProcessActivation(i,false);
         }  
@@ -163,7 +154,7 @@ void TG4PhysicsList::SetProcessActivation()
                  (!processManager->GetProcessActivation(i))) {
           if (verboseLevel>1) {
              G4cout << "Set process activation for " 
-                    << (*processVector)[i]->GetProcessName() << endl;
+                    << (*processVector)[i]->GetProcessName() << G4endl;
           }
           processManager->SetProcessActivation(i,true);
         } 
@@ -175,7 +166,7 @@ void TG4PhysicsList::SetProcessActivation()
     text = text + "    Vector of processes flags is not set.";
     TG4Globals::Warning(text);
   }    
-  G4cout << "TG4PhysicsList::SetProcessActivation() end" << endl;
+  G4cout << "TG4PhysicsList::SetProcessActivation() end" << G4endl;
 }
 
 void TG4PhysicsList::PrintAllProcesses() const
@@ -183,14 +174,15 @@ void TG4PhysicsList::PrintAllProcesses() const
 // Prints all processes.
 // ---
 
-  G4cout << "TG4PhysicsList processes: " << endl;
-  G4cout << "========================= " << endl;
+  G4cout << "TG4PhysicsList processes: " << G4endl;
+  G4cout << "========================= " << G4endl;
  
   G4ProcessTable* processTable = G4ProcessTable::GetProcessTable();
-  TG4StringVector* processNameList = processTable->GetNameList();
+  G4ProcessTable::G4ProcNameVector* processNameList 
+    = processTable->GetNameList();
 
-  for (G4int i=0; i <processNameList->entries(); i++){
-    G4cout << "   " << (*processNameList)[i] << endl;
+  for (G4int i=0; i <processNameList->size(); i++){
+    G4cout << "   " << (*processNameList)[i] << G4endl;
   }  
 }
 
@@ -436,7 +428,7 @@ void TG4PhysicsList::ConstructHad()
 // F.W.Jones  09-JUL-1998
 // ---
 
-   G4cout << "### TG4PhysicsList::ConstructHad()" << endl;
+   G4cout << "### TG4PhysicsList::ConstructHad()" << G4endl;
 
    G4HadronElasticProcess* theElasticProcess = 
                                     new G4HadronElasticProcess;
@@ -751,7 +743,7 @@ void TG4PhysicsList::ConstructHad()
       }
    }
 
-   G4cout << "### TG4PhysicsList::ConstructHad() finished." << endl;
+   G4cout << "### TG4PhysicsList::ConstructHad() finished." << G4endl;
 
 }
 
@@ -861,7 +853,7 @@ void TG4PhysicsList::ConstructSpecialCuts()
       // uncomment this to see all particles "WSP"
       //G4cout << "Iterating particle: " 
       //       << particle->GetParticleName() << " " << particleWSP << " "
-      //       << name << endl;
+      //       << name << G4endl;
 
       // special process is created in case
       // cutVector (vector of kinetic energy cuts) is set
@@ -880,17 +872,17 @@ void TG4PhysicsList::ConstructSpecialCuts()
     }
 
     if (verboseLevel>0) {
-      G4cout << "TG4PhysicsList::ConstructSpecialCuts: " << endl;
+      G4cout << "TG4PhysicsList::ConstructSpecialCuts: " << G4endl;
       if (cutVector)
-        G4cout << "   Global kinetic energy cuts are set." << endl;
-      G4cout << "   Special cuts process is defined for: " << endl 
+        G4cout << "   Global kinetic energy cuts are set." << G4endl;
+      G4cout << "   Special cuts process is defined for: " << G4endl 
              << "   ";
       for (G4int i=0; i<kAny; i++) {
         G4String name;
         physicsManager->GetG3ParticleWSPName(i, name);
         if ((*isCutVector)[i]) G4cout << name << " ";
       }  
-      G4cout << endl;
+      G4cout << G4endl;
     }  
   }
 }
@@ -906,7 +898,7 @@ void TG4PhysicsList::ConstructSpecialFlags()
 
   if (physicsManager->IsSpecialFlags())
   {
-    G4cout << "IsSpecialFlags started" << endl;
+    G4cout << "IsSpecialFlags started" << G4endl;
     TG4boolVector* isFlagVector 
       = physicsManager->GetIsFlagVector(); 
 
@@ -935,26 +927,59 @@ void TG4PhysicsList::ConstructSpecialFlags()
     }
 
     if (verboseLevel>0) {
-      G4cout << "TG4PhysicsList::ConstructSpecialFlagss: " << endl;
-      G4cout << "   Special flags process is defined for: " << endl
+      G4cout << "TG4PhysicsList::ConstructSpecialFlagss: " << G4endl;
+      G4cout << "   Special flags process is defined for: " << G4endl
              << "   ";
       for (G4int i=0; i<kNofParticlesWSP; i++) {
         G4String name;
         physicsManager->GetG3ParticleWSPName(i, name);
         if ((*isFlagVector)[i]) G4cout << name << " ";
       }  
-      G4cout << endl;
+      G4cout << G4endl;
     }  
   }
 }
 
 void TG4PhysicsList::SetCuts()
 {
-// "G4VUserPhysicsList::SetCutsWithDefault" method sets 
-// the default cut value for all particle types 
+// Sets the default cut value for all particle types
+// other then e-/e+. 
+// The cut value for e-/e+ is high in oredr to supress
+// tracking of delta electrons.
 // ---
 
-  SetCutsWithDefault();   
+  // SetCutsWithDefault();   
+         // "G4VUserPhysicsList::SetCutsWithDefault" method sets 
+         // the default cut value for all particle types.
+
+  // default cut value
+  G4double cut  = defaultCutValue;
+  G4double ecut = 10.*m; 
+  //G4double ecut = cut; 
+
+#ifdef G4VERBOSE    
+  if (verboseLevel >1){
+    G4cout << "G4VUserPhysicsList::SetCutsWithDefault:";
+    G4cout << "CutLength : " << cut/mm << " (mm)" << G4endl;
+  }  
+#endif
+
+  // set cut values for gamma at first and for e- second and next for e+,
+  // because some processes for e+/e- need cut values for gamma 
+  SetCutValue(cut, "gamma");
+  SetCutValue(ecut, "e-");
+  SetCutValue(ecut, "e+");
+ 
+  // set cut values for proton and anti_proton before all other hadrons
+  // because some processes for hadrons need cut values for proton/anti_proton 
+  SetCutValue(cut, "proton");
+  SetCutValue(cut, "anti_proton");
+  
+  SetCutValueForOthers(cut);
+
+  if (verboseLevel>1) {
+    DumpCutValuesTable();
+  }
 }
 
 void TG4PhysicsList::ConstructAllBosons()
@@ -1077,11 +1102,11 @@ void TG4PhysicsList::InActivateEM()
     else if (name == "e-") {
       //electron
       InActivateProcess("msc",  particle);      
-      G4cout << "msc inactivated." << endl;
+      G4cout << "msc inactivated." << G4endl;
       //InActivateProcess("eIoni",  particle);      
-      //G4cout << "eIoni inactivated." << endl;
+      //G4cout << "eIoni inactivated." << G4endl;
       InActivateProcess("eBrem",  particle);      
-      G4cout << "eBrem inactivated." << endl;
+      G4cout << "eBrem inactivated." << G4endl;
     } 
     else if (name == "e+") {
       //positron

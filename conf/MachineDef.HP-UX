@@ -1,3 +1,5 @@
+# $Id$
+ 
 # Which Machine 
 PLATFORM      = hpux
 
@@ -6,14 +8,16 @@ CXX           = CC
 F77	      = f77
 
 # Global optimisation
-OPT	      = -O +Onolimit
-OPT           = -g
+OPT	      = -O
 
 # Shared library suffix
 SL	      = sl
 
+# AWK
+AWK	      = awk
+
 # The options
-CXXOPTS       = +a1 +z  
+CXXOPTS       = $(OPT) +a1 +z
 COPT          = $(OPT)
 FOPT          = $(OPT) +ppu +Z
 
@@ -30,11 +34,9 @@ DEPINC	      = -I /opt/CC/include/CC/
 
 LD            = CC
 LDFLAGS       = $(OPT) +a1 -z
+
+SHLD	      = $(LD)
 SOFLAGS       = -b /usr/lib/libm.sl 
 
-G3LIBS        = -lgeant321
-CLIBS         = -lminicern
-
-LIBS          = $(ROOTLIBS) -lNew -lm
-GLIBS         = $(ROOTLIBS) $(ROOTGLIBS) -L/usr/lib/X11R6 -L/usr/local/lib \
-                -lX11 -lm -ldld 
+LIBS          = $(ROOTLIBS)
+GLIBS         = $(ROOTLIBS) -L/usr/lib/X11R6 -lX11 

@@ -2,8 +2,8 @@
 * $Id$
 *
 * $Log$
-* Revision 1.1.1.4  1997/07/13 13:22:35  cernlib
-* Import version 7.09
+* Revision 1.1.1.5  2000/04/19 13:27:52  mclareni
+* Import version 8.04
 *
 * Revision 1.1.1.1  1996/04/12 15:29:08  plothow
 * Version 7.01
@@ -42,8 +42,8 @@ C    to Jim Botts or Wu-Ki Tung (username Tung at same E-mail nodes as above).
 
 C$Header$
 C$Log$
-CRevision 1.1.1.4  1997/07/13 13:22:35  cernlib
-CImport version 7.09
+CRevision 1.1.1.5  2000/04/19 13:27:52  mclareni
+CImport version 8.04
 C
 CRevision 1.1.1.1  1996/04/12 15:29:08  plothow
 CVersion 7.01

@@ -6,31 +6,32 @@
 #ifndef ALI_TRACKING_ACTION_H
 #define ALI_TRACKING_ACTION_H
 
-#include <G4UserTrackingAction.hh>
-#include <globals.hh>
+#include "TG4TrackingAction.h"
 
-#include <TClonesArray.h>
+#include <globals.hh>
 
 class AliTrackingActionMessenger;
 
 class G4Track;
 
-class AliTrackingAction : public G4UserTrackingAction 
+class TClonesArray;
+
+class AliTrackingAction : public TG4TrackingAction 
 {
   public:
     AliTrackingAction();
     // --> protected
     // AliTrackingAction(const AliTrackingAction& right);
-    ~AliTrackingAction();
+    virtual ~AliTrackingAction();
    
     // static get method
     static AliTrackingAction* Instance();
 
     // methods
     void PrepareNewEvent();
-    virtual void PreUserTrackingAction(const G4Track* aTrack);
-    virtual void PostUserTrackingAction(const G4Track* aTrack);
-    void SaveParticle(const G4Track* track, G4String processName);
+    virtual void PreTrackingAction(const G4Track* aTrack);
+    virtual void PostTrackingAction(const G4Track* aTrack);
+    void SaveParticle(const G4Track* track);
     void SaveAndDestroyTrack();
 
     // set methods
@@ -40,6 +41,7 @@ class AliTrackingAction : public G4UserTrackingAction
     // get methods
     G4int GetVerboseLevel() const;
     G4bool GetSavePrimaries() const;
+    G4int GetNofTracks() const;
     G4int GetNofPrimaryTracks() const;
     G4int GetNofSavedTracks() const;
 
@@ -63,6 +65,7 @@ class AliTrackingAction : public G4UserTrackingAction
     G4int          fVerboseLevel;      //verbose level
     G4int          fPrimariesCounter;  //primary particles counter
     G4int          fParticlesCounter;  //particles counter
+    G4int          fTrackCounter;      //tracks counter
     G4int          fLastParticleIndex; //index of the last particle in fParticles
     AliTrackingActionMessenger*  fMessenger; //messenger
 };
@@ -80,6 +83,9 @@ inline G4int AliTrackingAction::GetVerboseLevel() const
 
 inline G4bool AliTrackingAction::GetSavePrimaries() const
 { return fSavePrimaries; }
+
+inline G4int AliTrackingAction::GetNofTracks() const
+{ return fTrackCounter; }
 
 inline G4int AliTrackingAction::GetNofPrimaryTracks() const
 { return fPrimariesCounter; }

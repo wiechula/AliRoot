@@ -10,16 +10,18 @@
 
 #include "AliModuleType.h"
 
-#include <G3VolTable.hh>
 #include <globals.hh>
 
-#include <vector.h>
+#include <g4std/vector>
 
 class AliSingleModuleConstruction;
 class AliSDManager;
 
 class AliMoreModulesConstruction
 {  
+  typedef G4std::vector<AliSingleModuleConstruction*>  
+                                   AliSingleModuleConstructionPtrVector;
+
   public:
     AliMoreModulesConstruction();
     AliMoreModulesConstruction(const AliMoreModulesConstruction& right);
@@ -32,6 +34,7 @@ class AliMoreModulesConstruction
     // methods
     void AddModule(G4String moduleName, G4int version, 
                    AliModuleType moduleType);
+    void Configure();
     void Construct();
     
     // get methods
@@ -45,7 +48,7 @@ class AliMoreModulesConstruction
     void CreateSensitiveDetectors2();
 
     // data members
-    vector<AliSingleModuleConstruction*>  fModuleConstructionVector;        //.
+    AliSingleModuleConstructionPtrVector  fModuleConstructionVector; //..
                                 //vector of AliSingleModuleConstruction
     AliSDManager*  fSDManager;  //AliSDManager						   
 };						   

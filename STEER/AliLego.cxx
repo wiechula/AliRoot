@@ -1,3 +1,66 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.20  2000/11/30 07:12:48  alibrary
+Introducing new Rndm and QA classes
+
+Revision 1.19  2000/10/26 14:13:05  morsch
+- Change from coordinates theta, phi to general coordinates Coor1 and Coor2.
+- Lego generator instance can be passed in constructor.
+
+Revision 1.18  2000/10/02 21:28:14  fca
+Removal of useless dependecies via forward declarations
+
+Revision 1.17  2000/07/12 08:56:25  fca
+Coding convention correction and warning removal
+
+Revision 1.16  2000/05/26 08:35:03  fca
+Move the check on z after z has been retrieved
+
+Revision 1.15  2000/05/16 13:10:40  fca
+New method IsNewTrack and fix for a problem in Father-Daughter relations
+
+Revision 1.14  2000/04/27 10:38:21  fca
+Correct termination of Lego Run and introduce Lego getter in AliRun
+
+Revision 1.13  2000/04/26 10:17:31  fca
+Changes in Lego for G4 compatibility
+
+Revision 1.12  2000/04/07 11:12:33  fca
+G4 compatibility changes
+
+Revision 1.11  2000/03/22 13:42:26  fca
+SetGenerator does not replace an existing generator, ResetGenerator does
+
+Revision 1.10  2000/02/23 16:25:22  fca
+AliVMC and AliGeant3 classes introduced
+ReadEuclid moved from AliRun to AliModule
+
+Revision 1.9  1999/12/03 10:54:01  fca
+Fix lego summary
+
+Revision 1.8  1999/10/01 09:54:33  fca
+Correct logics for Lego StepManager
+
+Revision 1.7  1999/09/29 09:24:29  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 //                            
@@ -22,16 +85,19 @@
 //
 //Begin_Html
 /*
-<img src="gif/alilego.gif">
+<img src="picts/alilego.gif">
 */
 //End_Html
 //
 //////////////////////////////////////////////////////////////
 
 #include "TMath.h"
-#include "TGeant3.h"
-#include "AliRun.h"
+
+#include "AliLego.h"
+#include "AliLegoGenerator.h"
 #include "AliConst.h"
+#include "AliMC.h"
+#include "TH2.h"
 
 ClassImp(AliLego)
 
@@ -39,177 +105,119 @@ ClassImp(AliLego)
 //___________________________________________
 AliLego::AliLego()
 {
-   fHistRadl = 0;
-   fHistAbso = 0;
-   fHistGcm2 = 0;
-   fHistReta = 0;
+  //
+  // Default constructor
+  //
+  fHistRadl = 0;
+  fHistAbso = 0;
+  fHistGcm2 = 0;
+  fHistReta = 0;
 }
 
 //___________________________________________
-AliLego::AliLego(const char *name, const char *title) 
-        : TNamed(name,title)
+AliLego::AliLego(const char *title, Int_t ntheta, Float_t thetamin, 
+		 Float_t thetamax, Int_t nphi, Float_t phimin, Float_t phimax,
+		 Float_t rmin, Float_t rmax, Float_t zmax)
+  : TNamed("Lego Generator",title)
 {
-   fHistRadl = 0;
-   fHistAbso = 0;
-   fHistGcm2 = 0;
-   fHistReta = 0;
+  //
+  // specify the angular limits and the size of the rectangular box
+  //
+   fGener = new AliLegoGenerator(ntheta, thetamin, thetamax,
+		       nphi, phimin, phimax, rmin, rmax, zmax);
+   
+
+   
+   fHistRadl = new TH2F("hradl","Radiation length map",    
+			ntheta,thetamin,thetamax,nphi,phimin,phimax);
+   fHistAbso = new TH2F("habso","Interaction length map",  
+			ntheta,thetamin,thetamax,nphi,phimin,phimax);
+   fHistGcm2 = new TH2F("hgcm2","g/cm2 length map",        
+			ntheta,thetamin,thetamax,nphi,phimin,phimax);
+}
+
+AliLego::AliLego(const char *title, AliLegoGenerator* generator)
+  : TNamed("Lego Generator",title)
+{
+  //
+  // specify the angular limits and the size of the rectangular box
+  //
+   fGener = generator;
+   Float_t c1min, c1max, c2min, c2max;
+   Int_t n1 = fGener->NCoor1();
+   Int_t n2 = fGener->NCoor2();
+   
+   fGener->Coor1Range(c1min, c1max);
+   fGener->Coor2Range(c2min, c2max);   
+
+   fHistRadl = new TH2F("hradl","Radiation length map",    
+			n2, c2min, c2max, n1, c1min, c1max);
+   fHistAbso = new TH2F("habso","Interaction length map",  
+			n2, c2min, c2max, n1, c1min, c1max);
+   fHistGcm2 = new TH2F("hgcm2","g/cm2 length map",        
+			n2, c2min, c2max, n1, c1min, c1max);
 }
 
 //___________________________________________
 AliLego::~AliLego()
 {
-   delete fHistRadl;
-   delete fHistAbso;
-   delete fHistGcm2;
-   delete fHistReta;
+  //
+  // Destructor
+  //
+  delete fHistRadl;
+  delete fHistAbso;
+  delete fHistGcm2;
+  delete fGener;
 }
 
 //___________________________________________
-void AliLego::GenerateKinematics()
+void AliLego::BeginEvent()
 {
-// Create a geantino with kinematics corresponding to the current
-// bins in theta and phi.
-   
-   const Int_t mpart = 48;
-   Float_t orig[3], pmom[3];
-   Float_t t, cost, sint, cosp, sinp;
-   
-// --- Set to 0 radiation length, absorption length and g/cm2 ---
-   fTotRadl = 0;
-   fTotAbso = 0;
-   fTotGcm2 = 0;
-
-   fCurTheta = (fThetaMin+(fThetaBin-0.5)*(fThetaMax-fThetaMin)/fNtheta)*kDegrad;
-   fCurPhi   = (fPhiMin+(fPhiBin-0.5)*(fPhiMax-fPhiMin)/fNphi)*kDegrad;
-   cost      = TMath::Cos(fCurTheta);
-   sint      = TMath::Sin(fCurTheta);
-   cosp      = TMath::Cos(fCurPhi);
-   sinp      = TMath::Sin(fCurPhi);
-
-   pmom[0] = cosp*sint;
-   pmom[1] = sinp*sint;
-   pmom[2] = cost;
-
-// --- Where to start
-   orig[0] = orig[1] = orig[2] = 0;
-   Float_t dalicz = 3000;
-   if (fRadMin > 0) {
-      t = PropagateCylinder(orig,pmom,fRadMin,dalicz);
-      orig[0] = pmom[0]*t;
-      orig[1] = pmom[1]*t;
-      orig[2] = pmom[2]*t;
-      if (TMath::Abs(orig[2]) > fZMax) return;
-   }
-
-// --- We do start here
-   Float_t polar[3]={0.,0.,0.};
-   Int_t ntr;
-   gAlice->SetTrack(1, 0, mpart, pmom, orig, polar, 0, "LEGO ray", ntr);
+  //
+  // --- Set to 0 radiation length, absorption length and g/cm2 ---
+  //
+  fTotRadl = 0;
+  fTotAbso = 0;
+  fTotGcm2 = 0;
 }
 
 //___________________________________________
-void AliLego::Init(Int_t ntheta,Float_t themin,Float_t themax,
-          Int_t nphi,Float_t phimin,Float_t phimax,Float_t rmin,Float_t rmax,
-		  Float_t zmax)
+void AliLego::FinishEvent()
 {
-// specify the angular limits and the size of the rectangular box
-   fNtheta   = ntheta;
-   fThetaMin = themin;
-   fThetaMax = themax;
-   fNphi     = nphi;
-   fPhiMin   = phimin;
-   fPhiMax   = phimax;
-   fRadMin   = rmin;
-   fRadMax   = rmax;
-   fZMax     = zmax;
-   Float_t etamin = -TMath::Log(TMath::Tan(TMath::Min((Double_t)fThetaMax*kDegrad/2,TMath::Pi()/2-1.e-10)));
-   Float_t etamax = -TMath::Log(TMath::Tan(TMath::Max((Double_t)fThetaMin*kDegrad/2,              1.e-10)));
-
-   fHistRadl = new TH2F("hradl","Radiation length map",    nphi,phimin,phimax,ntheta,themin,themax);
-   fHistAbso = new TH2F("habso","Interaction length map",  nphi,phimin,phimax,ntheta,themin,themax);
-   fHistGcm2 = new TH2F("hgcm2","g/cm2 length map",        nphi,phimin,phimax,ntheta,themin,themax);
-   fHistReta = new TH2F("hetar","Radiation length vs. eta",nphi,phimin,phimax,ntheta,etamin,etamax);
-
+  //
+  // Finish the event and update the histos
+  //
+  Double_t c1, c2;
+  c1 = fGener->CurCoor1();
+  c2 = fGener->CurCoor2();
+  fHistRadl->Fill(c2,c1,fTotRadl);
+  fHistAbso->Fill(c2,c1,fTotAbso);
+  fHistGcm2->Fill(c2,c1,fTotGcm2);
 }
 
 //___________________________________________
-Float_t AliLego::PropagateCylinder(Float_t *x, Float_t *v, Float_t r, Float_t z)
+void AliLego::FinishRun()
 {
-// Propagate to cylinder from inside
+  //
+  // Store histograms in current Root file
+  //
+  fHistRadl->Write();
+  fHistAbso->Write();
+  fHistGcm2->Write();
 
-   Double_t hnorm, sz, t, t1, t2, t3, sr;
-   Double_t d[3];
-   const Float_t kSmall  = 1e-8;
-   const Float_t kSmall2 = kSmall*kSmall;
-
-// ---> Find intesection with Z planes
-   d[0]  = v[0];
-   d[1]  = v[1];
-   d[2]  = v[2];
-   hnorm = TMath::Sqrt(1/(d[0]*d[0]+d[1]*d[1]+d[2]*d[2]));
-   d[0] *= hnorm;
-   d[1] *= hnorm;
-   d[2] *= hnorm;
-   if (d[2] > kSmall)       sz = (z-x[2])/d[2];
-   else if (d[2] < -kSmall) sz = -(z+x[2])/d[2];
-   else                     sz = 1.e10;  // ---> Direction parallel to X-Y, no intersection
-
-// ---> Intersection with cylinders
-//      Intersection point (x,y,z)
-//      (x,y,z) is on track :    x=X(1)+t*D(1)
-//                               y=X(2)+t*D(2)
-//                               z=X(3)+t*D(3)
-//      (x,y,z) is on cylinder : x**2 + y**2 = R**2
-//
-//      (D(1)**2+D(2)**2)*t**2
-//      +2.*(X(1)*D(1)+X(2)*D(2))*t
-//      +X(1)**2+X(2)**2-R**2=0
-// ---> Solve second degree equation
-   t1 = d[0]*d[0] + d[1]*d[1];
-   if (t1 <= kSmall2) {
-      t = sz;  // ---> Track parallel to the z-axis, take distance to planes
-   } else {
-      t2 = x[0]*d[0] + x[1]*d[1];
-      t3 = x[0]*x[0] + x[1]*x[1];
-      // ---> It should be positive, but there may be numerical problems
-      sr = (t2 +TMath::Sqrt(TMath::Max(t2*t2-(t3-r*r)*t1,0.)))/t1;
-      // ---> Find minimum distance between planes and cylinder
-      t  = TMath::Min(sz,sr);
-   }
-   return t;
+  // Delete histograms from memory
+  fHistRadl->Delete(); fHistRadl=0;
+  fHistAbso->Delete(); fHistAbso=0;
+  fHistGcm2->Delete(); fHistGcm2=0;
 }
 
 //___________________________________________
-void AliLego::Run()
+void AliLego::Copy(AliLego &lego) const
 {
-   // loop on phi,theta bins
-   AliMC* pMC=AliMC::GetMC();
-   pMC->InitLego();
-   Float_t thed, phid, eta;
-   for (fPhiBin=1; fPhiBin<=fNphi; fPhiBin++) {
-      printf("AliLego Generating rays in phi bin:%d\n",fPhiBin);
-      for (fThetaBin=1; fThetaBin<=fNtheta; fThetaBin++) {
-         pMC->Gtrigi();
-         pMC->Gtrigc();
-         GenerateKinematics();
-         pMC->Gtreve();
-
-         thed = fCurTheta*kRaddeg;
-         phid = fCurPhi*kRaddeg;
-	 eta  = -TMath::Log(TMath::Tan(TMath::Max(
-                     TMath::Min((Double_t)fCurTheta/2,TMath::Pi()/2-1.e-10),1.e-10)));
-         fHistRadl->Fill(phid,thed,fTotRadl);
-         fHistAbso->Fill(phid,thed,fTotAbso);
-         fHistGcm2->Fill(phid,thed,fTotGcm2);
-	 fHistReta->Fill(phid,eta,fTotRadl);
-         gAlice->FinishEvent();
-      }
-   }
-   // store histograms in current Root file
-   fHistRadl->Write();
-   fHistAbso->Write();
-   fHistGcm2->Write();
-   fHistReta->Write();
+  //
+  // Copy *this onto lego -- not implemented
+  //
+  Fatal("Copy","Not implemented!\n");
 }
 
 //___________________________________________
@@ -217,33 +225,61 @@ void AliLego::StepManager()
 {
 // called from AliRun::Stepmanager from gustep.
 // Accumulate the 3 parameters step by step
-  AliMC* pMC = AliMC::GetMC();
   
-   Float_t t, tt;
+   static Float_t t;
    Float_t a,z,dens,radl,absl;
+   Int_t i;
    
-   Float_t step  = pMC->TrackStep();
+   Float_t step  = gMC->TrackStep();
        
-   Float_t vect[3], pmom[4];
-   pMC->TrackPosition(vect);  
-   pMC->TrackMomentum(pmom);
-   pMC->CurrentMaterial(a,z,dens,radl,absl);
+   Float_t vect[3], dir[3];
+   TLorentzVector pos, mom;
+
+   gMC->CurrentMaterial(a,z,dens,radl,absl);
    
    if (z < 1) return;
-   
+    
+   gMC->TrackPosition(pos);  
+   gMC->TrackMomentum(mom);
 // --- See if we have to stop now
-   if (TMath::Abs(vect[2]) > fZMax  || 
-       vect[0]*vect[0] +vect[1]*vect[1] > fRadMax*fRadMax) {
-       pMC->StopEvent();
-   } else {
+   if (TMath::Abs(pos[2]) > fGener->ZMax()  || 
+       pos[0]*pos[0] +pos[1]*pos[1] > fGener->RadMax()*fGener->RadMax()) {
+     if (!gMC->IsNewTrack()) {
+       // Not the first step, add past contribution
+       fTotAbso += t/absl;
+       fTotRadl += t/radl;
+       fTotGcm2 += t*dens;
+//       Int_t copy;
+//       Int_t id = gMC->CurrentVolID(copy);
+//       char* vol = gMC->VolName(id);
+       
+//       printf("\n %f %f %f %f %s  ", fTotRadl, vect[0], vect[1], vect[2], vol);
+
+     }
+     gMC->StopTrack();
+     return;
+   }
 
 // --- See how long we have to go
-      t  = PropagateCylinder(vect,pmom,fRadMax,fZMax);
-      tt = TMath::Min(step,t);
+   for(i=0;i<3;++i) {
+     vect[i]=pos[i];
+     dir[i]=mom[i];
+   }
 
-      fTotAbso += tt/absl;
-      fTotRadl += tt/radl;
-      fTotGcm2 += tt*dens;
+   t  = fGener->PropagateCylinder(vect,dir,fGener->RadMax(),fGener->ZMax());
+
+   if(step) {
+     fTotAbso += step/absl;
+     fTotRadl += step/radl;
+     fTotGcm2 += step*dens;
+//     Int_t copy;
+//     Int_t id = gMC->CurrentVolID(copy);
+//     char* vol = gMC->VolName(id);
+//     printf("\n %f %f %f %f %s %f ", fTotRadl, vect[0], vect[1], vect[2], vol, t);
    }
 }
+
+
+
+
 

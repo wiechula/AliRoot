@@ -2,8 +2,11 @@
 * $Id$
 *
 * $Log$
-* Revision 1.1.1.3  1997/07/13 13:25:32  cernlib
-* Import version 7.09
+* Revision 1.1.1.4  2000/04/19 13:30:01  mclareni
+* Import version 8.04
+*
+* Revision 1.4  2000/04/09 10:06:56  plothow
+* new version 8.00 - MRS 98 and 99, CTEQ5 and GRV98 added
 *
 * Revision 1.3  1997/07/02 15:03:11  pdflib
 * potential bug removed in GRSGALO
@@ -87,7 +90,7 @@ C Test new PDFLIB versions (4.0 or bigger) for Photons only
             IF(NPGSMX(NPTYPE,KGRO) .EQ. 0) GOTO 500
             DO ISET=1,NPGSMX(NPTYPE,KGRO)
                WRITE (N6,*) ' ==========================================
-     +================================================================='
+     +============================================'
                FIRST=.TRUE.
                PARM(1) = 'Nptype'
                VAL(1)  = NPTYPE

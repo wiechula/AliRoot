@@ -2,8 +2,17 @@
 * $Id$
 *
 * $Log$
-* Revision 1.1.1.3  1997/04/15 14:02:00  cernlib
-* Import version 7.08
+* Revision 1.1.1.4  2000/04/19 13:28:34  mclareni
+* Import version 8.04
+*
+* Revision 1.6  2000/04/15 14:10:46  plothow
+* Version 8.03: Nuclear PDFs introduced
+*
+* Revision 1.5  2000/04/09 14:47:29  plothow
+* version 8.02 - add CTEQ4 ref2 PDFs
+*
+* Revision 1.4  2000/04/09 10:06:25  plothow
+* new version 8.00 - MRS 98 and 99, CTEQ5 and GRV98 added
 *
 * Revision 1.3  1997/04/08 15:53:25  pdflib
 * Lambda_QCD for CTEQ4 sets corrected
@@ -21,9 +30,11 @@ C
 C **********************************************************************
 C *                                                                    *
 C *   Routine to set user parameters in the internal COMMON/W50511/,   *
+C *                                                  COMMON/W50511a/   *
 C *                                                  COMMON/W50512/    *
 C *                                              and COMMON/W50513/    *
 C *   and provide filling of the internal            COMMON/W50518/    *
+C *                                                  COMMON/W50518a/   *
 C *                                                  COMMON/W505110/   *
 C *                                                  COMMON/W505120/   *
 C *                                                  COMMON/W505121/   *
@@ -43,6 +54,7 @@ C
 #include "pdf/w5051p7.inc"
 #include "pdf/w50510.inc"
 #include "pdf/w50511.inc"
+#include "pdf/w50511a.inc"
 #include "pdf/w50512.inc"
 #include "pdf/w50513.inc"
 #include "pdf/w50514.inc"
@@ -51,6 +63,7 @@ C
 #include "pdf/w50516.inc"
 #include "pdf/w50517.inc"
 #include "pdf/w50518.inc"
+#include "pdf/w50518a.inc"
 #include "pdf/w50519.inc"
 #include "pdf/w505110.inc"
 #include "pdf/w505120.inc"
@@ -87,7 +100,15 @@ C.
      +           0.2540D0, 0.2540D0, 0.2300D0, 0.2300D0, 0.1500D0,
      +           0.2010D0, 0.2660D0, 0.3440D0, 0.4350D0, 0.5420D0,
      +           0.3440D0, 0.5070D0, 0.2410D0, 0.3440D0, 0.2410D0,
-     +           0.3440D0, 0.2410D0, 0.3440D0 /
+     +           0.3440D0, 0.2410D0, 0.3440D0, 0.3000D0, 0.3000D0,
+     +           0.3000D0, 0.3000D0, 0.3000D0, 0.3000D0, 0.2290D0,
+     +           0.3830D0, 0.3000D0, 0.3000D0, 0.3000D0, 0.2290D0,
+     +           0.3830D0, 0.1740D0, 0.1740D0, 0.1740D0, 0.1360D0,
+     +           0.2160D0, 0.2925D0, 0.3000D0, 0.3000D0, 0.3000D0,
+     +           0.2290D0, 0.3830D0, 0.3033D0, 0.2903D0, 0.3000D0,
+     +           0.3000D0, 0.3000D0, 0.3000D0, 0.3000D0, 0.3000D0,
+     +           0.3000D0, 0.2290D0, 0.3830D0, 0.3033D0, 0.2903D0,
+     +           0.3000D0, 0.3000D0, 0.3000D0, 0.3000D0, 0.3000D0 /
       DATA (PQCDL4(1,4,K),K=1,ND14) /
      +           0.2120D0, 0.1940D0, 0.1910D0, 0.1550D0, 0.2370D0,
      +           0.2120D0, 0.1940D0, 0.1910D0, 0.1550D0, 0.2370D0,
@@ -95,13 +116,16 @@ C.
      +           0.2470D0, 0.1900D0, 0.2130D0, 0.2080D0, 0.2080D0,
      +           0.3220D0, 0.2350D0, 0.1900D0, 0.2130D0, 0.2080D0,
      +           0.2080D0, 0.3220D0, 0.2350D0, 0.1770D0, 0.2390D0,
-     +           0.2470D0, 0.2350D0, 0.2960D0, 0.2960D0, 0.2130D0,
-     +           0.2530D0, 0.2960D0, 0.3440D0, 0.3990D0, 0.3020D0,
-     +           0.2590D0 /
+     +           0.2470D0, 0.2360D0, 0.2980D0, 0.2980D0, 0.2150D0,
+     +           0.2540D0, 0.2980D0, 0.3460D0, 0.4010D0, 0.3030D0,
+     +           0.2610D0, 0.2980D0, 0.2980D0, 0.3850D0, 0.2920D0,
+     +           0.1920D0, 0.3260D0, 0.3260D0, 0.3260D0, 0.3260D0,
+     +           0.3950D0, 0.3090D0, 0.3260D0, 0.3260D0, 0.1920D0,
+     +           0.3260D0 /
       DATA (PQCDL4(1,5,K),K=1,ND15) /
      +           0.1600D0, 0.2200D0, 0.2000D0, 0.2000D0, 0.2000D0,
      +           0.2000D0, 0.2000D0, 0.2000D0, 0.2000D0, 0.2000D0,
-     +           0.2000D0 /
+     +           0.2000D0, 0.2000D0, 0.2000D0, 0.2000D0 /
       DATA (PQCDL4(1,6,K),K=1,ND16) /
      +           0.2300D0 /
       DATA (PQCDL4(1,7,K),K=1,ND17) /
@@ -121,7 +145,7 @@ C.
       DATA (PQCDL4(3,2,K),K=1,ND32) /
      +           0.4000D0, 0.4000D0, 0.4000D0, 0.4000D0 /
       DATA (PQCDL4(3,3,K),K=1,ND33) /
-     +           0.2000D0, 0.2000D0, 0.2000D0 /
+     +           0.2000D0, 0.2000D0, 0.2000D0, 0.2000D0 /
       DATA (PQCDL4(3,4,K),K=1,ND34) /
      +           0.2000D0, 0.2000D0, 0.2000D0, 0.2000D0, 0.2000D0 /
       DATA (PQCDL4(3,5,K),K=1,ND35) /
@@ -134,6 +158,9 @@ C.
       DATA (PQCDL4(3,9,K),K=1,ND39) /
      +           0.2000D0, 0.2000D0, 0.2000D0, 0.2000D0, 0.2000D0,
      +           0.2000D0, 0.2000D0, 0.2000D0 /
+C.
+      DATA (PQCDL4(4,1,K),K=1,ND41) /
+     +           0.0000D0 /
 C.
 C.
       DATA (PQCDL5(1,1,K),K=1,ND11) /
@@ -154,7 +181,15 @@ C.
      +           0.1700D0, 0.1700D0, 0.1522D0, 0.1522D0, 0.0946D0,
      +           0.1310D0, 0.1790D0, 0.2388D0, 0.3110D0, 0.3988D0,
      +           0.2388D0, 0.3698D0, 0.1604D0, 0.2388D0, 0.1604D0,
-     +           0.2388D0, 0.1604D0, 0.2388D0 /
+     +           0.2388D0, 0.1604D0, 0.2388D0, 0.2048D0, 0.2048D0,
+     +           0.2048D0, 0.2048D0, 0.2048D0, 0.2048D0, 0.1515D0,
+     +           0.2694D0, 0.2048D0, 0.2048D0, 0.2048D0, 0.1515D0,
+     +           0.2694D0, 0.1305D0, 0.1305D0, 0.1305D0, 0.0999D0,
+     +           0.1651D0, 0.1991D0, 0.2048D0, 0.2048D0, 0.2048D0,
+     +           0.1515D0, 0.2694D0, 0.2074D0, 0.1974D0, 0.2048D0,
+     +           0.2048D0, 0.2048D0, 0.2048D0, 0.2048D0, 0.2048D0,
+     +           0.2048D0, 0.1515D0, 0.2694D0, 0.2074D0, 0.1974D0,
+     +           0.2048D0, 0.2048D0, 0.2048D0, 0.2048D0, 0.2048D0 /
       DATA (PQCDL5(1,4,K),K=1,ND14) /
      +           0.1390D0, 0.1259D0, 0.1238D0, 0.0981D0, 0.1574D0,
      +           0.1390D0, 0.1259D0, 0.1238D0, 0.0981D0, 0.1574D0,
@@ -164,11 +199,14 @@ C.
      +           0.1350D0, 0.2200D0, 0.1550D0, 0.1320D0, 0.1580D0,
      +           0.1640D0, 0.1810D0, 0.2020D0, 0.2020D0, 0.1400D0,
      +           0.1690D0, 0.2020D0, 0.2390D0, 0.2820D0, 0.2060D0,
-     +           0.1740D0 /
+     +           0.1740D0, 0.2020D0, 0.2020D0, 0.0000D0, 0.0000D0,
+     +           0.1460D0, 0.2260D0, 0.2260D0, 0.2260D0, 0.2260D0,
+     +           0.0000D0, 0.0000D0, 0.2260D0, 0.2260D0, 0.1460D0,
+     +           0.2260D0 /
       DATA (PQCDL5(1,5,K),K=1,ND15) /
      +           0.1016D0, 0.1684D0, 0.1303D0, 0.1519D0, 0.1530D0,
      +           0.1310D0, 0.1310D0, 0.1530D0, 0.1530D0, 0.1310D0,
-     +           0.1310D0 /
+     +           0.1310D0, 0.1310D0, 0.1530D0, 0.1530D0 /
       DATA (PQCDL5(1,6,K),K=1,ND16) /
      +           0.1559D0 /
       DATA (PQCDL5(1,7,K),K=1,ND17) /
@@ -188,7 +226,7 @@ C.
       DATA (PQCDL5(3,2,K),K=1,ND32) /
      +           0.3226D0, 0.3226D0, 0.3226D0, 0.3226D0 /
       DATA (PQCDL5(3,3,K),K=1,ND33) /
-     +           0.1519D0, 0.1519D0, 0.1519D0 /
+     +           0.1519D0, 0.1519D0, 0.1519D0, 0.1519D0 /
       DATA (PQCDL5(3,4,K),K=1,ND34) /
      +           0.1303D0, 0.1519D0, 0.1519D0, 0.1303D0, 0.1519D0 /
       DATA (PQCDL5(3,5,K),K=1,ND35) /
@@ -201,6 +239,9 @@ C.
       DATA (PQCDL5(3,9,K),K=1,ND39) /
      +           0.3226D0, 0.3226D0, 0.3226D0, 0.3226D0, 0.3226D0,
      +           0.3226D0, 0.3226D0, 0.3226D0 /
+C.
+      DATA (PQCDL5(4,1,K),K=1,ND41) /
+     +           0.0000D0 /
 C.
 C.
       DATA (PXMIN(1,1,K),K=1,ND11) /
@@ -221,7 +262,15 @@ C.
      +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
      +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
      +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
-     +           1.000D-5, 1.000D-5, 1.000D-5 /
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5 /
       DATA (PXMIN(1,4,K),K=1,ND14) /
      +           1.00D-10, 1.00D-10, 1.00D-10, 1.00D-10, 1.00D-10,
      +           1.00D-10, 1.00D-10, 1.00D-10, 1.00D-10, 1.00D-10,
@@ -231,11 +280,14 @@ C.
      +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
      +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
      +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
+     +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
      +           1.000D-5 /
       DATA (PXMIN(1,5,K),K=1,ND15) /
      +           1.000D-6, 1.000D-6, 1.000D-6, 1.000D-6, 1.000D-6,
      +           1.000D-6, 1.000D-6, 1.000D-4, 1.000D-4, 1.000D-4,
-     +           1.000D-4 /
+     +           1.000D-4, 1.000D-9, 1.000D-9, 1.000D-9 /
       DATA (PXMIN(1,6,K),K=1,ND16) /
      +           1.000D-4 /
       DATA (PXMIN(1,7,K),K=1,ND17) /
@@ -255,7 +307,7 @@ C.
       DATA (PXMIN(3,2,K),K=1,ND32) /
      +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5 /
       DATA (PXMIN(3,3,K),K=1,ND33) /
-     +           1.000D-4, 1.000D-4, 1.000D-4 /
+     +           1.000D-4, 1.000D-4, 1.000D-4, 1.000D-4 /
       DATA (PXMIN(3,4,K),K=1,ND34) /
      +           5.000D-4, 5.000D-4, 5.000D-4, 5.000D-4, 5.000D-4 /
       DATA (PXMIN(3,5,K),K=1,ND35) /
@@ -268,6 +320,9 @@ C.
       DATA (PXMIN(3,9,K),K=1,ND39) /
      +           1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5, 1.000D-5,
      +           1.000D-5, 1.000D-5, 1.000D-5 /
+C.
+      DATA (PXMIN(4,1,K),K=1,ND41) /
+     +           0.0000D0 /
 C.
 C.
       DATA (PXMAX(1,1,K),K=1,ND11) /
@@ -288,8 +343,19 @@ C.
      +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
      +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
      +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
-     +           0.99999D0, 0.99999D0, 0.99999D0 /
+     +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
+     +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
+     +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
+     +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
+     +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
+     +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
+     +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
+     +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
+     +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0 /
       DATA (PXMAX(1,4,K),K=1,ND14) /
+     +           0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0,
+     +           0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0,
+     +           0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0,
      +           0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0,
      +           0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0,
      +           0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0, 0.99998D0,
@@ -302,7 +368,7 @@ C.
       DATA (PXMAX(1,5,K),K=1,ND15) /
      +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
      +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0,
-     +           0.99999D0 /
+     +           0.99999D0, 0.99999D0, 0.99999D0, 0.99999D0 /
       DATA (PXMAX(1,6,K),K=1,ND16) /
      +           0.99999D0 /
       DATA (PXMAX(1,7,K),K=1,ND17) /
@@ -322,7 +388,7 @@ C.
       DATA (PXMAX(3,2,K),K=1,ND32) /
      +           0.9998D0, 0.9998D0, 0.9998D0, 0.9998D0 /
       DATA (PXMAX(3,3,K),K=1,ND33) /
-     +           0.9998D0, 0.9998D0, 0.9998D0 /
+     +           0.9998D0, 0.9998D0, 0.9998D0, 0.9998D0 /
       DATA (PXMAX(3,4,K),K=1,ND34) /
      +           0.9998D0, 0.9998D0, 0.9998D0, 0.9998D0, 0.9998D0 /
       DATA (PXMAX(3,5,K),K=1,ND35) /
@@ -335,6 +401,9 @@ C.
       DATA (PXMAX(3,9,K),K=1,ND39) /
      +           0.9998D0, 0.9998D0, 0.9998D0, 0.9998D0, 0.9998D0,
      +           0.9998D0, 0.9998D0, 0.9998D0 /
+C.
+      DATA (PXMAX(4,1,K),K=1,ND41) /
+     +           0.0000D0 /
 C.
 C.
       DATA (PQ2MIN(1,1,K),K=1,ND11) /
@@ -355,7 +424,15 @@ C.
      +           5.000D0, 5.000D0, 0.625D0, 0.625D0, 5.000D0,
      +           5.000D0, 5.000D0, 5.000D0, 5.000D0, 5.000D0,
      +           5.000D0, 5.000D0, 1.250D0, 1.250D0, 1.250D0,
-     +           1.250D0, 2.000D0, 2.000D0 /
+     +           1.250D0, 2.000D0, 2.000D0, 1.250D0, 1.250D0, 
+     +           1.250D0, 1.250D0, 1.250D0, 1.250D0, 1.250D0,
+     +           1.250D0, 1.250D0, 1.250D0, 1.250D0, 1.250D0,
+     +           1.250D0, 1.250D0, 1.250D0, 1.250D0, 1.250D0,
+     +           1.250D0, 1.250D0, 1.250D0, 1.250D0, 1.250D0,
+     +           1.250D0, 1.250D0, 1.250D0, 1.250D0, 1.250D0,
+     +           1.250D0, 1.250D0, 1.250D0, 1.250D0, 1.250D0,
+     +           1.250D0, 1.250D0, 1.250D0, 1.250D0, 1.250D0,
+     +           1.250D0, 1.250D0, 1.250D0, 1.250D0, 1.250D0 /
       DATA (PQ2MIN(1,4,K),K=1,ND14) /
      +           4.000D0, 4.000D0, 4.000D0, 4.000D0, 4.000D0,
      +           4.000D0, 4.000D0, 4.000D0, 4.000D0, 4.000D0,
@@ -365,11 +442,14 @@ C.
      +           4.000D0, 4.000D0, 4.000D0, 4.000D0, 4.000D0,
      +           4.000D0, 2.560D0, 2.560D0, 2.560D0, 2.560D0,
      +           2.560D0, 2.560D0, 2.560D0, 2.560D0, 2.560D0,
-     +           0.490D0 /
+     +           0.490D0, 2.560D0, 1.000D0, 2.560D0, 2.560D0,
+     +           1.000D0, 1.000D0, 1.000D0, 1.000D0, 1.000D0,
+     +           1.000D0, 1.000D0, 1.000D0, 1.000D0, 1.000D0,
+     +           1.000D0 /
       DATA (PQ2MIN(1,5,K),K=1,ND15) /
      +           0.200D0, 0.200D0, 0.300D0, 0.250D0, 0.400D0,
      +           0.400D0, 0.400D0, 0.400D0, 0.400D0, 0.400D0,
-     +           0.400D0 /
+     +           0.400D0, 0.800D0, 0.800D0, 0.800D0 /
       DATA (PQ2MIN(1,6,K),K=1,ND16) /
      +           2.0000D0 /
       DATA (PQ2MIN(1,7,K),K=1,ND17) /
@@ -389,7 +469,7 @@ C.
       DATA (PQ2MIN(3,2,K),K=1,ND32) /
      +           1.0000D0, 1.0000D0, 20.000D0, 200.00D0 /
       DATA (PQ2MIN(3,3,K),K=1,ND33) /
-     +           4.0000D0, 4.0000D0, 1.0000D0 /
+     +           4.0000D0, 4.0000D0, 1.0000D0, 4.0000D0 /
       DATA (PQ2MIN(3,4,K),K=1,ND34) /
      +           5.3000D0, 5.3000D0, 5.3000D0, 5.3000D0, 5.3000D0 /
       DATA (PQ2MIN(3,5,K),K=1,ND35) /
@@ -402,6 +482,9 @@ C.
       DATA (PQ2MIN(3,9,K),K=1,ND39) /
      +           0.3600D0, 0.3600D0, 4.0000D0, 4.0000D0, 0.3600D0,
      +           0.3600D0, 4.0000D0, 4.0000D0 /
+C.
+      DATA (PQ2MIN(4,1,K),K=1,ND41) /
+     +           0.0000D0 /
 C.
 C.
       DATA (PQ2MAX(1,1,K),K=1,ND11) /
@@ -422,7 +505,15 @@ C.
      +           1.310D6, 1.310D6, 1.310D6, 1.310D6, 1.310D6,
      +           1.310D6, 1.310D6, 1.310D6, 1.310D6, 1.310D6,
      +           1.310D6, 1.310D6, 1.000D7, 1.000D7, 1.000D7,
-     +           1.000D7, 1.000D7, 1.000D7 /
+     +           1.000D7, 1.000D7, 1.000D7, 1.000D7, 1.000D7,
+     +           1.000D7, 1.000D7, 1.000D7, 1.000D7, 1.000D7,
+     +           1.000D7, 1.000D7, 1.000D7, 1.000D7, 1.000D7,
+     +           1.000D7, 1.000D7, 1.000D7, 1.000D7, 1.000D7,
+     +           1.000D7, 1.000D7, 1.000D7, 1.000D7, 1.000D7,
+     +           1.000D7, 1.000D7, 1.000D7, 1.000D7, 1.000D7,
+     +           1.000D7, 1.000D7, 1.000D7, 1.000D7, 1.000D7,
+     +           1.000D7, 1.000D7, 1.000D7, 1.000D7, 1.000D7,
+     +           1.000D7, 1.000D7, 1.000D7, 1.000D7, 1.000D7 /
       DATA (PQ2MAX(1,4,K),K=1,ND14) /
      +           1.000D8, 1.000D8, 1.000D8, 1.000D8, 1.000D8,
      +           1.000D8, 1.000D8, 1.000D8, 1.000D8, 1.000D8,
@@ -432,11 +523,14 @@ C.
      +           1.000D6, 1.000D6, 1.000D6, 1.000D6, 1.000D6,
      +           1.000D6, 1.000D8, 1.000D8, 1.000D8, 1.000D8,
      +           1.000D6, 1.000D8, 1.000D8, 1.000D8, 1.000D8,
+     +           1.000D8, 1.000D8, 1.000D8, 1.000D8, 1.000D8,
+     +           1.000D8, 1.000D8, 1.000D8, 1.000D8, 1.000D8,
+     +           1.000D8, 1.000D8, 1.000D8, 1.000D8, 1.000D8,
      +           1.000D8 /
       DATA (PQ2MAX(1,5,K),K=1,ND15) /
      +           1.000D8, 1.000D8, 1.000D8, 1.000D8, 1.000D6,
      +           1.000D6, 1.000D6, 1.000D4, 1.000D4, 1.000D4,
-     +           1.000D4 /
+     +           1.000D4, 1.000D6, 1.000D6, 1.000D6 /
       DATA (PQ2MAX(1,6,K),K=1,ND16) /
      +           1.0000D8 /
       DATA (PQ2MAX(1,7,K),K=1,ND17) /
@@ -456,7 +550,7 @@ C.
       DATA (PQ2MAX(3,2,K),K=1,ND32) /
      +           1.0000D4, 50.000D0, 500.00D0, 1.0000D4 /
       DATA (PQ2MAX(3,3,K),K=1,ND33) /
-     +           1.0000D5, 1.0000D5, 1.0000D5 /
+     +           1.0000D5, 1.0000D5, 1.0000D5, 1.0000D5 /
       DATA (PQ2MAX(3,4,K),K=1,ND34) /
      +           1.0000D8, 1.0000D8, 1.0000D8, 1.0000D8, 1.0000D8 /
       DATA (PQ2MAX(3,5,K),K=1,ND35) /
@@ -470,6 +564,10 @@ C.
      +           5.0000D4, 5.0000D4, 5.0000D4, 5.0000D4, 5.0000D4,
      +           5.0000D4, 5.0000D4, 5.0000D4 /
 C.
+      DATA (PQ2MAX(4,1,K),K=1,ND41) /
+     +           0.0000D0 /
+C.
+C.
       DATA AV /'BE','OR','GH','DO','EH','DF','MR','HM','KM',
      +         'MT','CT','GR','AB','BM','WI','SA'/
 C.
@@ -482,6 +580,7 @@ C.
      +     /W50514/, /W50514W/, /W50515/, /W50516/, /W50518/
 C.
       IF (ISTART.EQ.0) IFLSET = 0
+      NAFLAG = 0
 C.
 C Set the PDFLIB parameters to the values of the previous call to PDFSET
       IF(IFLSET.EQ.1) THEN
@@ -498,6 +597,9 @@ C Set the PDFLIB parameters to the values of the previous call to PDFSET
          XMAX   = XMAXP
          Q2MIN  = Q2MINP
          Q2MAX  = Q2MAXP
+         NATYPE  = NATYPP
+         NAGROUP = NAGROPP
+         NASET   = NASETP
       ENDIF
 C.
 C Initialisation of PDFLIB parameters (first call to PDFSET)
@@ -532,6 +634,7 @@ C set maximum dimensions for PDFs per particle type and per author group
          NPGSMX(3,7) = ND37
          NPGSMX(3,8) = ND38
          NPGSMX(3,9) = ND39
+         NPGSMX(4,1) = ND41
 C.
 C set retracted PDF sets invalid
          CALL UFILL(NSETFL,1,NPTYMX*NGRMAX*NSETMX,0)
@@ -641,6 +744,48 @@ C set character*8 NAME for each PDF
          SFNAME(1,3,56) = 'MRS-R4  '
          SFNAME(1,3,57) = 'MRS-R1Ft'
          SFNAME(1,3,58) = 'MRS-R2Ft'
+         SFNAME(1,3,59) = 'MRRS-ch1'
+         SFNAME(1,3,60) = 'MRRS-ch2'
+         SFNAME(1,3,61) = 'MRRS-ch3'
+         SFNAME(1,3,62) = 'MRST-cgD'
+         SFNAME(1,3,63) = 'MRST-hgD'
+         SFNAME(1,3,64) = 'MRST-lgD'
+         SFNAME(1,3,65) = 'MRSTlasD'
+         SFNAME(1,3,66) = 'MRSThasD'
+         SFNAME(1,3,67) = 'MRST-cg '
+         SFNAME(1,3,68) = 'MRST-hg '
+         SFNAME(1,3,69) = 'MRST-lg '
+         SFNAME(1,3,70) = 'MRST-las'
+         SFNAME(1,3,71) = 'MRST-has'
+         SFNAME(1,3,72) = 'MRST-cgO'
+         SFNAME(1,3,73) = 'MRST-hgO'
+         SFNAME(1,3,74) = 'MRST-lgO'
+         SFNAME(1,3,75) = 'MRSTlasO'
+         SFNAME(1,3,76) = 'MRSThasO'
+         SFNAME(1,3,77) = 'MRST-ht '
+         SFNAME(1,3,78) = 'MRST-cgD'
+         SFNAME(1,3,79) = 'MRST-hgD'
+         SFNAME(1,3,80) = 'MRST-lgD'
+         SFNAME(1,3,81) = 'MRSTlasD'
+         SFNAME(1,3,82) = 'MRSThasD'
+         SFNAME(1,3,83) = 'MRSTqupD'
+         SFNAME(1,3,84) = 'MRSTqdnD'
+         SFNAME(1,3,85) = 'MRSTsupD'
+         SFNAME(1,3,86) = 'MRSTsdnD'
+         SFNAME(1,3,87) = 'MRSTcupD'
+         SFNAME(1,3,88) = 'MRSTcdnD'
+         SFNAME(1,3,89) = 'MRST-cg '
+         SFNAME(1,3,90) = 'MRST-hg '
+         SFNAME(1,3,91) = 'MRST-lg '
+         SFNAME(1,3,92) = 'MRST-las'
+         SFNAME(1,3,93) = 'MRST-has'
+         SFNAME(1,3,94) = 'MRST-qup'
+         SFNAME(1,3,95) = 'MRST-qdn'
+         SFNAME(1,3,96) = 'MRST-sup'
+         SFNAME(1,3,97) = 'MRST-sdn'
+         SFNAME(1,3,98) = 'MRST-cup'
+         SFNAME(1,3,99) = 'MRST-cdn'
+         SFNAME(1,3,100)= 'MRST-d/u'
          SFNAME(1,4,1)  = 'MT-S1DIS'
          SFNAME(1,4,2)  = 'MT-B1DIS'
          SFNAME(1,4,3)  = 'MT-B2DIS'
@@ -682,6 +827,21 @@ C set character*8 NAME for each PDF
          SFNAME(1,4,39) = 'CTEQ-4A5'
          SFNAME(1,4,40) = 'CTEQ-4HJ'
          SFNAME(1,4,41) = 'CTEQ-4lQ'
+         SFNAME(1,4,42) = 'CTEQ-4HQ'
+         SFNAME(1,4,43) = 'CTQ-4HQ1'
+         SFNAME(1,4,44) = 'CTEQ-4F3'
+         SFNAME(1,4,45) = 'CTEQ-4F4'
+         SFNAME(1,4,46) = 'CTEQ-5L '
+         SFNAME(1,4,47) = 'CTEQ-5D '
+         SFNAME(1,4,48) = 'CTEQ-5M '
+         SFNAME(1,4,49) = 'CTEQ-5HJ'
+         SFNAME(1,4,50) = 'CTEQ-5HQ'
+         SFNAME(1,4,51) = 'CTEQ-5F3'
+         SFNAME(1,4,52) = 'CTEQ-5F4'
+         SFNAME(1,4,53) = 'CTEQ-5M1'
+         SFNAME(1,4,54) = 'CTQ-5HQ1'
+         SFNAME(1,4,55) = 'CTEQ-5Lp'
+         SFNAME(1,4,56) = 'CTQ-5M1p'
          SFNAME(1,5,1)  = 'GRV-HO  '
          SFNAME(1,5,2)  = 'GRV-LO  '
          SFNAME(1,5,3)  = 'GRV-HO  '
@@ -693,6 +853,9 @@ C set character*8 NAME for each PDF
          SFNAME(1,5,9)  = 'GRSV-LOV'
          SFNAME(1,5,10) = 'GRSV-HOS'
          SFNAME(1,5,11) = 'GRSV-HOV'
+         SFNAME(1,5,12) = 'GRV98-LO'
+         SFNAME(1,5,13) = 'GRV98-MS'
+         SFNAME(1,5,14) = 'GRV98-D '
          SFNAME(1,6,1)  = 'ABFOW   '
          SFNAME(1,7,1)  = 'BM-A    '
          SFNAME(1,7,2)  = 'BM-B    '
@@ -715,6 +878,7 @@ C set character*8 NAME for each PDF
          SFNAME(3,3,1)  = 'LAC-G-1 '
          SFNAME(3,3,2)  = 'LAC-G-2 '
          SFNAME(3,3,3)  = 'LAC-G-3 '
+         SFNAME(3,3,4)  = 'GAL-G   '
          SFNAME(3,4,1)  = 'GS-G-1  '
          SFNAME(3,4,2)  = 'GS-G-2  '
          SFNAME(3,4,3)  = 'GS-G-3  '
@@ -741,6 +905,7 @@ C set character*8 NAME for each PDF
          SFNAME(3,9,6)  = 'SaS-2G1M'
          SFNAME(3,9,7)  = 'SaS-2G2D'
          SFNAME(3,9,8)  = 'SaS-2G2M'
+         SFNAME(4,1,1)  = 'A-EKS98 '
 C.
 C set cross reference tables for NEW PDFLIB format version 4.0
 C       (give OLD to get NEW)
@@ -893,7 +1058,7 @@ C       (give NEW to get OLD)
                   IF (J.EQ.5) KT = 270
                   IF (J.EQ.6) KT = 279
                ENDIF
-               IF(NPGSMX(I,J).EQ.0) GOTO 5
+               IF(I.EQ.4 .OR. NPGSMX(I,J).EQ.0) GOTO 5
                DO K = 1,NPGSMX(I,J)
                   KT = KT + 1
                   MK = KT
@@ -928,6 +1093,9 @@ C Set the default values
          XMAX   = PXMAX(NPTYPE,NGROUP,NSET)
          Q2MIN  = PQ2MIN(NPTYPE,NGROUP,NSET)
          Q2MAX  = PQ2MAX(NPTYPE,NGROUP,NSET)
+         NATYPE  = LATYPE
+         NAGROUP = LAGROUP
+         NASET   = LNASET
 C.
 C Save the PDFLIB parameters
          IFLPRTP = IFLPRT
@@ -943,6 +1111,9 @@ C Save the PDFLIB parameters
          XMAXP   = XMAX
          Q2MINP  = Q2MIN
          Q2MAXP  = Q2MAX
+         NATYPP   = NATYPE
+         NAGROPP  = NAGROUP
+         NASETP   = NASET
 C. endif from ISTART
       ENDIF
 C.
@@ -981,6 +1152,8 @@ C Now get user defined values
      + .AND. STRING(1:5).NE.'QCDL4' .AND. STRING(1:5).NE.'QCDL5'
      + .AND. STRING(1:4).NE.'XMIN'  .AND. STRING(1:4).NE.'XMAX'
      + .AND. STRING(1:5).NE.'Q2MIN' .AND. STRING(1:5).NE.'Q2MAX'
+     + .AND. STRING(1:6).NE.'NATYPE'.AND. STRING(1:7).NE.'NAGROUP'
+     + .AND. STRING(1:5).NE.'NASET'
 C.
      + .AND. STRING(1:2).NE.'NU'    .AND. STRING(1:2).NE.'PR'
      + .AND. STRING(1:2).NE.'PI'    .AND. STRING(1:2).NE.'PH'
@@ -989,8 +1162,8 @@ C.
      + .AND. STRING(1:4).NE.'GRVP'  .AND. STRING(1:5).NE.'GRV-P'
      + .AND. STRING(1:5).NE.'GRVPI' .AND. STRING(1:6).NE.'GRV-PI'
      + .AND. STRING(1:4).NE.'ABFK'  .AND. STRING(1:3).NE.'DOG'
-     + .AND. STRING(1:4).NE.'DO-G'  .AND. STRING(1:4).NE.'DOPH'
-     + .AND. STRING(1:5).NE.'DO-PH' .AND. STRING(1:2).NE.'DG'
+C     + .AND. STRING(1:4).NE.'DO-G'  .AND. STRING(1:4).NE.'DOPH'
+C     + .AND. STRING(1:5).NE.'DO-PH' .AND. STRING(1:2).NE.'DG'
      + .AND. STRING(1:2).NE.'LA'    .AND. STRING(1:2).NE.'GS'
      + .AND. STRING(1:3).NE.'GRV'   .AND. STRING(1:3).NE.'GRS'
      + .AND. STRING(1:4).NE.'WHIT'  .AND. STRING(1:3).NE.'SAS'
@@ -1002,13 +1175,15 @@ C.
      +   STRING(1:6).EQ.'NPTYPE'.OR. STRING(1:6).EQ.'NGROUP' .OR.
      +   STRING(1:4).EQ.'NSET'  .OR. STRING(1:3).EQ.'NFL'    .OR.
      +   STRING(1:2).EQ.'LO'    .OR.
+     +   STRING(1:6).EQ.'NATYPE'.OR. STRING(1:7).EQ.'NAGROUP' .OR.
+     +   STRING(1:5).EQ.'NASET'  .OR. 
      +   STRING(1:3).EQ.'PRI'   .OR. NSCHECK    .GT.0        .OR.
      +   STRING(1:2).EQ.'OW'    .OR. STRING(1:2).EQ.'SM'     .OR.
      +   STRING(1:4).EQ.'GRVP'  .OR. STRING(1:5).EQ.'GRV-P'  .OR.
      +   STRING(1:5).EQ.'GRVPI' .OR. STRING(1:6).EQ.'GRV-PI' .OR.
      +   STRING(1:4).EQ.'ABFK'  .OR. STRING(1:3).EQ.'DOG'    .OR.
-     +   STRING(1:4).EQ.'DO-G'  .OR. STRING(1:4).EQ.'DOPH'   .OR.
-     +   STRING(1:5).EQ.'DO-PH' .OR. STRING(1:2).EQ.'DG'     .OR.
+C     +   STRING(1:4).EQ.'DO-G'  .OR. STRING(1:4).EQ.'DOPH'   .OR.
+C     +   STRING(1:5).EQ.'DO-PH' .OR. STRING(1:2).EQ.'DG'     .OR.
      +   STRING(1:2).EQ.'LA'    .OR. STRING(1:2).EQ.'GS'     .OR.
      +   STRING(1:3).EQ.'GRV'   .OR. STRING(1:3).EQ.'GRS'    .OR.
      +   STRING(1:4).EQ.'WHIT'  .OR. STRING(1:3).EQ.'SAS'    .OR.
@@ -1257,6 +1432,24 @@ C Particle Type = Photons
         NSET   = TEMP
         KNSET  = 1
       ENDIF
+C
+C Get particle type for Nuclear Corrections
+      IF(STRING(1:6).EQ.'NATYPE')   THEN
+        NATYPE = TEMP
+        KPTYP  = 1
+        NAFLAG = 1
+      ENDIF
+C Get Author Group Number for Nuclear Corrections
+      IF(STRING(1:7).EQ.'NAGROUP') THEN
+        NAGROUP = TEMP
+        KGROP  = 1
+      ENDIF
+C Get PDF Set within Author Group for Nuclear Corrections
+      IF(STRING(1:5).EQ.'NASET' ) THEN
+         NASET  = TEMP
+         KNSET = 1
+      ENDIF
+C
 C... set defaults for private structure functions set (Nset = 1)
       IF(NPTYPE.EQ.1 .AND. NGROUP.EQ.1 .AND. NSET.EQ.1) THEN
          NFL   = IFL
@@ -1319,6 +1512,9 @@ C. check on conflicting parameters in case of mixed versions
            NPTYPE = LPTYPE
            NGROUP = LGROUP
            NSET   = LNSET
+           NATYPE  = LATYPE
+           NAGROUP = LAGROUP
+           NASET   = LNASET
       ENDIF
 C.
 #include "pdf/w50511c.inc"
@@ -1360,9 +1556,6 @@ C User wants new version (4.0 or bigger) of PDFLIB format
       ELSE
 C Check on validity of parameter values
         IF (NSET.EQ.0) THEN
-           NPTYPE = LPTYPE
-           NGROUP = LGROUP
-           NSET   = LNSET
            IF(FIRST) THEN
            WRITE(N6,*)
      +      ' PDFLIB  : DEFAULT parameter set (Nucleon PDFs) has been
@@ -1371,13 +1564,16 @@ C Check on validity of parameter values
      +      ' PDFLIB  : Nptype = ',NPTYPE,'   Ngroup = ',NGROUP,
      +      '   Nset = ',NSET
            ENDIF
+           NPTYPE = LPTYPE
+           NGROUP = LGROUP
+           NSET   = LNSET
         ENDIF
         IF (NPTYPE.LT.0 .OR. NPTYPE.EQ.0 .OR. NPTYPE.GT.NPTYMX) THEN
            IF(FIRST) THEN
-           WRITE(N6,*)
-     +   ' PDFLIB  : Particle type number INCORRECT, Nptype = ',
-     +     NPTYPE,'   Ngroup = ',NGROUP,'   Nset = ',NSET
-           WRITE(N6,*)
+             WRITE(N6,*)
+     +   ' PDFLIB  : PARTICLE TYPE number INCORRECT, Nptype = ',
+     +     NPTYPE,'  Ngroup = ',NGROUP,'  Nset = ',NSET
+             WRITE(N6,*)
      +   ' Warning : ALL parameters set to default (Nucleon PDFs) !!'
            ENDIF
            NPTYPE = LPTYPE
@@ -1386,10 +1582,10 @@ C Check on validity of parameter values
         ENDIF
         IF (NGROUP.LT.0 .OR. NGROUP.EQ.0 .OR. NGROUP.GT.NGRMAX) THEN
            IF(FIRST) THEN
-           WRITE(N6,*)
-     +   ' PDFLIB  : Group number for PDFs INCORRECT, Nptype = ',
-     +     NPTYPE,'   Ngroup = ',NGROUP,'   Nset = ',NSET
-           WRITE(N6,*)
+             WRITE(N6,*)
+     +   ' PDFLIB  : GROUP number INCORRECT, Nptype = ',
+     +     NPTYPE,'  Ngroup = ',NGROUP,'  Nset = ',NSET
+             WRITE(N6,*)
      +   ' Warning : ALL parameters set to default (Nucleon PDFs) !!'
            ENDIF
            NPTYPE = LPTYPE
@@ -1399,15 +1595,91 @@ C Check on validity of parameter values
         IF (NSET.LT.0 .OR. NSET.EQ.0 .OR. NSET.GT.NPGSMX(NPTYPE,NGROUP))
      +  THEN
            IF(FIRST) THEN
-           WRITE(N6,*)
+             WRITE(N6,*)
      +   ' PDFLIB  : NSET value for PDFs INCORRECT, Nptype = ',
-     +     NPTYPE,'   Ngroup = ',NGROUP,'   Nset = ',NSET
-           WRITE(N6,*)
+     +     NPTYPE,'  Ngroup = ',NGROUP,'  Nset = ',NSET
+             WRITE(N6,*)
      +   ' Warning : ALL parameters set to default (Nucleon PDFs) !!'
            ENDIF
            NPTYPE = LPTYPE
            NGROUP = LGROUP
            NSET   = LNSET
+        ENDIF
+C Check on validity of parameter values in case of NPTYPE=4 (wrong)
+        IF (NPTYPE.EQ.4) THEN
+           IF(FIRST) THEN
+             WRITE(N6,*)
+     +      ' PDFLIB  : User may want NPDFs with Nuclear Corrections !!'
+             WRITE(N6,*)
+     +      ' PDFLIB  : Nptype = ',NPTYPE,'   Ngroup = ',NGROUP,
+     +      '   Nset = ',NSET
+             WRITE(N6,*)
+     +      ' PDFLIB  : Nptype =  4 is not allowed !!'
+             WRITE(N6,*)
+     +      ' PDFLIB  : Please check ALL INPUT parameters for PDFSET and
+     + STRUCTA !!'
+           ENDIF
+C. Reset PDFSET parameters
+            DO K = 1,NCHDIM
+               PARM(K) = '  '
+            ENDDO
+            RETURN
+        ENDIF
+C now check on Nuclear Corrections
+        IF (NASET.EQ.0) THEN
+           IF(FIRST) THEN
+           WRITE(N6,*)
+     +      ' PDFLIB  : DEFAULT parameter set has been chosen for Nuclea
+     +r Corrections!'
+           WRITE(N6,*)
+     +      ' PDFLIB  : NAtype = ',NATYPE,'   NAgroup = ',NAGROUP,
+     +      '   NAset = ',NASET
+           ENDIF
+           NATYPE  = LATYPE
+           NAGROUP = LAGROUP
+           NASET   = LNASET
+        ENDIF
+        IF (NATYPE.LT.0 .OR. NATYPE.EQ.0 .OR. NATYPE.GT.NPTYMX) 
+     +THEN
+           IF(FIRST) THEN
+           WRITE(N6,*)
+     +   ' PDFLIB  : PARTICLE TYPE number INCORRECT, NAtype = ',
+     +     NATYPE,'  NAgroup = ',NAGROUP,'  NAset = ',NASET
+           WRITE(N6,*)
+     +   ' Warning : ALL parameters set to default for Nuclear Correctio
+     +ns!!'
+           ENDIF
+           NATYPE  = LATYPE
+           NAGROUP = LAGROUP
+           NASET   = LNASET
+        ENDIF
+        IF (NAGROUP.LT.0 .OR. NAGROUP.EQ.0 .OR. NAGROUP.GT.NGRMAX) 
+     +THEN
+           IF(FIRST) THEN
+           WRITE(N6,*)
+     +   ' PDFLIB  : NAGROUP number INCORRECT, Nptype = ',
+     +     NATYPE,'  NAgroup = ',NAGROUP,'  NAset = ',NASET
+           WRITE(N6,*)
+     +   ' Warning : ALL parameters set to default for Nuclear Correctio
+     +ns!!'
+           ENDIF
+           NATYPE  = LATYPE
+           NAGROUP = LAGROUP
+           NASET   = LNASET
+        ENDIF
+        IF (NASET.LT.0 .OR. NASET.EQ.0 .OR. 
+     +                        NASET.GT.NPGSMX(NATYPE,NAGROUP)) THEN
+           IF(FIRST) THEN
+           WRITE(N6,*)
+     +   ' PDFLIB  : NASET value for PDFs INCORRECT, NAtype = ',
+     +     NATYPE,'  NAgroup = ',NAGROUP,'  NAset = ',NASET
+           WRITE(N6,*)
+     +   ' Warning : ALL parameters set to default for Nuclear Correctio
+     +ns !!'
+           ENDIF
+           NATYPE  = LATYPE
+           NAGROUP = LAGROUP
+           NASET   = LNASET
         ENDIF
       ENDIF
    30 CONTINUE
@@ -1436,6 +1708,18 @@ C Number of flavours in alpha(s) calculation
          ENDIF
          NFL = IFL
       ENDIF
+C.
+C Special settings for Number of Flavours for CTEQ4 and CTEQ55 F3 and F4
+C
+      IF (FIRST) THEN
+         NFL = IFL
+         IF(NPTYPE.EQ.1 .AND. NGROUP.EQ.4 .AND. NSET.EQ.44) NFL=-3
+         IF(NPTYPE.EQ.1 .AND. NGROUP.EQ.4 .AND. NSET.EQ.45) NFL=-4
+         IF(NPTYPE.EQ.1 .AND. NGROUP.EQ.4 .AND. NSET.EQ.51) NFL=-3
+         IF(NPTYPE.EQ.1 .AND. NGROUP.EQ.4 .AND. NSET.EQ.52) NFL=-4
+      ENDIF
+C.
+C User defined Number of Flavours
       IF (NFLU .GT. 0) THEN
          NFL = NFLU
          IF(FIRST) THEN
@@ -1451,6 +1735,7 @@ C Order of alpha(s) calculation
       LO=LORD
       IF ((NPTYPE.EQ.1.AND.NGROUP.EQ.1.AND.NSET.GE. 2) .OR.
      +    (NPTYPE.EQ.1.AND.NGROUP.EQ.2.AND.NSET.LE. 5) .OR.
+     +   (NPTYPE.EQ.1.AND.NGROUP.EQ.3.AND.NSET.GE.72.AND.NSET.LE.76).OR.
      +   (NPTYPE.EQ.1.AND.NGROUP.EQ.4.AND.NSET.GE.11.AND.NSET.LE.12).OR.
      +    (NPTYPE.EQ.1.AND.NGROUP.EQ.4.AND.NSET.EQ.17) .OR.
      +    (NPTYPE.EQ.1.AND.NGROUP.EQ.4.AND.NSET.EQ.23) .OR.
@@ -1467,8 +1752,10 @@ C Order of alpha(s) calculation
      +    (NPTYPE.EQ.3.AND.NGROUP.EQ.4.AND.NSET.GE. 2.AND.NSET.LE.3).OR.
      +    (NPTYPE.EQ.3.AND.NGROUP.EQ.4.AND.NSET.EQ. 5) .OR.
      +    (NPTYPE.EQ.3.AND.NGROUP.EQ.5.AND.NSET.GE. 3.AND.NSET.LE.4).OR.
-     +    (NPTYPE.EQ.3.AND.(NGROUP.GE.8.AND.NGROUP.LE.9)))
-     +     LO=1
+     +    (NPTYPE.EQ.3.AND.(NGROUP.GE.8.AND.NGROUP.LE.9)))        LO=1
+      IF ((NPTYPE.EQ.1.AND.NGROUP.EQ.4.AND.NSET.EQ. 46)) LO=1
+      IF ((NPTYPE.EQ.1.AND.NGROUP.EQ.4.AND.NSET.EQ. 55)) LO=1
+      IF ((NPTYPE.EQ.1.AND.NGROUP.EQ.5.AND.NSET.EQ. 12)) LO=1
       IF (LOU .GT. 0) THEN
          LO = LOU
          IF(FIRST) THEN
@@ -1607,6 +1894,9 @@ C Save the PDFLIB parameters
          XMAXP   = XMAX
          Q2MINP  = Q2MIN
          Q2MAXP  = Q2MAX
+         NATYPP   = NATYPE
+         NAGROPP  = NAGROUP
+         NASETP   = NASET
 C.
 C... Reset variables to zero for error counting
            PDFWGT = ONED
@@ -1625,16 +1915,23 @@ C print COMMON block values
      +                  MODECR(NPTYPE,NGROUP,NSET)
          WRITE(N6,3001) NFL,LO,TMAS
          WRITE(N6,3002) QCDL4,QCDL5
-         WRITE(N6,3003) XMIN,XMAX,Q2MIN,Q2MAX
+         WRITE(N6,3003) XMIN,XMAX
+         WRITE(N6,3004) Q2MIN,Q2MAX
+         IF(NAFLAG.EQ.1) THEN
+         WRITE(N6,3005) NATYPE,NAGROUP,NASET,
+     +                  SFNAME(NATYPE,NAGROUP,NASET)
+         ENDIF
       ENDIF
- 3000 FORMAT(/,'  Nptype = ',I1,'  Ngroup = ',I1,'  Nset = ',I2,
+ 3000 FORMAT(/,'  Nptype = ',I1,'  Ngroup = ',I2,'  Nset = ',I3,
      +         '  Name  = "',A8,'"  CrMode = ',I3)
  3001 FORMAT(1H ,' Nfl    = ',I2,',  LO = ',I1,
      +           ',  Tmas = ',F7.2,' GeV/c**2')
  3002 FORMAT(1H ,' QCDL4  = ',F7.4,' GeV,  QCDL5 = ',F7.4,' GeV')
- 3003 FORMAT(1H ,' Xmin   = ',1X,E8.2,',  Xmax = ',E11.5,
-     +          ',  Q2min = ',F7.3,' (GeV/c)**2,  Q2max = ',E8.2,
+ 3003 FORMAT(1H ,' Xmin   = ',1X,E8.2,',    Xmax = ',E11.5)
+ 3004 FORMAT(1H ,' Q2min  =',F7.3,' (GeV/c)**2,  Q2max = ',E8.2,
      +          ' (GeV/c)**2')
+ 3005 FORMAT(/,'  NAtype = ',I1,'  NAgroup = ',I2,'  NAset = ',I3,
+     +         '  Name  = "',A8,'"')
 C.
 C. Reset PDFSET parameters
       DO K = 1,NCHDIM

@@ -9,34 +9,66 @@ PACKAGE = MUON
 
 # C++ sources
 
-SRCS          = AliMUON.cxx AliMUONdisplay.cxx AliMUONpoints.cxx \
-                AliMUONsegmentv1.cxx AliMUONv0.cxx AliMUONv01.cxx
+SRCS         = AliMUONChamber.cxx AliMUONChamberTrigger.cxx \
+	       AliMUONSegmentationV0.cxx\
+	       AliMUONResponse.cxx AliMUONResponseV0.cxx \
+	       AliMUONSegmentationV01.cxx \
+               AliMUONSegmentationV02.cxx AliMUONSegmentationV04.cxx \
+	       AliMUONSegmentationV05.cxx\
+	       AliMUONSegmentationTrigger.cxx  AliMUONResponseTrigger.cxx\
+               AliMUONResponseTriggerV1.cxx\
+	       AliMUONSegmentationTriggerX.cxx AliMUONSegmentationTriggerY.cxx \
+               AliMUONSegmentationV1.cxx AliMUON.cxx AliMUONv0.cxx AliMUONv1.cxx\
+               AliMUONDisplay.cxx AliMUONPoints.cxx \
+               AliMUONClusterFinderVS.cxx \
+               AliMUONHitMapA1.cxx \
+	       AliMUONHit.cxx AliMUONPadHit.cxx AliMUONDigit.cxx \
+               AliMUONTransientDigit.cxx AliMUONRawCluster.cxx \
+	       AliMUONReconstHit.cxx \
+	       AliMUONTrackReconstructor.cxx \
+               AliMUONEventReconstructor.cxx \
+	       AliMUONTriggerDecision.cxx \
+               AliMUONHitForRec.cxx AliMUONSegment.cxx \
+               AliMUONTrack.cxx AliMUONTrackHit.cxx AliMUONTrackParam.cxx \
+               AliMUONTriggerCircuit.cxx AliMUONTriggerLut.cxx \
+               AliMUONGlobalTrigger.cxx AliMUONLocalTrigger.cxx \
+               AliMUONTriggerConstants.cxx  AliMUONConstants.cxx \
+	       AliMUONClusterInput.cxx  \
+	       AliMUONSegmentationSlatModule.cxx AliMUONSegmentationSlatModuleN.cxx \
+	       AliMUONSegmentationSlat.cxx AliMUONSegmentationSlatN.cxx \
+	       AliMUONRecoEvent.cxx AliMUONRecoDisplay.cxx
 
 # C++ Headers
 
-HDRS          = $(SRCS:.cxx=.h) AliMUONConst.h MUONLinkDef.h
+HDRS          = $(SRCS:.cxx=.h) \
+		$(ROOTSYS)/include/TF1.h \
+		$(ROOTSYS)/include/TH3.h \
+		$(ROOTSYS)/include/TMarker3DBox.h \
+		$(ROOTSYS)/include/TMatrix.h \
+		$(ROOTSYS)/include/TTree.h \
+		MUONLinkDef.h
 
 # Library dictionary
 
 DICT          = MUONCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # Fortran sources
 
-FSRCS	      = algo.F
+FSRCS	      = reco_muon.F extrap.F
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.F=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -50,12 +82,12 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libMUON.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libMUON.a
+SLIBRARY	= $(LIBDIR)/libMUON.$(SL)
+ALIBRARY	= $(LIBDIR)/libMUON.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libMUON.$(SL):	$(OBJS) $(FOBJS)
+$(LIBDIR)/libMUON.$(SL):	$(OBJS) $(FOBJS)
 
 $(DICT):			$(HDRS)
 
@@ -63,11 +95,12 @@ depend:				$(SRCS)
 
 TOCLEAN		= $(OBJS) $(FOBJS) *Cint.cxx *Cint.h
 
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
 ############################### General Macros ################################
 
 include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
- 
+-include tgt_$(ALICE_TARGET)/Make-depend 

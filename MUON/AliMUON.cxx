@@ -1,36 +1,254 @@
-////////////////////////////////////////////////
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+/*
+$Log$
+Revision 1.40  2000/11/29 20:32:26  gosset
+Digitize:
+1. correction for array index out of bounds
+2. one printout commented
+
+Revision 1.39  2000/11/12 17:17:03  pcrochet
+BuildGeometry of AliMUON for trigger chambers delegated to AliMUONSegmentationTriggerX (same strategy as for tracking chambers)
+
+Revision 1.38  2000/11/06 09:20:43  morsch
+AliMUON delegates part of BuildGeometry() to AliMUONSegmentation using the
+Draw() method. This avoids code and parameter replication.
+
+Revision 1.37  2000/10/26 09:53:37  pcrochet
+put back trigger chambers in the display (there was a problem in buildgeometry)
+
+Revision 1.36  2000/10/25 19:51:18  morsch
+Correct x-position of chambers.
+
+Revision 1.35  2000/10/24 19:46:21  morsch
+BuildGeometry updated for slats in station 3-4.
+
+Revision 1.34  2000/10/18 11:42:06  morsch
+- AliMUONRawCluster contains z-position.
+- Some clean-up of useless print statements during initialisations.
+
+Revision 1.33  2000/10/09 14:01:57  morsch
+Unused variables removed.
+
+Revision 1.32  2000/10/06 09:08:10  morsch
+Built geometry includes slat geometry for event display.
+
+Revision 1.31  2000/10/02 21:28:08  fca
+Removal of useless dependecies via forward declarations
+
+Revision 1.30  2000/10/02 16:58:29  egangler
+Cleaning of the code :
+-> coding conventions
+-> void Streamers
+-> some useless includes removed or replaced by "class" statement
+
+Revision 1.29  2000/07/28 13:49:38  morsch
+SetAcceptance defines inner and outer chamber radii according to angular acceptance.
+Can be used for simple acceptance studies.
+
+Revision 1.28  2000/07/22 16:43:15  morsch
+Same comment as before, but now done correctly I hope (sorry it's Saturday evening)
+
+Revision 1.27  2000/07/22 16:36:50  morsch
+Change order of indices in creation (new) of xhit and yhit
+
+Revision 1.26  2000/07/03 11:54:57  morsch
+AliMUONSegmentation and AliMUONHitMap have been replaced by AliSegmentation and AliHitMap in STEER
+The methods GetPadIxy and GetPadXxy of AliMUONSegmentation have changed name to GetPadI and GetPadC.
+
+Revision 1.25  2000/06/29 12:34:09  morsch
+AliMUONSegmentation class has been made independent of AliMUONChamber. This makes
+it usable with any other geometry class. The link to the object to which it belongs is
+established via an index. This assumes that there exists a global geometry manager
+from which the pointer to the parent object can be obtained (in our case gAlice).
+
+Revision 1.24  2000/06/28 15:16:35  morsch
+(1) Client code adapted to new method signatures in AliMUONSegmentation (see comments there)
+to allow development of slat-muon chamber simulation and reconstruction code in the MUON
+framework. The changes should have no side effects (mostly dummy arguments).
+(2) Hit disintegration uses 3-dim hit coordinates to allow simulation
+of chambers with overlapping modules (MakePadHits, Disintegration).
+
+Revision 1.23  2000/06/28 12:19:17  morsch
+More consequent seperation of global input data services (AliMUONClusterInput singleton) and the
+cluster and hit reconstruction algorithms in AliMUONClusterFinderVS.
+AliMUONClusterFinderVS becomes the base class for clustering and hit reconstruction.
+It requires two cathode planes. Small modifications in the code will make it usable for
+one cathode plane and, hence, more general (for test beam data).
+AliMUONClusterFinder is now obsolete.
+
+Revision 1.22  2000/06/28 08:06:10  morsch
+Avoid global variables in AliMUONClusterFinderVS by seperating the input data for the fit from the
+algorithmic part of the class. Input data resides inside the AliMUONClusterInput singleton.
+It also naturally takes care of the TMinuit instance.
+
+Revision 1.21  2000/06/27 08:54:41  morsch
+Problems with on constant array sizes (in hitMap, nmuon, xhit, yhit) corrected.
+
+Revision 1.20  2000/06/26 14:02:38  morsch
+Add class AliMUONConstants with MUON specific constants using static memeber data and access methods.
+
+Revision 1.19  2000/06/22 13:40:51  morsch
+scope problem on HP, "i" declared once
+pow changed to TMath::Power (PH, AM)
+
+Revision 1.18  2000/06/15 07:58:48  morsch
+Code from MUON-dev joined
+
+Revision 1.14.4.17  2000/06/14 14:36:46  morsch
+- add TriggerCircuit (PC)
+- add GlobalTrigger and LocalTrigger and specific methods (PC)
+
+Revision 1.14.4.16  2000/06/09 21:20:28  morsch
+Most coding rule violations corrected
+
+Revision 1.14.4.15  2000/05/02 09:54:32  morsch
+RULE RN17 violations corrected
+
+Revision 1.14.4.12  2000/04/26 12:25:02  morsch
+Code revised by P. Crochet:
+- Z position of TriggerChamber changed according to A.Tournaire Priv.Comm.
+- ToF included in the method MakePadHits
+- inner radius of flange between beam shielding and trigger corrected
+- Trigger global volume updated (according to the new geometry)
+
+Revision 1.14.4.11  2000/04/19 19:42:08  morsch
+Some changes of variable names curing viols and methods concerning
+correlated clusters removed.
+
+Revision 1.14.4.10  2000/03/22 16:44:07  gosset
+Memory leak suppressed in function Digitise:
+p_adr->Delete() instead of Clear (I.Chevrot and A.Baldisseri)
+
+Revision 1.14.4.9  2000/03/20 18:15:25  morsch
+Positions of trigger chambers corrected (P.C.)
+
+Revision 1.14.4.8  2000/02/21 15:38:01  morsch
+Call to AddHitList introduced to make this version compatible with head.
+
+Revision 1.14.4.7  2000/02/20 07:45:53  morsch
+Bugs in Trigger part of BuildGeomemetry corrected (P.C)
+
+Revision 1.14.4.6  2000/02/17 14:28:54  morsch
+Trigger included into initialization and digitization
+
+Revision 1.14.4.5  2000/02/15 10:02:58  morsch
+Log messages of previous revisions added
+
+Revision 1.14.4.2  2000/02/04 10:57:34  gosset
+Z position of the chambers:
+it was the Z position of the stations;
+it is now really the Z position of the chambers.
+   !!!! WARNING: THE CALLS TO "AliMUONChamber::SetZPOS"
+   !!!!                   AND "AliMUONChamber::ZPosition"
+   !!!! HAVE TO BE CHANGED TO "AliMUONChamber::"SetZ"
+   !!!!                   AND "AliMUONChamber::Z"
+
+Revision 1.14.4.3  2000/02/04 16:19:04  gosset
+Correction for mis-spelling of NCH 
+
+Revision 1.14.4.4  2000/02/15 09:43:38  morsch
+Log message added
+
+*/
+
+
+///////////////////////////////////////////////
 //  Manager and hits classes for set:MUON     //
 ////////////////////////////////////////////////
 
 #include <TTUBE.h>
+#include <TBRIK.h>
+#include <TRotMatrix.h>
+#include <TGeometry.h>
 #include <TNode.h> 
+#include <TTree.h> 
 #include <TRandom.h> 
 #include <TObject.h>
 #include <TVector.h>
 #include <TObjArray.h>
+#include <TMinuit.h>
+#include <TParticle.h>
+#include <TROOT.h>
+#include <TFile.h>
+#include <TNtuple.h>
+#include <TCanvas.h>
+#include <TPad.h>
+#include <TDirectory.h>
+#include <TObjectTable.h>
+#include <AliPDG.h>
+#include <TTUBE.h>
 
 #include "AliMUON.h"
+#include "AliMUONHit.h"
+#include "AliMUONPadHit.h"
+#include "AliMUONDigit.h"
+#include "AliMUONTransientDigit.h"
+#include "AliMUONRawCluster.h"
+#include "AliMUONLocalTrigger.h"
+#include "AliMUONGlobalTrigger.h"
+#include "AliMUONTriggerCircuit.h"
+#include "AliHitMap.h"
+#include "AliMUONHitMapA1.h"
+#include "AliMUONChamberTrigger.h"
+#include "AliMUONConstants.h"
+#include "AliMUONClusterFinderVS.h"
+#include "AliMUONTriggerDecision.h"
 #include "AliRun.h"
 #include "AliMC.h"
+#include "AliMUONClusterInput.h"
 #include "iostream.h"
 #include "AliCallf77.h" 
+#include "AliConst.h" 
 
-// Static variables for the pad-hit iterator routines
-static Int_t sMaxIterPad=0;
-static Int_t sCurIterPad=0;
- 
+// Defaults parameters for Z positions of chambers
+// taken from values for "stations" in AliMUON::AliMUON
+//     const Float_t zch[7]={528, 690., 975., 1249., 1449., 1610, 1710.};
+// and from array "dstation" in AliMUONv1::CreateGeometry
+//          Float_t dstation[5]={20., 20., 20, 20., 20.};
+//     for tracking chambers,
+//          according to (Z1 = zch - dstation) and  (Z2 = zch + dstation)
+//          for the first and second chambers in the station, respectively,
+// and from "DTPLANES" in AliMUONv1::CreateGeometry
+//           const Float_t DTPLANES = 15.;
+//     for trigger chambers,
+//          according to (Z1 = zch) and  (Z2 = zch + DTPLANES)
+//          for the first and second chambers in the station, respectively
+
 ClassImp(AliMUON)
- 
 //___________________________________________
 AliMUON::AliMUON()
 {
-   fIshunt     = 0;
-   fHits       = 0;
-   fClusters   = 0;
-   fNclusters  = 0;
-   fDchambers  = 0;
-   fRecClusters= 0;
-   fNdch       = 0;
+// Default Constructor
+//
+   fIshunt       = 0;
+   fHits         = 0;
+   fPadHits      = 0;
+   fNPadHits     = 0;
+   fDchambers    = 0;
+   fTriggerCircuits = 0;     // cp new design of AliMUONTriggerDecision
+   fNdch         = 0;
+   fRawClusters  = 0;
+   fNrawch       = 0;
+   fGlobalTrigger   = 0;
+   fNLocalTrigger   = 0;
+   fLocalTrigger    = 0;
+   fNLocalTrigger   = 0;
+   fAccMin          = 0.;
+   fAccMax          = 0.;   
+   fAccCut          = kFALSE;
 }
  
 //___________________________________________
@@ -42,64 +260,152 @@ AliMUON::AliMUON(const char *name, const char *title)
 <img src="gif/alimuon.gif">
 */
 //End_Html
- 
-   fHits     = new TClonesArray("AliMUONhit",1000  );
-   fClusters = new TClonesArray("AliMUONcluster",10000);
-   fNclusters  =  0;
+
+   fHits     = new TClonesArray("AliMUONHit",1000);
+   gAlice->AddHitList(fHits);
+   fPadHits = new TClonesArray("AliMUONPadHit",10000);
+   fNPadHits  =  0;
    fIshunt     =  0;
 
-   fNdch      = new Int_t[11];
+   fNdch      = new Int_t[AliMUONConstants::NCh()];
 
-   fDchambers = new TObjArray(11);
+   fDchambers = new TObjArray(AliMUONConstants::NCh());
 
    Int_t i;
    
-   for (i=0; i<11 ;i++) {
-       (*fDchambers)[i] = new TClonesArray("AliMUONdigit",10000); 
+   for (i=0; i<AliMUONConstants::NCh() ;i++) {
+       (*fDchambers)[i] = new TClonesArray("AliMUONDigit",10000); 
        fNdch[i]=0;
    }
 
-   fRecClusters=new TObjArray(20);
-   for (i=0; i<20;i++)
-     (*fRecClusters)[i] = new TObjArray(1000);
+   fNrawch      = new Int_t[AliMUONConstants::NTrackingCh()];
 
-//   
-// Transport angular cut
-   fAccCut=0;
-   fAccMin=2;
-   fAccMax=9;
+   fRawClusters = new TObjArray(AliMUONConstants::NTrackingCh());
+
+   for (i=0; i<AliMUONConstants::NTrackingCh();i++) {
+       (*fRawClusters)[i] = new TClonesArray("AliMUONRawCluster",10000); 
+       fNrawch[i]=0;
+   }
+
+   fGlobalTrigger = new TClonesArray("AliMUONGlobalTrigger",1);    
+   fNGlobalTrigger = 0;
+   fLocalTrigger  = new TClonesArray("AliMUONLocalTrigger",234);    
+   fNLocalTrigger = 0;
 
    SetMarkerColor(kRed);
+//
+//
+//
+//
+
+    Int_t ch;
+
+    fChambers = new TObjArray(AliMUONConstants::NCh());
+
+    // Loop over stations
+    for (Int_t st = 0; st < AliMUONConstants::NCh() / 2; st++) {
+      // Loop over 2 chambers in the station
+	for (Int_t stCH = 0; stCH < 2; stCH++) {
+//
+//    
+//    Default Parameters for Muon Tracking Stations
+
+
+	    ch = 2 * st + stCH;
+//
+	    if (ch < AliMUONConstants::NTrackingCh()) {
+		(*fChambers)[ch] = new AliMUONChamber(ch);
+	    } else {
+		(*fChambers)[ch] = new AliMUONChamberTrigger(ch);
+	    }
+	    
+	    AliMUONChamber* chamber = (AliMUONChamber*) (*fChambers)[ch];
+	    
+	    chamber->SetGid(0);
+	    // Default values for Z of chambers
+	    chamber->SetZ(AliMUONConstants::DefaultChamberZ(ch));
+//
+	    chamber->InitGeo(AliMUONConstants::DefaultChamberZ(ch));
+//          Set chamber inner and outer radius to default
+	    chamber->SetRInner(AliMUONConstants::Dmin(st)/2);
+	    chamber->SetROuter(AliMUONConstants::Dmax(st)/2);
+//
+	} // Chamber stCH (0, 1) in 
+    }     // Station st (0...)
+    fMaxStepGas=0.01; 
+    fMaxStepAlu=0.1; 
+    fMaxDestepGas=-1;
+    fMaxDestepAlu=-1;
+//
+   fMaxIterPad   = 0;
+   fCurIterPad   = 0;
+//
+   fAccMin          = 0.;
+   fAccMax          = 0.;   
+   fAccCut          = kFALSE;
+
+   // cp new design of AliMUONTriggerDecision
+   fTriggerCircuits = new TObjArray(AliMUONConstants::NTriggerCircuit());
+   for (Int_t circ=0; circ<AliMUONConstants::NTriggerCircuit(); circ++) {
+     (*fTriggerCircuits)[circ] = new AliMUONTriggerCircuit();     
+   }
+   // cp new design of AliMUONTriggerDecision
+
 }
  
 //___________________________________________
+AliMUON::AliMUON(const AliMUON& rMUON)
+{
+// Dummy copy constructor
+    ;
+    
+}
+
 AliMUON::~AliMUON()
 {
-  fIshunt  = 0;
-  delete fHits;
-  delete fClusters;
-//  for (Int_t i=0;i<10;i++) {
-//      delete (*fDchambers)[i];
-//      fNdch[i]=0;
-//  }
-//  delete fDchambers;
-  for (Int_t i=0;i<20;i++) 
-      delete (*fRecClusters)[i];
-  delete fRecClusters;
+// Destructor
+    printf("Calling AliMUON destructor !!!\n");
+    
+    Int_t i;
+    fIshunt  = 0;
+    delete fHits;
+    delete fPadHits;
+    
+    delete fGlobalTrigger;
+    fNGlobalTrigger = 0;
+    
+    delete fLocalTrigger;
+    fNLocalTrigger = 0;
 
+    for (i=0;i<AliMUONConstants::NCh();i++) {
+	delete (*fDchambers)[i];
+	fNdch[i]=0;
+    }
+    delete fDchambers;
+    
+    for (i=0;i<AliMUONConstants::NTrackingCh();i++) {
+	delete (*fRawClusters)[i];
+	fNrawch[i]=0;
+    }
+    delete fRawClusters;
+    
+    for (Int_t circ=0; circ<AliMUONConstants::NTriggerCircuit(); circ++) {
+	delete (*fTriggerCircuits)[circ];
+    }
+    delete fTriggerCircuits;
 }
  
 //___________________________________________
 void AliMUON::AddHit(Int_t track, Int_t *vol, Float_t *hits)
 {
   TClonesArray &lhits = *fHits;
-  new(lhits[fNhits++]) AliMUONhit(fIshunt,track,vol,hits);
+  new(lhits[fNhits++]) AliMUONHit(fIshunt,track,vol,hits);
 }
 //___________________________________________
-void AliMUON::AddCluster(Int_t *clhits)
+void AliMUON::AddPadHit(Int_t *clhits)
 {
-   TClonesArray &lclusters = *fClusters;
-   new(lclusters[fNclusters++]) AliMUONcluster(clhits);
+   TClonesArray &lclusters = *fPadHits;
+   new(lclusters[fNPadHits++]) AliMUONPadHit(clhits);
 }
 //_____________________________________________________________________________
 void AliMUON::AddDigits(Int_t id, Int_t *tracks, Int_t *charges, Int_t *digits)
@@ -109,124 +415,49 @@ void AliMUON::AddDigits(Int_t id, Int_t *tracks, Int_t *charges, Int_t *digits)
     //
 
     TClonesArray &ldigits = *((TClonesArray*)(*fDchambers)[id]);
-    new(ldigits[fNdch[id]++]) AliMUONdigit(tracks,charges,digits);
+    new(ldigits[fNdch[id]++]) AliMUONDigit(tracks,charges,digits);
 }
 
-
 //_____________________________________________________________________________
-void AliMUON::AddRecCluster(Int_t iCh, Int_t iCat, AliMUONRecCluster* Cluster)
+void AliMUON::AddRawCluster(Int_t id, const AliMUONRawCluster& c)
 {
     //
-    // Add a MUON reconstructed cluster to the list
+    // Add a MUON digit to the list
     //
-    TObjArray* ClusterList = RecClusters(iCh,iCat);
-    ClusterList->Add(Cluster);
+
+    TClonesArray &lrawcl = *((TClonesArray*)(*fRawClusters)[id]);
+    new(lrawcl[fNrawch[id]++]) AliMUONRawCluster(c);
+}
+
+//___________________________________________
+void AliMUON::AddGlobalTrigger(Int_t *singlePlus, Int_t *singleMinus,
+			       Int_t *singleUndef,
+			       Int_t *pairUnlike, Int_t *pairLike)
+{
+// add a MUON Global Trigger to the list (only one GlobalTrigger per event !)
+  TClonesArray &globalTrigger = *fGlobalTrigger;
+  new(globalTrigger[fNGlobalTrigger++]) 
+    AliMUONGlobalTrigger(singlePlus, singleMinus,  singleUndef, pairUnlike, 
+			 pairLike);
+}
+//___________________________________________
+void AliMUON::AddLocalTrigger(Int_t *localtr)
+{
+// add a MUON Local Trigger to the list
+  TClonesArray &localTrigger = *fLocalTrigger;
+  new(localTrigger[fNLocalTrigger++]) AliMUONLocalTrigger(localtr);
 }
 
 //___________________________________________
 void AliMUON::BuildGeometry()
 {
-  TNode *Node, *Top;
-  const int kColorMUON = kBlue;
-  //
-  Top=gAlice->GetGeometry()->GetNode("alice");
-
-  // MUON
-  const float cz[10] = { 511, 519, 686, 694, 971, 979, 1245, 1253, 1445, 1453};
-  const float acc_min = TMath::Tan( 2*.0174532925199432958);
-  const float acc_max = TMath::Tan(9*.0174532925199432958);
-  float rmin, rmax;
-  
-  // Chamber 1
-  rmin = (cz[0]+0.25)*acc_min;
-  rmax = cz[0]*acc_max;
-  new TTUBE("S_MUON1","MUON chamber 1","void",rmin,rmax,0.25);
-  Top->cd();
-  Node = new TNode("MUON1","MUON chamber 1","S_MUON1",0,0,cz[0],"");
-  Node->SetLineColor(kColorMUON);
-  fNodes->Add(Node);
-  
-  // Chamber 2
-  rmin = (cz[1]+0.25)*acc_min;
-  rmax = cz[1]*acc_max;
-  new TTUBE("S_MUON2","MUON chamber 2","void",rmin,rmax,0.25);
-  Top->cd();
-  Node = new TNode("MUON2","MUON chamber 2","S_MUON2",0,0,cz[1],"");
-  fNodes->Add(Node);
-  Node->SetLineColor(kColorMUON);
-  
-  // Chamber 3
-  rmin = (cz[2]+0.25)*acc_min;
-  rmax =  cz[2]*acc_max;
-  new TTUBE("S_MUON3","MUON chamber 3","void",rmin,rmax,0.25);
-  Top->cd();
-  Node = new TNode("MUON3","MUON chamber 3","S_MUON3",0,0,cz[2],"");
-  Node->SetLineColor(kColorMUON);
-  fNodes->Add(Node);
-  
-  // Chamber 4
-  rmin = (cz[3]+0.25)*acc_min;
-  rmax = cz[3]*acc_max;
-  new TTUBE("S_MUON4","MUON chamber 4","void",rmin,rmax,0.25);
-  Top->cd();
-  Node = new TNode("MUON4","MUON chamber 4","S_MUON4",0,0,cz[3],"");
-  Node->SetLineColor(kColorMUON);
-  fNodes->Add(Node);
-
-  // Chamber 5
-  rmin = 30;
-  rmax = cz[4]*acc_max;
-  new TTUBE("S_MUON5","MUON chamber 5","void",rmin,rmax,0.25);
-  Top->cd();
-  Node = new TNode("MUON5","MUON chamber 5","S_MUON5",0,0,cz[4],"");
-  Node->SetLineColor(kColorMUON);
-  fNodes->Add(Node);
-  
-  // Chamber 6
-  rmin = 30;
-  rmax = cz[5]*acc_max;
-  new TTUBE("S_MUON6","MUON chamber 6","void",rmin,rmax,0.25);
-  Top->cd();
-  Node = new TNode("MUON6","MUON chamber 6","S_MUON6",0,0,cz[5],"");
-  fNodes->Add(Node);
-  Node->SetLineColor(kColorMUON);
-  
-  // Chamber 7
-  rmin = 30;
-  rmax = cz[6]*acc_max;
-  new TTUBE("S_MUON7","MUON chamber 7","void",rmin,rmax,0.25);
-  Top->cd();
-  Node = new TNode("MUON7","MUON chamber 7","S_MUON7",0,0,cz[6],"");
-  Node->SetLineColor(kColorMUON);
-  fNodes->Add(Node);
-
-  // Chamber 8
-  rmin = 30;
-  rmax = cz[7]*acc_max;
-  new TTUBE("S_MUON8","MUON chamber 8","void",rmin,rmax,0.25);
-  Top->cd();
-  Node = new TNode("MUON8","MUON chamber 8","S_MUON8",0,0,cz[7],"");
-  Node->SetLineColor(kColorMUON);
-  fNodes->Add(Node);
-
-  // Chamber 9
-  rmin = 30;
-  rmax = cz[8]*acc_max;
-  new TTUBE("S_MUON9","MUON chamber 9","void",rmin,rmax,0.25);
-  Top->cd();
-  Node = new TNode("MUON9","MUON chamber 9","S_MUON9",0,0,cz[8],"");
-  Node->SetLineColor(kColorMUON);
-  fNodes->Add(Node);
-
-  // Chamber 10
-  rmin = 30;
-  rmax = cz[9]*acc_max;
-  new TTUBE("S_MUON10","MUON chamber 10","void",rmin,rmax,0.25);
-  Top->cd();
-  Node = new TNode("MUON10","MUON chamber 10","S_MUON10",0,0,cz[9],"");
-  Node->SetLineColor(kColorMUON);
-  fNodes->Add(Node);
-
+// Geometry for event display
+  for (Int_t i=0; i<7; i++) {
+    for (Int_t j=0; j<2; j++) {
+      Int_t id=2*i+j+1;
+      this->Chamber(id-1).SegmentationModel(1)->Draw("eventdisplay");
+    }
+  }
 }
 
 //___________________________________________
@@ -238,68 +469,104 @@ Int_t AliMUON::DistancetoPrimitive(Int_t , Int_t )
 //___________________________________________
 void AliMUON::MakeBranch(Option_t* option)
 {
-  // Create Tree branches for the MUON.
-  
-  const Int_t buffersize = 4000;
-  char branchname[20];
-  sprintf(branchname,"%sCluster",GetName());
-
-  AliDetector::MakeBranch(option);
-
-  if (fClusters   && gAlice->TreeH()) {
-    gAlice->TreeH()->Branch(branchname,&fClusters, buffersize);
-    printf("Making Branch %s for clusters\n",branchname);
-  }
-
+    // Create Tree branches for the MUON.
+    const Int_t kBufferSize = 4000;
+    char branchname[30];
+    sprintf(branchname,"%sCluster",GetName());
+    
+    AliDetector::MakeBranch(option);
+    
+    if (fPadHits   && gAlice->TreeH()) {
+	gAlice->TreeH()->Branch(branchname,&fPadHits, kBufferSize);
+	printf("Making Branch %s for clusters\n",branchname);
+    }
+    
 // one branch for digits per chamber
-  Int_t i;
-  
-  for (i=0; i<10 ;i++) {
-      sprintf(branchname,"%sDigits%d",GetName(),i+1);
-      
-      if (fDchambers   && gAlice->TreeD()) {
-	  gAlice->TreeD()->Branch(branchname,&((*fDchambers)[i]), buffersize);
-	  printf("Making Branch %s for digits in chamber %d\n",branchname,i+1);
-      }	
-  }
-// one branch for rec clusters
-  for (i=0; i<20; i++) {
-      sprintf(branchname,"%sRecClus%d",GetName(),i+1);
-      if (fRecClusters   && gAlice->TreeD()) {
-	  gAlice->TreeR()
-	      ->Branch(branchname,"TObjArray", 
-		       &((*fRecClusters)[i]), buffersize,0);
-	  printf("Making Branch %s for clusters in chamber %d\n",
-		 branchname,i+1);
-      }
-  }
+    Int_t i;
+    
+    for (i=0; i<AliMUONConstants::NCh() ;i++) {
+	sprintf(branchname,"%sDigits%d",GetName(),i+1);
+	
+	if (fDchambers   && gAlice->TreeD()) {
+	    gAlice->TreeD()->Branch(branchname,&((*fDchambers)[i]), kBufferSize);
+	    printf("Making Branch %s for digits in chamber %d\n",branchname,i+1);
+	}	
+    }
+    
+    printf("Make Branch - TreeR address %p\n",gAlice->TreeR());
+    
+// one branch for raw clusters per chamber
+    for (i=0; i<AliMUONConstants::NTrackingCh() ;i++) {
+	sprintf(branchname,"%sRawClusters%d",GetName(),i+1);
+	
+	if (fRawClusters   && gAlice->TreeR()) {
+	    gAlice->TreeR()->Branch(branchname,&((*fRawClusters)[i]), kBufferSize);
+	    printf("Making Branch %s for raw clusters in chamber %d\n",branchname,i+1);
+	}	
+    }
+    
+// one branch for global trigger
+    sprintf(branchname,"%sGlobalTrigger",GetName());
+    if (fGlobalTrigger && gAlice->TreeR()) {  
+	gAlice->TreeR()->Branch(branchname,&fGlobalTrigger,kBufferSize);
+	printf("Making Branch %s for Global Trigger\n",branchname);
+    }
+// one branch for local trigger
+    sprintf(branchname,"%sLocalTrigger",GetName());
+    if (fLocalTrigger && gAlice->TreeR()) {  
+	gAlice->TreeR()->Branch(branchname,&fLocalTrigger,kBufferSize);
+	printf("Making Branch %s for Local Trigger\n",branchname);
+    }
+    
 }
 
 //___________________________________________
 void AliMUON::SetTreeAddress()
 {
   // Set branch address for the Hits and Digits Tree.
-  char branchname[20];
+  char branchname[30];
   AliDetector::SetTreeAddress();
 
   TBranch *branch;
   TTree *treeH = gAlice->TreeH();
   TTree *treeD = gAlice->TreeD();
+  TTree *treeR = gAlice->TreeR();
 
   if (treeH) {
-    if (fClusters) {
+    if (fPadHits) {
       branch = treeH->GetBranch("MUONCluster");
-      if (branch) branch->SetAddress(&fClusters);
+      if (branch) branch->SetAddress(&fPadHits);
     }
   }
 
   if (treeD) {
-      for (int i=0; i<10; i++) {
+      for (int i=0; i<AliMUONConstants::NCh(); i++) {
 	  sprintf(branchname,"%sDigits%d",GetName(),i+1);
 	  if (fDchambers) {
 	      branch = treeD->GetBranch(branchname);
 	      if (branch) branch->SetAddress(&((*fDchambers)[i]));
 	  }
+      }
+  }
+
+  // printf("SetTreeAddress --- treeR address  %p \n",treeR);
+
+  if (treeR) {
+      for (int i=0; i<AliMUONConstants::NTrackingCh(); i++) {
+	  sprintf(branchname,"%sRawClusters%d",GetName(),i+1);
+	  if (fRawClusters) {
+	      branch = treeR->GetBranch(branchname);
+	      if (branch) branch->SetAddress(&((*fRawClusters)[i]));
+	  }
+      }
+
+      if (fLocalTrigger) {
+	branch = treeR->GetBranch("MUONLocalTrigger");
+	if (branch) branch->SetAddress(&fLocalTrigger);
+      }
+      if (fGlobalTrigger) {
+	branch = treeR->GetBranch("MUONGlobalTrigger");
+	if (branch) branch->SetAddress(&fGlobalTrigger);
       }
   }
 }
@@ -308,8 +575,8 @@ void AliMUON::ResetHits()
 {
   // Reset number of clusters and the cluster array for this detector
   AliDetector::ResetHits();
-  fNclusters = 0;
-  if (fClusters) fClusters->Clear();
+  fNPadHits = 0;
+  if (fPadHits) fPadHits->Clear();
 }
 
 //____________________________________________
@@ -318,496 +585,996 @@ void AliMUON::ResetDigits()
     //
     // Reset number of digits and the digits array for this detector
     //
-    for ( int i=0;i<10;i++ ) {
-	if ((*fDchambers)[i])   (*fDchambers)[i]->Clear();
+    for ( int i=0;i<AliMUONConstants::NCh();i++ ) {
+	if ((*fDchambers)[i])    ((TClonesArray*)(*fDchambers)[i])->Clear();
 	if (fNdch)  fNdch[i]=0;
     }
 }
 //____________________________________________
-void AliMUON::ResetRecClusters()
+void AliMUON::ResetRawClusters()
 {
     //
-    // Reset the rec clusters
+    // Reset number of raw clusters and the raw clust array for this detector
     //
-    for ( int i=0;i<20;i++ ) {
-	if ((*fRecClusters)[i])   (*fRecClusters)[i]->Clear();
+    for ( int i=0;i<AliMUONConstants::NTrackingCh();i++ ) {
+	if ((*fRawClusters)[i])    ((TClonesArray*)(*fRawClusters)[i])->Clear();
+	if (fNrawch)  fNrawch[i]=0;
     }
 }
-//___________________________________________
 
-void AliMUON::SetPADSIZ(Int_t id, Int_t isec, Float_t p1, Float_t p2)
+//____________________________________________
+void AliMUON::ResetTrigger()
 {
+  //  Reset Local and Global Trigger 
+  fNGlobalTrigger = 0;
+  if (fGlobalTrigger) fGlobalTrigger->Clear();
+  fNLocalTrigger = 0;
+  if (fLocalTrigger) fLocalTrigger->Clear();
+}
+
+//____________________________________________
+void AliMUON::SetPadSize(Int_t id, Int_t isec, Float_t p1, Float_t p2)
+{
+// Set the pad size for chamber id and cathode isec
     Int_t i=2*(id-1);
-    ((AliMUONchamber*) (*fChambers)[i])  ->SetPADSIZ(isec,p1,p2);
-    ((AliMUONchamber*) (*fChambers)[i+1])->SetPADSIZ(isec,p1,p2);
+    ((AliMUONChamber*) (*fChambers)[i])  ->SetPadSize(isec,p1,p2);
+    ((AliMUONChamber*) (*fChambers)[i+1])->SetPadSize(isec,p1,p2);
 }
 
 //___________________________________________
-void AliMUON::SetMUCHSP(Int_t id, Float_t p1)
+void AliMUON::SetChambersZ(const Float_t *Z)
 {
-    Int_t i=2*(id-1);
-    ((AliMUONchamber*) (*fChambers)[i])->SetMUCHSP(p1);
-    ((AliMUONchamber*) (*fChambers)[i+1])->SetMUCHSP(p1);
+  // Set Z values for all chambers (tracking and trigger)
+  // from the array pointed to by "Z"
+    for (Int_t ch = 0; ch < AliMUONConstants::NCh(); ch++)
+	((AliMUONChamber*) ((*fChambers)[ch]))->SetZ(Z[ch]);
+    return;
 }
 
 //___________________________________________
-void AliMUON::SetMUSIGM(Int_t id, Float_t p1, Float_t p2)
+void AliMUON::SetChambersZToDefault()
 {
-    Int_t i=2*(id-1);
-    ((AliMUONchamber*) (*fChambers)[i])->SetMUSIGM(p1,p2);
-    ((AliMUONchamber*) (*fChambers)[i+1])->SetMUSIGM(p1,p2);
+  // Set Z values for all chambers (tracking and trigger)
+  // to default values
+  SetChambersZ(AliMUONConstants::DefaultChamberZ());
+  return;
 }
 
 //___________________________________________
-void AliMUON::SetRSIGM(Int_t id, Float_t p1)
+void AliMUON::SetChargeSlope(Int_t id, Float_t p1)
 {
+// Set the inverse charge slope for chamber id
     Int_t i=2*(id-1);
-    ((AliMUONchamber*) (*fChambers)[i])->SetRSIGM(p1);
-    ((AliMUONchamber*) (*fChambers)[i+1])->SetRSIGM(p1);
+    ((AliMUONChamber*) (*fChambers)[i])->SetChargeSlope(p1);
+    ((AliMUONChamber*) (*fChambers)[i+1])->SetChargeSlope(p1);
 }
 
 //___________________________________________
-void AliMUON::SetMAXADC(Int_t id, Float_t p1)
+void AliMUON::SetChargeSpread(Int_t id, Float_t p1, Float_t p2)
 {
+// Set sigma of charge spread for chamber id
     Int_t i=2*(id-1);
-    ((AliMUONchamber*) (*fChambers)[i])->SetMAXADC(p1);
-    ((AliMUONchamber*) (*fChambers)[i+1])->SetMAXADC(p1);
+    ((AliMUONChamber*) (*fChambers)[i])->SetChargeSpread(p1,p2);
+    ((AliMUONChamber*) (*fChambers)[i+1])->SetChargeSpread(p1,p2);
 }
 
 //___________________________________________
-void AliMUON::SetSMAXAR(Float_t p1)
+void AliMUON::SetSigmaIntegration(Int_t id, Float_t p1)
 {
+// Set integration limits for charge spread
+    Int_t i=2*(id-1);
+    ((AliMUONChamber*) (*fChambers)[i])->SetSigmaIntegration(p1);
+    ((AliMUONChamber*) (*fChambers)[i+1])->SetSigmaIntegration(p1);
+}
+
+//___________________________________________
+void AliMUON::SetMaxAdc(Int_t id, Int_t p1)
+{
+// Set maximum number for ADCcounts (saturation)
+    Int_t i=2*(id-1);
+    ((AliMUONChamber*) (*fChambers)[i])->SetMaxAdc(p1);
+    ((AliMUONChamber*) (*fChambers)[i+1])->SetMaxAdc(p1);
+}
+
+//___________________________________________
+void AliMUON::SetMaxStepGas(Float_t p1)
+{
+// Set stepsize in gas
      fMaxStepGas=p1;
 }
 
 //___________________________________________
-void AliMUON::SetSMAXAL(Float_t p1)
+void AliMUON::SetMaxStepAlu(Float_t p1)
 {
+// Set step size in Alu
     fMaxStepAlu=p1;
 }
 
 //___________________________________________
-void AliMUON::SetDMAXAR(Float_t p1)
+void AliMUON::SetMaxDestepGas(Float_t p1)
 {
+// Set maximum step size in Gas
     fMaxDestepGas=p1;
 }
 
 //___________________________________________
-void AliMUON::SetDMAXAL(Float_t p1)
+void AliMUON::SetMaxDestepAlu(Float_t p1)
 {
+// Set maximum step size in Alu
     fMaxDestepAlu=p1;
 }
 //___________________________________________
-void AliMUON::SetMUONACC(Bool_t acc, Float_t angmin, Float_t angmax)
+void AliMUON::SetAcceptance(Bool_t acc, Float_t angmin, Float_t angmax)
 {
+// Set acceptance cuts 
    fAccCut=acc;
-   fAccMin=angmin;
-   fAccMax=angmax;
+   fAccMin=angmin*TMath::Pi()/180;
+   fAccMax=angmax*TMath::Pi()/180;
+   Int_t ch;
+   if (acc) {
+       for (Int_t st = 0; st < AliMUONConstants::NCh() / 2; st++) {
+	   // Loop over 2 chambers in the station
+	   for (Int_t stCH = 0; stCH < 2; stCH++) {
+	       ch = 2 * st + stCH;
+//         Set chamber inner and outer radius according to acceptance cuts
+	       Chamber(ch).SetRInner(AliMUONConstants::DefaultChamberZ(ch)*TMath::Tan(fAccMin));
+	       Chamber(ch).SetROuter(AliMUONConstants::DefaultChamberZ(ch)*TMath::Tan(fAccMax));
+	   } // chamber loop
+       } // station loop
+   }
 }
 //___________________________________________
-void   AliMUON::SetSegmentationModel(Int_t id, Int_t isec, AliMUONsegmentation *segmentation)
+void   AliMUON::SetSegmentationModel(Int_t id, Int_t isec, AliSegmentation *segmentation)
 {
-    ((AliMUONchamber*) (*fChambers)[id])->SegmentationModel(isec, segmentation);
+// Set the segmentation for chamber id cathode isec
+    ((AliMUONChamber*) (*fChambers)[id])->SetSegmentationModel(isec, segmentation);
 
 }
 //___________________________________________
-void   AliMUON::SetResponseModel(Int_t id, AliMUONresponse *response)
+void   AliMUON::SetResponseModel(Int_t id, AliMUONResponse *response)
 {
-    ((AliMUONchamber*) (*fChambers)[id])->ResponseModel(response);
+// Set the response for chamber id
+    ((AliMUONChamber*) (*fChambers)[id])->SetResponseModel(response);
+}
+
+void   AliMUON::SetReconstructionModel(Int_t id, AliMUONClusterFinderVS *reconst)
+{
+// Set ClusterFinder for chamber id
+    ((AliMUONChamber*) (*fChambers)[id])->SetReconstructionModel(reconst);
 }
 
 void   AliMUON::SetNsec(Int_t id, Int_t nsec)
 {
-    ((AliMUONchamber*) (*fChambers)[id])->SetNsec(nsec);
+// Set number of segmented cathods for chamber id
+    ((AliMUONChamber*) (*fChambers)[id])->SetNsec(nsec);
 }
 
 
 //___________________________________________
 
-void AliMUON::StepManager()
+
+
+void AliMUON::MakePadHits(Float_t xhit,Float_t yhit, Float_t zhit,
+			  Float_t eloss, Float_t tof,  Int_t idvol)
 {
-    printf("Dummy version of muon step -- it should never happen!!\n");
-    const Float_t kRaddeg = 180/TMath::Pi();
-    AliMC* pMC = AliMC::GetMC();
-    Int_t nsec, ipart;
-    Float_t x[4], p[4];
-    Float_t pt, th0, th1;
-    char proc[5];
-    if(fAccCut) {
-	if((nsec=pMC->NSecondaries())>0) {
-	    pMC->ProdProcess(proc);
-	    if((pMC->TrackPid()==113 || pMC->TrackPid()==114) && !strcmp(proc,"DCAY")) {
-		//
-		// Check angular acceptance
-		//* --- and have muons from resonance decays in the wanted window --- 
-		if(nsec != 2) {
-		    printf(" AliMUON::StepManager: Strange resonance Decay into %d particles\n",nsec);
-		    pMC->StopEvent();
-		} else {
-		    pMC->GetSecondary(0,ipart,x,p);
-		    pt  = TMath::Sqrt(p[0]*p[0]+p[1]*p[1]);
-		    th0 = TMath::ATan2(pt,p[2])*kRaddeg;
-		    pMC->GetSecondary(1,ipart,x,p);
-		    pt  = TMath::Sqrt(p[0]*p[0]+p[1]*p[1]);
-		    th1 = TMath::ATan2(pt,p[2])*kRaddeg;
-		    if(!(fAccMin < th0 && th0 < fAccMax) ||
-		       !(fAccMin < th1 && th1 < fAccMax)) 
-			pMC->StopEvent();
-		}
-	    }
+//
+//  Calls the charge disintegration method of the current chamber and adds
+//  the simulated cluster to the root treee 
+//
+    Int_t clhits[7];
+    Float_t newclust[6][500];
+    Int_t nnew;
+    
+    
+//
+//  Integrated pulse height on chamber
+
+    
+    clhits[0]=fNhits+1;
+//
+//
+//    if (idvol == 6) printf("\n ->Disintegration %f %f %f", xhit, yhit, eloss );
+    
+
+    ((AliMUONChamber*) (*fChambers)[idvol])
+	->DisIntegration(eloss, tof, xhit, yhit, zhit, nnew, newclust);
+    Int_t ic=0;
+//    if (idvol == 6) printf("\n nnew  %d \n", nnew);
+//
+//  Add new clusters
+    for (Int_t i=0; i<nnew; i++) {
+	if (Int_t(newclust[3][i]) > 0) {
+	    ic++;
+// Cathode plane
+	    clhits[1] = Int_t(newclust[5][i]);
+//  Cluster Charge
+	    clhits[2] = Int_t(newclust[0][i]);
+//  Pad: ix
+	    clhits[3] = Int_t(newclust[1][i]);
+//  Pad: iy 
+	    clhits[4] = Int_t(newclust[2][i]);
+//  Pad: charge
+	    clhits[5] = Int_t(newclust[3][i]);
+//  Pad: chamber sector
+	    clhits[6] = Int_t(newclust[4][i]);
+	    
+	    AddPadHit(clhits);
 	}
     }
 }
-void AliMUON::ReconstructClusters()
+
+//----------------------------------------------------------------------
+
+void AliMUON::Digitise(Int_t nev,Int_t bgrEvent,Option_t *option,Option_t *opt,Text_t *filename)
+{
+    // keep galice.root for signal and name differently the file for 
+    // background when add! otherwise the track info for signal will be lost !
+  
+    static Bool_t first=kTRUE;
+    static TFile *file;
+    char *addBackground = strstr(option,"Add");
+
+
+    AliMUONChamber*   iChamber;
+    AliSegmentation*  segmentation;
+
+    
+    Int_t trk[50];
+    Int_t chtrk[50];  
+    TObjArray *list=new TObjArray;
+    static TClonesArray *pAddress=0;
+    if(!pAddress) pAddress=new TClonesArray("TVector",1000);
+    Int_t digits[5]; 
+
+    AliMUON *pMUON  = (AliMUON *) gAlice->GetModule("MUON");
+    AliHitMap** hitMap= new AliHitMap* [AliMUONConstants::NCh()];
+    for (Int_t i=0; i<AliMUONConstants::NCh(); i++) {hitMap[i]=0;}
+    if (addBackground ) {
+	if(first) {
+	    fFileName=filename;
+	    cout<<"filename"<<fFileName<<endl;
+	    file=new TFile(fFileName);
+	    cout<<"I have opened "<<fFileName<<" file "<<endl;
+	    fHits2     = new TClonesArray("AliMUONHit",1000  );
+	    fPadHits2 = new TClonesArray("AliMUONPadHit",10000);
+	}	    
+	first=kFALSE;
+	file->cd();
+	//file->ls();
+	// Get Hits Tree header from file
+	if(fHits2) fHits2->Clear();
+	if(fPadHits2) fPadHits2->Clear();
+	if(fTrH1) delete fTrH1;
+	fTrH1=0;
+	
+	char treeName[20];
+	sprintf(treeName,"TreeH%d",bgrEvent);
+	fTrH1 = (TTree*)gDirectory->Get(treeName);
+        //printf("fTrH1 %p of treename %s for event %d \n",fTrH1,treeName,bgrEvent);
+	
+	if (!fTrH1) {
+	    printf("ERROR: cannot find Hits Tree for event:%d\n",bgrEvent);
+	}
+	// Set branch addresses
+	TBranch *branch;
+	char branchname[20];
+	sprintf(branchname,"%s",GetName());
+	if (fTrH1 && fHits2) {
+	    branch = fTrH1->GetBranch(branchname);
+	    if (branch) branch->SetAddress(&fHits2);
+	}
+	if (fTrH1 && fPadHits2) {
+	    branch = fTrH1->GetBranch("MUONCluster");
+	    if (branch) branch->SetAddress(&fPadHits2);
+	}
+// test
+	//Int_t ntracks1 =(Int_t)fTrH1->GetEntries();
+	//printf("background - ntracks1 - %d\n",ntracks1);
+    }
+    //
+    // loop over cathodes
+    //
+    AliHitMap* hm;
+    Int_t countadr=0;
+    for (int icat=0; icat<2; icat++) { 
+	Int_t counter=0;
+	Int_t * nmuon = new Int_t [AliMUONConstants::NCh()];
+	for (Int_t i =0; i<AliMUONConstants::NCh(); i++) {
+	    iChamber=(AliMUONChamber*) (*fChambers)[i];
+	    if (iChamber->Nsec()==1 && icat==1) {
+		continue;
+	    } else {
+		segmentation=iChamber->SegmentationModel(icat+1);
+	    }
+	    hitMap[i] = new AliMUONHitMapA1(segmentation, list);
+	    nmuon[i]=0;
+	}
+	//printf("Start loop over tracks \n");     
+//
+//   Loop over tracks
+//
+
+	TTree *treeH = gAlice->TreeH();
+	Int_t ntracks =(Int_t) treeH->GetEntries();
+	Int_t jj;
+	Int_t nmaxmuon = 5;
+
+	Float_t ** xhit = new Float_t * [AliMUONConstants::NCh()];
+	for (jj=0; jj<AliMUONConstants::NCh(); jj++)
+	  xhit[jj] = new Float_t[nmaxmuon];
+	Float_t ** yhit = new Float_t * [AliMUONConstants::NCh()];
+	for (jj=0; jj<AliMUONConstants::NCh(); jj++)
+	  yhit[jj] = new Float_t[nmaxmuon];
+
+	for (Int_t track=0; track<ntracks; track++) {
+	    gAlice->ResetHits();
+	    treeH->GetEvent(track);
+//
+//   Loop over hits
+	    for(AliMUONHit* mHit=(AliMUONHit*)pMUON->FirstHit(-1); 
+		mHit;
+		mHit=(AliMUONHit*)pMUON->NextHit()) 
+	    {
+		Int_t   nch   = mHit->fChamber-1;  // chamber number
+		if (nch > AliMUONConstants::NCh()-1) continue;
+//		if (nch > 9) continue;
+		iChamber = &(pMUON->Chamber(nch));
+                // new 17.07.99
+		if (addBackground) {
+
+		    if (mHit->fParticle == kMuonPlus 
+			|| mHit->fParticle == kMuonMinus) {
+		      // mark muon hits
+		      if (nmuon[nch] < nmaxmuon) {
+			xhit[nch][nmuon[nch]]=mHit->X();
+			yhit[nch][nmuon[nch]]=mHit->Y();
+			nmuon[nch]++;
+		      }
+		      // ignore muon if too many compared to nmaxmuon
+		      else printf("AliMUON::Digitize: nmuon %d ==> ignored\n",nmuon[nch]);
+		    }
+		}
+		
+
+
+		
+//
+// Loop over pad hits
+		for (AliMUONPadHit* mPad=
+			 (AliMUONPadHit*)pMUON->FirstPad(mHit,fPadHits);
+		     mPad;
+		     mPad=(AliMUONPadHit*)pMUON->NextPad(fPadHits))
+		{
+		    Int_t cathode  = mPad->fCathode;    // cathode number
+		    Int_t ipx      = mPad->fPadX;       // pad number on X
+		    Int_t ipy      = mPad->fPadY;       // pad number on Y
+		    Int_t iqpad    = Int_t(mPad->fQpad);// charge per pad
+//		    printf("\n Pad: %d %d %d %d", ipx, ipy, cathode,nch);
+//
+//
+		    
+		    if (cathode != (icat+1)) continue;
+		    // fill the info array
+//		    Float_t thex, they, thez;
+		    segmentation=iChamber->SegmentationModel(cathode);
+//		    segmentation->GetPadC(ipx,ipy,thex,they,thez);
+//		    Float_t rpad=TMath::Sqrt(thex*thex+they*they);
+//		    if (rpad < rmin || iqpad ==0 || rpad > rmax) continue;
+
+		    new((*pAddress)[countadr++]) TVector(2);
+		    TVector &trinfo=*((TVector*) (*pAddress)[countadr-1]);
+		    trinfo(0)=(Float_t)track;
+		    trinfo(1)=(Float_t)iqpad;
+
+		    digits[0]=ipx;
+		    digits[1]=ipy;
+		    digits[2]=iqpad;
+		    digits[3]=iqpad;
+		    if (mHit->fParticle == kMuonPlus ||
+			mHit->fParticle == kMuonMinus) {
+			digits[4]=mPad->fHitNumber;
+		    } else digits[4]=-1;
+
+		    AliMUONTransientDigit* pdigit;
+		    // build the list of fired pads and update the info
+		    if (!hitMap[nch]->TestHit(ipx, ipy)) {
+
+			list->AddAtAndExpand(
+			    new AliMUONTransientDigit(nch,digits),counter);
+			
+			hitMap[nch]->SetHit(ipx, ipy, counter);
+			counter++;
+			pdigit=(AliMUONTransientDigit*)list->At(list->GetLast());
+			// list of tracks
+			TObjArray *trlist=(TObjArray*)pdigit->TrackList();
+			trlist->Add(&trinfo);
+		    } else {
+			pdigit=(AliMUONTransientDigit*) hitMap[nch]->GetHit(ipx, ipy);
+			// update charge
+			(*pdigit).fSignal+=iqpad;
+			(*pdigit).fPhysics+=iqpad;			
+			// update list of tracks
+			TObjArray* trlist=(TObjArray*)pdigit->TrackList();
+			Int_t lastEntry=trlist->GetLast();
+			TVector *pTrack=(TVector*)trlist->At(lastEntry);
+			TVector &ptrk=*pTrack;
+			Int_t lastTrack  = Int_t(ptrk(0));
+			Int_t lastCharge = Int_t(ptrk(1));
+			if (lastTrack==track) {
+			    lastCharge+=iqpad;
+			    trlist->RemoveAt(lastEntry);
+			    trinfo(0)=lastTrack;
+			    trinfo(1)=lastCharge;
+			    trlist->AddAt(&trinfo,lastEntry);
+			} else {
+			    trlist->Add(&trinfo);
+			}
+			// check the track list
+			Int_t nptracks=trlist->GetEntriesFast();
+			if (nptracks > 2) {
+			    for (Int_t tr=0;tr<nptracks;tr++) {
+				TVector *ppTrack=(TVector*)trlist->At(tr);
+				TVector &pptrk=*ppTrack;
+				trk[tr]   = Int_t(pptrk(0));
+				chtrk[tr] = Int_t(pptrk(1));
+			    }
+			} // end if nptracks
+		    } //  end if pdigit
+		} //end loop over clusters
+	    } // hit loop
+	} // track loop
+
+	// open the file with background
+       
+	if (addBackground) {
+	    ntracks =(Int_t)fTrH1->GetEntries();
+//
+//   Loop over tracks
+//
+	    for (Int_t track=0; track<ntracks; track++) {
+
+		if (fHits2)       fHits2->Clear();
+		if (fPadHits2)   fPadHits2->Clear();
+
+		fTrH1->GetEvent(track);
+//
+//   Loop over hits
+		AliMUONHit* mHit;
+		for(int i=0;i<fHits2->GetEntriesFast();++i) 
+		{	
+		    mHit=(AliMUONHit*) (*fHits2)[i];
+		    Int_t   nch   = mHit->fChamber-1;  // chamber number
+		    if (nch >9) continue;
+		    iChamber = &(pMUON->Chamber(nch));
+//		    Int_t rmin = (Int_t)iChamber->RInner();
+//		    Int_t rmax = (Int_t)iChamber->ROuter();
+                    Float_t xbgr=mHit->X();
+		    Float_t ybgr=mHit->Y();
+		    Bool_t cond=kFALSE;
+		    
+		    for (Int_t imuon =0; imuon < nmuon[nch]; imuon++) {
+			Float_t dist= (xbgr-xhit[nch][imuon])*(xbgr-xhit[nch][imuon])
+			    +(ybgr-yhit[nch][imuon])*(ybgr-yhit[nch][imuon]);
+			if (dist<100) cond=kTRUE;
+		    }
+		    if (!cond) continue;
+		    
+//
+// Loop over pad hits
+		    for (AliMUONPadHit* mPad=
+			     (AliMUONPadHit*)pMUON->FirstPad(mHit,fPadHits2);
+			 mPad;
+			 mPad=(AliMUONPadHit*)pMUON->NextPad(fPadHits2))
+		    {
+			//		    mPad = (AliMUONPadHit*) (*fPadHits2)[j];
+			Int_t cathode  = mPad->fCathode;    // cathode number
+			Int_t ipx      = mPad->fPadX;       // pad number on X
+			Int_t ipy      = mPad->fPadY;       // pad number on Y
+			Int_t iqpad    = Int_t(mPad->fQpad);// charge per pad
+
+			if (cathode != (icat+1)) continue;
+// 			printf("\n Pad: %d %d %d", ipx, ipy, cathode);
+			
+//			Float_t thex, they, thez;
+//			segmentation=iChamber->SegmentationModel(cathode);
+//			segmentation->GetPadC(ipx,ipy,thex,they,thez);
+//			Float_t rpad=TMath::Sqrt(thex*thex+they*they);
+//			if (rpad < rmin || iqpad ==0 || rpad > rmax) continue;
+			new((*pAddress)[countadr++]) TVector(2);
+			TVector &trinfo=*((TVector*) (*pAddress)[countadr-1]);
+			trinfo(0)=-1;  // tag background
+			trinfo(1)=-1;
+			
+			digits[0]=ipx;
+			digits[1]=ipy;
+			digits[2]=iqpad;
+			digits[3]=0;
+			digits[4]=-1;
+			
+			AliMUONTransientDigit* pdigit;
+			// build the list of fired pads and update the info
+			if (!hitMap[nch]->TestHit(ipx, ipy)) {
+			    list->AddAtAndExpand(new AliMUONTransientDigit(nch,digits),counter);
+			    
+			    hitMap[nch]->SetHit(ipx, ipy, counter);
+			    counter++;
+			    
+			    pdigit=(AliMUONTransientDigit*)list->At(list->GetLast());
+			    // list of tracks
+			    TObjArray *trlist=(TObjArray*)pdigit->
+				TrackList();
+			    trlist->Add(&trinfo);
+			} else {
+			    pdigit=(AliMUONTransientDigit*) hitMap[nch]->GetHit(ipx, ipy);
+			    // update charge
+			    (*pdigit).fSignal+=iqpad;
+			    
+			    // update list of tracks
+			    TObjArray* trlist=(TObjArray*)pdigit->
+				TrackList();
+			    Int_t lastEntry=trlist->GetLast();
+			    TVector *pTrack=(TVector*)trlist->
+				At(lastEntry);
+			    TVector &ptrk=*pTrack;
+			    Int_t lastTrack=Int_t(ptrk(0));
+			    if (lastTrack==-1) {
+				continue;
+			    } else {
+				trlist->Add(&trinfo);
+			    }
+				// check the track list
+			    Int_t nptracks=trlist->GetEntriesFast();
+			    if (nptracks > 0) {
+				for (Int_t tr=0;tr<nptracks;tr++) {
+				    TVector *ppTrack=(TVector*)trlist->At(tr);
+				    TVector &pptrk=*ppTrack;
+				    trk[tr]=Int_t(pptrk(0));
+				    chtrk[tr]=Int_t(pptrk(1));
+				}
+			    } // end if nptracks
+			} //  end if pdigit
+		    } //end loop over clusters
+		} // hit loop
+	    } // track loop
+	    //Int_t nentr2=list->GetEntriesFast();
+	    //printf(" \n counter2, nentr2 %d %d \n",counter,nentr2);
+	    TTree *fAli=gAlice->TreeK();
+            TFile *file=NULL;
+	    
+	    if (fAli) file =fAli->GetCurrentFile();
+	    file->cd();
+	} // if addBackground
+	delete [] xhit;
+	delete [] yhit;
+
+	Int_t tracks[10];
+	Int_t charges[10];
+	Int_t nentries=list->GetEntriesFast();
+	
+	for (Int_t nent=0;nent<nentries;nent++) {
+	    AliMUONTransientDigit *address=(AliMUONTransientDigit*)list->At(nent);
+	    if (address==0) continue; 
+	    Int_t ich=address->fChamber;
+	    Int_t q=address->fSignal; 
+	    iChamber=(AliMUONChamber*) (*fChambers)[ich];
+//
+//  Digit Response (noise, threshold, saturation, ...)
+//		if (address->fPhysics !=0 ) address->fPhysics+=(Int_t)Noise; 
+	    AliMUONResponse * response=iChamber->ResponseModel();
+	    q=response->DigitResponse(q);
+	    
+	    if (!q) continue;
+	    
+	    digits[0]=address->fPadX;
+	    digits[1]=address->fPadY;
+	    digits[2]=q;
+	    digits[3]=address->fPhysics;
+	    digits[4]=address->fHit;
+	    
+	    TObjArray* trlist=(TObjArray*)address->TrackList();
+	    Int_t nptracks=trlist->GetEntriesFast();
+	    //printf("nptracks, trlist   %d  %p\n",nptracks,trlist);
+
+	    // this was changed to accomodate the real number of tracks
+	    if (nptracks > 10) {
+		cout<<"Attention - nptracks > 10 "<<nptracks<<endl;
+		nptracks=10;
+	    }
+	    if (nptracks > 2) {
+		printf("Attention - nptracks > 2  %d \n",nptracks);
+		printf("cat,ich,ix,iy,q %d %d %d %d %d \n",icat,ich,digits[0],digits[1],q);
+	    }
+	    for (Int_t tr=0;tr<nptracks;tr++) {
+		TVector *ppP=(TVector*)trlist->At(tr);
+		if(!ppP ) printf("ppP - %p\n",ppP);
+		TVector &pp  =*ppP;
+		tracks[tr]=Int_t(pp(0));
+		charges[tr]=Int_t(pp(1));
+                //printf("tracks, charges - %d %d\n",tracks[tr],charges[tr]);
+	    }      //end loop over list of tracks for one pad
+            // Sort list of tracks according to charge
+	    if (nptracks > 1) {
+		SortTracks(tracks,charges,nptracks);
+	    }
+	    if (nptracks < 10 ) {
+		for (Int_t i=nptracks; i<10; i++) {
+		    tracks[i]=0;
+		    charges[i]=0;
+		}
+	    }
+	    
+	    // fill digits
+	    pMUON->AddDigits(ich,tracks,charges,digits);
+	    // delete trlist;
+	}
+	//cout<<"I'm out of the loops for digitisation"<<endl;
+	//	gAlice->GetEvent(nev);
+	gAlice->TreeD()->Fill();
+	pMUON->ResetDigits();
+	list->Delete();
+
+	
+	for(Int_t ii=0;ii<AliMUONConstants::NCh();++ii) {
+	    if (hitMap[ii]) {
+		hm=hitMap[ii];
+		delete hm;
+		hitMap[ii]=0;
+	    }
+	}
+	delete [] nmuon;    
+    } //end loop over cathodes
+    delete [] hitMap;
+    char hname[30];
+    sprintf(hname,"TreeD%d",nev);
+    gAlice->TreeD()->Write(hname);
+    // reset tree
+    gAlice->TreeD()->Reset();
+    delete list;
+    
+    pAddress->Delete();
+    // gObjectTable->Print();
+}
+
+void AliMUON::SortTracks(Int_t *tracks,Int_t *charges,Int_t ntr)
+{
+  //
+  // Sort the list of tracks contributing to a given digit
+  // Only the 3 most significant tracks are acctually sorted
+  //
+  
+  //
+  //  Loop over signals, only 3 times
+  //
+  
+  Int_t qmax;
+  Int_t jmax;
+  Int_t idx[3] = {-2,-2,-2};
+  Int_t jch[3] = {-2,-2,-2};
+  Int_t jtr[3] = {-2,-2,-2};
+  Int_t i,j,imax;
+  
+  if (ntr<3) imax=ntr;
+  else imax=3;
+  for(i=0;i<imax;i++){
+    qmax=0;
+    jmax=0;
+    
+    for(j=0;j<ntr;j++){
+      
+      if((i == 1 && j == idx[i-1]) 
+	 ||(i == 2 && (j == idx[i-1] || j == idx[i-2]))) continue;
+      
+      if(charges[j] > qmax) {
+	qmax = charges[j];
+	jmax=j;
+      }       
+    } 
+    
+    if(qmax > 0) {
+      idx[i]=jmax;
+      jch[i]=charges[jmax]; 
+      jtr[i]=tracks[jmax]; 
+    }
+    
+  } 
+  
+  for(i=0;i<3;i++){
+    if (jtr[i] == -2) {
+         charges[i]=0;
+         tracks[i]=0;
+    } else {
+         charges[i]=jch[i];
+         tracks[i]=jtr[i];
+    }
+  }
+
+}
+
+//___________________________________________
+void AliMUON::Trigger(Int_t nev){
+// call the Trigger Algorithm and fill TreeR
+
+  Int_t singlePlus[3]  = {0,0,0}; 
+  Int_t singleMinus[3] = {0,0,0}; 
+  Int_t singleUndef[3] = {0,0,0};
+  Int_t pairUnlike[3]  = {0,0,0}; 
+  Int_t pairLike[3]    = {0,0,0};
+
+  ResetTrigger();
+  AliMUONTriggerDecision* decision= new AliMUONTriggerDecision(1);
+  decision->Trigger();   
+  decision->GetGlobalTrigger(singlePlus, singleMinus, singleUndef,
+			     pairUnlike, pairLike);
+// add a local trigger in the list 
+  AddGlobalTrigger(singlePlus, singleMinus, singleUndef, pairUnlike, pairLike);
+  Int_t i;
+  
+  for (Int_t icirc=0; icirc<AliMUONConstants::NTriggerCircuit(); icirc++) { 
+      if(decision->GetITrigger(icirc)==1) {
+	  Int_t localtr[7]={0,0,0,0,0,0,0};      
+	  Int_t loLpt[2]={0,0}; Int_t loHpt[2]={0,0}; Int_t loApt[2]={0,0};
+	  decision->GetLutOutput(icirc, loLpt, loHpt, loApt);
+	  localtr[0] = icirc;
+	  localtr[1] = decision->GetStripX11(icirc);
+	  localtr[2] = decision->GetDev(icirc);
+	  localtr[3] = decision->GetStripY11(icirc);
+	  for (i=0; i<2; i++) {    // convert the Lut output in 1 digit 
+	      localtr[4] = localtr[4]+Int_t(loLpt[i]*TMath::Power(2,i));
+	      localtr[5] = localtr[5]+Int_t(loHpt[i]*TMath::Power(2,i));
+	      localtr[6] = localtr[6]+Int_t(loApt[i]*TMath::Power(2,i));
+	  }
+	  AddLocalTrigger(localtr);  // add a local trigger in the list
+      }
+  }
+  delete decision;
+
+  gAlice->TreeR()->Fill();
+  ResetTrigger();
+  char hname[30];
+  sprintf(hname,"TreeR%d",nev);
+  gAlice->TreeR()->Write(hname);
+  gAlice->TreeR()->Reset();
+  printf("\n End of trigger for event %d", nev);
+}
+
+
+//____________________________________________
+void AliMUON::FindClusters(Int_t nev,Int_t lastEntry)
 {
 //
-// Initialize the necessary correspondance table
+//  Perform cluster finding
 //
-    static const Int_t kMaxNpadx = 600;
-    static const Int_t kMaxNpady = 600;
-    Int_t elem[kMaxNpadx*2][kMaxNpady*2];
+    TClonesArray *dig1, *dig2;
+    Int_t ndig, k;
+    dig1 = new TClonesArray("AliMUONDigit",1000);
+    dig2 = new TClonesArray("AliMUONDigit",1000);
+    AliMUONDigit *digit;
 //
 // Loop on chambers and on cathode planes
 //
-    for (Int_t ich=0;ich<10;ich++)
-	for (Int_t icat=0;icat<2;icat++) {
-	    //
-	    // Get ready the current chamber stuff
-	    //
-	    AliMUONchamber*  iChamber= &(this->Chamber(ich));
-	    AliMUONsegmentation*  segmentation = 
-		iChamber->GetSegmentationModel(icat+1);
-	    if (!segmentation) 
-		continue;
-	    TClonesArray *MUONdigits  = this->DigitsAddress(ich);
-	    if (MUONdigits == 0) 
-		continue;
-	    cout << "Npx " << segmentation->Npx() 
-		 << " Npy " << segmentation->Npy() << endl;
-	    //      
-	    // Ready the digits
-	    //  
-	    gAlice->ResetDigits();
-	    gAlice->TreeD()->GetEvent(icat+1); // spurious +1 ...
-	    Int_t ndigits = MUONdigits->GetEntriesFast();
-	    if (ndigits == 0) 
-		continue;
-	    printf("Found %d digits for cathode %d in chamber %d \n",
-		   ndigits,icat,ich+1);
-	    AliMUONdigit  *mdig;
-	    AliMUONRecCluster *Cluster;
-	    //
-	    // Build the correspondance table
-	    //
-	    memset(elem,0,sizeof(Int_t)*kMaxNpadx*kMaxNpady*4);
-	    Int_t digit;
-	    for (digit=0; digit<ndigits; digit++) 
-	    {
-		mdig    = (AliMUONdigit*)MUONdigits->UncheckedAt(digit);
-		elem[kMaxNpadx+mdig->fPadX][kMaxNpady+mdig->fPadY] = digit+1;
-		// because default is 0
-	    }
-	    //
-	    // Declare some useful variables
-	    //
-	    Int_t Xlist[10];
-	    Int_t Ylist[10];
-	    Int_t Nlist;
-	    Int_t nclust=0;
-	    //
-	    // loop over digits
-	    //
-	    for (digit=0;digit<ndigits;digit++) {
-		mdig    = (AliMUONdigit*)MUONdigits->UncheckedAt(digit);
-		//
-		// if digit still available, start clustering
-		//
-		if (elem[kMaxNpadx+mdig->fPadX][kMaxNpady+mdig->fPadY]) {
-		    Cluster = new AliMUONRecCluster(digit, ich, icat);
-		    elem[kMaxNpadx+mdig->fPadX][kMaxNpady+mdig->fPadY]=0;
-		    //
-		    // loop over the current list of digits 
-                    // and look for neighbours
-		    //
-		    for(Int_t clusDigit=Cluster->FirstDigitIndex();
-			clusDigit!=Cluster->InvalidDigitIndex();
-			clusDigit=Cluster->NextDigitIndex()) {
-			AliMUONdigit* pDigit=(AliMUONdigit*)MUONdigits
-			    ->UncheckedAt(clusDigit);
-			segmentation->Neighbours(pDigit->fPadX,pDigit->fPadY, 
-						 &Nlist, Xlist, Ylist);
-			for (Int_t Ilist=0;Ilist<Nlist;Ilist++) {
-			    if (elem[kMaxNpadx+Xlist[Ilist]][kMaxNpady
-							    +Ylist[Ilist]]) {
-				//
-				// Add the digit at the end and reset the table
-				//
-				Cluster->AddDigit(elem[kMaxNpadx+Xlist[Ilist]][kMaxNpady+Ylist[Ilist]]-1);
-				elem[kMaxNpadx+Xlist[Ilist]][kMaxNpady
-							    +Ylist[Ilist]] =0;
-			    } // if elem
-			} // for Ilist
-		    } // for pDigit
-		    //
-		    // Store the cluster (good time to do Cluster polishing)
-		    //
-		    segmentation->FitXY(Cluster,MUONdigits);
-		    nclust ++;
-		    AddRecCluster(ich,icat,Cluster);
-		}
-	    }
-	    printf("===> %d Clusters\n",nclust); 
-	} // for icat
-}
+    
+    for (Int_t ich=0;ich<10;ich++) {
+	AliMUONChamber* iChamber=(AliMUONChamber*) (*fChambers)[ich];
+	AliMUONClusterFinderVS* rec = iChamber->ReconstructionModel();    
+	gAlice->ResetDigits();
+	gAlice->TreeD()->GetEvent(lastEntry);
+	TClonesArray *muonDigits  = this->DigitsAddress(ich);
+	ndig=muonDigits->GetEntriesFast();
+	printf("\n 1 Found %d digits in %p %d", ndig, muonDigits,ich);
+	TClonesArray &lhits1 = *dig1;
+	Int_t n=0;
+	for (k=0; k<ndig; k++) {
+	    digit=(AliMUONDigit*) muonDigits->UncheckedAt(k);
+	    if (rec->TestTrack(digit->fTracks[0]))
+		new(lhits1[n++]) AliMUONDigit(*digit);
+	}
+	gAlice->ResetDigits();
+	gAlice->TreeD()->GetEvent(lastEntry+1);
+	muonDigits  = this->DigitsAddress(ich);
+	ndig=muonDigits->GetEntriesFast();
+	printf("\n 2 Found %d digits in %p %d", ndig, muonDigits, ich);
+	TClonesArray &lhits2 = *dig2;
+	n=0;
+	
+	for (k=0; k<ndig; k++) {
+	    digit= (AliMUONDigit*) muonDigits->UncheckedAt(k);
+	    if (rec->TestTrack(digit->fTracks[0]))
+	    new(lhits2[n++]) AliMUONDigit(*digit);
+	}
 
+	if (rec) {	 
+	    AliMUONClusterInput::Instance()->SetDigits(ich, dig1, dig2);
+	    rec->FindRawClusters();
+	}
+	dig1->Delete();
+	dig2->Delete();
+    } // for ich
+    gAlice->TreeR()->Fill();
+    ResetRawClusters();
+    char hname[30];
+    sprintf(hname,"TreeR%d",nev);
+    gAlice->TreeR()->Write(hname);
+    gAlice->TreeR()->Reset();
+    printf("\n End of cluster finding for event %d", nev);
+    
+    delete dig1;
+    delete dig2;
+    //gObjectTable->Print();
+}
  
-//______________________________________________________________________________
+
 void AliMUON::Streamer(TBuffer &R__b)
 {
    // Stream an object of class AliMUON.
-      AliMUONchamber       *iChamber;
-      AliMUONsegmentation  *segmentation;
-      AliMUONresponse      *response;
-      TClonesArray         *digitsaddress;
-      
-   if (R__b.IsReading()) {
-      Version_t R__v = R__b.ReadVersion(); if (R__v) { }
-      AliDetector::Streamer(R__b);
-      R__b >> fNclusters;
-      R__b >> fClusters; // diff
-      R__b >> fDchambers;
-      R__b.ReadArray(fNdch);
-      //
-      R__b >> fAccCut;
-      R__b >> fAccMin;
-      R__b >> fAccMax; 
-      //   
-      R__b >> fChambers;
+      AliMUONChamber        *iChamber;
+      AliMUONTriggerCircuit *iTriggerCircuit;
+      AliSegmentation       *segmentation;
+      AliMUONResponse       *response;
+      TClonesArray          *digitsaddress;
+      TClonesArray          *rawcladdress;
+      Int_t i;
+      if (R__b.IsReading()) {
+	  Version_t R__v = R__b.ReadVersion(); if (R__v) { }
+	  AliDetector::Streamer(R__b);
+	  R__b >> fNPadHits;
+	  R__b >> fPadHits; // diff
+	  R__b >> fNLocalTrigger;       
+	  R__b >> fLocalTrigger;       
+	  R__b >> fNGlobalTrigger;       
+	  R__b >> fGlobalTrigger;   
+	  R__b >> fDchambers;
+	  R__b >> fRawClusters;
+	  R__b.ReadArray(fNdch);
+	  R__b.ReadArray(fNrawch);
+	  R__b >> fAccCut;
+	  R__b >> fAccMin;
+	  R__b >> fAccMax; 
+	  R__b >> fChambers;
+	  R__b >> fTriggerCircuits;
+	  for (i =0; i<AliMUONConstants::NTriggerCircuit(); i++) {
+	      iTriggerCircuit=(AliMUONTriggerCircuit*) (*fTriggerCircuits)[i];
+	      iTriggerCircuit->Streamer(R__b);
+	  }
 // Stream chamber related information
-      for (Int_t i =0; i<10; i++) {
-	  iChamber=(AliMUONchamber*) (*fChambers)[i];
-	  iChamber->Streamer(R__b);
-	  if (iChamber->Nsec()==1) {
-	      segmentation=iChamber->GetSegmentationModel(1);
-	      segmentation->Streamer(R__b);
-	  } else {
-	      segmentation=iChamber->GetSegmentationModel(1);
-	      segmentation->Streamer(R__b);
-	      segmentation=iChamber->GetSegmentationModel(2);
-	      segmentation->Streamer(R__b);
+	  for (i =0; i<AliMUONConstants::NCh(); i++) {
+	      iChamber=(AliMUONChamber*) (*fChambers)[i];
+	      iChamber->Streamer(R__b);
+	      if (iChamber->Nsec()==1) {
+		  segmentation=iChamber->SegmentationModel(1);
+		  if (segmentation)
+		      segmentation->Streamer(R__b);
+	      } else {
+		  segmentation=iChamber->SegmentationModel(1);
+		  if (segmentation)
+		      segmentation->Streamer(R__b);
+		  if (segmentation)
+		      segmentation=iChamber->SegmentationModel(2);
+		  segmentation->Streamer(R__b);
+	      }
+	      response=iChamber->ResponseModel();
+	      if (response)
+		  response->Streamer(R__b);	  
+	      digitsaddress=(TClonesArray*) (*fDchambers)[i];
+	      digitsaddress->Streamer(R__b);
+	      if (i < AliMUONConstants::NTrackingCh()) {
+		  rawcladdress=(TClonesArray*) (*fRawClusters)[i];
+		  rawcladdress->Streamer(R__b);
+	      }
 	  }
-          response=iChamber->GetResponseModel();
-	  response->Streamer(R__b);	  
-	  digitsaddress=(TClonesArray*) (*fDchambers)[i];
-	  digitsaddress->Streamer(R__b);
-      }
-      
-   } else {
-      R__b.WriteVersion(AliMUON::IsA());
-      AliDetector::Streamer(R__b);
-      R__b << fNclusters;
-      R__b << fClusters; // diff
-      R__b << fDchambers;
-      R__b.WriteArray(fNdch, 10);
-      //
-      R__b << fAccCut;
-      R__b << fAccMin;
-      R__b << fAccMax; 
-      //   
-      R__b << fChambers;
-//  Stream chamber related information
-      for (Int_t i =0; i<10; i++) {
-	  iChamber=(AliMUONchamber*) (*fChambers)[i];
-	  iChamber->Streamer(R__b);
-	  if (iChamber->Nsec()==1) {
-	      segmentation=iChamber->GetSegmentationModel(1);
-	      segmentation->Streamer(R__b);
-	  } else {
-	      segmentation=iChamber->GetSegmentationModel(1);
-	      segmentation->Streamer(R__b);
-	      segmentation=iChamber->GetSegmentationModel(2);
-	      segmentation->Streamer(R__b);
+	  
+      } else {
+	  R__b.WriteVersion(AliMUON::IsA());
+	  AliDetector::Streamer(R__b);
+	  R__b << fNPadHits;
+	  R__b << fPadHits; // diff
+	  R__b << fNLocalTrigger;       
+	  R__b << fLocalTrigger;       
+	  R__b << fNGlobalTrigger;       
+	  R__b << fGlobalTrigger; 
+	  R__b << fDchambers;
+	  R__b << fRawClusters;
+	  R__b.WriteArray(fNdch, AliMUONConstants::NCh());
+	  R__b.WriteArray(fNrawch, AliMUONConstants::NTrackingCh());
+	  
+	  R__b << fAccCut;
+	  R__b << fAccMin;
+	  R__b << fAccMax; 
+	  
+	  R__b << fChambers;
+	  R__b << fTriggerCircuits;
+	  for (i =0; i<AliMUONConstants::NTriggerCircuit(); i++) {
+	      iTriggerCircuit=(AliMUONTriggerCircuit*) (*fTriggerCircuits)[i];
+	      iTriggerCircuit->Streamer(R__b);
 	  }
-          response=iChamber->GetResponseModel();
-	  response->Streamer(R__b);
-         
-	  digitsaddress=(TClonesArray*) (*fDchambers)[i];
-	  digitsaddress->Streamer(R__b);
+	  for (i =0; i<AliMUONConstants::NCh(); i++) {
+	      iChamber=(AliMUONChamber*) (*fChambers)[i];
+	      iChamber->Streamer(R__b);
+	      if (iChamber->Nsec()==1) {
+		  segmentation=iChamber->SegmentationModel(1);
+		  if (segmentation)
+		      segmentation->Streamer(R__b);
+	      } else {
+		  segmentation=iChamber->SegmentationModel(1);
+		  if (segmentation)
+		      segmentation->Streamer(R__b);
+		  segmentation=iChamber->SegmentationModel(2);
+		  if (segmentation)
+		      segmentation->Streamer(R__b);
+	      }
+	      response=iChamber->ResponseModel();
+	      if (response)
+		  response->Streamer(R__b);
+	      digitsaddress=(TClonesArray*) (*fDchambers)[i];
+	      digitsaddress->Streamer(R__b);
+	      if (i < AliMUONConstants::NTrackingCh()) {
+		  rawcladdress=(TClonesArray*) (*fRawClusters)[i];
+		  rawcladdress->Streamer(R__b);
+	      }
+	  }
       }
-   }
 }
-AliMUONcluster* AliMUON::FirstPad(AliMUONhit*  hit) 
+AliMUONPadHit* AliMUON::FirstPad(AliMUONHit*  hit, TClonesArray *clusters) 
 {
 //
     // Initialise the pad iterator
     // Return the address of the first padhit for hit
-    TClonesArray *theClusters = Clusters();
+    TClonesArray *theClusters = clusters;
     Int_t nclust = theClusters->GetEntriesFast();
     if (nclust && hit->fPHlast > 0) {
-	sMaxIterPad=hit->fPHlast;
-	sCurIterPad=hit->fPHfirst;
-	return (AliMUONcluster*) fClusters->UncheckedAt(sCurIterPad-1);
+	AliMUON::fMaxIterPad=hit->fPHlast;
+	AliMUON::fCurIterPad=hit->fPHfirst;
+	return (AliMUONPadHit*) clusters->UncheckedAt(AliMUON::fCurIterPad-1);
     } else {
 	return 0;
     }
 }
 
-AliMUONcluster* AliMUON::NextPad() 
+AliMUONPadHit* AliMUON::NextPad(TClonesArray *clusters) 
 {
-    sCurIterPad++;
-    if (sCurIterPad <= sMaxIterPad) {
-	return (AliMUONcluster*) fClusters->UncheckedAt(sCurIterPad-1);
+// Get next pad (in iterator) 
+//
+    AliMUON::fCurIterPad++;
+    if (AliMUON::fCurIterPad <= AliMUON::fMaxIterPad) {
+	return (AliMUONPadHit*) clusters->UncheckedAt(AliMUON::fCurIterPad-1);
     } else {
 	return 0;
     }
 }
 
-ClassImp(AliMUONcluster)
- 
-//___________________________________________
-AliMUONcluster::AliMUONcluster(Int_t *clhits)
-{
-   fHitNumber=clhits[0];
-   fCathode=clhits[1];
-   fQ=clhits[2];
-   fPadX=clhits[3];
-   fPadY=clhits[4];
-   fQpad=clhits[5];
-   fRSec=clhits[6];
-}
-ClassImp(AliMUONdigit)
-//_____________________________________________________________________________
-AliMUONdigit::AliMUONdigit(Int_t *digits)
-{
-  //
-  // Creates a MUON digit object to be updated
-  //
-  fPadX        = digits[0];
-  fPadY        = digits[1];
-  fSignal      = digits[2];
 
-}
-//_____________________________________________________________________________
-AliMUONdigit::AliMUONdigit(Int_t *tracks, Int_t *charges, Int_t *digits)
+AliMUONRawCluster *AliMUON::RawCluster(Int_t ichamber, Int_t icathod, Int_t icluster)
 {
-    //
-    // Creates a MUON digit object
-    //
-    fPadX        = digits[0];
-    fPadY        = digits[1];
-    fSignal      = digits[2];
-    for(Int_t i=0; i<10; i++) {
-	fTcharges[i]  = charges[i];
-	fTracks[i]    = tracks[i];
-    }
+//
+//  Return rawcluster (icluster) for chamber ichamber and cathode icathod
+//  Obsolete ??
+    TClonesArray *muonRawCluster  = RawClustAddress(ichamber);
+    ResetRawClusters();
+    TTree *treeR = gAlice->TreeR();
+    Int_t nent=(Int_t)treeR->GetEntries();
+    treeR->GetEvent(nent-2+icathod-1);
+    //treeR->GetEvent(icathod);
+    //Int_t nrawcl = (Int_t)muonRawCluster->GetEntriesFast();
+
+    AliMUONRawCluster * mRaw = (AliMUONRawCluster*)muonRawCluster->UncheckedAt(icluster);
+    //printf("RawCluster _ nent nrawcl icluster mRaw %d %d %d%p\n",nent,nrawcl,icluster,mRaw);
+    
+    return  mRaw;
 }
 
-ClassImp(AliMUONlist)
- 
-//____________________________________________________________________________
-    AliMUONlist::AliMUONlist(Int_t rpad, Int_t *digits): 
-	AliMUONdigit(digits)
+AliMUON& AliMUON::operator = (const AliMUON& rhs)
 {
-    //
-    // Creates a MUON digit list object
-    //
-
-    fRpad = rpad;
-    fTrackList   = new TObjArray;
- 
-}
-//_____________________________________________________________________________
-
-
-ClassImp(AliMUONhit)
- 
-//___________________________________________
-    AliMUONhit::AliMUONhit(Int_t shunt, Int_t track, Int_t *vol, Float_t *hits):
-	AliHit(shunt, track)
-{
-    fChamber=vol[0];
-    fParticle=hits[0];
-    fX=hits[1];
-    fY=hits[2];
-    fZ=hits[3];
-    fTheta=hits[4];
-    fPhi=hits[5];
-    fTlength=hits[6];
-    fEloss=hits[7];
-    fPHfirst=(Int_t) hits[8];
-    fPHlast=(Int_t) hits[9];
-}
-ClassImp(AliMUONreccluster) 
-
-ClassImp(AliMUONRecCluster)
-
-//_____________________________________________________________________
-AliMUONRecCluster::AliMUONRecCluster()
-{
-    fDigits=0;
-    fNdigit=-1;
-}
-
-AliMUONRecCluster::
-AliMUONRecCluster(Int_t FirstDigit,Int_t Ichamber, Int_t Icathod)
-{
-    fX = 0.;
-    fY = 0.;
-    fDigits = new TArrayI(10);
-    fNdigit=0;
-    AddDigit(FirstDigit);
-    fChamber=Ichamber;
-    fCathod=Icathod;
-}
-
-void AliMUONRecCluster::AddDigit(Int_t Digit)
-{
-    if (fNdigit==fDigits->GetSize()) {
-	//enlarge the list by hand!
-	Int_t *array= new Int_t[fNdigit*2];
-	for(Int_t i=0;i<fNdigit;i++)
-	    array[i] = fDigits->At(i);
-	fDigits->Adopt(fNdigit*2,array);
-    }
-    fDigits->AddAt(Digit,fNdigit);
-    fNdigit++;
+// copy operator
+// dummy version
+    return *this;
 }
 
 
-AliMUONRecCluster::~AliMUONRecCluster()
-{
-    if (fDigits)
-	delete fDigits;
-}
 
-Int_t AliMUONRecCluster::FirstDigitIndex()
-{
-    fCurrentDigit=0;
-    return fDigits->At(fCurrentDigit);
-}
 
-Int_t AliMUONRecCluster::NextDigitIndex()
-{
-    fCurrentDigit++;
-    if (fCurrentDigit<fNdigit)
-	return fDigits->At(fCurrentDigit);
-    else 
-	return InvalidDigitIndex();
-}
 
-Int_t AliMUONRecCluster::NDigits()
-{
-    return fNdigit;
-}
 
-void AliMUONRecCluster::Finish()
-{
-    // In order to reconstruct coordinates, one has to
-    // get back to the digits which is not trivial here,
-    // because we don't know where digits are stored!
-    // Center Of Gravity, or other method should be
-    // a property of AliMUON class!
-}
+
+
 
 
 

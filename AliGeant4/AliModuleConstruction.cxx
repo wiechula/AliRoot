@@ -4,8 +4,10 @@
 // See the class description in the header file.
 
 #include "AliModuleConstruction.h"
+#include "AliModuleConstructionMessenger.h"
 #include "AliGlobals.h"
 #include "AliLVStructure.h"
+#include "AliModule.h"
 
 #ifdef ALICE_VISUALIZE
 #include "AliColourStore.h"
@@ -15,8 +17,6 @@
 #endif //ALICE_VISUALIZE
 #include <G4LogicalVolumeStore.hh>
 #include <G4LogicalVolume.hh>
-
-#include <fstream.h>
 
 AliModuleConstruction::AliModuleConstruction(G4String moduleName) 
   : fModuleName(moduleName), 
@@ -283,7 +283,13 @@ void AliModuleConstruction::SetVolumeVisibility(G4LogicalVolume* lv,
 
   if (lv) {
     const G4VisAttributes* kpVisAttributes = lv->GetVisAttributes ();
-    G4VisAttributes* newVisAttributes = new G4VisAttributes(kpVisAttributes); 
+    G4VisAttributes* newVisAttributes; 
+    if (kpVisAttributes) {
+      G4Colour oldColour   = kpVisAttributes->GetColour();
+      newVisAttributes = new G4VisAttributes(oldColour); 
+    }  
+    else
+      newVisAttributes = new G4VisAttributes();
     delete kpVisAttributes;
 
     newVisAttributes->SetVisibility(visibility); 
@@ -331,8 +337,9 @@ void AliModuleConstruction::SetVolumeColour(G4LogicalVolume* lv,
 
   if (lv) {
     const G4VisAttributes* kpVisAttributes = lv->GetVisAttributes ();
-    G4VisAttributes* newVisAttributes = new G4VisAttributes(kpVisAttributes); 
     delete kpVisAttributes;
+
+    G4VisAttributes* newVisAttributes = new G4VisAttributes(); 
 
     AliColourStore* pColours = AliColourStore::Instance();
     const G4Colour kColour = pColours->GetColour(colName);
