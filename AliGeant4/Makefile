@@ -82,7 +82,8 @@ ALILIBS := $(filter-out -lgeant321,$(ALILIBS))
 ALILIBS := $(filter-out -lgeant3,$(ALILIBS))
 ALILIBS := $(filter-out -lZDC,$(ALILIBS))
 ALILIBS := $(filter-out -lITS,$(ALILIBS))
-ALILIBS += -lAliGeant4 -L$(MCINSTALL)/lib/Linux-g++ -lgeant4mc
+//ALILIBS += -lAliGeant4 -L$(MCINSTALL)/lib/Linux-egcs -lgeant4mc
+ALILIBS += -lAliGeant4 -L$(MCINSTALL)/lib/$(G4SYSTEM) -lgeant4mc
 
 #LIBS = $(ALILIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia6 -lpythia6 -lpdf \
 #	-lTHijing -lhijing  -lTMevSim -lmevsim  \
