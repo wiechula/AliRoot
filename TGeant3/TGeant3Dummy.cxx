@@ -135,6 +135,7 @@ void  TGeant3::Gsstak(Int_t) {}
 void  TGeant3::Gsxyz() {}
 void  TGeant3::Gtrack() {}
 void  TGeant3::Gtreve() {}
+void  TGeant3::Gtreve_root() {}
 void  TGeant3::Grndm(Float_t*, const Int_t) const {}
 void  TGeant3::Grndmq(Int_t&, Int_t&, const Int_t, const Text_t*) {}
 
