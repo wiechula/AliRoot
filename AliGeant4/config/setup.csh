@@ -296,6 +296,8 @@ set SYSTEM = `uname`
 if ( $SYSTEM == "HP-UX" ) then
   setenv G4SYSTEM "HP-aCC"
   #setenv G4USE_OSPACE 1      # compiling with Object Space STL
+  setenv G4NO_STD_NAMESPACE 1 # required when compiling with native STL
+                              # (check if needed for geant4.2.0)
 endif 
 if ( $SYSTEM == "Linux" ) then
   setenv G4SYSTEM "Linux-g++"
@@ -618,8 +620,12 @@ if ( "$?AG4_OPACS" == 1 ) then
   #
   setenv G4VIS_BUILD_OPENGLX_DRIVER 1
   setenv G4VIS_USE_OPENGLX          1
-  setenv OGLHOME /usr/local
-  setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
+  if ( $SYSTEM == "Linux" ) then
+    setenv OGLHOME /usr/local
+    setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
+  else
+    setenv OGLHOME $LHCXX_BASE/OpenGL/pro
+  endif
 
   #
   # OPACS

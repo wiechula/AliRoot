@@ -77,8 +77,7 @@ ALILIBS := $(filter-out -lTGeant3,$(ALILIBS))
 ALILIBS := $(filter-out -lZDC,$(ALILIBS))
 ALILIBS += -lTGeant4 -lAliGeant4
 
-LIBS = $(ALILIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia -lpythia -lpdf \
-	-lTHijing -lhijing $(G4LDLIBS) 
+LIBS = $(ALILIBS) $(G4LDLIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia -lpythia -lpdf
 
 TOCLEAN	      = $(OBJS) $(POBJ) *Cint.cxx *Cint.h
 
