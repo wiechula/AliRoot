@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.11  2001/11/27 08:50:33  hristov
+BranchOld replaced by Branch
+
 Revision 1.10  2001/11/14 10:50:45  cblume
 Changes in digits IO. Add merging of summable digits
 
@@ -86,6 +89,9 @@ Add new TRD classes
 #include <TFile.h>
 
 #include "AliRun.h"
+#include "AliRunLoader.h"
+#include "AliLoader.h"
+
 #include "AliTRD.h"
 #include "AliTRDclusterizer.h"
 #include "AliTRDcluster.h"
@@ -101,8 +107,6 @@ AliTRDclusterizer::AliTRDclusterizer():TNamed()
   // AliTRDclusterizer default constructor
   //
 
-  fInputFile   = NULL;
-  fOutputFile  = NULL;
   fClusterTree = NULL;
   fTRD         = 0;
   fEvent       = 0;
@@ -118,8 +122,6 @@ AliTRDclusterizer::AliTRDclusterizer(const Text_t* name, const Text_t* title)
   // AliTRDclusterizer default constructor
   //
 
-  fInputFile   = NULL;
-  fOutputFile  = NULL;
   fClusterTree = NULL;
   fEvent       = 0;
   fVerbose     = 0;
@@ -144,20 +146,6 @@ AliTRDclusterizer::~AliTRDclusterizer()
   // AliTRDclusterizer destructor
   //
 
-  if (fInputFile) {
-    fInputFile->Close();
-    delete fInputFile;
-  }
-
-  if (fOutputFile) {
-    fOutputFile->Close();
-    delete fOutputFile;
-  }
-
-  if (fClusterTree) {
-    delete fClusterTree;
-  }
-
 }
 
 //_____________________________________________________________________________
@@ -179,8 +167,6 @@ void AliTRDclusterizer::Copy(TObject &c)
   // Copy function
   //
 
-  ((AliTRDclusterizer &) c).fInputFile   = NULL;
-  ((AliTRDclusterizer &) c).fOutputFile  = NULL;
   ((AliTRDclusterizer &) c).fClusterTree = NULL;
   ((AliTRDclusterizer &) c).fEvent       = 0;  
   ((AliTRDclusterizer &) c).fVerbose     = fVerbose;  
@@ -193,99 +179,64 @@ Bool_t AliTRDclusterizer::Open(const Char_t *name, Int_t nEvent)
   //
   // Opens the AliROOT file. Output and input are in the same file
   //
+  fRunLoader = AliRunLoader::Open(name);
+  if (!fRunLoader)
+   {
+     Error("Open","Can not open session for file %s.",name);
+     return kFALSE;
+   }
 
-  OpenInput(name,nEvent);
-  OpenOutput(name);
-
+  OpenInput(nEvent);
+  OpenOutput();
   return kTRUE;
-
 }
 
-//_____________________________________________________________________________
-Bool_t AliTRDclusterizer::Open(const Char_t *inname, const Char_t *outname
-                              , Int_t nEvent)
-{
-  //
-  // Opens the AliROOT file. Output and input are in different files
-  //
-
-  OpenInput(inname,nEvent);
-  OpenOutput(outname);
-
-  return kTRUE;
-
-}
 
 //_____________________________________________________________________________
-Bool_t AliTRDclusterizer::OpenOutput(const Char_t *name)
+Bool_t AliTRDclusterizer::OpenOutput()
 {
   //
   // Open the output file
   //
 
-  TDirectory *savedir = NULL;
-
-  if (!fInputFile) return kFALSE;
-
-  if (strcmp(name,fInputFile->GetName()) != 0) {
-    savedir = gDirectory;
-    printf("AliTRDclusterizer::OpenOutput -- ");
-    printf("Open the output file %s.\n",name);
-    fOutputFile = new TFile(name,"RECREATE");
-  }
-
-  // Create a tree for the cluster
-  Char_t treeName[12];
-  sprintf(treeName,"TreeR%d_TRD",fEvent);
-  fClusterTree = new TTree(treeName,"TRD cluster");
   TObjArray *ioArray = 0;
+
+  AliLoader* loader = fRunLoader->GetLoader("TRDLoader");
+  loader->MakeTree("R");
+  fClusterTree = loader->TreeR();
   fClusterTree->Branch("TRDcluster","TObjArray",&ioArray,32000,0);
 
-  if (savedir) {
-    savedir->cd();
-  }
 
   return kTRUE;
 
 }
 
 //_____________________________________________________________________________
-Bool_t AliTRDclusterizer::OpenInput(const Char_t *name, Int_t nEvent)
+Bool_t AliTRDclusterizer::OpenInput(Int_t nEvent)
 {
   //
   // Opens a ROOT-file with TRD-hits and reads in the digits-tree
   //
 
   // Connect the AliRoot file containing Geometry, Kine, and Hits
-  fInputFile = (TFile*) gROOT->GetListOfFiles()->FindObject(name);
-  if (!fInputFile) {
-    printf("AliTRDclusterizer::OpenInput -- ");
-    printf("Open the ALIROOT-file %s.\n",name);
-    fInputFile = new TFile(name,"UPDATE");
-  }
-  else {
-    printf("AliTRDclusterizer::OpenInput -- ");
-    printf("%s is already open.\n",name);
-  }
+  fRunLoader->LoadgAlice();
+  gAlice = fRunLoader->GetAliRun();
 
-  // Get AliRun object from file
-  gAlice = (AliRun *) fInputFile->Get("gAlice");
   if (!(gAlice)) {
-    printf("AliTRDclusterizer::OpenInput -- ");
-    printf("Could not find AliRun object.\n");
-    return kFALSE;
+    fRunLoader->LoadgAlice();
+    gAlice = fRunLoader->GetAliRun();
+      if (!(gAlice)) {
+        printf("AliTRDclusterizer::OpenInput -- ");
+        printf("Could not find AliRun object.\n");
+        return kFALSE;
+      }
   }
 
   fEvent = nEvent;
 
   // Import the Trees for the event nEvent in the file
-  Int_t nparticles = gAlice->GetEvent(fEvent);
-  if (nparticles <= 0) {
-    printf("AliTRDclusterizer::OpenInput -- ");
-    printf("No entries in the trees for event %d.\n",fEvent);
-    return kFALSE;
-  }
-
+  fRunLoader->GetEvent(fEvent);
+  
   // Get the TRD object
   fTRD = (AliTRD*) gAlice->GetDetector("TRD"); 
   if (!fTRD) {
@@ -312,11 +263,6 @@ Bool_t AliTRDclusterizer::WriteClusters(Int_t det)
     return kFALSE;
   }
  
-  TDirectory *savedir = gDirectory;
-
-  if (fOutputFile) {
-    fOutputFile->cd();
-  }
 
   TBranch *branch = fClusterTree->GetBranch("TRDcluster");
   if (!branch) {
@@ -359,13 +305,14 @@ Bool_t AliTRDclusterizer::WriteClusters(Int_t det)
 
   }
   
-  savedir->cd();
-
+  AliLoader* loader = fRunLoader->GetLoader("TRDLoader");
+  loader->WriteDigits("OVERWRITE");
+  
   printf("AliTRDclusterizer::WriteClusters -- ");
   printf("Unexpected detector index %d.\n",det);
  
   return kFALSE;  
-
+  
 }
 
 

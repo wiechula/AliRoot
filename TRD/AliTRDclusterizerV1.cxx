@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.15.4.1  2002/06/03 09:55:03  hristov
+Merged with v3-08-02
+
 Revision 1.16  2002/03/25 20:01:30  cblume
 Introduce parameter class
 
@@ -89,6 +92,8 @@ Add new TRD classes
 #include <TFile.h>
 
 #include "AliRun.h"
+#include "AliRunLoader.h"
+#include "AliLoader.h"
 
 #include "AliTRD.h"
 #include "AliTRDclusterizerV1.h"
@@ -186,16 +191,16 @@ Bool_t AliTRDclusterizerV1::ReadDigits()
   // Reads the digits arrays from the input aliroot file
   //
 
-  if (!fInputFile) {
+  if (!fRunLoader) {
     printf("<AliTRDclusterizerV1::ReadDigits> ");
     printf("No input file open\n");
     return kFALSE;
   }
-
-  fDigitsManager->Open(fInputFile->GetName());
+  AliLoader* loader = fRunLoader->GetLoader("TRDLoader");
+  if (!loader->TreeD()) loader->LoadDigits();
 
   // Read in the digit arrays
-  return (fDigitsManager->ReadDigits());  
+  return (fDigitsManager->ReadDigits(loader->TreeD()));
 
 }
 

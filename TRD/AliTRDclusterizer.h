@@ -8,7 +8,7 @@
 #include <TNamed.h>
 
 class TFile;
-
+class AliRunLoader;
 ///////////////////////////////////////////////////////
 //  Finds and handles cluster                        //
 ///////////////////////////////////////////////////////
@@ -25,9 +25,9 @@ class AliTRDclusterizer : public TNamed {
 
   virtual void    Copy(TObject &c);
   virtual Bool_t  Open(const Char_t *name, Int_t nEvent = 0);
-  virtual Bool_t  Open(const Char_t *inname, const Char_t *outname, Int_t nEvent = 0);
-  virtual Bool_t  OpenInput(const Char_t *name, Int_t nEvent = 0);
-  virtual Bool_t  OpenOutput(const Char_t *name);
+  
+  virtual Bool_t  OpenInput(Int_t nEvent = 0);
+  virtual Bool_t  OpenOutput();
   virtual Bool_t  MakeClusters() = 0;
   virtual Bool_t  WriteClusters(Int_t det);
 
@@ -35,8 +35,8 @@ class AliTRDclusterizer : public TNamed {
 
  protected:
 
-  TFile   *fInputFile;             //! AliROOT input file
-  TFile   *fOutputFile;            //! AliROOT output file
+  AliRunLoader * fRunLoader;       //! Run Loader
+  
   TTree   *fClusterTree;           //! Tree with the cluster
   AliTRD  *fTRD;                   //! The TRD object
 

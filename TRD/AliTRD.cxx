@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.36.4.2  2002/06/03 09:55:03  hristov
+Merged with v3-08-02
+
 
 Revision 1.36.4.1  2002/05/31 09:38:00  hristov
 First set of changes done by Piotr
@@ -166,6 +169,7 @@ Introduction of the Copyright and cvs Log
 #include "AliDigit.h"
 #include "AliMagF.h"
 #include "AliMC.h"                                                              
+#include "AliLoader.h"
  
 #include "AliTRD.h"
 #include "AliTRDhit.h"
@@ -367,12 +371,14 @@ void AliTRD::Hits2Digits()
   //
   // Create digits
   //
-
+  if (!fLoader->TreeH()) fLoader->LoadHits("read");
+  SetTreeAddress();
+  
   AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer"
                                                   ,"TRD digitizer class");
   digitizer->SetDebug(GetDebug());
   digitizer->SetEvent(gAlice->GetEvNumber());
-
+  
   // Initialization
   digitizer->InitDetector();
     
@@ -380,7 +386,9 @@ void AliTRD::Hits2Digits()
   digitizer->MakeDigits();
   
   // Write the digits into the input file
-  if (digitizer->MakeBranch(fDigitsFile)) {
+
+  if (!fLoader->TreeD()) fLoader->MakeTree("D");
+  if (digitizer->MakeBranch(fLoader->TreeD())) {
 
     digitizer->WriteDigits();
 
@@ -397,6 +405,8 @@ void AliTRD::Hits2SDigits()
   //
   // Create summable digits
   //
+  if (!fLoader->TreeH()) fLoader->LoadHits("read");
+  SetTreeAddress();
 
   AliTRDdigitizer *digitizer = new AliTRDdigitizer("TRDdigitizer"
                                                   ,"TRD digitizer class");
@@ -413,7 +423,9 @@ void AliTRD::Hits2SDigits()
   digitizer->MakeDigits();
   
   // Write the digits into the input file
-  if (digitizer->MakeBranch(fDigitsFile)) {
+  if (!fLoader->TreeS()) fLoader->MakeTree("S");
+  
+  if (digitizer->MakeBranch(fLoader->TreeS())) {
 
     digitizer->WriteDigits();
 
@@ -444,13 +456,20 @@ void AliTRD::SDigits2Digits()
 
   // Read the s-digits via digits manager
   AliTRDdigitsManager *sdigitsManager = new AliTRDdigitsManager();
+ 
   sdigitsManager->SetDebug(GetDebug());
   sdigitsManager->SetSDigits(kTRUE);
-  if (fDigitsFile) {
-    sdigitsManager->Open(fDigitsFile);
-  }
   sdigitsManager->CreateArrays();
-  sdigitsManager->ReadDigits();
+  
+  if (!fLoader->TreeS()) 
+    if (fLoader->LoadSDigits("read"))
+     {
+       Error("SDigits2Digits","Error while reading SDigits for event %d",gAlice->GetEvNumber());
+       return;
+     }
+  if (!fLoader->TreeS()) return;
+  
+  sdigitsManager->ReadDigits(fLoader->TreeS());
 
   // Add the s-digits to the input list 
   digitizer->AddSDigitsManager(sdigitsManager);
@@ -459,10 +478,9 @@ void AliTRD::SDigits2Digits()
   digitizer->SDigits2Digits();
 
   // Store the digits
-  if (digitizer->MakeBranch(fDigitsFile)) {
-
+  if (!fLoader->TreeD()) fLoader->MakeTree("D");
+  if (digitizer->MakeBranch(fLoader->TreeD())){
     digitizer->WriteDigits();
-
   }
 
 }

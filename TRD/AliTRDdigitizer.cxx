@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.33.4.2  2002/06/03 09:55:03  hristov
+Merged with v3-08-02
+
 
 Revision 1.33.4.1  2002/05/31 09:38:00  hristov
 First set of changes done by Piotr
@@ -200,6 +203,8 @@ Add new TRD classes
 #include "AliConfig.h"
 #include "AliMagF.h"
 #include "AliRunDigitizer.h"
+#include "AliRunLoader.h"
+#include "AliLoader.h"
 
 #include "AliTRD.h"
 #include "AliTRDhit.h"
@@ -220,7 +225,6 @@ AliTRDdigitizer::AliTRDdigitizer()
   // AliTRDdigitizer default constructor
   //
 
-  fInputFile          = 0;
   fDigitsManager      = 0;
   fSDigitsManagerList = 0;
   fSDigitsManager     = 0;
@@ -245,7 +249,6 @@ AliTRDdigitizer::AliTRDdigitizer(const Text_t *name, const Text_t *title)
   // AliTRDdigitizer constructor
   //
 
-  fInputFile          = NULL;
 
   fDigitsManager      = NULL;
   fSDigitsManager     = NULL;
@@ -255,7 +258,6 @@ AliTRDdigitizer::AliTRDdigitizer(const Text_t *name, const Text_t *title)
   fGeo                = NULL;
 
   //NewIO: These data members probably are not needed anymore
-  fInputFile          = 0;
   fDigitsManager      = 0;
   fSDigitsManagerList = 0;
   fSDigitsManager     = 0;
@@ -284,7 +286,6 @@ AliTRDdigitizer::AliTRDdigitizer(AliRunDigitizer *manager
   // AliTRDdigitizer constructor
   //
 
-  fInputFile          = 0;
   fDigitsManager      = 0;
   fSDigitsManagerList = 0;
   fSDigitsManager     = 0;
@@ -311,7 +312,6 @@ AliTRDdigitizer::AliTRDdigitizer(AliRunDigitizer *manager)
   // AliTRDdigitizer constructor
   //
 
-  fInputFile          = 0;
 
   fDigitsManager      = 0;
   fSDigitsManager     = 0;
@@ -352,11 +352,6 @@ AliTRDdigitizer::~AliTRDdigitizer()
   // AliTRDdigitizer destructor
   //
 
-  if (fInputFile) {
-    fInputFile->Close();
-    delete fInputFile;
-    fInputFile = 0;
-  }
 
   if (fDigitsManager) {
     delete fDigitsManager;
@@ -399,7 +394,6 @@ void AliTRDdigitizer::Copy(TObject &d)
   // Copy function
   //
 
-  ((AliTRDdigitizer &) d).fInputFile          = 0;
   ((AliTRDdigitizer &) d).fSDigitsManagerList = 0;
   ((AliTRDdigitizer &) d).fSDigitsManager     = 0;
   ((AliTRDdigitizer &) d).fDigitsManager      = 0;
@@ -438,6 +432,7 @@ void AliTRDdigitizer::Exec(Option_t* option)
   }
 
   // The AliRoot file is already connected by the manager
+  
   if (gAlice) {
     if (fDebug > 0) {
       printf("<AliTRDdigitizer::Exec> ");
@@ -445,9 +440,15 @@ void AliTRDdigitizer::Exec(Option_t* option)
     }
   }
   else {
-    printf("<AliTRDdigitizer::Exec> ");
-    printf("Could not find AliRun object.\n");
-    return;
+    AliRunLoader* rl = AliRunLoader::GetRunLoader(fManager->GetInputFolderName(0));
+    rl->LoadgAlice();
+    gAlice = rl->GetAliRun();
+    if (!gAlice)
+     {
+       printf("<AliTRDdigitizer::Exec> ");
+       printf("Could not find AliRun object.\n");
+       return;
+     }
   }
                                                                            
   Int_t nInput = fManager->GetNinputs();
@@ -472,8 +473,9 @@ void AliTRDdigitizer::Exec(Option_t* option)
     sdigitsManager->SetSDigits(kTRUE);
     
     AliRunLoader* rl = AliRunLoader::GetRunLoader(fManager->GetInputFolderName(iInput));
-    AliLoader* gime = rl->GetLoader("TRDLoader");
-    sdigitsManager->ReadDigits(gime->TreeS());
+    AliLoader* gimme = rl->GetLoader("TRDLoader");
+    if (!gimme->TreeS()) gimme->LoadSDigits();
+    sdigitsManager->ReadDigits(gimme->TreeS());
 
     // Add the s-digits to the input list 
     AddSDigitsManager(sdigitsManager);
@@ -496,10 +498,9 @@ void AliTRDdigitizer::Exec(Option_t* option)
   AliRunLoader* orl = AliRunLoader::GetRunLoader(fManager->GetOutputFolderName());
   AliLoader* ogime = orl->GetLoader("TRDLoader");
 
-  ogime->WriteDigits("OVERWRITE");
-  
-//  fDigitsManager->MakeBranch(fManager->GetTreeDTRD());
-//  fDigitsManager->WriteDigits();
+  fDigitsManager->MakeBranch(ogime->TreeD());
+
+  fDigitsManager->WriteDigits();
 
   if (fDebug > 0) {
     printf("<AliTRDdigitizer::Exec> ");
@@ -518,22 +519,18 @@ Bool_t AliTRDdigitizer::Open(const Char_t *file, Int_t nEvent)
   //
 
   // Connect the AliRoot file containing Geometry, Kine, and Hits
-  fInputFile = (TFile *) gROOT->GetListOfFiles()->FindObject(file);
-  if (!fInputFile) {
-    if (fDebug > 0) {
-      printf("<AliTRDdigitizer::Open> ");
-      printf("Open the AliROOT-file %s.\n",file);
-    }
-    fInputFile = new TFile(file,"UPDATE");
-  }
-  else {
-    if (fDebug > 0) {
-      printf("<AliTRDdigitizer::Open> ");
-      printf("%s is already open.\n",file);
-    }
-  }
-
-  gAlice = (AliRun *) fInputFile->Get("gAlice");
+  
+  fRunLoader = AliRunLoader::Open(file,AliConfig::fgkDefaultEventFolderName,"UPDATE");
+  
+  if (!fRunLoader)
+   {
+     Error("Open","Can not open session for file %s.",file);
+     return kFALSE;
+   }
+   
+  fRunLoader->LoadgAlice();
+  gAlice = fRunLoader->GetAliRun();
+  
   if (gAlice) {
     if (fDebug > 0) {
       printf("<AliTRDdigitizer::Open> ");
@@ -549,15 +546,37 @@ Bool_t AliTRDdigitizer::Open(const Char_t *file, Int_t nEvent)
   fEvent = nEvent;
 
   // Import the Trees for the event nEvent in the file
-  Int_t nparticles = gAlice->GetEvent(fEvent);
-  if (nparticles <= 0) {
-    printf("<AliTRDdigitizer::Open> ");
-    printf("No entries in the trees for event %d.\n",fEvent);
-    return kFALSE;
-  }
-
+  fRunLoader->GetEvent(fEvent);
+  
+  AliLoader* loader = fRunLoader->GetLoader("TRDLoader");
+  if (!loader)
+   {
+     Error("Open","Can not get TRD loader from Run Loader");
+     return kFALSE;
+   }
+  
   if (InitDetector()) {
-    return MakeBranch();
+    TTree* tree = 0;
+    if (fSDigits)
+     { 
+     //if we produce SDigits
+       tree = loader->TreeS();
+       if (!tree)
+        {
+         loader->MakeTree("S");
+         tree = loader->TreeS();
+        }
+     }
+    else
+     {//if we produce Digits
+       tree = loader->TreeD();
+       if (!tree)
+        {
+         loader->MakeTree("D");
+         tree = loader->TreeD();
+        }
+     }
+    return MakeBranch(tree);
   }
   else {
     return kFALSE;
@@ -607,13 +626,13 @@ Bool_t AliTRDdigitizer::InitDetector()
 }
 
 //_____________________________________________________________________________
-Bool_t AliTRDdigitizer::MakeBranch(const Char_t *file) const
+Bool_t AliTRDdigitizer::MakeBranch(TTree* tree) const
 {
   // 
   // Create the branches for the digits array
   //
 
-  return fDigitsManager->MakeBranch(file);
+  return fDigitsManager->MakeBranch(tree);
 
 }
 
@@ -700,30 +719,16 @@ Bool_t AliTRDdigitizer::MakeDigits()
     printf("Start creating digits.\n");
   }
 
-  // Get the pointer to the hit tree
-/******************************************************************/
-      AliConfig* config = AliConfig::Instance();
-      TFolder* topfold = (TFolder*)config->GetTopFolder();
-      if (topfold == 0x0)
-       {
-         Error("MakeDigits","Can not get Alice top folder");
-         return kFALSE; 
-       }
-      TString fmdfoldname(config->GetDataFolderName()+"/"+"TRD");
-      TFolder* fmdfold = (TFolder*)topfold->FindObject(fmdfoldname);
-      if (fmdfold == 0x0)
-       {
-         Error("MakeDigits","Can not get TRD folder");
-         return kFALSE; 
-       }
-      TTree* hitTree = dynamic_cast<TTree*>(fmdfold->FindObject("TreeH"));
-      if (hitTree == 0x0)
-       {
-         Error("MakeDigits","Can not get TreeH");
-         return kFALSE;
-       }
-/******************************************************************/     
-
+  AliLoader* gimme = fRunLoader->GetLoader("TRDLoader");
+  if (!gimme->TreeH()) gimme->LoadHits();
+  TTree* hitTree = gimme->TreeH();
+  if (hitTree == 0x0)
+    {
+      Error("MakeDigits","Can not get TreeH");
+      return kFALSE;
+    }
+  fTRD->SetTreeAddress();
+  
   // Get the number of entries in the hit tree
   // (Number of primary particles creating a hit somewhere)
   Int_t nTrack = (Int_t) hitTree->GetEntries();
@@ -1579,13 +1584,48 @@ void AliTRDdigitizer::DeConvExp(Double_t *source, Double_t *target
 }
 
 //_____________________________________________________________________________
-void AliTRDdigitizer::InitOutput(TFile *file, Int_t iEvent)
+void AliTRDdigitizer::InitOutput(Int_t iEvent)
 {
   //
   // Initializes the output branches
   //
 
   fEvent = iEvent;
-  fDigitsManager->MakeTreeAndBranches(file,iEvent);
+   
+  if (!fRunLoader)
+   {
+     Error("InitOutput","Run Loader is NULL");
+     return;  
+   }
+  AliLoader* loader = fRunLoader->GetLoader("TRDLoader");
+  if (!loader)
+   {
+     Error("Open","Can not get TRD loader from Run Loader");
+     return;
+   }
+
+  TTree* tree = 0;
+  
+  if (fSDigits)
+   { 
+   //if we produce SDigits
+    tree = loader->TreeS();
+    if (!tree)
+     {
+      loader->MakeTree("S");
+      tree = loader->TreeS();
+     }
+   }
+  else
+   {//if we produce Digits
+     tree = loader->TreeD();
+     if (!tree)
+      {
+       loader->MakeTree("D");
+       tree = loader->TreeD();
+      }
+   }
+  fDigitsManager->SetEvent(iEvent);
+  fDigitsManager->MakeBranch(tree);
 
 }

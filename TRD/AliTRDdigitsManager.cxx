@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.16.4.1  2002/06/03 09:55:03  hristov
+Merged with v3-08-02
+
 Revision 1.18  2002/04/12 12:13:23  cblume
 Add Jiris changes
 
@@ -121,7 +124,6 @@ AliTRDdigitsManager::AliTRDdigitsManager():TObject()
   fDebug   = 0;
   fSDigits = 0;
 
-  fFile    = NULL;
   fTree    = NULL;
   fDigits  = NULL;
   for (Int_t iDict = 0; iDict < kNDict; iDict++) {
@@ -148,11 +150,6 @@ AliTRDdigitsManager::~AliTRDdigitsManager()
   // AliTRDdigitsManager destructor
   //
 
-  if (fFile) {
-    fFile->Close();
-    delete fFile;
-    fFile = NULL;
-  }
 
   if (fDigits) {
     fDigits->Delete();
@@ -225,78 +222,10 @@ Short_t AliTRDdigitsManager::GetDigitAmp(Int_t row, Int_t col,Int_t time
 
 }
  
-//_____________________________________________________________________________
-Bool_t AliTRDdigitsManager::Open(const Char_t *file)
-{
-  //
-  // Opens the file for the TRD digits
-  //
 
-  fFile = (TFile*) gROOT->GetListOfFiles()->FindObject(file);
-  if (!fFile) {
-    if (fDebug > 0) {
-      printf("<AliTRDdigitsManager::Open> ");
-      printf("Open the AliROOT-file %s.\n",file);
-    }
-    fFile = new TFile(file,"UPDATE");
-    if (!fFile) return kFALSE;
-  }
-  else {
-    if (fDebug > 0) {
-      printf("<AliTRDdigitsManager::Open> ");
-      printf("%s is already open.\n",file);
-    }
-  }
-
-  return kTRUE;
-
-}
 
 //_____________________________________________________________________________
-void AliTRDdigitsManager::MakeTreeAndBranches(TFile *file, Int_t iEvent)
-{
-  //
-  // Creates tree for (s)digits in the specified file
-  //
-
-  fEvent = iEvent;
-  TDirectory *wd = gDirectory;
-  file->cd();
-  MakeBranch();
-  wd->cd();
-
-}
-
-//_____________________________________________________________________________
-Bool_t AliTRDdigitsManager::MakeBranch(const Char_t *file)
-{
-  //
-  // Creates the tree and branches for the digits and the dictionary
-  //
-
-  // Create the TRD digits tree
-  TTree *tree;
-  Char_t treeName[12];
-  if (fSDigits) {
-    sprintf(treeName,"TreeS%d_TRD",fEvent);
-    tree = new TTree(treeName,"TRD SDigits");
-  }
-  else {
-    sprintf(treeName,"TreeD%d_TRD",fEvent);
-    tree = new TTree(treeName,"TRD Digits");
-  }
-
-  if (fDebug > 0) {
-    printf("<AliTRDdigitsManager::MakeBranch> ");
-    printf("Creating tree %s\n",treeName);
-  }
-
-  return MakeBranch(tree,file);
-
-}
-
-//_____________________________________________________________________________
-Bool_t AliTRDdigitsManager::MakeBranch(TTree *tree, const Char_t *file)
+Bool_t AliTRDdigitsManager::MakeBranch(TTree *tree)
 {
   //
   // Creates the tree and branches for the digits and the dictionary
@@ -317,7 +246,7 @@ Bool_t AliTRDdigitsManager::MakeBranch(TTree *tree, const Char_t *file)
     const AliTRDdataArray *kDigits = (AliTRDdataArray *) fDigits->At(0);
     if (kDigits) {
       trd->MakeBranchInTree(fTree,"TRDdigits",kDigits->IsA()->GetName()
-                                 ,&kDigits,buffersize,99,file);
+                                 ,&kDigits,buffersize,99);
       if (fDebug > 0) {
         printf("<AliTRDdigitsManager::MakeBranch> ");
         printf("Making branch TRDdigits\n");
@@ -340,7 +269,7 @@ Bool_t AliTRDdigitsManager::MakeBranch(TTree *tree, const Char_t *file)
               (AliTRDdataArray *) fDictionary[iDict]->At(0);
       if (kDictionary) {
         trd->MakeBranchInTree(fTree,branchname,kDictionary->IsA()->GetName()
-                             ,&kDictionary,buffersize,99,file);
+                             ,&kDictionary,buffersize,99);
         if (fDebug > 0) {
           printf("<AliTRDdigitsManager::MakeBranch> ");
           printf("Making branch %s\n",branchname);
@@ -371,32 +300,6 @@ Bool_t AliTRDdigitsManager::ReadDigits(TTree *tree)
   if (tree) {
 
     fTree = tree;
-
-  }
-  else {
-
-    // Get the digits tree
-    Char_t treeName[12];
-    if (fSDigits) {
-      sprintf(treeName,"TreeS%d_TRD",fEvent);
-    }
-    else {
-      sprintf(treeName,"TreeD%d_TRD",fEvent);
-    }
-    if (fFile) {
-      fTree = (TTree *) fFile->Get(treeName);
-    }
-    else {
-      fTree = (TTree *) gDirectory->Get(treeName);
-    }
-
-    if (!fTree) {
-      if (fDebug > 0) {
-        printf("<AliTRDdigitsManager::ReadDigits> ");
-        printf("Could not find tree %s.\n",treeName);
-      }
-      return kFALSE;
-    }
 
   }
 
