@@ -94,15 +94,17 @@ Int_t AliBarrelReconstruction(Int_t n=1)
      }
 //   cout<<"Stopping tracking on TPC\n";
 // ********** Sort and label TPC tracks *********** //
+   rl->TreeE()->Print();
    if (TPCSortTracks(TPCtrkNameS,n)) {
       cerr<<"Failed to sort TPC tracks !\n";
       return 1;
-    }
+    } 
 
 //   cout<<"Stopping tracking on TPC sorted T\n";
 
    
 // ********** Find ITS clusters *********** //
+   rl->TreeE()->Print();
    if (ITSFindClusters(n)) 
     {
       cerr<<"Failed to get ITS clusters !\n";
@@ -189,6 +191,7 @@ Int_t TPCFindClusters(Int_t n)
 Int_t TPCFindTracks(Int_t n) {
 
    Int_t rc=0;
+   AliTPCtracker *tracker = 0x0;
    const Char_t *name="TPCFindTracks";
    rl->GetEvent(0);
    rl->CdGAFile();
@@ -218,7 +221,8 @@ Int_t TPCFindTracks(Int_t n) {
    for (Int_t i=0;i<n;i++){
      rl->GetEvent(i);
      printf("Processing event %d\n",i);
-     AliTPCtracker *tracker = new AliTPCtracker(param, AliConfig::fgkDefaultEventFolderName,i);
+     
+     tracker = new AliTPCtracker(param, AliConfig::fgkDefaultEventFolderName.Data(),i);
      //Int_t rc=
      tracker->Clusters2Tracks();
      delete tracker;
@@ -339,6 +343,12 @@ Int_t TPCSortTracks(const Char_t * outname,  Int_t eventn){
    }
   
    cout<<"rl2->GetEventFolder()->GetName() "<<rl2->GetEventFolder()->GetName()<<endl;
+
+   rl->TreeE()->Print();
+   cout<<"1:TE address = "<<rl->TreeE()<<endl;
+   cout<<"2:TE address = "<<rl2->TreeE()<<endl;
+   
+
    delete rl2;
 
    tpcl->UnloadTracks();
@@ -353,6 +363,8 @@ Int_t TPCSortTracks(const Char_t * outname,  Int_t eventn){
 Int_t ITSFindClusters(Int_t n) 
  {
    Int_t rc=0;
+   Float_t lp[5];
+   Int_t lab[4]; 
    const Char_t *name="ITSFindClusters";
    cerr<<'\n'<<name<<"...\n";
    gBenchmark->Start(name);
@@ -369,13 +381,17 @@ Int_t ITSFindClusters(Int_t n)
       cerr<<"Can not get ITS Loader from Run Loader\n";
       return 1;
     } 
+  
    gAlice=rl->GetAliRun();
    if (!gAlice) {
       cerr<<"Can't get gAlice !\n";
       return 1;
    }
-   rl->LoadKinematics();
-   rl->LoadHeader();     
+   if (rl->TreeK() == 0x0) rl->LoadKinematics();
+   if (rl->TreeE() == 0x0) rl->LoadHeader();
+   
+   itsl->LoadRecPoints("recreate");
+   itsl->LoadRawClusters("recreate");
    
    AliITS *ITS  = (AliITS*)gAlice->GetModule("ITS");
    if (!ITS) { cerr<<"Can't get the ITS !\n"; return 1;}
@@ -423,7 +439,10 @@ Int_t ITSFindClusters(Int_t n)
 
      if (itsl->TreeC() == 0x0) itsl->MakeTree("C");
      TTree *cTree = itsl->TreeC();
-     cTree->Branch("Clusters",&clusters);
+     TBranch* b = cTree->GetBranch("Clusters");
+     if (b == 0x0) 
+       cTree->Branch("Clusters",&clusters);
+     else b->SetAddress(&clusters);
      
       
      if (itsl->TreeR() == 0x0) itsl->LoadRecPoints();
@@ -452,14 +471,14 @@ Int_t ITSFindClusters(Int_t n)
        nclusters+=ncl;
        for (Int_t j=0; j<ncl; j++) {
 	 AliITSRecPoint *p=(AliITSRecPoint*)points->UncheckedAt(j);
-	 Float_t lp[5];
 	 lp[0]=-p->GetX()-yshift; if (lay==1) lp[0]=-lp[0];
 	 lp[1]=p->GetZ()+zshift;
 	 lp[2]=p->GetSigmaX2();
 	 lp[3]=p->GetSigmaZ2();
 	 lp[4]=p->GetQ();
-	 Int_t lab[6]; 
-	 lab[0]=p->GetLabel(0);lab[1]=p->GetLabel(1);lab[2]=p->GetLabel(2);
+	 lab[0]=p->GetLabel(0);
+	 lab[1]=p->GetLabel(1);
+	 lab[2]=p->GetLabel(2);
 	 lab[3]=ndet;
 	 
 	 Int_t label=lab[0];
@@ -497,10 +516,13 @@ Int_t ITSFindClusters(Int_t n)
 
 Int_t ITSFindTracks(const Char_t *inname2, Int_t n) 
 {
+
    Int_t rc=0;
    const Char_t *name="ITSFindTracks";
    cerr<<'\n'<<name<<"...\n";
    gBenchmark->Start(name);
+
+   rl->GetEvent(0);
 
    AliITSLoader* itsl = (AliITSLoader*)rl->GetLoader("ITSLoader");
    if ( (itsl == 0x0) || (tpcl == 0x0))
