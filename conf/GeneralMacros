@@ -2,32 +2,34 @@
 
 $(SLIBRARY):
 		@echo "Generating $@ for $(PACKAGE)..."
+		@[ -d $(dir $@) ] || mkdir $(dir $@)
 		@rm -f $@
                 ifeq ($(PLATFORM),aix)
-		   @$(SHLD) -o $@ $(LIBS) -p 0 $^
+		   @cd tgt_$(ALICE_TARGET) ;\
+		   $(SHLD) -o $@ $(LIBS) -p 0 $(patsubst tgt_$(ALICE_TARGET)/%,%,$(filter-out dirs,$^))
                 else
-		   @$(SHLD) $(SOFLAGS) $(LDFLAGS) $^ $(SHLIB) -o $@
+		   @cd tgt_$(ALICE_TARGET) ;\
+		   $(SHLD) $(SOFLAGS) $(LDFLAGS) $(patsubst tgt_$(ALICE_TARGET)/%,%,$(filter-out dirs,$^)) $(SHLIB) -o $@
                 endif
 		@chmod 555 $@
 		@echo "$@ done"
 
 
-$(ALIBRARY):
+$(ALIBRARY):	
 		@echo "Generating $@ for $(PACKAGE)..."
+		@[ -d $(dir $@) ] || mkdir $(dir $@)
 		@rm -f $@
 		@ar rv $@ $^
 		@echo "$@ done"
  
-$(PROGRAM):
+$(PROGRAM):	
 		@echo "Generating $@ for $(PACKAGE)..."
+		@[ -d $(dir $@) ] || mkdir $(dir $@)
 		@rm -f $@
 		@$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 		@echo "$@ done"
  
 headers:	$(patsubst %,$(ALICE_ROOT)/include/%,$(HEADERS))
-
-$(patsubst %,$(ALICE_ROOT)/include/%,$(HEADERS)) : $(ALICE_ROOT)/include/% : %
-		@cp -p $^ $@
 
 $(DICT):
 		@echo "Generating $@ for $(PACKAGE)..."
@@ -35,10 +37,11 @@ $(DICT):
 		@echo "$@ done"
  
 depend:
-		@$(MAKEDEPEND) -fMake-depend -- $(CXXFLAGS) $(DEPINC) -- $^
+		@$(MAKEDEPEND) -ftgt_$(ALICE_TARGET)/Make-depend -ptgt_$(ALICE_TARGET)/ -- $(CXXFLAGS) $(DEPINC) -- $^
 
-Make-depend:
-		@cp $(ALICE_ROOT)/conf/Makedepend ./Make-depend
+tgt_$(ALICE_TARGET)/Make-depend:
+		@[ -d $(dir $@) ] || mkdir $(dir $@)
+		@cp $(ALICE_ROOT)/conf/Makedepend $@
 
 macroclean:
 		@rm -f $(TOCLEAN) *~ \#*

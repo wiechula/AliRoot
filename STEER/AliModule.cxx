@@ -52,14 +52,14 @@ AliModule::AliModule(const char* name,const char *title):TNamed(name,title)
   //  
   // Get the Module numeric ID
   Int_t id = gAlice->GetModuleID(name);
-  if (id < 0) {
-    // Unknown Module !
-     Warning("AliRun::Ctor","ERROR Unknown Module: %s\n",name);
+  if (id>=0) {
+    // Module already added !
+     Warning("Ctor","Module: %s already present at %d\n",name,id);
      return;
   }
   //
   // Add this Module to the list of Modules
-  gAlice->Modules()->AddAtAndExpand(this,id);
+  gAlice->Modules()->Add(this);
   //
   //
   SetMarkerColor(3);
@@ -154,8 +154,33 @@ void AliModule::AliMaterial(Int_t imat, const char* name, Float_t a,
   // nwbuf       number of user words
   //
   Int_t kmat;
-  AliMC::GetMC()->Material(kmat, name, a, z, dens, radl, absl, buf, nwbuf);
+  gMC->Material(kmat, name, a, z, dens, radl, absl, buf, nwbuf);
   (*fIdmate)[imat]=kmat;
+}
+  
+//_____________________________________________________________________________
+void AliModule::AliGetMaterial(Int_t imat, char* name, Float_t &a, 
+			      Float_t &z, Float_t &dens, Float_t &radl,
+			      Float_t &absl)
+{
+  //
+  // Store the parameters for a material
+  //
+  // imat        the material index will be stored in (*fIdmate)[imat]
+  // name        material name
+  // a           atomic mass
+  // z           atomic number
+  // dens        density
+  // radl        radiation length
+  // absl        absorbtion length
+  // buf         adress of an array user words
+  // nwbuf       number of user words
+  //
+
+  Float_t buf[10];
+  Int_t nwbuf, kmat;
+  kmat=(*fIdmate)[imat];
+  gMC->Gfmate(kmat, name, a, z, dens, radl, absl, buf, nwbuf);
 }
   
 
@@ -184,7 +209,7 @@ void AliModule::AliMixture(Int_t imat, const char *name, Float_t *a,
   // wmat        array of concentrations
   //
   Int_t kmat;
-  AliMC::GetMC()->Mixture(kmat, name, a, z, dens, nlmat, wmat);
+  gMC->Mixture(kmat, name, a, z, dens, nlmat, wmat);
   (*fIdmate)[imat]=kmat;
 } 
  
@@ -217,10 +242,9 @@ void AliModule::AliMedium(Int_t numed, const char *name, Int_t nmat,
   //        =  3       constant magnetic field along z
   //  
   Int_t kmed;
-  Int_t *idtmed = gAlice->Idtmed();
-  AliMC::GetMC()->Medium(kmed,name, (*fIdmate)[nmat], isvol, ifield, fieldm,
+  gMC->Medium(kmed,name, (*fIdmate)[nmat], isvol, ifield, fieldm,
 			 tmaxfd, stemax, deemax, epsil,	stmin, ubuf, nbuf); 
-  idtmed[numed-1]=kmed;
+  (*fIdtmed)[numed]=kmed;
 } 
  
 //_____________________________________________________________________________
@@ -239,7 +263,7 @@ void AliModule::AliMatrix(Int_t &nmat, Float_t theta1, Float_t phi1,
   // theta3      polar angle for axis III
   // phi3        azimuthal angle for axis III
   //
-  AliMC::GetMC()->Matrix(nmat, theta1, phi1, theta2, phi2, theta3, phi3); 
+  gMC->Matrix(nmat, theta1, phi1, theta2, phi2, theta3, phi3); 
 } 
 
 //_____________________________________________________________________________

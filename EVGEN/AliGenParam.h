@@ -8,7 +8,7 @@
 #include "TArrayF.h"
 #include "TArrayI.h"
 #include "TTree.h"
-#include "TMCParticle.h"
+#include "TParticle.h"
 
 //-------------------------------------------------------------
 class AliGenParam : public AliGenerator
@@ -27,13 +27,14 @@ protected:
     Float_t     fBias;
     Int_t       fTrials;
     Decay_t     fForceDecay;
+    Int_t       fCutOnChild;
     TArrayI   fChildSelect;
     AliPythia *fPythia;
  private:
     // check if particle is selected as child
     Bool_t ChildSelected(Int_t ip);
     // all kinematic selection goes here
-    Bool_t KinematicSelection(TMCParticle *particle);
+    Bool_t KinematicSelection(TParticle *particle);
  public:
   AliGenParam();
   AliGenParam(Int_t npart, Param_t param);
@@ -47,6 +48,7 @@ protected:
   // force decay type
   virtual void ForceDecay(Decay_t decay=dimuon) {fForceDecay=decay;}
   virtual void SetWeighting(Weighting_t flag=analog) {fAnalog=flag;}	
+  virtual void SetCutOnChild(Int_t flag=0) {fCutOnChild=flag;}
   ClassDef(AliGenParam,1) // Generator using parameterised pt- and y-distribution
 };
 #endif

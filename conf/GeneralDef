@@ -1,15 +1,53 @@
 ##### RULES #####
  
-.SUFFIXES: .cxx
+.SUFFIXES: .cxx .h
+
+# IRST coding rule check
+STRIP=$(ALICE)/local/IRST/syntax/strip-cpp.prl
+CODE_CHECK=java syntax.CPPParser
+export CLASSPATH=$(ALICE)/local/IRST
+
+$(ALICE_ROOT)/include/%.h : %.h
+	@[ -d $(dir $@) ] || mkdir $(dir $@)
+	@cp -p $? $(ALICE_ROOT)/include
  
-.cxx.o:
-	@$(CXX) $(CXXFLAGS) -c $*.cxx -o $*.o
-.c.o:
-	@$(CC) $(CFLAGS) -c $*.c -o $*.o
-.f.o:
-	@$(F77) $(FFLAGS) -c $*.f -o $*.o
-.F.o:
-	@$(F77) $(FFLAGS) -c $*.F -o $*.o
+tgt_$(ALICE_TARGET)/%.o : %.cxx
+	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	@$(CXX) $(CXXFLAGS) -c $*.cxx -o tgt_$(ALICE_TARGET)/$*.o
+
+# IRST coding rule check 
+check/%.i : %.cxx
+	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	@$(CXX) -E $(CXXFLAGS) $*.cxx > check/$*.i
+
+# IRST coding rule check
+check/%.ii : check/%.i
+	@$(STRIP) check/$*.i > check/$*.ii
+
+# IRST coding rule check
+check/%.viol : check/%.ii
+	@$(CODE_CHECK) check/$*.ii ./ > check/$*.viol
+
+tgt_$(ALICE_TARGET)/%.o : %.c
+	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) -c $*.c -o tgt_$(ALICE_TARGET)/$*.o
+
+tgt_$(ALICE_TARGET)/%.o : %.f
+	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	@$(F77) $(FFLAGS) -c $*.f -o tgt_$(ALICE_TARGET)/$*.o
+
+tgt_$(ALICE_TARGET)/%.o : %.F
+	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	@$(F77) $(FFLAGS) -c $*.F -o tgt_$(ALICE_TARGET)/$*.o
+
+# Needed binary directories
+LIBDIR = $(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)
+BINDIR = $(ALICE_ROOT)/bin/tgt_$(ALICE_TARGET)
+
+
+# Current Version
+
+VERSION		= 3.02pre
  
 # Which makedepend
 MAKEDEPEND    = $(ROOTSYS)/bin/makedepend
@@ -22,9 +60,9 @@ ROOTLIBS      = -L$(ROOTSYS)/lib -lBase -lCint -lClib -lCont -lFunc -lGraf \
 
 # Alice libraries
 
-ALILIBS	      = -L$(ALICE_ROOT)/lib -lMUON -lTPC -lPMD -lTRD -lFMD -lTOF \
+ALILIBS	      = -L$(LIBDIR) -lMUON -lTPC -lPMD -lTRD -lFMD -lTOF \
                 -lITS -lPHOSdummy -lPHOS -lCASTOR -lRICH -lZDC -lSTRUCT \
-                -lTGeant3 -lEVGEN -lSTEER
+                -lTGeant3 -lSTART -lCPV -lEVGEN -lSTEER
 
 # Graphic libraries
 
@@ -35,4 +73,13 @@ ROOTGLIBS     = -lGpad -lGui -lGX11 -lX3d  -lXpm
 CLIBS         = -lminicern
 G3LIBS        = -lgeant321
 
- 
+
+
+
+
+
+
+
+
+
+

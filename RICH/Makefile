@@ -9,7 +9,7 @@ PACKAGE = RICH
 
 # C++ sources
 
-SRCS          = AliRICH.cxx
+SRCS          = AliRICH.cxx AliRICHv0.cxx AliRICHdisplay.cxx AliRICHpoints.cxx AliRICHHitMap.cxx AliRICHSegResV0.cxx AliRICHSegResCkv.cxx
 
 # C++ Headers
 
@@ -19,23 +19,26 @@ HDRS          = $(SRCS:.cxx=.h) RICHLinkDef.h
 
 DICT          = RICHCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.f=.o)
+FOBJS         = $(patsubst %.f,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
 CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include/
+
+CXXFLAGS      += -I$(ALICE_ROOT)/TGeant3
+DEPINC        += -I$(ALICE_ROOT)/TGeant3
  
 # FORTRAN compilation flags
 
@@ -45,12 +48,12 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libRICH.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libRICH.a
+SLIBRARY	= $(LIBDIR)/libRICH.$(SL)
+ALIBRARY	= $(LIBDIR)/libRICH.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libRICH.$(SL):		$(OBJS)
+$(LIBDIR)/libRICH.$(SL):		$(OBJS)
 
 $(DICT):				$(HDRS)
 
@@ -64,4 +67,19 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
--include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+### Target check creates violation reports (.viol), which depend on
+### stripped files (.ii), which in turn depend on preprocessed
+### files (.i). Dependences are in conf/GeneralDef.
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
+
+check:          $(CHECKS)
+
+
+
+
+
+
+

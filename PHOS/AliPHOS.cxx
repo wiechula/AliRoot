@@ -19,8 +19,6 @@
 // --- galice header files ---
 #include "AliPHOS.h"
 #include "AliRun.h"
-#include "AliMC.h" 
-#include "TGeant3.h"
 
 //______________________________________________________________________________
 
@@ -112,15 +110,6 @@ void AliPHOS::DefPars()
       PHOSsize[1]=88;
       PHOSsize[2]=4;
       PHOScradlesA=0.;
-      PHOSCPV[0]=1.;
-      PHOSCPV[1]=2.;
-      PHOSCPV[2]=0.;
-      PHOSCPV[3]=0.;
-      PHOSCPV[4]=0.;
-      PHOSCPV[5]=0.;
-      PHOSCPV[6]=0.;
-      PHOSCPV[7]=0.;
-      PHOSCPV[8]=0.;
       PHOSextra[0]=0.001;
       PHOSextra[1]=6.95;
       PHOSextra[2]=4.;
@@ -194,7 +183,6 @@ void AliPHOS::CreateMaterials()
 // ORIGIN    : NICK VAN EIJNDHOVEN 
 
 
-  AliMC* pMC = AliMC::GetMC();
 
     Int_t   ISXFLD = gAlice->Field()->Integ();
     Float_t SXMGMX = gAlice->Field()->Max();
@@ -235,8 +223,7 @@ void AliPHOS::CreateMaterials()
     Float_t wtx[2] = { 1.,1. };
     Float_t dtx    = 1.83;
 
-    Int_t *idtmed = gAlice->Idtmed();
-    
+    Int_t *idtmed = fIdtmed->GetArray()-699;
 
     AliMixture(  0, "PbWO4$",          ax, zx, dx, -3, wx);
     AliMixture(  1, "Polystyrene$",    ap, zp, dp, -2, wp);
@@ -250,23 +237,22 @@ void AliPHOS::CreateMaterials()
     AliMixture(  8, "Textolit$",        atx, ztx, dtx, -2, wtx);
     AliMaterial(99, "Air$",             14.61, 7.3, .001205, 30420., 67500);
 
-    AliMedium(700, "PHOS Xtal    $", 0, 1, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(701, "CPV scint.   $", 1, 1, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(702, "Al parts     $", 2, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
-    AliMedium(703, "Tyvek wrapper$", 3, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
-    AliMedium(704, "Polyst. foam $", 4, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(705, "Steel cover  $", 5, 0, ISXFLD, SXMGMX, 10., .1, .1, 1e-4, 1e-4);
-    AliMedium(706, "Si PIN       $", 6, 0, ISXFLD, SXMGMX, 10., .1, .1, .01, .01);
-    AliMedium(707, "Thermo Insul.$", 7, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(708, "Textolit     $", 8, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
-    AliMedium(799, "Air          $",99, 0, ISXFLD, SXMGMX, 10., 1., .1, .1, 10);
+    AliMedium(0, "PHOS Xtal    $", 0, 1, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(2, "Al parts     $", 2, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
+    AliMedium(3, "Tyvek wrapper$", 3, 0, ISXFLD, SXMGMX, 10., .1, .1, .001, .001);
+    AliMedium(4, "Polyst. foam $", 4, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(5, "Steel cover  $", 5, 0, ISXFLD, SXMGMX, 10., .1, .1, 1e-4, 1e-4);
+    AliMedium(6, "Si PIN       $", 6, 0, ISXFLD, SXMGMX, 10., .1, .1, .01, .01);
+    AliMedium(7, "Thermo Insul.$", 7, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(8, "Textolit     $", 8, 0, ISXFLD, SXMGMX, 10., .1, .1, .1, .1);
+    AliMedium(99, "Air          $",99, 0, ISXFLD, SXMGMX, 10., 1., .1, .1, 10);
 
 // --- Generate explicitly delta rays in the steel cover --- 
-    pMC->Gstpar(idtmed[704], "LOSS", 3.);
-    pMC->Gstpar(idtmed[704], "DRAY", 1.);
+    gMC->Gstpar(idtmed[704], "LOSS", 3.);
+    gMC->Gstpar(idtmed[704], "DRAY", 1.);
 // --- and in aluminium parts --- 
-    pMC->Gstpar(idtmed[701], "LOSS", 3.);
-    pMC->Gstpar(idtmed[701], "DRAY", 1.);
+    gMC->Gstpar(idtmed[701], "LOSS", 3.);
+    gMC->Gstpar(idtmed[701], "DRAY", 1.);
 }
  
 //______________________________________________________________________________
@@ -285,8 +271,6 @@ void AliPHOS::AddPHOSCradles()
 				     GetPIN_SideSize       (),
 				     GetPIN_Length         (),
 				     GetRadius             (),
-				     GetCPV_Thickness      (),
-				     GetCPV_PHOS_Distance  (),
 				     GetNz                 (),
 				     GetNphi               (),
 				     GetCradleAngle        (i)));
@@ -391,7 +375,7 @@ void AliPHOS::SetTreeAddress(void)
 
   if( NULL==(fTreePHOS=(TTree*)gDirectory->Get((char*)(fTreeName.Data()))  ) )
   {
-    Error("Can not find Tree \"%s\"\n",fTreeName.Data());
+    Error("SetTreeAddress","Can not find Tree \"%s\"\n",fTreeName.Data());
     exit(1);
   }
 
@@ -418,7 +402,7 @@ AliPHOSCradle *AliPHOS::GetCradleOfTheParticle(const TVector3 &p,const TVector3 
     AliPHOSCradle *cradle = (AliPHOSCradle *)PHOS->fCradles->operator[](m);
 
     float x,y,l;
-    const float d = cradle->GetRadius()-cradle->GetCPV_PHOS_Distance()-cradle->GetCPV_Thikness();
+    const float d = cradle->GetRadius();
     cradle->GetXY(p,v,d,x,y,l);
 
     if( l>0 && TMath::Abs(x)<cradle->GetNz  ()*cradle->GetCellSideSize()/2 
@@ -534,21 +518,6 @@ void AliPHOS::SetCradleA(Float_t angle)
 }
 
 //______________________________________________________________________________
-void AliPHOS::SetCPV(Float_t p1,Float_t p2,Float_t p3,Float_t p4,
-                     Float_t p5,Float_t p6,Float_t p7,Float_t p8,Float_t p9)
-{
-   PHOSCPV[0] = p1;
-   PHOSCPV[1] = p2;
-   PHOSCPV[2] = p3;
-   PHOSCPV[3] = p4;
-   PHOSCPV[4] = p5;
-   PHOSCPV[5] = p6;
-   PHOSCPV[6] = p7;
-   PHOSCPV[7] = p8;
-   PHOSCPV[8] = p9;
-}
-
-//______________________________________________________________________________
 void AliPHOS::SetExtra(Float_t p1,Float_t p2,Float_t p3,Float_t p4,
                        Float_t p5,Float_t p6,Float_t p7,Float_t p8,Float_t p9)
 {
@@ -604,16 +573,12 @@ AliPHOSCradle::AliPHOSCradle( int   Geometry           ,
                               float PIN_SideSize       ,
                               float PIN_Length         ,
                               float Radius             ,
-                              float CPV_Thickness      ,
-                              float CPV_PHOS_Distance  ,
                               int   Nz                 ,
                               int   Nphi               ,
                               float Angle              ) :
     fGeometry                   (Geometry),
 //  fCellEnergy                 (),
 //  fChargedTracksInPIN         (),
-//  fCPV_hitsX                  (),
-//  fCPV_hitsY                  (),
     fCrystalSideSize            (CrystalSideSize),
     fCrystalLength              (CrystalLength),
     fWrapThickness              (WrapThickness),
@@ -621,8 +586,6 @@ AliPHOSCradle::AliPHOSCradle( int   Geometry           ,
     fPIN_SideSize               (PIN_SideSize),
     fPIN_Length                 (PIN_Length),
     fRadius                     (Radius),
-    fCPV_PHOS_Distance          (CPV_PHOS_Distance),
-    fCPV_Thickness              (CPV_Thickness),
     fNz                         (Nz),
     fNphi                       (Nphi),
     fPhi                        (Angle)
@@ -654,27 +617,6 @@ void AliPHOSCradle::Clear(Option_t *)
   GetGammasReconstructed() .Delete();
   GetGammasReconstructed() .Compress();
 
-  fCPV_hitsX.Set(0);
-  fCPV_hitsY.Set(0);
-}
-
-//______________________________________________________________________________
-
-void AliPHOSCradle::AddCPVHit(float x,float y)
-{
-// Add this hit to the hits list in CPV detector.
-
-  TArrayF a(fCPV_hitsX.GetSize()+1);
-  
-  memcpy(a.GetArray(),fCPV_hitsX.GetArray(),sizeof(Float_t)*fCPV_hitsX.GetSize());
-  a[fCPV_hitsX.GetSize()] = x;
-  fCPV_hitsX = a;
-
-  // It must be:   fCPV_hitsX.GetSize() == fCPV_hitsY.GetSize()
-
-  memcpy(a.GetArray(),fCPV_hitsY.GetArray(),sizeof(Float_t)*fCPV_hitsY.GetSize());
-  a[fCPV_hitsY.GetSize()] = y;
-  fCPV_hitsY = a;
 }
 
 //______________________________________________________________________________
@@ -753,8 +695,8 @@ void AliPHOSCradle::Print(Option_t *opt)
 
   AliPHOSCradle *cr = (AliPHOSCradle *)this;     // Removing 'const'...
 
-  printf("AliPHOSCradle:  Nz=%d  Nphi=%d, fPhi=%f, E=%g, CPV hits amount = %d\n",fNz,fNphi,fPhi,
-       cr->fCellEnergy.GetSumOfWeights(),fCPV_hitsX.GetSize());
+  printf("AliPHOSCradle:  Nz=%d  Nphi=%d, fPhi=%f, E=%g\n",fNz,fNphi,fPhi,
+       cr->fCellEnergy.GetSumOfWeights());
 
   if( NULL!=strchr(opt,'d') )
   {

@@ -24,7 +24,6 @@
 #include <TNode.h>
 #include "AliRun.h"
 #include "AliFMD.h"
-#include "TGeant3.h"
  
 ClassImp(AliFMD)
  
@@ -136,13 +135,14 @@ void AliFMD::StepManager()
   //
   
   Float_t       hits[3];
-  Int_t         copy,vol[1];
+  Int_t         i,copy,vol[1];
   TClonesArray &lhits = *fHits;
-  AliMC* pMC=AliMC::GetMC();
+  TLorentzVector p;
   
-  pMC->CurrentVol(0, copy);
+  gMC->CurrentVolID(copy);
   vol[0] = copy;
-  pMC->TrackPosition(hits);
+  gMC->TrackPosition(p);
+  for(i=0;i<3;++i) hits[i]=p[i];
   new(lhits[fNhits++]) AliFMDhit(fIshunt,gAlice->CurrentTrack(),vol,hits);
 }
 
