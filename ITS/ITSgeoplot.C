@@ -1,3 +1,30 @@
+#define __NOCOMPILED__
+#ifdef __COMPILED__
+#include<iostream.h>
+#include<TROOT.h>
+#include<TArrayI.h>
+#include<TCanvas.h>
+#include<TClassTable.h>
+#include<TClonesArray.h>
+#include<TFile.h>
+#include<TH1.h>
+#include<TH2.h>
+#include<TObject.h>
+#include<TObjArray.h>
+#include<TTree.h>
+#include <AliRun.h>
+#include <AliITS.h>
+#include <AliITSgeom.h>
+#include <AliITSDetType.h>
+#include <AliITSRecPoint.h>
+#include <AliITSdigit.h>
+#include <AliITShit.h>
+#include <AliITSmodule.h> 
+#include <AliITSsegmentation.h>
+#include <AliITSsegmentationSPD.h> 
+#include <AliITSsegmentationSDD.h>
+#include <AliITSsegmentationSSD.h>
+#endif
 Int_t ITSgeoplot (char *opt="All+Rec", char *filename="galice.root") {
   /*******************************************************************
    *  This macro displays geometrical information related to the
@@ -23,31 +50,46 @@ Int_t ITSgeoplot (char *opt="All+Rec", char *filename="galice.root") {
    *          digits on p and n side originating from the same track, when
    *          possible. This (mis)use of DIGITS is tolerated for debugging 
    *          purposes only !!!!  The pairing in real life should be done
-   *          starting from info really available...  
+   *          starting from info really available... 
+   * 
+   *  COMPILATION: this macro can be compiled. 
+   *      1)       Change the first line above from its default 
+   *               value (#define __NOCOMPILED__) to
+   *               #define __COMPILED__
+   *      2)       You need to set your include path with
+   * gSystem->SetIncludePath("-I- -I$ALICE_ROOT/include -I$ALICE_ROOT/ITS -g");
+   *      3)       If you are using root instead of aliroot you need to
+   *               execute the macro loadlibs.C in advance
+   *      4)       To compile this macro from root (or aliroot):
+   *                 ---  .L ITSgeoplot.C++
+   *                 ---  ITSgeoplot("ListOfParametersIfAny");
    *     
-   *  M.Masera  19/3/2001 18:45
+   *  M.Masera  11/4/2001 18:45
    ********************************************************************/
 
   extern void GetHitsCoor(TObject *its, Int_t mod, TObjArray & histos, Int_t subd,Bool_t verb);
   extern Int_t GetRecCoor(TObject *ge, TClonesArray *ITSrec, Int_t mod, TH2F *h2, TH1F *h1, Bool_t verb);
   extern void GetDigits(TObject *tmps,TObject *ge,TClonesArray *ITSdigits, Int_t subd, Int_t mod, Bool_t verbose, TObjArray & histos);
-
   //Options
   TString choice(opt);
   Bool_t All = choice.Contains("All");
   Bool_t verbose=choice.Contains("Verbose");
   Bool_t userec=choice.Contains("Rec");
   Int_t retcode=1; //return code
+#ifdef __NOCOMPILED__
   if (gClassTable->GetID("AliRun") < 0) {
     gROOT->LoadMacro("loadlibs.C");
     loadlibs();
   }
   else {
+#endif
     if(gAlice){
       delete gAlice;
       gAlice=0;
     }
+#ifdef __NOCOMPILED__
   }
+#endif
   // Connect the Root input  file containing Geometry, Kine and Hits
   // galice.root file by default
 
@@ -222,7 +264,7 @@ Int_t ITSgeoplot (char *opt="All+Rec", char *filename="galice.root") {
         //RecPoints     
         if(userec){
           ITS->ResetRecPoints();
-          TR->GetEvent(mod);
+          TR->GetEvent(mod+1);
           TH2F *bidi=(TH2F*)histos.At(6+subd*9);
           TH1F *uni=(TH1F*)histos.At(7+subd*9);
           nrecp=GetRecCoor(geom,ITSrec,mod,bidi,uni,verbose);
@@ -231,7 +273,7 @@ Int_t ITSgeoplot (char *opt="All+Rec", char *filename="galice.root") {
         // Digits
         if(usedigits){
           ITS->ResetDigits();
-          nbytes += TD->GetEvent(mod);
+          nbytes += TD->GetEvent(mod+1);
           GetDigits(seg,geom,ITSdigits,subd,mod,verbose,histos);
         }
 
@@ -413,7 +455,7 @@ void GetDigits(TObject *tmps,TObject *ge,TClonesArray *ITSdigits, Int_t subd, In
           for(Int_t digi2=0;digi2<ndigits;digi2++){
             if(ssdone[digi2]==0 && impaired){
               AliITSdigitSSD *dig2=(AliITSdigitSSD*)ITSdigits->UncheckedAt(digi2);
-              if(dig2->fCoord1 != iz && dig2->GetTracks()[0]==digs->GetTracks()[0]){
+              if(dig2->fCoord1 != iz && dig2->GetTracks()[0]==digs->GetTracks()[0] && dig2->GetTracks()[0]>0){
                 ssdone[digi2]=2;
                 pair[digit]=digi2;
                 if(pside)nstrip=dig2->fCoord2;
@@ -422,7 +464,9 @@ void GetDigits(TObject *tmps,TObject *ge,TClonesArray *ITSdigits, Int_t subd, In
               }
             }
           }
-          if(!impaired)seg->GetPadCxz(pstrip,nstrip,lcoor[0],lcoor[2]);
+          if(!impaired){
+            seg->GetPadCxz(pstrip,nstrip,lcoor[0],lcoor[2]);
+          }
         }
       }
       if(subd==0){
