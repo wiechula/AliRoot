@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.27  2001/09/26 16:06:59  coppedis
+Some function moved to AliZDC
+
 Revision 1.26  2001/06/13 11:10:55  coppedis
 Minor changes
 
@@ -130,7 +133,7 @@ Introduction of the Copyright and cvs Log
 #include "AliDetector.h"
 #include "AliMagF.h"
 #include "AliMC.h"
-#include "AliCallf77.h"
+//#include "AliCallf77.h"
 #include "AliConst.h"
 #include "AliPDG.h"
 #include "TLorentzVector.h"

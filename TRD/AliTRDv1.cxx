@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.33  2002/02/20 14:01:40  hristov
+Compare a TString with a string, otherwise the conversion cannot be done on Sun
+
 Revision 1.32  2002/02/13 16:58:37  cblume
 Bug fix reported by Jiri. Make atoi input zero terminated in StepManager()
 
@@ -513,7 +516,7 @@ void AliTRDv1::StepManager()
 
   Float_t  hits[3];
   Float_t  moms[3];
-  Float_t  random[1];
+  Double_t random[1];
   Float_t  charge;
   Float_t  aMass;
 
@@ -680,8 +683,10 @@ void AliTRDv1::StepManager()
           }
       
           if (pp > 0) {
-            do 
-              gMC->Rndm(random,1);
+            do {
+              //gMC->Rndm(random,1);
+              gMC->GetRandom()->RndmArray(1, random);
+	    }  
             while ((random[0] == 1.) || (random[0] == 0.));
             stepSize = - TMath::Log(random[0]) / pp; 
             gMC->SetMaxStep(stepSize);

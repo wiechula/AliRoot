@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.41  2002/05/27 14:33:15  hristov
+The new class AliTrackReference used (M.Ivanov)
+
+Revision 1.40  2002/01/21 17:12:00  kowal2
+New track hits structure using root containers
+
 Revision 1.39  2001/05/16 14:57:25  alibrary
 New files for folders and Stack
 
@@ -1959,6 +1965,25 @@ void AliTPCv2::StepManager()
 
   id = gMC->CurrentVolID(copy); // current volume Id
 
+  if (gMC->IsTrackEntering() && ( (id == fIdLSec) || (id == fIdUSec))){
+    //    printf("track  %d entering volume %d\n",gAlice->CurrentTrack(),id);
+    TLorentzVector p;
+    TLorentzVector x;
+    gMC->TrackMomentum(p);
+    gMC->TrackPosition(x);
+    AddTrackReference(gAlice->CurrentTrack(),p,x);
+  }
+
+  if (gMC->IsTrackExiting() && ( (id == fIdLSec) || (id == fIdUSec))){
+    //    printf("track  %d exiting volume %d\n",gAlice->CurrentTrack(),id);
+    TLorentzVector p;
+    TLorentzVector x;
+    gMC->TrackMomentum(p);
+    gMC->TrackPosition(x);
+    AddTrackReference(gAlice->CurrentTrack(),p,x);
+  }
+
+
   if(id == fIdLSec){
     vol[0] = copy-1; // lower sector number
   }
@@ -2068,13 +2093,13 @@ void AliTPCv2::StepManager()
       if(TMath::Abs(charge) > 1.) pp *= (charge*charge);
     }
   
-  Float_t random[1];
-  gMC->Rndm(random,1); // good, old GRNDM from Geant3
-  
-  Double_t rnd = (Double_t)random[0];
-  
-  gMC->SetMaxStep(-TMath::Log(rnd)/pp);
-  
+  //Float_t random[1];
+  //gMC->Rndm(random,1); // good, old GRNDM from Geant3  
+  //Double_t rnd = (Double_t)random[0];
+
+  Double_t rnd = gMC->GetRandom()->Rndm();
+
+  gMC->SetMaxStep(-TMath::Log(rnd)/pp);  
 }
 
 //_____________________________________________________________________________

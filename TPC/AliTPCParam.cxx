@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.15  2002/05/07 17:24:02  kowal2
+Updated wires positions
+
+Revision 1.14  2002/03/29 06:57:45  kowal2
+Restored backward compatibility to use the hits from Dec. 2000 production.
+
+Revision 1.13  2002/03/18 17:59:13  kowal2
+Chnges in the pad geometry - 3 pad lengths introduced.
+
 Revision 1.12  2002/02/05 09:12:26  hristov
 Small mods for gcc 3.02
 
@@ -100,7 +109,7 @@ AliTPCParam::AliTPCParam()
   fResponseBin = 0;
   fResponseWeight = 0;
   fRotAngle = 0;
-  SetTitle("75x40_100x60");
+  SetTitle("75x40_100x60_150x60");
   SetDefault();  
 }
 
@@ -303,10 +312,10 @@ void AliTPCParam::SetDefault()
   //
   //sector default parameters
   //
-  const static  Float_t kInnerRadiusLow = 83.0;
-  const static  Float_t kInnerRadiusUp  = 133.2;
-  const static  Float_t kOuterRadiusLow = 133.5;
-  const static  Float_t kOuterRadiusUp  = 247.7;
+  const static  Float_t kInnerRadiusLow = 82.97;
+  const static  Float_t kInnerRadiusUp  = 133.17;
+  const static  Float_t kOuterRadiusLow = 133.58;
+  const static  Float_t kOuterRadiusUp  = 247.78;
   const static  Float_t kInnerAngle = 20; // 20 degrees
   const static  Float_t kInnerAngleShift = 10;
   const static  Float_t kOuterAngle = 20; //  20 degrees
@@ -327,14 +336,14 @@ void AliTPCParam::SetDefault()
   const static Int_t    kNInnerWiresPerPad = 3;
   const static Int_t    kInnerDummyWire = 2;
   const static Float_t  kInnerWWPitch = 0.25;
-  const static Float_t  kRInnerFirstWire = 84.475;
-  const static Float_t  kRInnerLastWire = 132.475;
+  const static Float_t  kRInnerFirstWire = 84.445;
+  const static Float_t  kRInnerLastWire = 132.445;
   const static Float_t  kInnerOffWire = 0.5;
   const static Int_t    kNOuter1WiresPerPad = 4;
   const static Int_t    kNOuter2WiresPerPad = 6;
   const static Float_t  kOuterWWPitch = 0.25;  
-  const static Float_t  kROuterFirstWire = 134.225;
-  const static Float_t  kROuterLastWire = 246.975;
+  const static Float_t  kROuterFirstWire = 134.305;
+  const static Float_t  kROuterLastWire = 247.055;
   const static Int_t    kOuterDummyWire = 2;
   const static Float_t  kOuterOffWire = 0.5;
   //

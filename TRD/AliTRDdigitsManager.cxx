@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.18  2002/04/12 12:13:23  cblume
+Add Jiris changes
+
+Revision 1.17  2002/03/28 14:59:07  cblume
+Coding conventions
+
+Revision 1.16  2002/02/12 11:42:08  cblume
+Remove fTree from destructor
+
 Revision 1.15  2002/02/11 14:27:54  cblume
 Geometry and hit structure update
 
@@ -194,6 +203,9 @@ void AliTRDdigitsManager::CreateArrays()
 //_____________________________________________________________________________
 void AliTRDdigitsManager::SetRaw()
 {
+  //
+  // Switch on the raw digits flag
+  //
 
   fIsRaw = kTRUE;
 
@@ -237,6 +249,21 @@ Bool_t AliTRDdigitsManager::Open(const Char_t *file)
   }
 
   return kTRUE;
+
+}
+
+//_____________________________________________________________________________
+void AliTRDdigitsManager::MakeTreeAndBranches(TFile *file, Int_t iEvent)
+{
+  //
+  // Creates tree for (s)digits in the specified file
+  //
+
+  fEvent = iEvent;
+  TDirectory *wd = gDirectory;
+  file->cd();
+  MakeBranch();
+  wd->cd();
 
 }
 
@@ -424,7 +451,8 @@ Bool_t AliTRDdigitsManager::WriteDigits()
   }
 
   // Write the new tree to the output file
-  fTree->Write();
+  //fTree->Write();
+  fTree->AutoSave();  // Modification by Jiri
 
   return kTRUE;
 

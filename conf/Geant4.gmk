@@ -4,11 +4,6 @@
 
 # include $(G4INSTALL)/config/architecture.gmk
 
-# Alice options flags
-ifdef AG4_VISUALIZE
-  CPPFLAGS  += -DALICE_VISUALIZE
-endif
-
 #
 # C++ compilation flags
 #
@@ -19,12 +14,14 @@ ifeq ($(ALICE_TARGET),Linux)
 # in order to exclude warnings from G4 
 # excluded for Geant4: -Wswitch -Wunused
 
-  CXXOPTS := $(filter-out -Wall,$(CXXOPTS))
-  CXXOPTS += -Wimplicit-int -Wimplicit-function-declaration\
-	     -Wimplicit -Wmain -Wreturn-type -Wcomment \
-	     -Wtrigraphs -Wformat -Wchar-subscripts \
-	     -Wparentheses              
-  CXXOPTS := $(patsubst -O%,-O% -Wuninitialized,$(CXXOPTS))
+#  CXXOPTS := $(filter-out -Wall,$(CXXOPTS))
+#  CXXOPTS += -Wimplicit-int -Wimplicit-function-declaration\
+#	     -Wimplicit -Wmain -Wreturn-type -Wcomment \
+#	     -Wtrigraphs -Wformat -Wchar-subscripts \
+#	     -Wparentheses              
+#  CXXOPTS := $(patsubst -O%,-O% -Wuninitialized,$(CXXOPTS))
+
+  CXXOPTS += -ansi -pedantic -fno-for-scope -DGNU_GCC
 
 # Motif, Xt libraries
   G4GLIBS := -L/usr/lib/Motif1.2_R6 -lXm -L/usr/lib -lXt

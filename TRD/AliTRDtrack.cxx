@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.9  2002/03/28 14:59:07  cblume
+Coding conventions
+
+Revision 1.8  2001/05/30 12:17:47  hristov
+Loop variables declared once
+
 Revision 1.7  2001/05/28 17:07:58  hristov
 Last minute changes; ExB correction in AliTRDclusterizerV1; taking into account of material in G10 TEC frames and material between TEC planes (C.Blume,S.Sedykh)
 
@@ -31,6 +37,12 @@ Revision 1.1.2.1  2000/09/22 14:47:52  cblume
 Add the tracking code
 
 */                                                        
+
+/////////////////////////////////////////////////////////////////////////////
+//                                                                         //
+//  TRD track object                                                       //
+//                                                                         //
+/////////////////////////////////////////////////////////////////////////////
 
 #include <iostream.h>
 

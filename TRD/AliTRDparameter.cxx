@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.5  2002/04/30 08:30:40  cblume
+gAlice now only read by AliRunDigitizer. Therefore it is just deleted in AliTRDmerge.C
+
 Revision 1.4  2002/04/12 12:13:23  cblume
 Add Jiris changes
 

@@ -11,6 +11,8 @@
 #include "AliDetector.h"
 #include "AliHit.h" 
 #include "AliDigit.h" 
+#include "TLorentzVector.h" 
+
 
 
 class TMatrix;
@@ -59,6 +61,7 @@ public:
   AliTPC(const char *name, const char *title);
   virtual      ~AliTPC();
   virtual void  AddHit(Int_t a1, Int_t *a2, Float_t *a3);
+  virtual void  AddTrackReference(Int_t lab,  TLorentzVector p, TLorentzVector x);
   Int_t         DistancetoPrimitive(Int_t px, Int_t py);
   virtual void  BuildGeometry();
   virtual void  CreateGeometry() {}
@@ -115,7 +118,6 @@ public:
    virtual AliHit* NextHit();
    virtual AliHit* FirstHit2(Int_t track);
    virtual AliHit* NextHit2();
-   
    virtual void LoadPoints(Int_t dummy);
    virtual void LoadPoints2(Int_t dummy);
    virtual void LoadPoints3(Int_t dumy);
@@ -132,8 +134,8 @@ public:
    void    GenerNoise(Int_t tablasize);  // make noise table
    Bool_t  IsSectorActive(Int_t sec);    // check if the sector is active
    void    SetActiveSectors(Int_t * sectors, Int_t n);  //set active sectors
-   void    SetActiveSectors(); //loop over al hits and set active only hitted sectors
-
+   Int_t GetHitType(){return fHitType;}
+   void    SetActiveSectors(Int_t flag=0); //loop over al hits and set active only hitted sectors
 private:
   //
    Bool_t  TrackInVolume(Int_t id,Int_t track);  //return true if current track is in volume
@@ -154,7 +156,7 @@ private:
   Int_t      fCurrentNoise; //!index of the noise in  the noise table 
   Bool_t*    fActiveSectors; //!bool indicating which sectors are active
 
-  ClassDef(AliTPC,6)  // Time Projection Chamber class
+  ClassDef(AliTPC,8)  // Time Projection Chamber class
 };
 
 
