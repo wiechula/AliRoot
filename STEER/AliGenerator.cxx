@@ -15,15 +15,15 @@
 
 /*
 $Log$
-<<<<<<< AliGenerator.cxx
-=======
+Revision 1.18.2.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
 Revision 1.19  2002/03/12 11:06:03  morsch
 Add particle status code to argument list of SetTrack(..).
 
 Revision 1.18  2002/02/18 19:23:00  hristov
 Put protection in the destructor
 
->>>>>>> 1.19
 Revision 1.17  2001/11/26 15:46:35  morsch
 Set default value for vertex truncation in constructor.
 

@@ -12,8 +12,7 @@ SRCS:=  AliTPCLoader.cxx\
         AliTPCTrackHits.cxx\
         AliTPCDigitizer.cxx\
         AliTPCTrackHitsV2.cxx AliTPCtrackerParam.cxx\
-        
-	
+        AliTPCkineGrid.cxx
 
 HDRS:= $(SRCS:.cxx=.h)
 

@@ -15,6 +15,16 @@
  
 /*
 $Log$
+Revision 1.3.4.1  2002/05/31 09:37:56  hristov
+First set of changes done by Piotr
+
+Revision 1.5  2002/05/13 14:27:57  hristov
+TreeC created once per event (M.Masera)
+
+Revision 1.4  2002/05/10 22:31:30  nilsen
+Changes by Massimo Masera to allow Recpoints and Clusters to be written
+to separate files.
+
 Revision 1.3  2002/02/06 13:52:27  barbera
 gAlice deletion corrected (from M. Masera)
 
@@ -64,6 +74,7 @@ AliITSreconstruction::AliITSreconstruction(){
 
     fFilename = "";
     fFile     = 0;
+    fFile2    = 0;
     fITS      = 0;
     fDet[0] = fDet[1] = fDet[2] = kTRUE;
     fInit     = kFALSE;
@@ -84,8 +95,6 @@ AliITSreconstruction::AliITSreconstruction(const char* filename){
     //    A standardly constructed AliITSreconstruction class.
 
     fFilename = filename;
-    
-    
     fRunLoader = AliRunLoader::Open(fFilename);
     if (fRunLoader == 0x0)
      {
@@ -94,20 +103,8 @@ AliITSreconstruction::AliITSreconstruction(const char* filename){
      }
     fRunLoader->LoadgAlice();
     gAlice = fRunLoader->GetAliRun();
-    
-/*    if(filename){
-      fFile = (TFile*)gROOT->GetListOfFiles()->FindObject(fFilename.Data());
-      if(fFile) fFile->Close();
-      fFile = new TFile(fFilename.Data(),"UPDATE");
-      //
-        if(gAlice) {
-          delete gAlice;
-          gAlice = 0;
-        }   
-      gAlice = (AliRun*)fFile->Get("gAlice");
-    } // end if !filename.
-*/
-      if(!gAlice) {
+
+    if(!gAlice) {
           cout << "gAlice not found on file. Aborting." << endl;
           fInit = kFALSE;
           return;
@@ -141,7 +138,6 @@ Bool_t AliITSreconstruction::Init(){
     // Return:
     //    kTRUE if no errors initilizing this class occurse else kFALSE
     Int_t nparticles;
-
     fITS = (AliITS*) gAlice->GetDetector("ITS");
     if(!fITS){
       cout << "ITS not found aborting. fITS=" << fITS << endl;
@@ -250,11 +246,26 @@ void AliITSreconstruction::Exec(const Option_t *opt){
        Error("Exec","Can not get loader for ITS");
        return;
      }
-    for(evnt=0;evnt<fEnt;evnt++){
+
+    for(evnt=0;evnt<fEnt;evnt++)
+     {
+
       fRunLoader->GetEvent(evnt);
 //      gAlice->SetEvent(evnt);
       if(!gime->TreeR()) gime->MakeTree("R");
       fITS->MakeBranch("R");
       fITS->DigitsToRecPoints(evnt,0,lopt);
+      fITS->MakeTreeC();
     } // end for evnt
 }
+//______________________________________________________________________ 
+void AliITSreconstruction::SetOutputFile(TString filename){
+  // Set a file name for recpoints. Used only if this file is not the file
+  // containing digits. This obj is deleted by AliRun.
+  Error("SetOutputFile","Use AliLoader::SetRecPointsFileName(TString&)instead");
+}
+
+
+
+
+

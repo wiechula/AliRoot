@@ -15,6 +15,16 @@
 
 /*
 $Log$
+Revision 1.16.2.1  2002/05/31 09:38:00  hristov
+First set of changes done by Piotr
+
+Revision 1.18  2002/05/13 07:33:52  kowal2
+Added protection in Int_t AliTPCtracker::AliTPCRow::Find(Double_t y) const
+in the case of defined region of interests.
+
+Revision 1.17  2002/03/18 17:59:13  kowal2
+Chnges in the pad geometry - 3 pad lengths introduced.
+
 Revision 1.16  2001/11/08 16:39:03  hristov
 Additional protection (M.Masera)
 
@@ -341,7 +351,8 @@ Int_t AliTPCtracker::FollowProlongation(AliTPCseed& t, Int_t rf) {
   if (alpha < 0.            ) alpha += 2.*TMath::Pi();  
   Int_t s=Int_t(alpha/fSectors->GetAlpha())%fN;
 
-  for (Int_t nr=fSectors->GetRowNumber(xt)-1; nr>=rf; nr--) {
+  Int_t nrows=fSectors->GetRowNumber(xt)-1;
+  for (Int_t nr=nrows; nr>=rf; nr--) {
     Double_t x=fSectors->GetX(nr), ymax=fSectors->GetMaxY(nr);
     if (!t.PropagateTo(x)) return 0;
 
@@ -982,13 +993,15 @@ void AliTPCtracker::AliTPCSector::Setup(const AliTPCParam *par, Int_t f) {
      fAlpha=par->GetOuterAngle();
      fAlphaShift=par->GetOuterAngleShift();
      fPadPitchWidth=par->GetOuterPadPitchWidth();
-     fPadPitchLength=par->GetOuterPadPitchLength();
+     f1PadPitchLength=par->GetOuter1PadPitchLength();
+     f2PadPitchLength=par->GetOuter2PadPitchLength();
 
      fN=par->GetNRowUp();
      fRow=new AliTPCRow[fN];
-     for (Int_t i=0; i<fN; i++) fRow[i].SetX(par->GetPadRowRadiiUp(i));
-  }
-  
+     for (Int_t i=0; i<fN; i++){ 
+     fRow[i].SetX(par->GetPadRowRadiiUp(i));
+     }
+  } 
 }
 
 //_________________________________________________________________________
@@ -1012,6 +1025,7 @@ Int_t AliTPCtracker::AliTPCRow::Find(Double_t y) const {
   //-----------------------------------------------------------------------
   // Return the index of the nearest cluster 
   //-----------------------------------------------------------------------
+  if(fN<=0) return 0;
   if (y <= fClusters[0]->GetY()) return 0;
   if (y > fClusters[fN-1]->GetY()) return fN;
   Int_t b=0, e=fN-1, m=(b+e)/2;

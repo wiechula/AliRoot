@@ -44,7 +44,6 @@ class AliStack : public TNamed
                    Double_t polx, Double_t poly, Double_t polz,
                    AliMCProcess mech, Int_t &ntr, Float_t weight = 1,
                    Int_t is = 0);
-
     void  GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
                        Float_t &e, Float_t *vpos, Float_t *polar, Float_t &tof);
 
@@ -75,6 +74,7 @@ class AliStack : public TNamed
     void  CleanParents();
     void  ResetArrays(Int_t size);
     TParticle* GetNextParticle();
+    Bool_t KeepPhysics(TParticle* part);
     
   private:
     // data members

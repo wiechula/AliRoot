@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.17.4.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
+Revision 1.18  2002/05/24 13:29:58  hristov
+AliTrackReference added, AliDisplay modified
+
 Revision 1.17  2001/10/21 18:38:44  hristov
 Several pointers were set to zero in the default constructors to avoid memory management problems
 
@@ -80,6 +86,7 @@ Introduction of the Copyright and cvs Log
 #include <TMath.h>
 
 #include "AliRun.h"
+#include "AliStack.h"
 #include "AliDetector.h"
 #include "AliDisplay.h"
 #include "AliPoints.h"
@@ -112,6 +119,8 @@ AliDisplay::AliDisplay()
   fZoomButton = 0;
   fArcButton = 0;
   fFruits = 0;
+  fTracksToDisplay =0;
+  fNTracksToDisplay =0;
 }
 
 //_____________________________________________________________________________
@@ -295,7 +304,8 @@ AliDisplay::AliDisplay(Int_t size)
 
    fTrigPad->SetEditable(kFALSE);
    fButtons->SetEditable(kFALSE);
-   
+   fTracksToDisplay =0;
+   fNTracksToDisplay =0;   
 
    fCanvas->cd();
    fCanvas->Update();
@@ -777,6 +787,13 @@ void AliDisplay::ExecuteEvent(Int_t event, Int_t px, Int_t py)
 
 }
  
+
+void AliDisplay::SetTracksToDisplay(Int_t *tracks, Int_t n){
+  //
+  // set tracks to display  - MI
+  fTracksToDisplay = tracks;
+  fNTracksToDisplay = n;
+}
 //___________________________________________
 void AliDisplay::LoadPoints()
 {
@@ -787,19 +804,49 @@ void AliDisplay::LoadPoints()
    TIter next(gAlice->Modules());
    AliModule *module;
    Int_t ntracks = gAlice->GetNtrack();
-   for (Int_t track=0; track<ntracks;track++) {
+
+   while((module = (AliModule*)next())) 
+    {
+     AliDetector* detector = dynamic_cast<AliDetector*>(module);
+     if(detector) detector->SetTreeAddress();
+    }
+   next.Reset();
+
+   if (fNTracksToDisplay>0)
+    {
+      Int_t nprim =  gAlice->Stack()->GetNprimary();
+      for (Int_t track=0; track<fNTracksToDisplay;track++) 
+       {
+        gAlice->ResetHits();
+        Int_t nev = nprim-1-gAlice->GetPrimary(fTracksToDisplay[track]);
+        while((module = (AliModule*)next())) 
+         {
+          AliDetector* detector = dynamic_cast<AliDetector*>(module);
+          if(detector)
+           {
+            detector->TreeH()->GetEvent(nev);
+            module->LoadPoints(nprim-1-gAlice->GetPrimary(fTracksToDisplay[track]));
+           }
+         }
+        next.Reset();
+     }
+   }
+   else
+    {
+      
+      for (Int_t track=0; track<ntracks;track++) {
       gAlice->ResetHits();
       while((module = (AliModule*)next())) {
          AliDetector* detector = dynamic_cast<AliDetector*>(module);
          if(detector)
            {
-             detector->SetTreeAddress();
              detector->TreeH()->GetEvent(track);
              detector->LoadPoints(track);
            }
       }
       next.Reset();
    }
+    }
 }
 
 //_____________________________________________________________________________

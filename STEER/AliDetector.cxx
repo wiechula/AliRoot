@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.16.6.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
+Revision 1.17  2002/05/24 13:29:58  hristov
+AliTrackReference added, AliDisplay modified
+
 Revision 1.16  2001/10/04 15:30:56  hristov
 Changes to accommodate the set of PHOS folders and tasks (Y.Schutz)
 
@@ -86,9 +92,13 @@ Introduction of the Copyright and cvs Log
 #include "AliHit.h"
 #include "AliPoints.h"
 #include "AliLoader.h"
+#include "AliTrackReference.h"
+
+
 // Static variables for the hit iterator routines
 static Int_t sMaxIterHit=0;
 static Int_t sCurIterHit=0;
+
 
 ClassImp(AliDetector)
  
@@ -102,10 +112,12 @@ AliDetector::AliDetector()
   fNdigits    = 0;
   fPoints     = 0;
   fHits       = 0;
+  fTrackReferences =0;
   fDigits     = 0;
   fTimeGate   = 200.e-9;
   fBufferSize = 16000;
   fDigitsFile = 0;
+  fLoader     = 0x0; //skowron
 
 }
  
@@ -122,13 +134,19 @@ AliDetector::AliDetector(const char* name,const char *title):AliModule(name,titl
   fActive     = kTRUE;
   fNhits      = 0;
   fHits       = 0;
+  fTrackReferences =0;
   fDigits     = 0;
   fNdigits    = 0;
   fPoints     = 0;
   fBufferSize = 16000;
   fDigitsFile = 0;
+  fLoader     = 0x0; //skowron
 
   AliConfig::Instance()->Add(this);
+
+  fTrackReferences        = new TClonesArray("AliTrackReference", 100);
+  //if detector to want to create another track reference - than let's be free 
+  
 }
  
 //_____________________________________________________________________________
@@ -194,7 +212,6 @@ MakeBranchInTree(TTree *tree, const char* name, const char *classname,
   {
     branch = tree->Branch(name,address,size);
   }
-
  return branch;
 }
 
@@ -259,6 +276,36 @@ AliHit* AliDetector::FirstHit(Int_t track)
   else            return 0;
 }
 
+
+//_____________________________________________________________________________
+AliTrackReference* AliDetector::FirstTrackReference(Int_t track)
+{
+  //
+  // Initialise the hit iterator
+  // Return the address of the first hit for track
+  // If track>=0 the track is read from disk
+  // while if track<0 the first hit of the current
+  // track is returned
+  // 
+  if(track>=0) 
+   {
+     if (fLoader == 0x0)
+      {
+        Fatal("FirstTrackReference","Loader not initialized. Can not proceed");
+      }
+     AliRunLoader* rl = fLoader->GetRunLoader();
+     rl->GetAliRun()->ResetTrackReferences();
+     rl->TreeTR()->GetEvent(track);
+   }
+  //
+  sMaxIterHit=fTrackReferences->GetEntriesFast();
+  sCurIterHit=0;
+  if(sMaxIterHit) return (AliTrackReference*) fTrackReferences->UncheckedAt(0);
+  else            return 0;
+}
+
+
+
 //_____________________________________________________________________________
 AliHit* AliDetector::NextHit()
 {
@@ -272,6 +319,22 @@ AliHit* AliDetector::NextHit()
       return 0;
   } else {
     printf("* AliDetector::NextHit * Hit Iterator called without calling FistHit before\n");
+    return 0;
+  }
+}
+//_____________________________________________________________________________
+AliTrackReference* AliDetector::NextTrackReference()
+{
+  //
+  // Return the next hit for the current track
+  //
+  if(fMaxIterTrackRef) {
+    if(++fCurrentIterTrackRef<fMaxIterTrackRef) 
+      return (AliTrackReference*) fTrackReferences->UncheckedAt(fCurrentIterTrackRef);
+    else        
+      return 0;
+  } else {
+    printf("* AliDetector::NextTrackReference * TrackReference  Iterator called without calling FistTrackReference before\n");
     return 0;
   }
 }
@@ -291,7 +354,7 @@ void AliDetector::LoadPoints(Int_t)
   Int_t nhits = fHits->GetEntriesFast();
   if (nhits == 0) 
    {
-    Error("LoadPoints","nhits == 0. Name is %s",GetName());
+//    Error("LoadPoints","nhits == 0. Name is %s",GetName());
     return;
    }
   Int_t tracks = gAlice->GetNtrack();
@@ -313,23 +376,28 @@ void AliDetector::LoadPoints(Int_t)
   Int_t chunk=nhits/4+1;
   //
   // Loop over all the hits and store their position
-  for (Int_t hit=0;hit<nhits;hit++) {
+  for (Int_t hit=0;hit<nhits;hit++) 
+   {
     ahit = (AliHit*)fHits->UncheckedAt(hit);
     trk=ahit->GetTrack();
     assert(trk<=tracks);
-    if(ntrk[trk]==limi[trk]) {
+    if(ntrk[trk]==limi[trk])
+     {
       //
       // Initialise a new track
       fp=new Float_t[3*(limi[trk]+chunk)];
-      if(coor[trk]) {
-	memcpy(fp,coor[trk],sizeof(Float_t)*3*limi[trk]);
-	delete [] coor[trk];
-      }
+      if(coor[trk]) 
+       {
+          memcpy(fp,coor[trk],sizeof(Float_t)*3*limi[trk]);
+          delete [] coor[trk];
+       }
       limi[trk]+=chunk;
       coor[trk] = fp;
-    } else {
+     } 
+    else 
+     {
       fp = coor[trk];
-    }
+     }
     fp[3*ntrk[trk]  ] = ahit->X();
     fp[3*ntrk[trk]+1] = ahit->Y();
     fp[3*ntrk[trk]+2] = ahit->Z();
@@ -377,6 +445,25 @@ void AliDetector::MakeBranch(Option_t *option, const char *file)
   
 
 }
+//_____________________________________________________________________________
+void AliDetector::MakeBranchTR(Option_t *option, const char *file)
+{
+  //
+  // Create a new branch in the current Root Tree
+  // The branch of fHits is automatically split
+  //
+ 
+  char branchname[10];
+  sprintf(branchname,"%s",GetName());
+  //
+  // Get the pointer to the header
+  const char *cTR = strstr(option,"T");
+  //
+  TTree * tree = fLoader->GetRunLoader()->TreeTR();
+  if (fTrackReferences && tree && cTR) {
+    MakeBranchInTree(tree, branchname, &fTrackReferences, fBufferSize, file) ;
+  }	  
+}
 
 //_____________________________________________________________________________
 void AliDetector::ResetDigits()
@@ -397,6 +484,17 @@ void AliDetector::ResetHits()
   fNhits   = 0;
   if (fHits) fHits->Clear();
 }
+
+//_____________________________________________________________________________
+void AliDetector::ResetTrackReferences()
+{
+  //
+  // Reset number of hits and the hits array
+  //
+  fMaxIterTrackRef   = 0;
+  if (fTrackReferences)   fTrackReferences->Clear();
+}
+
 
 //_____________________________________________________________________________
 void AliDetector::ResetPoints()
@@ -424,19 +522,35 @@ void AliDetector::SetTreeAddress()
   // Branch address for hit tree
   cout<<"#########################################"<<endl;
   
-  TTree *treeH = TreeH();
-  if (treeH && fHits) {
-    branch = treeH->GetBranch(branchname);
+  TTree *tree = TreeH();
+  if (tree && fHits) {
+    branch = tree->GetBranch(branchname);
     if (branch) 
      {
-       cout<<GetName()<<"::SetTreeAddress Setting"<<endl;
+       cout<<GetName()<<"::SetTreeAddress Setting for Hits"<<endl;
        branch->SetAddress(&fHits);
      }
     else
      {
-       cout<<GetName()<<"::SetTreeAddress Failed"<<endl;
+       cout<<GetName()<<"::SetTreeAddress for Hits Failed"<<endl;
      }
   }
+  
+  tree = TreeTR();
+  if (tree && fTrackReferences) {
+    branch = tree->GetBranch(branchname);
+    if (branch) 
+     {
+       cout<<GetName()<<"::SetTreeAddress Setting for TrackRefs"<<endl;
+       branch->SetAddress(&fTrackReferences);
+     }
+    else
+     {
+       cout<<GetName()<<"::SetTreeAddress for TrackRefs Failed"<<endl;
+     }
+  }
+  
+  
   //
   // Branch address for digit tree
   TTree *treeD = fLoader->TreeD();
@@ -510,3 +624,24 @@ TTree* AliDetector::TreeH()
   TTree* tree = (TTree*)GetLoader()->TreeH();
   return tree;
 }
+
+TTree* AliDetector::TreeTR()
+{
+//Get the hits container from the folder
+  if (GetLoader() == 0x0) 
+    {
+    //sunstitude this with make getter when we can obtain the event folder name 
+     Error("TreeTR","Can not get the loader");
+     return 0x0;
+    }
+  AliRunLoader* rl = GetLoader()->GetRunLoader();
+  if ( rl == 0x0)
+   {
+     Error("TreeTR","Can not get the run loader");
+     return 0x0;
+   }
+
+  TTree* tree = rl->TreeTR();
+  return tree;
+}
+

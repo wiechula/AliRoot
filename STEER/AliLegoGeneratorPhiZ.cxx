@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.7  2002/05/07 16:44:04  morsch
+Correct initialization of origin[2]. (Thanks to Angela Badala)
+
+Revision 1.6  2002/05/03 12:18:24  morsch
+Print-out corrected.
+
+Revision 1.5  2001/05/16 14:57:22  alibrary
+New files for folders and Stack
+
 Revision 1.4  2001/01/12 09:23:17  morsch
 Correct order of phi and z.
 
@@ -55,10 +64,9 @@ void AliLegoGeneratorPhiZ::Generate()
        return;
      } else { 
        fCoor2Bin++;
-       printf("Generating rays in z-bin:%d\n",fCoor2Bin);
+       printf("Generating rays in Phi-bin:%d\n",fCoor2Bin);
        fCoor1Bin=0;
      } else fCoor1Bin++;
-
    fCurCoor1 = (fCoor1Min+(fCoor1Bin+0.5)*(fCoor1Max-fCoor1Min)/fNCoor1);
    fCurCoor2 = (fCoor2Min+(fCoor2Bin+0.5)*(fCoor2Max-fCoor2Min)/fNCoor2);
 
@@ -78,9 +86,9 @@ void AliLegoGeneratorPhiZ::Generate()
    Float_t dalicz = 3000;
    if (fRadMin > 0) {
        t = PropagateCylinder(orig,pmom,fRadMin,dalicz);
-       orig[0] = pmom[0]*t;
-       orig[1] = pmom[1]*t;
-       orig[2] = pmom[2]*t;
+       orig[0] += pmom[0]*t;
+       orig[1] += pmom[1]*t;
+       orig[2] += pmom[2]*t;
        if (TMath::Abs(orig[2]) > fZMax) return;
    }
    

@@ -112,6 +112,7 @@ public:
    virtual  void  ResetDigits();
    virtual  void  ResetSDigits();
    virtual  void  ResetHits();
+   virtual  void  ResetTrackReferences();
    virtual  void  ResetPoints();
    virtual  void  SetTransPar(char *filename="$(ALICE_ROOT)/data/galice.cuts");
    virtual  void  SetBaseFile(char *filename="galice.root");
@@ -153,6 +154,7 @@ public:
    virtual  void EnergySummary();
    virtual  TDatabasePDG* PDGDB() const {return fPDGDB;}
 
+   
 
    TTree         *TreeE() {return (fRunLoader)?fRunLoader->TreeE():0x0;}
    TTree         *TreeK() {return (fRunLoader)?fRunLoader->TreeK():0x0;}
@@ -168,6 +170,7 @@ public:
 //   void SetEventFolderName(const char* eventfoldername);
 protected:
   virtual  void  Tree2Tree(Option_t *option, const char *detector=0);
+
   virtual  void  InitLoaders(); //prepares run (i.e. creates getters)
 
   Int_t          fRun;               //! Current run number
@@ -175,7 +178,6 @@ protected:
   Int_t          fEventNrInRun;      //! Current unique event number in run
   Int_t          fEventsPerRun;      //  Number of events per run
   Int_t          fDebug;             //  Debug flag
-
   TObjArray     *fModules;           //  List of Detectors
   TGeometry     *fGeometry;          //  Pointer to geometry
   AliDisplay    *fDisplay;           //! Pointer to event display

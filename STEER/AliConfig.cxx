@@ -23,6 +23,12 @@
 
 /*
 $Log$
+Revision 1.3.6.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
+Revision 1.4  2002/05/27 14:26:59  hristov
+New folder for track references added
+
 Revision 1.3  2001/10/04 15:30:56  hristov
 Changes to accommodate the set of PHOS folders and tasks (Y.Schutz)
 
@@ -132,9 +138,6 @@ AliConfig::AliConfig(const char *name, const char *title)
   SetName(name) ; 
   SetTitle(title) ; 
   
-
-//Detector subfolders for sim and rec data
-
   fDetectorFolder    =  new TString[kDetFolderLast+1];
   
   fDetectorFolder[kDetFolderData] = fgkDataFolderName;
@@ -188,7 +191,7 @@ AliConfig::AliConfig(const char *name, const char *title)
 //____________________________________________________________________________
 AliConfig::~AliConfig()
 { 
-  delete fDetectorFolder ;  
+  delete [] fDetectorFolder ;  
   delete fDetectorTask ;  
   delete fTopFolder ; 
 }

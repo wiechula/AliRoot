@@ -148,11 +148,14 @@ Int_t TPCFindClusters(Int_t n)
    cerr<<'\n'<<name<<"...\n";
    rl->CdGAFile();
    param=(AliTPCParam *)gDirectory->Get("75x40_100x60");
-   
    if (!param) 
     {
-      cerr<<"TPC parameters have not been found !\n";
-      return 1;
+     param=(AliTPCParam *)gDirectory->Get("75x40_100x60_150x60");
+     if (!param) 
+      {
+        cerr<<"TPC parameters have not been found !\n";
+        return 1;
+      }
     }
 //   param->Dump();
    param->Update();
@@ -193,8 +196,12 @@ Int_t TPCFindTracks(Int_t n) {
    
    if (!param) 
     {
-      cerr<<"TPC parameters have not been found !\n";
-      return 1;
+     param=(AliTPCParam *)gDirectory->Get("75x40_100x60_150x60");
+     if (!param) 
+      {
+        cerr<<"TPC parameters have not been found !\n";
+        return 1;
+      }
     }
 //   param->Dump();
    param->Update();

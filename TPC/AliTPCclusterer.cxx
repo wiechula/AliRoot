@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.7.4.1  2002/05/31 09:38:00  hristov
+First set of changes done by Piotr
+
+Revision 1.9  2002/05/09 06:57:09  kowal2
+Protection against nonexisting input tree
+
+Revision 1.8  2002/03/29 06:57:45  kowal2
+Restored backward compatibility to use the hits from Dec. 2000 production.
+
 Revision 1.7  2001/10/21 19:04:55  hristov
 Several patches were done to adapt the barel reconstruction to the multi-event case. Some memory leaks were corrected. (Yu.Belikov)
 
@@ -132,6 +141,11 @@ void AliTPCclusterer::Digits2Clusters(const AliTPCParam *par, AliLoader *of, Int
 
   
   TTree *t = (TTree *)of->TreeD();
+
+  if (!t) {
+    cerr<<"Input tree with digits not found"<<endl;
+    return;
+  }
 
   AliSimDigits digarr, *dummy=&digarr;
   t->GetBranch("Segment")->SetAddress(&dummy);

@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.18.4.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
 Revision 1.18  2001/12/19 14:46:26  morsch
 Add possibility to disable StepManager() for each module separately.
 
@@ -99,7 +102,6 @@ AliModule::AliModule()
   fDebug      = 0;
   fEnable     = 1;
   
-  fLoader     = 0x0; //skowron
   AliConfig::Instance()->Add(this);//skowron 4.02.2002
 }
  
@@ -141,7 +143,6 @@ AliModule::AliModule(const char* name,const char *title):TNamed(name,title)
   fLoMedium = 65536;
   fHiMedium = 0;
 
-  fLoader     = 0x0; //skowron
   AliConfig::Instance()->Add(this);    
     
   SetDebug(gAlice->GetDebug());
@@ -669,7 +670,5 @@ void AliModule::ReadEuclidMedia(const char* filnam)
 
 AliLoader*  AliModule::MakeLoader(const char* topfoldername) 
  {
-   cout<<"Module::MakeLoader"<<endl;
-   fLoader = 0x0;
    return 0x0;
  }//skowron   

@@ -14,7 +14,24 @@
  **************************************************************************/
 
 /*
-$Log$
+Revision 1.53.2.1  2002/05/31 09:38:00  hristov
+First set of changes done by Piotr
+
+Revision 1.58  2002/05/27 14:33:14  hristov
+The new class AliTrackReference used (M.Ivanov)
+
+Revision 1.57  2002/05/07 17:23:11  kowal2
+Linear gain inefficiency instead of the step one at the wire edges.
+
+Revision 1.56  2002/04/04 16:26:33  kowal2
+Digits (Sdigits) go to separate files now.
+
+Revision 1.55  2002/03/29 06:57:45  kowal2
+Restored backward compatibility to use the hits from Dec. 2000 production.
+
+Revision 1.54  2002/03/18 17:59:13  kowal2
+Chnges in the pad geometry - 3 pad lengths introduced.
+
 Revision 1.53  2002/02/25 11:02:56  kowal2
 Changes towards speeding up the code. Thanks to Marian Ivanov.
 
@@ -196,6 +213,7 @@ Introduction of the Copyright and cvs Log
 #include <fstream.h>
 #include "AliMC.h"
 #include "AliMagF.h"
+#include "AliTrackReference.h"
 
 
 #include "AliTPCParamSR.h"
@@ -265,7 +283,7 @@ AliTPC::AliTPC()
   fDefaults = 0;
   fTrackHits = 0; 
   fTrackHitsOld = 0;   
-  fHitType = 4; //default CONTAINERS - based on ROOT structure 
+  fHitType = 2; //default CONTAINERS - based on ROOT structure 
   fTPCParam = 0;    
   fNoiseTable = 0;
   fActiveSectors =0;
@@ -300,7 +318,7 @@ AliTPC::AliTPC(const char *name, const char *title)
 
   fNoiseTable =0;
 
-  fHitType = 4;
+  fHitType = 2;
   fActiveSectors = 0;
   //
   // Initialise counters
@@ -357,6 +375,21 @@ void AliTPC::AddHit(Int_t track, Int_t *vol, Float_t *hits)
   }
   if (fHitType>1)
    AddHit2(track,vol,hits);
+}
+
+void  AliTPC::AddTrackReference(Int_t lab, TLorentzVector p, TLorentzVector x){
+  //
+  // add a trackrefernce to the list
+  if (!fTrackReferences) {
+    cerr<<"Container trackrefernce not active\n";
+    return;
+  }
+  Int_t nref = fTrackReferences->GetEntriesFast();
+  TClonesArray &lref = *fTrackReferences;
+  AliTrackReference * ref =  new(lref[nref]) AliTrackReference;
+  ref->SetMomentum(p[0],p[1],p[2]);
+  ref->SetPosition(x[0],x[1],x[2]);
+  ref->SetTrack(lab);
 }
  
 //_____________________________________________________________________________
@@ -912,6 +945,7 @@ Bool_t  AliTPC::IsSectorActive(Int_t sec)
 void    AliTPC::SetActiveSectors(Int_t * sectors, Int_t n)
 {
   // activate interesting sectors
+  SetTreeAddress();//just for security
   if (fActiveSectors) delete [] fActiveSectors;
   fActiveSectors = new Bool_t[fTPCParam->GetNSector()];
   for (Int_t i=0;i<fTPCParam->GetNSector();i++) fActiveSectors[i]=kFALSE;
@@ -920,14 +954,19 @@ void    AliTPC::SetActiveSectors(Int_t * sectors, Int_t n)
     
 }
 
-void    AliTPC::SetActiveSectors()
+void    AliTPC::SetActiveSectors(Int_t flag)
 {
   //
   // activate sectors which were hitted by tracks 
   //loop over tracks
+  SetTreeAddress();//just for security
   if (fHitType==0) return;  // if Clones hit - not short volume ID information
   if (fActiveSectors) delete [] fActiveSectors;
   fActiveSectors = new Bool_t[fTPCParam->GetNSector()];
+  if (flag) {
+    for (Int_t i=0;i<fTPCParam->GetNSector();i++) fActiveSectors[i]=kTRUE;
+    return;
+  }
   for (Int_t i=0;i<fTPCParam->GetNSector();i++) fActiveSectors[i]=kFALSE;
   TBranch * branch=0;
   if (TreeH() == 0x0)
@@ -1322,6 +1361,11 @@ void AliTPC::Hits2ExactClustersSector(Int_t isec)
 	  Float_t detbz=currentIndex*(sumxz*sumx4-sumx2z*sumx3)-sumz*(sumx*sumx4-sumx2*sumx3)+
 	    sumx2*(sumx*sumx2z-sumx2*sumxz);
 	  
+	  if (TMath::Abs(det)<0.00001){
+	     tpcHit = (AliTPChit*)NextHit();
+	    continue;
+	  }
+	
 	  Float_t y=detay/det+centralPad;
 	  Float_t z=detaz/det;	
 	  Float_t by=detby/det; //y angle
@@ -1606,9 +1650,23 @@ void AliTPC::SetDefaults(){
   AliRunLoader* rl = (AliRunLoader*)fLoader->GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName);
   rl->CdGAFile();
   AliTPCParamSR *param=(AliTPCParamSR*)gDirectory->Get("75x40_100x60");
-  
+  if(param){
+    printf("You are using 2 pad-length geom hits with 3 pad-lenght geom digits...\n");
+    delete param;
+    param = new AliTPCParamSR();
+  }
+  else {
+    param=(AliTPCParamSR*)gDirectory->Get("75x40_100x60_150x60");
+  }
+  if(!param){
+    printf("No TPC parameters found\n");
+    exit(4);
+  }
+
+
   AliTPCPRF2D    * prfinner   = new AliTPCPRF2D;
-  AliTPCPRF2D    * prfouter   = new AliTPCPRF2D;
+  AliTPCPRF2D    * prfouter1   = new AliTPCPRF2D;
+  AliTPCPRF2D    * prfouter2   = new AliTPCPRF2D;  
   AliTPCRF1D     * rf    = new AliTPCRF1D(kTRUE);
   rf->SetGauss(param->GetZSigma(),param->GetZWidth(),1.);
   rf->SetOffset(3*param->GetZSigma());
@@ -1621,12 +1679,14 @@ void AliTPC::SetDefaults(){
      exit(3);
   }
   prfinner->Read("prf_07504_Gati_056068_d02");
-  prfouter->Read("prf_10006_Gati_047051_d03");
+  prfouter1->Read("prf_10006_Gati_047051_d03");
+  prfouter2->Read("prf_15006_Gati_047051_d03");  
   f->Close();
   savedir->cd();
 
   param->SetInnerPRF(prfinner);
-  param->SetOuterPRF(prfouter); 
+  param->SetOuter1PRF(prfouter1); 
+  param->SetOuter2PRF(prfouter2);
   param->SetTimeRF(rf);
 
   // set fTPCParam
@@ -1674,6 +1734,7 @@ void AliTPC::Hits2Digits(Int_t eventnumber)
   AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
   arr->SetClass("AliSimDigits");
   arr->Setup(fTPCParam);
+
   arr->MakeTree(fLoader->TreeD());
   SetDigitsArray(arr);
 
@@ -1691,8 +1752,6 @@ void AliTPC::Hits2Digits(Int_t eventnumber)
    {
     cout<<"Sector "<<isec<<"is NOT active\n";
    }
-
-  // write results
 
 
   fLoader->WriteDigits("OVERWRITE"); 
@@ -1741,6 +1800,7 @@ void AliTPC::Hits2SDigits2(Int_t eventnumber)
   arr->SetClass("AliSimDigits");
   arr->Setup(fTPCParam);
   arr->MakeTree(fLoader->TreeS());
+
   SetDigitsArray(arr);
 
   cerr<<"Digitizing TPC -- summable digits...\n"; 
@@ -1888,7 +1948,7 @@ void AliTPC::Hits2DigitsSector(Int_t isec)
 
 	Int_t ndig = dig->GetDigitSize(); 
 	
-	//if (gDebug > 10) 
+	if (gDebug > 10) 
 	printf("*** Sector, row, compressed digits %d %d %d ***\n",isec,i,ndig);        
  	
         fDigitsArray->ClearRow(isec,i);  
@@ -2338,7 +2398,23 @@ void AliTPC::MakeSector(Int_t isec,Int_t nrows,TTree *TH,
 	  rowNumber = index[2];
 	  //transform position to local digit coordinates
 	  //relative to nearest pad row 
-	  if ((rowNumber<0)||rowNumber>=fTPCParam->GetNRow(isec)) continue;	  
+	  if ((rowNumber<0)||rowNumber>=fTPCParam->GetNRow(isec)) continue;
+  Float_t x1,y1;
+	  if (isec <fTPCParam->GetNInnerSector()) {
+	    x1 = xyz[1]*fTPCParam->GetInnerPadPitchWidth();
+	    y1 = fTPCParam->GetYInner(rowNumber);
+	  }
+	  else{
+	    x1=xyz[1]*fTPCParam->GetOuterPadPitchWidth();
+	    y1 = fTPCParam->GetYOuter(rowNumber);
+	  }
+
+	  // gain inefficiency at the wires edges - linear
+
+	  x1=TMath::Abs(x1);
+	  y1-=1.;
+          if(x1>y1) xyz[3]*=TMath::Max(1.e-6,(y1-x1+1.));	
+       
 	  nofElectrons[rowNumber]++;	  
 	  //----------------------------------
 	  // Expand vector if necessary
@@ -3209,7 +3285,21 @@ void AliTPC::Digits2Reco(Int_t firstevent,Int_t lastevent)
   TDirectory *cwd = gDirectory;
 
 
-  AliTPCParam *dig=(AliTPCParam *)gDirectory->Get("75x40_100x60");
+  AliTPCParamSR *dig=(AliTPCParamSR *)gDirectory->Get("75x40_100x60");
+  if(dig){
+    printf("You are running 2 pad-length geom hits with 3 pad-length geom digits\n");
+    delete dig;
+    dig = new AliTPCParamSR();
+  }
+  else
+  {
+   dig=(AliTPCParamSR *)gDirectory->Get("75x40_100x60_150x60"); 
+  }
+  if(!dig){
+   printf("No TPC parameters found\n");
+   exit(3);
+  }
+   
   SetParam(dig);
   cout<<"AliTPC::Digits2Reco: TPC parameteres have been set"<<endl; 
   TFile *out;

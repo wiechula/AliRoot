@@ -13,8 +13,17 @@
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
 
+/*
+$Log$
+Revision 1.6  2002/04/06 14:41:04  kowal2
+Added #include<stdlib.h> and log
+
+*/
 
 
+
+
+#include <stdlib.h>
 #include <TTree.h> 
 #include <TObjArray.h>
 #include <TFile.h>
@@ -25,6 +34,7 @@
 
 #include "AliTPC.h"
 #include "AliTPCParam.h"
+#include "AliTPCParamSR.h" 
 #include "AliRun.h"
 #include "AliPDG.h"
 #include "AliRunDigitizer.h"
@@ -79,7 +89,8 @@ void AliTPCDigitizer::ExecFast(Option_t* option)
   
   // merge input tree's with summable digits
   //output stored in TreeTPCD
-
+  char s[100]; 
+  char ss[100];
   TString optionString = option;
   if (optionString.Data() == "deb") {
     cout<<"AliTPCDigitizer::Exec: called with option deb "<<endl;
@@ -88,6 +99,22 @@ void AliTPCDigitizer::ExecFast(Option_t* option)
   //get detector and geometry
   AliTPC *pTPC  = (AliTPC *) gAlice->GetModule("TPC");
   AliTPCParam * param = pTPC->GetParam();
+  
+  sprintf(s,param->GetTitle());
+  sprintf(ss,"75x40_100x60");
+  if(strcmp(s,ss)==0){
+    printf("2 pad-length geom hits with 3 pad-lenght geom digits...\n");
+    delete param;
+    param=new AliTPCParamSR();
+  }
+  else{
+   sprintf(ss,"75x40_100x60_150x60");
+   if(strcmp(s,ss)!=0) {
+     printf("No TPC parameters found...\n");
+     exit(2); 
+   }
+  }
+  
   pTPC->GenerNoise(500000); //create teble with noise
   //
   Int_t nInputs = fManager->GetNinputs();
@@ -110,8 +137,11 @@ void AliTPCDigitizer::ExecFast(Option_t* option)
      gime = rl->GetLoader("TPCLoader");
      TTree * treear =  gime->TreeS();
      
-//    TTree * treear =  fManager->GetInputTreeTPCS(i1);
-    
+    if (!treear) {
+      cerr<<"AliTPCDigitizer: Input tree with SDigits not found in"
+	  <<" input "<< i1<<endl;
+      return;
+    }
     if (treear->GetIndex()==0) 
       treear->BuildIndex("fSegmentID","fSegmentID");
     if (!treear) {      

@@ -97,17 +97,20 @@ public:
   virtual void        Init() {}
   virtual void        LoadPoints(Int_t ) {}
 
+
   virtual void        MakeBranch(Option_t *, const char *file=0 ) {}
   virtual void        MakeTree(Option_t *) {}//skowron 
 
   virtual AliLoader*  MakeLoader(const char* topfoldername);//skowron   
-  AliLoader* GetLoader() const {return fLoader;} //skowron
-  void SetLoader(AliLoader* loader){fLoader = loader;}
+  virtual AliLoader*  GetLoader() const {return 0x0;} //skowron
   
+  virtual void        MakeBranchTR(Option_t *opt=" ", const char *file=0 ){}
+
   virtual void        Paint(Option_t *) {}
   virtual void        ResetDigits() {}
   virtual void        ResetSDigits() {}
   virtual void        ResetHits() {}
+  virtual void        ResetTrackReferences() {}
   virtual void        ResetPoints() {}
   virtual void        SetTreeAddress() {}
   virtual void        SetTimeGate(Float_t) {}
@@ -141,7 +144,6 @@ protected:
   Int_t         fDebug;       //Debug flag
   Bool_t        fEnable;      //StepManager enabling flag
 
-  AliLoader*  fLoader;//! pointer to getter for this   skowron
 
   ClassDef(AliModule,2)  //Base class for ALICE Modules
 };

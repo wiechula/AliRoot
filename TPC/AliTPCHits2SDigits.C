@@ -50,7 +50,8 @@ Int_t AliTPCHits2SDigits(Int_t nevent=1)
   for(Int_t eventn =0;eventn<nevent;eventn++){
     printf("Processing event %d \n",eventn);
     rl->GetEvent(eventn);
-//    TPC->SetActiveSectors(); // all sectors set active
+    TPC->SetTreeAddress();
+    TPC->SetActiveSectors(); // all sectors set active
     printf("\nActive sectors\n");
     for (Int_t i=0;i<72;i++) if (TPC->IsSectorActive(i)) printf("%d\t",i);
     

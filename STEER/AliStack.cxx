@@ -15,6 +15,15 @@
 
 /*
 $Log$
+Revision 1.18.2.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
+Revision 1.21  2002/05/28 14:24:57  hristov
+Correct warning messages
+
+Revision 1.20  2002/04/30 11:47:30  morsch
+KeepPhysics method called by PurifyKine added (N. Carrer, A.M.)
+
 Revision 1.19  2002/03/12 11:06:03  morsch
 Add particle status code to argument list of SetTrack(..).
 
@@ -88,7 +97,6 @@ New files for folders and Stack
 #include "AliModule.h"
 #include "AliHit.h"
 #include "AliRunLoader.h"
-//#include "ETrackBits.h"
 
 ClassImp(AliStack)
 
@@ -372,7 +380,11 @@ void AliStack::PurifyKine()
     if(i<=fHgwmk) map[i]=i ; 
     else {
       map[i] = -99;
-      if((part=(TParticle*) particles.At(i))) { 
+      if((part=(TParticle*) particles.At(i))) {
+//
+//        Check of this track should be kept for physics reasons 
+	  if (KeepPhysics(part)) KeepTrack(i);
+//
           part->ResetBit(kDaughtersBit);
           part->SetFirstDaughter(-1);
           part->SetLastDaughter(-1);
@@ -467,6 +479,34 @@ void AliStack::PurifyKine()
    fNtrack=nkeep;
    fHgwmk=nkeep-1;
    //   delete [] map;
+}
+
+Bool_t AliStack::KeepPhysics(TParticle* part)
+{
+    //
+    // Some particles have to kept on the stack for reasons motivated
+    // by physics analysis. Decision is put here.
+    //
+    Bool_t keep = kFALSE;
+    //
+    // Keep first-generation daughter from primaries with heavy flavor 
+    //
+    Int_t parent = part->GetFirstMother();
+    if (parent >= 0 && parent <= fHgwmk) {
+	TParticle* father = (TParticle*) Particles()->At(parent);
+	Int_t kf = father->GetPdgCode();
+	kf = TMath::Abs(kf);
+	Int_t kfl = kf;
+	// meson ?
+	if  (kfl > 10) kfl/=100;
+	// baryon
+	if (kfl > 10) kfl/=10;
+	if (kfl > 10) kfl/=10;
+	if (kfl >= 4) {
+	    keep = kTRUE;
+	}
+    }
+    return keep;
 }
 
 //_____________________________________________________________________________
@@ -822,7 +862,7 @@ void AliStack::ConnectTree()
     cout<<"Branch Dir Name is "<<branch->GetDirectory()->GetName()<<endl;
   else
     cout<<"Branch Dir is NOT SET"<<endl;
-  cout<<"########################\n\n\n";
+    cout<<"########################\n\n\n";
 }
 
 //_____________________________________________________________________________

@@ -58,7 +58,8 @@
 
 #pragma link C++ class AliTPCclusterer-;
 #pragma link C++ class AliTPCDigitizer;
-#pragma link C++ class AliTPCtrackerParam;
+#pragma link C++ class AliTPCtrackerParam; 
+#pragma link C++ class AliTPCkineGrid;
 
 #pragma link C++ class AliTPCLoader+;
 

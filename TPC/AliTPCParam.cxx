@@ -15,6 +15,18 @@
 
 /*
 $Log$
+Revision 1.15  2002/05/07 17:24:02  kowal2
+Updated wires positions
+
+Revision 1.14  2002/03/29 06:57:45  kowal2
+Restored backward compatibility to use the hits from Dec. 2000 production.
+
+Revision 1.13  2002/03/18 17:59:13  kowal2
+Chnges in the pad geometry - 3 pad lengths introduced.
+
+Revision 1.12  2002/02/05 09:12:26  hristov
+Small mods for gcc 3.02
+
 Revision 1.11  2000/11/02 07:33:48  kowal2
 Automatic streamer generation.
 
@@ -97,7 +109,7 @@ AliTPCParam::AliTPCParam()
   fResponseBin = 0;
   fResponseWeight = 0;
   fRotAngle = 0;
-  SetTitle("75x40_100x60");
+  SetTitle("75x40_100x60_150x60");
   SetDefault();  
 }
 
@@ -301,8 +313,8 @@ void AliTPCParam::SetDefault()
   //sector default parameters
   //
   const static  Float_t kInnerRadiusLow = 82.97;
-  const static  Float_t kOuterRadiusLow = 133.58;
   const static  Float_t kInnerRadiusUp  = 133.17;
+  const static  Float_t kOuterRadiusLow = 133.58;
   const static  Float_t kOuterRadiusUp  = 247.78;
   const static  Float_t kInnerAngle = 20; // 20 degrees
   const static  Float_t kInnerAngleShift = 10;
@@ -314,13 +326,24 @@ void AliTPCParam::SetDefault()
   const static  Float_t kOuterWireMount = 1.370825926;
   const static  Float_t kZLength =250.;
   const static  Int_t   kGeometryType = 0; //straight rows 
+  const static Int_t kNRowLow = 63;
+  const static Int_t kNRowUp1 = 64;
+  const static Int_t kNRowUp2 = 32;
+  const static Int_t  kNRowUp = 96;
   //
   //wires default parameters
   //
   const static Int_t    kNInnerWiresPerPad = 3;
   const static Int_t    kInnerDummyWire = 2;
+  const static Float_t  kInnerWWPitch = 0.25;
+  const static Float_t  kRInnerFirstWire = 84.445;
+  const static Float_t  kRInnerLastWire = 132.445;
   const static Float_t  kInnerOffWire = 0.5;
-  const static Int_t    kNOuterWiresPerPad = 4;
+  const static Int_t    kNOuter1WiresPerPad = 4;
+  const static Int_t    kNOuter2WiresPerPad = 6;
+  const static Float_t  kOuterWWPitch = 0.25;  
+  const static Float_t  kROuterFirstWire = 134.305;
+  const static Float_t  kROuterLastWire = 247.055;
   const static Int_t    kOuterDummyWire = 2;
   const static Float_t  kOuterOffWire = 0.5;
   //
@@ -330,10 +353,13 @@ void AliTPCParam::SetDefault()
   const static Float_t  kInnerPadPitchWidth = 0.40;
   const static Float_t  kInnerPadLength = 0.75;
   const static Float_t  kInnerPadWidth = 0.40;
-  const static Float_t  kOuterPadPitchLength = 1.0;
+  const static Float_t  kOuter1PadPitchLength = 1.0;
   const static Float_t  kOuterPadPitchWidth = 0.6;
-  const static Float_t  kOuterPadLength = 1.0;
+  const static Float_t  kOuter1PadLength = 1.0;
   const static Float_t  kOuterPadWidth = 0.6;
+  const static Float_t  kOuter2PadPitchLength = 1.5;
+  const static Float_t  kOuter2PadLength = 1.5;
+
   const static Bool_t   kBMWPCReadout = kTRUE; //MWPC readout - another possibility GEM 
   const static Int_t    kNCrossRows = 1; //number of rows to cross-talk
   
@@ -386,15 +412,26 @@ void AliTPCParam::SetDefault()
   SetSectorAngles(kInnerAngle,kInnerAngleShift,kOuterAngle,kOuterAngleShift);
   SetZLength(kZLength);
   SetGeometryType(kGeometryType);
+  SetRowNLow(kNRowLow);
+  SetRowNUp1 (kNRowUp1);
+  SetRowNUp2(kNRowUp2);
+  SetRowNUp(kNRowUp);
   //
   //set wire parameters
   //
   SetInnerNWires(kNInnerWiresPerPad);
   SetInnerDummyWire(kInnerDummyWire);
   SetInnerOffWire(kInnerOffWire);
-  SetOuterNWires(kNOuterWiresPerPad);
+  SetOuter1NWires(kNOuter1WiresPerPad);
+  SetOuter2NWire(kNOuter2WiresPerPad);
   SetOuterDummyWire(kOuterDummyWire);
   SetOuterOffWire(kOuterOffWire);
+  SetInnerWWPitch(kInnerWWPitch);
+  SetRInnerFirstWire(kRInnerFirstWire);
+  SetRInnerLastWire(kRInnerLastWire);
+  SetOuterWWPitch(kOuterWWPitch);
+  SetROuterFirstWire(kROuterFirstWire);
+  SetROuterLastWire(kROuterLastWire);  
   //
   //set pad parameter
   //
@@ -402,9 +439,11 @@ void AliTPCParam::SetDefault()
   SetInnerPadPitchWidth(kInnerPadPitchWidth);
   SetInnerPadLength(kInnerPadLength);
   SetInnerPadWidth(kInnerPadWidth);
-  SetOuterPadPitchLength(kOuterPadPitchLength);
+  SetOuter1PadPitchLength(kOuter1PadPitchLength); 
+  SetOuter2PadPitchLength(kOuter2PadPitchLength);
   SetOuterPadPitchWidth(kOuterPadPitchWidth);
-  SetOuterPadLength(kOuterPadLength);
+  SetOuter1PadLength(kOuter1PadLength);
+  SetOuter2PadLength(kOuter2PadLength);
   SetOuterPadWidth(kOuterPadWidth); 
   SetMWPCReadout(kBMWPCReadout);
   SetNCrossRows(kNCrossRows);
@@ -493,26 +532,21 @@ Bool_t AliTPCParam::Update()
   fTotalNormFac = fPadCoupling*fChipNorm*kQel*1.e15*fChipGain*fADCSat/fADCDynRange;
   fNoiseNormFac = kQel*1.e15*fChipGain*fADCSat/fADCDynRange;
   //wire section 
-  Int_t nwire;
+  /*  Int_t nwire;
   Float_t wspace; //available space for wire
   Float_t dummyspace; //dummyspace for wire
-
-  fInnerWWPitch = Float_t((Double_t)fInnerPadPitchLength/(Double_t)fNInnerWiresPerPad);  
+ 
   wspace =fInnerRadiusUp-fInnerRadiusLow-2*fInnerOffWire;
   nwire = Int_t(wspace/fInnerWWPitch);
   wspace = Float_t(nwire)*fInnerWWPitch;
-  dummyspace =(fInnerRadiusUp-fInnerRadiusLow-wspace)/2.; 
-  fRInnerFirstWire = fInnerRadiusLow+dummyspace;
-  fRInnerLastWire = fRInnerFirstWire+fInnerWWPitch*(Float_t)(nwire);
-
-  fOuterWWPitch = Float_t((Double_t)fOuterPadPitchLength/(Double_t)fNOuterWiresPerPad);  
+  dummyspace =(fInnerRadiusUp-fInnerRadiusLow-wspace)/2.;  
   wspace =fOuterRadiusUp-fOuterRadiusLow-2*fOuterOffWire;
   nwire = Int_t(wspace/fOuterWWPitch);
   wspace = Float_t(nwire)*fOuterWWPitch;
   dummyspace =(fOuterRadiusUp-fOuterRadiusLow-wspace)/2.; 
   fROuterFirstWire = fOuterRadiusLow+dummyspace;
   fROuterLastWire = fROuterFirstWire+fOuterWWPitch*(Float_t)(nwire);
-
+  */
   
   //
   //response data
@@ -543,6 +577,16 @@ Int_t AliTPCParam::GetNRowUp() const
 {
   //get the number of pad rows in up sector
   return fNRowUp;
+}
+Int_t AliTPCParam::GetNRowUp1() const
+{
+  //get the number of pad rows in up1 sector
+  return fNRowUp1;
+}
+Int_t AliTPCParam::GetNRowUp2() const
+{
+  //get the number of pad rows in up2 sector
+  return fNRowUp2;
 }
 Float_t AliTPCParam::GetPadRowRadiiLow(Int_t irow) const
 {
@@ -580,4 +624,21 @@ Int_t AliTPCParam::GetNPadsUp(Int_t irow) const
   else
     return 0;
 }
+Float_t AliTPCParam::GetYInner(Int_t irow) const
+{
+  return fYInner[irow];
+}
+
+
+Float_t AliTPCParam::GetYOuter(Int_t irow) const
+{
+  return fYOuter[irow];
+}
+
+
+
+
+
+
+
 

@@ -6,6 +6,7 @@
   #include "AliSimDigits.h"
   #include "AliRunLoader.h"
   #include "AliLoader.h"
+  #include "AliTPCParamSR.h"
 #endif
 
 //  
@@ -25,9 +26,6 @@ Int_t AliTPCDisplayDigits3Dnew(Int_t eventn=0, Int_t noiseth=15, Bool_t sdigits=
 
    AliRunLoader* rl = AliRunLoader::Open();
    rl->GetEvent(eventn);
-   rl->CdGAFile();
-   AliTPCParam *param=(AliTPCParam *)gDirectory->Get("75x40_100x60");
-   if (!param) {cerr<<"TPC parameters have not been found !\n"; return 2;}
 
    AliLoader* tpcl = (AliTPCLoader*)rl->GetLoader("TPCLoader");
    if (tpcl == 0x0)
@@ -35,6 +33,20 @@ Int_t AliTPCDisplayDigits3Dnew(Int_t eventn=0, Int_t noiseth=15, Bool_t sdigits=
       cerr<<"Can not get TPC Loader"<<endl;
       return 1;
     }
+
+   rl->CdGAFile();
+   AliTPCParam *param=(AliTPCParam *)gDirectory->Get("75x40_100x60");
+   if(param){
+     cerr<<"2 pad-length geom hits with 3 pad-lengths geom parameters\n";
+     delete param;
+     param = new AliTPCParamSR();
+   }
+   else
+   {
+     param=(AliTPCParamSR *)gDirectory->Get("75x40_100x60_150x60");
+   }
+
+   if (!param) {cerr<<"TPC parameters have not been found !\n"; return 2;}
 
    TCanvas *c1=new TCanvas("ddisplay", "Digits display",0,0,700,730);
    TView *v=new TView(1);

@@ -1,4 +1,4 @@
-#ifndef ALIGETTER_H
+        #ifndef ALIGETTER_H
 #define ALIGETTER_H
 
 
@@ -98,10 +98,10 @@ class AliLoader: public TNamed
     TTask*         Tracker();
     
 
-    TObject** SDigitizerRef();
-    TObject** DigitizerRef();
-    TObject** ReconstructionerRef();
-    TObject** TrackerRef();
+    TObject**      SDigitizerRef();
+    TObject**      DigitizerRef();
+    TObject**      ReconstructionerRef();
+    TObject**      TrackerRef();
     
     virtual void   MakeHitsContainer();
     virtual void   MakeSDigitsContainer();
@@ -128,10 +128,23 @@ class AliLoader: public TNamed
     virtual Int_t PostDigitizer(AliDigitizer* task);
     virtual Int_t PostReconstructioner(TTask* task);
     virtual Int_t PostTracker(TTask* task);
+
+    virtual void  CleanHits()     {Clean(*fHitsContainerName);}//cleans hits from folder
+    virtual void  CleanSDigits()  {Clean(*fSDigitsContainerName);}
+    virtual void  CleanDigits()   {Clean(*fDigitsContainerName);}
+    virtual void  CleanRecPoints(){Clean(*fRecPointsContainerName);}
+    virtual void  CleanTracks()   {Clean(*fTracksContainerName);}
+    
+    virtual void  CleanSDigitizer();
+    virtual void  CleanDigitizer();
+    virtual void  CleanReconstructioner();
+    virtual void  CleanTracker();
     
     void        SetCompressionLevel(Int_t cl);
     
     const TString& GetDetectorName() const{return *fDetectorName;}
+    AliRunLoader*  GetRunLoader();//gets the run-getter from event folder
+    
    protected:
 
     /*********************************************/
@@ -144,16 +157,14 @@ class AliLoader: public TNamed
     Int_t         OpenDigitsFile(Option_t* opt); //opt is passed to TFile::Open
     Int_t         OpenRecPointsFile(Option_t* opt);
     Int_t         OpenTracksFile(Option_t* opt);
-
+    Int_t         OpenDataFile(TString& filename,TFile*& file,TDirectory*& dir,Option_t* opt);
+    
     void          CloseHitsFile(){CloseDataFile(fHitsFile,fHitsDir);}
     void          CloseSDigitsFile(){CloseDataFile(fSDigitsFile,fSDigitsDir);}
     void          CloseDigitsFile(){CloseDataFile(fDigitsFile,fDigitsDir);} 
     void          CloseRecPointsFile(){CloseDataFile(fRecPointsFile,fRecPointsDir);}
     void          CloseTracksFile(){CloseDataFile(fTracksFile,fTracksDir);}
-    
-    Int_t         OpenDataFile(TString& filename,TFile*& file,TDirectory*& dir,Option_t* opt);
     void          CloseDataFile(TFile*& file,TDirectory*& dir);
-
     //reads data from the file and posts them into folder
     virtual Int_t PostHits(); 
     virtual Int_t PostSDigits();
@@ -166,27 +177,17 @@ class AliLoader: public TNamed
     virtual Int_t PostReconstructioner();//gets Reconstructioner from file and adds it to Run Reconstructioner
     virtual Int_t PostTracker();//gets tracker from file and adds it to Run Tracker
 
-    void          CleanHits()     {Clean(*fHitsContainerName);}//cleans hits from folder
-    void          CleanSDigits()  {Clean(*fSDigitsContainerName);}
-    void          CleanDigits()   {Clean(*fDigitsContainerName);}
-    void          CleanRecPoints(){Clean(*fRecPointsContainerName);}
-    void          CleanTracks()   {Clean(*fTracksContainerName);}
-    
-    void          CleanSDigitizer();
-    void          CleanDigitizer();
-    void          CleanReconstructioner();
-    void          CleanTracker();
-    
     void Clean(const TString& name);
     
     TString       GetUnixDir();
-    AliRunLoader* GetRunLoader();//gets the run-getter from event folder
     TObject*      GetDetectorData(const char* name){return GetDetectorDataFolder()->FindObject(name);}
     TObject**     GetDetectorDataRef(TObject* obj);
-    /*********************************************/
-    /************    PROTECTED      **************/
-    /*********        D A T A          ***********/
-    /*********************************************/
+
+
+    /**********************************************/
+    /************    PROTECTED      ***************/
+    /*********        D A T A          ************/
+    /**********************************************/
    
     TString*      fDetectorName;
     
@@ -240,9 +241,19 @@ class AliLoader: public TNamed
    private:
     //descendant classes should
     //use protected interface methods to access these folders
+    
+
+    /**********************************************/
+    /***********     P U B L I C     **************/
+    /*********       S T A T I C       ************/
+    /*********         METHODS         ************/
+    /*********     They are used by    ************/
+    /*********** AliRunLoader as well**************/
+    /**********************************************/
    public:
     static TDirectory*   ChangeDir(TFile* file, Int_t eventno); //changes the root directory in "file" to directory corresponing to eventno
     static Bool_t        TestFileOption(Option_t* opt);
+
     ClassDef(AliLoader,1)
  };
 /******************************************************************/

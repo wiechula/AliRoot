@@ -1046,17 +1046,25 @@ Int_t AliLoader::OpenDataFile(TString& filename,TFile*& file,TDirectory*& dir,Op
    {
      if(file->IsOpen() == kTRUE)
        {
-         Warning("OpenDataFile","File %s already opened. First close it.",file->GetName());
+         Warning("OpenDataFile>"," File %s already opened. First close it.",file->GetName());
          return 0;
        }
+     else
+       {
+         Warning("OpenDataFile","Pointer to file %s is not null, but file is not opened",
+                file->GetName());
+         delete file;
+         file = 0x0;
+       }
    }
+
   file = (TFile *)(gROOT->GetListOfFiles()->FindObject(filename));
- 
   if (file)
    {
      if(file->IsOpen() == kTRUE)
        {
-         Warning("OpenDataFile","File %s already opened by sombody else.",file);
+         Warning("OpenDataFile","File %s already opened by sombody else. First close it.",
+                 file->GetName());
          return 0;
        }
    }
@@ -1072,6 +1080,7 @@ Int_t AliLoader::OpenDataFile(TString& filename,TFile*& file,TDirectory*& dir,Op
      Error("OpenDataFile","Can not open file %s",filename.Data());
      return 1;
    }
+
 
   AliRunLoader* rg = GetRunLoader();
   if (rg == 0x0)
@@ -1853,12 +1862,6 @@ TTree* AliLoader::TreeH()
 {
   //Get a hits container from the detector data folder
   TTree* tree = (TTree*)GetDetectorDataFolder()->FindObject(GetHitsContainerName());
-  if (!tree)
-   {
-//    cout<<"AliLoader::TreeH ";
-//    cout<<" !!!NOT!!! ";
-//    cout<<"Found hits container for "<<GetName()<<endl;
-   }
   return tree;
 }
 /*****************************************************************************/ 
@@ -1873,10 +1876,6 @@ TTree* AliLoader::TreeD()
 {
   //Get a hits container from the detector data folder
   TTree* tree = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(GetDigitsContainerName()));
-  if (!tree)
-   {
-    cout<<"AliLoader::TreeD NOT Found digits container for "<<GetName()<<endl;
-   }
   return tree;
 }
 /*****************************************************************************/ 
@@ -1884,10 +1883,6 @@ TTree* AliLoader::TreeR()
 {
   //Get a hits container from the detector data folder
   TTree* tree = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(GetRecPointsContainerName()));
-  if (!tree)
-   {
-    cout<<"AliLoader::TreeR NOT Found rec points container for "<<GetName()<<endl;
-   }
   return tree;
 }
 /*****************************************************************************/ 
@@ -1896,10 +1891,6 @@ TTree* AliLoader::TreeT()
 {
   //Get a hits container from the detector data folder
   TTree* tree = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(GetTracksContainerName()));
-  if (!tree)
-   {
-    cout<<"AliLoader::TreeT NOT Found tracks container for "<<GetName()<<endl;
-   }
   return tree;
 }
 /*****************************************************************************/ 
@@ -1975,7 +1966,9 @@ Int_t AliLoader::Register()
 AliRunLoader* AliLoader::GetRunLoader()
 {
 //gets the run-loader from event folder
-  AliRunLoader* rg = dynamic_cast<AliRunLoader*>(GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName));
+  AliRunLoader* rg = 0x0;
+  TObject * obj = GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName);
+  if (obj) rg = dynamic_cast<AliRunLoader*>(obj);
   return rg;
 }
 /*****************************************************************************/ 

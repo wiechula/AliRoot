@@ -58,6 +58,11 @@
 #pragma link C++ class  AliGausCorr+;
 #pragma link C++ class  AliLoader+;
 #pragma link C++ class  AliRunLoader+;
+#pragma link C++ class  AliTrackReference+;
+#pragma link C++ class  AliESD+;
+#pragma link C++ class  AliESDTrack+;
+#pragma link C++ class  AliESDVertex+;
+
 #endif
 
 

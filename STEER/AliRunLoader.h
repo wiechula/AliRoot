@@ -63,10 +63,12 @@ class AliRunLoader: public TNamed
     Int_t       LoadgAlice();
     Int_t       LoadHeader();
     Int_t       LoadKinematics(Option_t* option = "READ");
+    Int_t       LoadTrackRefs(Option_t* option = "READ");
     
     void        UnloadHeader();
     void        UnloadKinematics();
     void        UnloadgAlice();
+    void        UnloadTrackRefs();
     
     void        SetKineFileName(TString& fname){*fKineFileName = fname;}
     
@@ -76,6 +78,7 @@ class AliRunLoader: public TNamed
     AliStack*   Stack() const {return fStack;}
     
     TTree*      TreeK() const; //returns the tree from folder; shortcut method
+    TTree*      TreeTR() const; //returns the tree from folder; shortcut method    
     
     AliRun*     GetAliRun()const;
         
@@ -83,7 +86,8 @@ class AliRunLoader: public TNamed
     Int_t       WriteHeader(Option_t* opt="");
     Int_t       WriteAliRun(Option_t* opt="");
     Int_t       WriteKinematics(Option_t* opt="");
-    
+    Int_t       WriteTrackRefs(Option_t* opt="");
+
     Int_t       WriteHits(Option_t* opt=""); 
     Int_t       WriteSDigits(Option_t* opt="");
     Int_t       WriteDigits(Option_t* opt="");
@@ -105,6 +109,7 @@ class AliRunLoader: public TNamed
     void        CleanFolders();//removes all abjects from folder structure
     void        CleanDetectors();
     void        CleanKinematics(){Clean(fgkKineContainerName);}
+    void        CleanTrackRefs(){Clean(fgkTrackRefsContainerName);}
     
     void        RemoveEventFolder(); //remove folder structure from top folder 
     void        SetCompressionLevel(Int_t cl);
@@ -112,7 +117,7 @@ class AliRunLoader: public TNamed
     TFolder*    GetEventFolder() const {return fEventFolder;}
     void        CdGAFile();
 
-
+    void        MakeTrackRefsContainer();
 
   protected:
     TObjArray     *fLoaders;          //  List of Detectors
@@ -127,12 +132,21 @@ class AliRunLoader: public TNamed
     TFile*         fKineFile;    //!pointer to file with kinematics
     TDirectory*    fKineDir;     //!pointer to Dir with current event in Kine File
     TString*       fKineFileName;//name of file with hits
+
+    TFile*         fTrackRefsFile;    //!pointer to file with kinematics
+    TDirectory*    fTrackRefsDir;     //!pointer to Dir with current event in Kine File
+    TString*       fTrackRefsFileName;//name of file with hits
     
     static const TString   fgkDefaultKineFileName;//default file name with kinamatics
+    static const TString   fgkDefaultTrackRefsFileName;//default file name with kinamatics
     
     void           SetGAliceFile(TFile* gafile);//sets the pointer to gAlice file
     Int_t          PostKinematics();
-    Int_t          OpenKineFile(Option_t* opt);
+    Int_t          PostTrackRefs();
+    Int_t          OpenKineFile(Option_t* opt){return OpenDataFile(*fKineFileName,fKineFile,fKineDir,opt);}
+    Int_t          OpenTrackRefsFile(Option_t* opt){return OpenDataFile(*fTrackRefsFileName,fTrackRefsFile,fTrackRefsDir,opt);}
+
+    Int_t          OpenDataFile(TString& filename,TFile*& file,TDirectory*& dir,Option_t* opt);
 
   private:
     void  GetListOfDetectors(const char * namelist,TObjArray& pointerarray) const;
@@ -156,6 +170,7 @@ class AliRunLoader: public TNamed
     static const TString   fgkRunLoaderName;
     static const TString   fgkHeaderContainerName;//default name of the kinematics container (TREE) name - TreeE
     static const TString   fgkKineContainerName;//default name of the kinematics container (TREE) name - TreeK
+    static const TString   fgkTrackRefsContainerName;//default name of the track references container (TREE) name - TreeTR
     static const TString   fgkHeaderBranchName;
     static const TString   fgkKineBranchName;
     static const TString   fgkGAliceName;

@@ -2,7 +2,13 @@
 #define ITSETFSDD_H
 /* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
  * See cxx source for full Copyright notice                               */
+/*
+$Log$
+Revision 1.6  2002/04/24 22:02:31  nilsen
+New SDigits and Digits routines, and related changes,  (including new
+noise values).
 
+*/
 #include <TObject.h>
 
 static const Int_t kMaxNofPoles = 5;
@@ -34,7 +40,7 @@ class AliITSetfSDD : public TObject {
   Float_t GetTimeDelay() { return fTimeDelay; }
   void PrintElectronics();          // Print Electronics parameters  
 
- private:
+ protected:
 
   Float_t  fTimeDelay;         //  Time delay caused by the amplifier shaping
   Double_t fSamplingTime;      //

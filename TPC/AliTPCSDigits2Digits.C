@@ -51,6 +51,20 @@ Int_t AliTPCSDigits2Digits(Int_t nevent=1)
 
   tpcl->LoadSDigits("READ");
   tpcl->LoadDigits("RECREATE");
+  rl->CdGAFile();
+  AliTPCParamSR *dig=(AliTPCParamSR *)gDirectory->Get("75x40_100x60");
+   if(dig){
+     cerr<<"2 pad-length geom hits with 3 pad-lengths geom digits\n";
+     delete dig;
+     dig = new AliTPCParamSR();
+   }
+   else
+   {
+     dig=(AliTPCParamSR *)gDirectory->Get("75x40_100x60_150x60");
+   }
+   if (!dig) {cerr<<"TPC parameters have not been found !\n"; return 4;}
+   TPC->SetParam(dig);
+       
 
   TStopwatch timer;
   timer.Start();

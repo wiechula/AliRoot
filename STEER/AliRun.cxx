@@ -17,6 +17,24 @@
 
 /*
 $Log$
+Revision 1.81.2.1  2002/05/31 09:37:59  hristov
+First set of changes done by Piotr
+
+Revision 1.82  2002/03/12 11:06:03  morsch
+Add particle status code to argument list of SetTrack(..).
+
+Revision 1.86  2002/05/28 14:24:57  hristov
+Correct warning messages
+
+Revision 1.85  2002/05/24 13:29:58  hristov
+AliTrackReference added, AliDisplay modified
+
+Revision 1.84  2002/05/21 16:26:07  hristov
+Find correctly TreeK in case CONFIG_SPLIT_FILE is set (Y.Schutz)
+
+Revision 1.83  2002/04/04 13:16:17  jchudoba
+add possibility to write sdigits, digits and rec. points into separate files
+
 Revision 1.82  2002/03/12 11:06:03  morsch
 Add particle status code to argument list of SetTrack(..).
 
@@ -306,9 +324,7 @@ AliRun::AliRun()
   fTransParName = "\0";
   fBaseFileName = ".\0";
   fDebug        = 0;
-  
   fRunLoader = 0x0;
-  
   AliConfig::Instance();//skowron 29 Feb 2002
                         //ensures that the folder structure is build
 }
@@ -391,6 +407,7 @@ AliRun::~AliRun()
   //
   // Default AliRun destructor
   //
+
   delete fImedia;
   delete fField;
   delete fMC;
@@ -435,12 +452,7 @@ void AliRun::Browse(TBrowser *b)
   // of the Root browser.
   // It displays the Root Trees and all detectors.
   //
-
-  TIter next(fModules);
-  AliModule *detector;
-  while((detector = (AliModule*)next())) {
-    b->Add(detector,detector->GetName());
-  }
+  //detectors are in folders anyway
   b->Add(fMCQA,"AliMCQA");
 }
 
@@ -602,7 +614,7 @@ void AliRun::BeginPrimary()
   
   // Reset Hits info
   gAlice->ResetHits();
-
+  gAlice->ResetTrackReferences();
 }
 
 //_____________________________________________________________________________
@@ -648,6 +660,7 @@ void AliRun::FinishEvent()
    }
 
   fRunLoader->WriteKinematics("OVERWRITE");
+  fRunLoader->WriteTrackRefs("OVERWRITE");
   fRunLoader->WriteHits("OVERWRITE");
   
   fRunLoader->SetNextEvent();
@@ -842,6 +855,7 @@ Int_t AliRun::GetEvent(Int_t event)
 /*****************************************/ 
 // Reset existing structures
   ResetHits();
+  ResetTrackReferences();
   ResetDigits();
   ResetSDigits();
 
@@ -980,6 +994,8 @@ void AliRun::InitMC(const char *setup)
 
    fMCQA = new AliMCQA(fNdets);
 
+// JCH note: the following line is useless, AliConfig instance is already
+// created in AliMC ctor. But it does not hurt.
    AliConfig::Instance();
    //
    // Save stuff at the beginning of the file to avoid file corruption
@@ -1203,8 +1219,8 @@ void AliRun::BeginEvent()
   // Initialise event header
   //
 
-    // Clean-up previous event
-    // Energy scores  
+  // Clean-up previous event
+  // Energy scores  
   cout<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
   cout<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
   cout<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
@@ -1218,12 +1234,15 @@ void AliRun::BeginEvent()
   CleanDetectors();
   fRunLoader->Stack()->BeginEvent();
   fRunLoader->MakeTree("K");
+  fRunLoader->MakeTrackRefsContainer();
   fRunLoader->Stack()->Reset();
     // Reset stack info
 //  fRunLoader->CleanKinematics();
+  fRunLoader->MakeTrackRefsContainer();
 
   ResetHits();
   fRunLoader->MakeTree("H");
+
   fRunLoader->GetHeader()->Reset(fRun,fEvent,fEventNrInRun);
   fRunLoader->WriteKinematics("OVERWRITE");
 
@@ -1242,7 +1261,6 @@ void AliRun::BeginEvent()
     detector->MakeBranch("H"); //skowron
     detector->SetTreeAddress();
    }
-
 }
 //_____________________________________________________________________________
 void AliRun::ResetDigits()
@@ -1284,6 +1302,21 @@ void AliRun::ResetHits()
 }
 
 //_____________________________________________________________________________
+void AliRun::ResetTrackReferences()
+{
+  //
+  //  Reset all Detectors hits
+  //
+  TIter next(fModules);
+  AliModule *detector;
+  while((detector = (AliModule*)next())) {
+     detector->ResetTrackReferences();
+  }
+}
+
+
+
+//_____________________________________________________________________________
 void AliRun::ResetPoints()
 {
   //
@@ -1314,9 +1347,7 @@ void AliRun::RunMC(Int_t nevent, const char *setup)
   // Create the Root Tree with one branch per detector
   //Hits moved to begin event -> now we are crating separate tree for each event
   fRunLoader->LoadKinematics("RECREATE");
-  
   fRunLoader->MakeTree("KE");//skowron
-  
 
   gMC->ProcessRun(nevent);
 
@@ -1652,12 +1683,11 @@ TObjArray* AliRun::Particles() {
 
 //___________________________________________________________________________
 
-
+////////////////////////////////////////////////////////////////////////
 void AliRun::SetGenEventHeader(AliGenEventHeader* header)
 {
     fRunLoader->GetHeader()->SetGenEventHeader(header);
 }
-
 
 Int_t AliRun::GetEvNumber() const 
 { 

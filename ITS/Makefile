@@ -41,12 +41,12 @@ SRCS          = AliITS.cxx AliITSv1.cxx AliITSv3.cxx AliITSv5.cxx \
 		AliITSRad.cxx AliITSgeoinfo.cxx AliITSTrackerV1.cxx\
 		AliITSvtest.cxx	\
                 AliITSclusterV2.cxx AliITStrackV2.cxx AliITStrackerV2.cxx \
-		AliITSPid.cxx AliITStrackV2Pid.cxx  \
+		AliITSPid.cxx AliITStrackV2Pid.cxx AliITSsDigitize.cxx \
                 AliITSDigitizer.cxx AliITSreconstruction.cxx \
 		AliV0vertex.cxx AliV0vertexer.cxx \
 		AliCascadeVertex.cxx AliCascadeVertexer.cxx \
 		AliITSglobalRecPoint.cxx AliITSneuralTrack.cxx \
-		AliITSneuralTracker.cxx 
+		AliITSneuralTracker.cxx AliITSRiemannFit.cxx 
 #		AliITSAlignmentTrack.cxx AliITSAlignmentModule.cxx \
 
 # Fortran sources

@@ -53,6 +53,7 @@ AliITSpList::AliITSpList(Int_t imax,Int_t jmax){
 
     fNi = imax;
     fNj = jmax;
+    fEnteries = 0;
     fa  = new TObjArray(fNi*fNj); // elements are zeroed by 
                                   // TObjArray creator
 }
@@ -74,6 +75,7 @@ AliITSpList::~AliITSpList(){
     fNj = 0;
     delete fa;
     fa  = 0;
+    fEnteries = 0;
 }
 //______________________________________________________________________
 void AliITSpList::ClearMap(){
@@ -85,10 +87,14 @@ void AliITSpList::ClearMap(){
     // Return:
     //    A zeroed AliITSpList class.
 
+    fa->Delete();
+    /*
     for(Int_t i=0;i<GetMaxIndex();i++) if(fa->At(i)!=0){
         delete fa->At(i);
         fa->AddAt(0,i); // zero content
     } // end for i && if
+    */
+    fEnteries = 0;
 }
 //______________________________________________________________________
 void AliITSpList::DeleteHit(Int_t i,Int_t j){
@@ -106,6 +112,7 @@ void AliITSpList::DeleteHit(Int_t i,Int_t j){
         delete fa->At(k);
         fa->AddAt(0,k); // zero content
     } // end for i && if
+    if(k==fEnteries-1) fEnteries--;
 }
 //______________________________________________________________________
 AliITSpList& AliITSpList::operator=(const AliITSpList &source){
@@ -129,6 +136,7 @@ AliITSpList& AliITSpList::operator=(const AliITSpList &source){
     this->fNi = source.fNi;
     this->fNj = source.fNj;
     this->fa = new TObjArray(*(source.fa));
+    this->fEnteries = source.fEnteries;
 
     return *this;
 }
@@ -162,7 +170,8 @@ void AliITSpList::AddItemTo(Int_t fileIndex, AliITSpListItem *pl) {
         fa->AddAt(new AliITSpListItem(-2,-1,pl->GetModule(),index,0.0),index);
     } // end if
  
-    ((AliITSpListItem*)(fa->At( index )))->AddTo( fileIndex, pl );
+    ((AliITSpListItem*)(fa->At(index)))->AddTo( fileIndex,pl);
+    if(index>=fEnteries) fEnteries = index +1;
 }
 //______________________________________________________________________
 void AliITSpList::AddSignal(Int_t i,Int_t j,Int_t trk,Int_t ht,Int_t mod,
@@ -180,13 +189,14 @@ void AliITSpList::AddSignal(Int_t i,Int_t j,Int_t trk,Int_t ht,Int_t mod,
     //    none.
     // Return:
     //    none.
+    Int_t index = GetIndex(i,j);
 
-    if(GetpListItem(i,j)==0){ // most create AliITSpListItem
-        fa->AddAt(new AliITSpListItem(trk,ht,mod,GetIndex(i,j),signal),
-                  GetIndex(i,j));
+    if(GetpListItem(index)==0){ // most create AliITSpListItem
+        fa->AddAt(new AliITSpListItem(trk,ht,mod,index,signal),index);
     }else{ // AliITSpListItem exists, just add signal to it.
-        GetpListItem(i,j)->AddSignal(trk,ht,mod,GetIndex(i,j),signal);
+        GetpListItem(index)->AddSignal(trk,ht,mod,index,signal);
     } // end if
+    if(index>=fEnteries) fEnteries = index +1;
 }
 //______________________________________________________________________
 void AliITSpList::AddNoise(Int_t i,Int_t j,Int_t mod,Double_t noise){
@@ -200,13 +210,14 @@ void AliITSpList::AddNoise(Int_t i,Int_t j,Int_t mod,Double_t noise){
     //    none.
     // Return:
     //    none.
+    Int_t index = GetIndex(i,j);
 
-    if(GetpListItem(i,j)==0){ // most create AliITSpListItem
-        fa->AddAt(new AliITSpListItem(mod,GetIndex(i,j),noise),
-                  GetIndex(i,j));
+    if(GetpListItem(index)==0){ // most create AliITSpListItem
+        fa->AddAt(new AliITSpListItem(mod,index,noise),index);
     }else{ // AliITSpListItem exists, just add signal to it.
-        GetpListItem(i,j)->AddNoise(mod,GetIndex(i,j),noise);
+        GetpListItem(index)->AddNoise(mod,index,noise);
     } // end if
+    if(index>=fEnteries) fEnteries = index +1;
 }
 //______________________________________________________________________
 
@@ -230,6 +241,7 @@ AliITSpListItem::AliITSpListItem(){
     } // end if i
     fTsignal = 0.0;
     fNoise   = 0.0;
+    fSignalAfterElect = 0.0;
 }
 //______________________________________________________________________
 AliITSpListItem::AliITSpListItem(Int_t module,Int_t index,Double_t noise){
@@ -251,6 +263,7 @@ AliITSpListItem::AliITSpListItem(Int_t module,Int_t index,Double_t noise){
         this->fHits[i]   = -1;
     } // end if i
     this->fTsignal = 0.0;
+    this->fSignalAfterElect = 0.0;
     this->fNoise   = noise;
 }
 //______________________________________________________________________
@@ -280,6 +293,7 @@ AliITSpListItem::AliITSpListItem(Int_t track,Int_t hit,Int_t module,
     } // end if i
     this->fTsignal = signal;
     this->fNoise   = 0.0;
+    this->fSignalAfterElect   = 0.0;
 }
 //______________________________________________________________________
 AliITSpListItem::~AliITSpListItem(){
@@ -290,17 +304,7 @@ AliITSpListItem::~AliITSpListItem(){
     //    none.
     // Return:
     //    A properly destroyed AliITSpListItem class.
-/*
-    this->fmodule = 0;
-    this->findex  = 0;
-    for(Int_t i=0;i<=this->GetNsignals();i++){
-        this->fTrack[i]  = 0;
-        this->fSignal[i] = 0.0;
-        this->fHits[i]   = 0;
-    } // end if i
-    this->fTsignal = 0.0;
-    this->fNoise   = 0.0;
-*/    
+
 }
 //______________________________________________________________________
 AliITSpListItem& AliITSpListItem::operator=(const AliITSpListItem &source){
@@ -323,6 +327,7 @@ AliITSpListItem& AliITSpListItem::operator=(const AliITSpListItem &source){
     } // end if i
     this->fTsignal = source.fTsignal;
     this->fNoise   = source.fNoise;
+    this->fSignalAfterElect   = source.fSignalAfterElect;
 
     return *this;
 }
@@ -360,7 +365,8 @@ void AliITSpListItem::AddSignal(Int_t track,Int_t hit,Int_t module,
         Warning("AddSignal","index=%d != findex=%d or module=%d != fmodule=%d",
                  index,findex,module,fmodule);
     fTsignal += signal; // Keep track of sum signal.
-    for(i=0;i<fkSize;i++) if( track==fTrack[i] && hit==fHits[i]){
+
+    for(i=0;i<fkSize;i++) if( track==fTrack[i] && hit==fHits[i] ){
         fSignal[i] += signal;
         flg = kTRUE;
     } // end for i & if.
@@ -417,9 +423,50 @@ void AliITSpListItem::AddNoise(Int_t module,Int_t index,Double_t noise){
     //    none.
 
     if(findex!=index || fmodule!=module) 
-        Warning("AddSignal","index=%d != findex=%d or module=%d != fmodule=%d",
+        Warning("AddNoise","index=%d != findex=%d or module=%d != fmodule=%d",
             index,findex,module,fmodule);
     fNoise += noise; // Keep track of sum signal.
+}
+//______________________________________________________________________
+void AliITSpListItem::AddSignalAfterElect(Int_t module,Int_t index,Double_t signal){
+    // Adds signal after electronics to this existing list.
+    // Inputs:
+    //    Int_t module   The module where this noise occurred
+    //    Int_t index    The cell index where this noise occurred
+    //    Double_t signal The value of the signal.
+    // Outputs:
+    //    none.
+    // Return:
+    //    none.
+
+    if(findex!=index || fmodule!=module) 
+        Warning("AddSignalAfterElect","index=%d != findex=%d or module=%d "
+		"!= fmodule=%d",index,findex,module,fmodule);
+    fSignalAfterElect += signal; // Keep track of sum signal.
+}
+//______________________________________________________________________
+void AliITSpListItem::Add(AliITSpListItem *pl){
+    // Adds the contents of pl to this
+    // pl could come from different module and index 
+    // Inputs:
+    //    AliITSpListItem *pl  an AliITSpListItem to be added to this class.
+    // Outputs:
+    //    none.
+    // Return:
+    //    none.
+    Int_t i;
+    Double_t sig  = 0.0;
+    Double_t sigT = 0.0;
+
+    for(i=0;i<pl->GetNsignals();i++){
+        sig = pl->GetSignal(i); 
+        if( sig <= 0.0 ) break; // no more signals
+        AddSignal(pl->GetTrack(i),pl->GetHit(i),fmodule,findex,sig);
+        sigT += sig;
+    } // end for i
+    fTsignal += (pl->fTsignal - sigT);
+    fNoise   += pl->fNoise;
+    return;
 }
 //______________________________________________________________________
 void AliITSpListItem::AddTo(Int_t fileIndex,AliITSpListItem *pl){
@@ -433,16 +480,19 @@ void AliITSpListItem::AddTo(Int_t fileIndex,AliITSpListItem *pl){
     // Return:
     //    none.
     Int_t i,trk;
-    Double_t sig=0.0;
+    Double_t sig  = 0.0;
 
+    Int_t module = pl->GetModule();
+    Int_t index  = pl->GetIndex();
     for(i=0;i<pl->GetNsignals();i++){
+        sig = pl->GetSignal(i); 
+        if( sig <= 0.0 ) break; // no more signals
         trk = pl->GetTrack(i);
-        trk += fileIndex;
-        this->AddSignal(trk,pl->GetHit(i),pl->GetModule(),
-			    pl->GetIndex(),pl->GetSignal(i));
-        sig += pl->GetSignal(i);
+        trk += fileIndex; 
+        AddSignal(trk,pl->GetHit(i),module,index,sig);
     } // end for i
-    this->fNoise   += pl->fNoise;
+    fSignalAfterElect += (pl->fSignalAfterElect + pl->fNoise - fNoise);
+    fNoise = pl->fNoise;
     return;
 }
 //______________________________________________________________________
@@ -456,7 +506,7 @@ Int_t AliITSpListItem::ShiftIndex(Int_t in,Int_t trk){
     // Return:
     //    Int_t The track number with the file number in the upper bits.
     Int_t si = sizeof(Int_t) * 8;
-    UInt_t uin,utrk; // use UInt_t to avoid integer overflow-> goes negative.
+    UInt_t uin,utrk; // use UInt_t to avoid interger overflow-> goes negative.
 
     uin = in;
     utrk = trk;
@@ -481,7 +531,7 @@ void AliITSpListItem::Print(ostream *os){
     for(i=0;i<fkSize;i++) *os << fTrack[i] <<",";
     for(i=0;i<fkSize;i++) *os << fHits[i] <<",";
     for(i=0;i<fkSize;i++) *os << fSignal[i] <<",";
-    *os << fTsignal <<","<< fNoise;
+    *os << fTsignal <<","<< fNoise << "," << fSignalAfterElect;
 }
 //______________________________________________________________________
 void AliITSpListItem::Read(istream *is){
@@ -499,7 +549,7 @@ void AliITSpListItem::Read(istream *is){
     for(i=0;i<fkSize&&i<iss;i++) *is >> fTrack[i];
     for(i=0;i<fkSize&&i<iss;i++) *is >> fHits[i];
     for(i=0;i<fkSize&&i<iss;i++) *is >> fSignal[i];
-    *is >> fTsignal >> fNoise;
+    *is >> fTsignal >> fNoise >> fSignalAfterElect;
 }
 //______________________________________________________________________
 ostream &operator<<(ostream &os,AliITSpListItem &source){
