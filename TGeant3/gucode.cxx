@@ -89,7 +89,6 @@ extern "C" type_of_call void gtrack();
 extern "C" type_of_call void gtreve_root();
 extern "C" type_of_call void glast();
 
-
 extern "C" type_of_call {
 
 //______________________________________________________________________
@@ -122,7 +121,7 @@ void guhadr()
 //
 //    ------------------------------------------------------------------
 //
-      TGeant3 *geant3=(TGeant3*)AliMC::GetMC();
+      TGeant3* geant3 = (TGeant3*) gMC;
       Int_t ihadr=geant3->Gcphys()->ihadr;
       if (ihadr<4)       gheish();
       else if (ihadr==4) flufin();
@@ -161,7 +160,7 @@ void guphad()
 //
 //    ------------------------------------------------------------------
 //
-      TGeant3 *geant3=(TGeant3*)AliMC::GetMC();
+      TGeant3* geant3 = (TGeant3*) gMC;
       Int_t ihadr=geant3->Gcphys()->ihadr;
       if (ihadr<4)       gpghei();
       else if (ihadr==4) fldist();
@@ -299,7 +298,7 @@ void guswim(Float_t& CHARGE, Float_t& STEP, Float_t* VECT, Float_t* VOUT)
 //
 //    ------------------------------------------------------------------
 //
-  TGeant3 *geant3=(TGeant3*)AliMC::GetMC();
+  TGeant3* geant3 = (TGeant3*) gMC;
   Int_t ifield=geant3->Gctmed()->ifield;
   Float_t fieldm=geant3->Gctmed()->fieldm;
 
@@ -463,8 +462,6 @@ void gustep()
 //    ******************************************************************
 //
 
-  AliMC* pMC = AliMC::GetMC();
-  TGeant3 *geant3=(TGeant3*)pMC;
 
   Float_t x[3];
   Float_t r;
@@ -473,29 +470,30 @@ void gustep()
   char chproc[11];
   
   // --- Standard GEANT debug routine 
+  TGeant3* geant3 = (TGeant3*) gMC;
   if(geant3->Gcflag()->idebug) geant3->Gdebug();
 
   //     Stop particle if outside user defined tracking region 
-  pMC->TrackPosition(x);
+  gMC->TrackPosition(x);
   r=TMath::Sqrt(x[0]*x[0]+x[1]*x[1]);
   if (r > gAlice->TrackingRmax() || TMath::Abs(x[2]) > gAlice->TrackingZmax()) {
-	pMC->StopTrack();
+	gMC->StopTrack();
   }
   // --- Add new created particles 
-  if (pMC->NSecondaries() > 0) {
-    pMC->ProdProcess(chproc);
+  if (gMC->NSecondaries() > 0) {
+    gMC->ProdProcess(chproc);
     for (jk = 0; jk < geant3->Gcking()->ngkine; ++jk) {
       ipp = Int_t (geant3->Gcking()->gkin[jk][4]+0.5);
       // --- Skip neutrinos! 
       if (ipp != 4) {
-	gAlice->SetTrack(1,gAlice->CurrentTrack(),ipp, geant3->Gcking()->gkin[jk], 
+	gAlice->SetTrack(1,gAlice->CurrentTrack(),gMC->PDGFromId(ipp), geant3->Gcking()->gkin[jk], 
 			 geant3->Gckin3()->gpos[jk], polar,geant3->Gctrak()->tofg, chproc, nt);
       }
     }
   }
 
   // --- Particle leaving the setup ?
-  if (!pMC->TrackOut()) 
+  if (!gMC->TrackOut()) 
     if ((id=gAlice->DetFromMate(geant3->Gctmed()->numed)) >= 0) gAlice->StepManager(id);
 }
 
