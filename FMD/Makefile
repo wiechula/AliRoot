@@ -9,7 +9,7 @@ PACKAGE = FMD
 
 # C++ sources
 
-SRCS          = AliFMD.cxx AliFMDv0.cxx AliFMDv1.cxx 
+SRCS          = AliFMD.cxx AliFMDv0.cxx AliFMDv1.cxx AliFMDhit.cxx AliFMDdigit.cxx AliFMDMerger.cxx AliFMDReconstruction.cxx AliFMDReconstParticles.cxx
 
 # C++ Headers
 
@@ -19,19 +19,19 @@ HDRS          = $(SRCS:.cxx=.h) FMDLinkDef.h
 
 DICT          = FMDCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.f=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -45,18 +45,23 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libFMD.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libFMD.a
+SLIBRARY	= $(LIBDIR)/libFMD.$(SL)
+ALIBRARY	= $(LIBDIR)/libFMD.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libFMD.$(SL):	$(OBJS)
+tst:		Hit2Digits.cxx 
+	g++ -g $(CXXFLAGS) $(SLIBRARY) Hit2Digits.cxx $(ROOTLIBS) -o tst
+
+$(LIBDIR)/libFMD.$(SL):		$(OBJS)
 
 $(DICT):			$(HDRS)
 
 depend:				$(SRCS)
 
-TOCLEAN		 = $(OBSJ) *Cint.cxx *Cint.h
+TOCLEAN		 = $(OBJS) *Cint.cxx *Cint.h
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
 
 ############################### General Macros ################################
 
@@ -64,4 +69,11 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
+

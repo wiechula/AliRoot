@@ -9,9 +9,15 @@
 #include "AliGlobals.h"
 
 #include <G4Track.hh>
+#include <G4TrackStack.hh>
 #include <G4StackedTrack.hh>
 #include <G4StackManager.hh>
-#include <G4ios.hh>
+#include <G4NeutrinoE.hh>
+#include <G4NeutrinoMu.hh>
+#include <G4NeutrinoTau.hh>
+#include <G4AntiNeutrinoE.hh>
+#include <G4AntiNeutrinoMu.hh>
+#include <G4AntiNeutrinoTau.hh>
 
 AliStackingAction::AliStackingAction()
   : fStage(0), 
@@ -68,15 +74,27 @@ AliStackingAction::ClassifyNewTrack(const G4Track* track)
     // (secondary particles are stored 
     //  by AlTrackingAction::PreUserTrackingAction() method)
     if (fSavePrimaries)
-      fTrackingAction->SaveParticle(track, "primary");
+      fTrackingAction->SaveTrack(track);
   }  
   else {
+     // exclude neutrinos
+    G4ParticleDefinition* particle = track->GetDefinition();
+    if( particle == G4NeutrinoE::NeutrinoEDefinition() ||
+        particle == G4NeutrinoMu::NeutrinoMuDefinition() ||
+        particle == G4NeutrinoTau::NeutrinoTauDefinition() ||
+        particle == G4AntiNeutrinoE::AntiNeutrinoEDefinition() ||
+        particle == G4AntiNeutrinoMu::AntiNeutrinoMuDefinition() ||
+        particle == G4AntiNeutrinoTau::AntiNeutrinoTauDefinition()) {
+
+        return fKill;	 
+     }	
+     
      G4int parentID = track->GetParentID();
      if (parentID ==0) { 
-       classification = fUrgent; 
+        return fUrgent; 
      }
      else { 
-       classification = fWaiting; 
+        return fWaiting; 
      }
   }
   return classification;
@@ -91,7 +109,7 @@ void AliStackingAction::NewStage()
   if (fVerboseLevel>0) 
   {
     G4cout << "AliStackingAction::NewStage " << fStage 
-           << " has been started." << endl;
+           << " has been started." << G4endl;
   }
 
   G4int nofUrgent = stackManager->GetNUrgentTrack();

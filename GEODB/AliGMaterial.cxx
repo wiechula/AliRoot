@@ -1,3 +1,25 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.2  1999/09/29 09:24:19  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 // -*- C++ -*-
 // 
 // 1998/10/19
@@ -154,59 +176,3 @@ AliGMaterial* AliGMaterial::operator=( const AliGMaterial* Mat )
 
     return this;
 }
-
-//-------------------------------------------------------------------------
-
-void AliGMaterial::Streamer(TBuffer &R__b)
-{
-   // Stream an object of class AliGMaterial.
-
-   if (R__b.IsReading()) {
-      Version_t R__v = R__b.ReadVersion(); if (R__v) { }
-      TNamed::Streamer(R__b);
-      R__b >> fImat;
-      R__b >> fIsvol;
-      R__b >> fIfield;
-      R__b >> fFieldm;
-      R__b >> fTmaxfd;
-      R__b >> fStemax;
-      R__b >> fDeemax;
-      R__b >> fEpsil;
-      R__b >> fStmin;
-      R__b.ReadArray(fUbuf); //
-      R__b >> fNbuf;
-      R__b >> fA;
-      R__b >> fZ;
-      R__b >> fDens;
-      R__b >> fRadl;
-      R__b >> fAbsl;
-      R__b.ReadArray(fBuf); //
-      R__b >> fNwbuf;
-      R__b >> fRho;
-   } else {
-      R__b.WriteVersion(AliGMaterial::IsA());
-      TNamed::Streamer(R__b);
-      R__b << fImat;
-      R__b << fIsvol;
-      R__b << fIfield;
-      R__b << fFieldm;
-      R__b << fTmaxfd;
-      R__b << fStemax;
-      R__b << fDeemax;
-      R__b << fEpsil;
-      R__b << fStmin;
-      R__b.WriteArray(fUbuf, fNbuf); //
-      R__b << fNbuf;
-      R__b << fA;
-      R__b << fZ;
-      R__b << fDens;
-      R__b << fRadl;
-      R__b << fAbsl;
-      R__b.WriteArray(fBuf, fNbuf); //
-      R__b << fNwbuf;
-      R__b << fRho;
-   }
-}
-
-//-------------------------------------------------------------------------
-

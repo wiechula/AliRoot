@@ -24,7 +24,7 @@ AliModulesCompositionMessenger::AliModulesCompositionMessenger(
   fSwitchOnCmd = new G4UIcmdWithAString("/aliDet/switchOn", this);
   fSwitchOnCmd->SetGuidance("Define the module to be built.");
   fSwitchOnCmd->SetGuidance("Available modules:");
-  G4String listAvailableDets = "NONE, ALL, ";  
+  G4String listAvailableDets = "NONE, ALL, PPR, ";  
   listAvailableDets 
     = listAvailableDets + modulesComposition->GetAvailableDetsListWithCommas();
   fSwitchOnCmd->SetGuidance(listAvailableDets);
@@ -72,8 +72,23 @@ AliModulesCompositionMessenger::AliModulesCompositionMessenger(
     ->SetGuidance("If false: only volumes defined with a sensitive tracking");
   fSetAllSensitiveCmd 
     ->SetGuidance("          medium are associated with a sensitive detector.");
+  fSetAllSensitiveCmd 
+    ->SetGuidance("It has lower priority than individual module setting");
   fSetAllSensitiveCmd->SetParameterName("sensitivity", false);
   fSetAllSensitiveCmd->AvailableForStates(PreInit);  
+
+  fForceAllSensitiveCmd
+    = new G4UIcmdWithABool("/aliDet/forceAllSensitive", this);
+  fForceAllSensitiveCmd 
+    ->SetGuidance("If true: force to set all logical volumes sensitive.");
+  fForceAllSensitiveCmd 
+    ->SetGuidance("         (Each logical is volume associated with a sensitive");
+  fForceAllSensitiveCmd 
+    ->SetGuidance("          detector.)");
+  fForceAllSensitiveCmd 
+    ->SetGuidance("It has higher priority than individual module setting");
+  fForceAllSensitiveCmd->SetParameterName("forceSensitivity", false);
+  fForceAllSensitiveCmd->AvailableForStates(PreInit);  
 
   fSetReadGeometryCmd 
     = new G4UIcmdWithABool("/aliDet/readGeometry", this);
@@ -87,12 +102,22 @@ AliModulesCompositionMessenger::AliModulesCompositionMessenger(
   fSetWriteGeometryCmd->SetParameterName("writeGeometry", false);
   fSetWriteGeometryCmd->AvailableForStates(PreInit);   
 
+  fPrintMaterialsCmd 
+    = new G4UIcmdWithoutParameter("/aliDet/printMaterials", this);
+  fPrintMaterialsCmd->SetGuidance("Prints all materials.");
+  fPrintMaterialsCmd->AvailableForStates(PreInit, Init, Idle);   
+
+  fGenerateXMLCmd 
+    = new G4UIcmdWithoutParameter("/aliDet/generateXML", this);
+  fGenerateXMLCmd->SetGuidance("Generate geometry XML file.");
+  fGenerateXMLCmd->AvailableForStates(Idle);   
+
+
   // set candidates list
   SetCandidates();
 
   // set default values to a detector
   fModulesComposition->SwitchDetOn("NONE");
-  fModulesComposition->SetMagField(0.0*tesla);    
 }
 
 AliModulesCompositionMessenger::AliModulesCompositionMessenger() {
@@ -116,8 +141,11 @@ AliModulesCompositionMessenger::~AliModulesCompositionMessenger() {
   delete fListAvailableCmd;
   delete fFieldValueCmd;
   delete fSetAllSensitiveCmd;
+  delete fForceAllSensitiveCmd;
   delete fSetReadGeometryCmd;
   delete fSetWriteGeometryCmd;
+  delete fPrintMaterialsCmd;
+  delete fGenerateXMLCmd;
 }
 
 // operators
@@ -162,6 +190,10 @@ void AliModulesCompositionMessenger::SetNewValue(G4UIcommand* command, G4String 
     fModulesComposition->SetAllLVSensitive(
                          fSetAllSensitiveCmd->GetNewBoolValue(newValues));
   }
+  else if (command == fForceAllSensitiveCmd) {
+    fModulesComposition->SetForceAllLVSensitive(
+                         fForceAllSensitiveCmd->GetNewBoolValue(newValues));
+  }
   else if (command == fSetReadGeometryCmd) {
     fModulesComposition->SetReadGeometry(
                          fSetReadGeometryCmd->GetNewBoolValue(newValues));
@@ -170,6 +202,12 @@ void AliModulesCompositionMessenger::SetNewValue(G4UIcommand* command, G4String 
     fModulesComposition->SetWriteGeometry(
                          fSetWriteGeometryCmd->GetNewBoolValue(newValues));
   }    
+  else if (command == fPrintMaterialsCmd) {
+    fModulesComposition->PrintMaterials();
+  }    
+  else if (command == fGenerateXMLCmd) {
+    fModulesComposition->GenerateXMLGeometry();
+  }    
 }
 
 void AliModulesCompositionMessenger::SetCandidates() 
@@ -177,7 +215,7 @@ void AliModulesCompositionMessenger::SetCandidates()
 // Builds candidates list.
 // ---
 
-  G4String candidatesList = "NONE ALL ";
+  G4String candidatesList = "NONE ALL PPR ";
   candidatesList += fModulesComposition->GetDetNamesList();;
   candidatesList += fModulesComposition->GetAvailableDetsList();
   fSwitchOnCmd->SetCandidates(candidatesList);

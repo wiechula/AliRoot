@@ -1,0 +1,8 @@
+////////////////////////////////////////////////
+//  Segmentation class for set:ITS            //
+////////////////////////////////////////////////
+
+#include <TF1.h>
+#include "AliITSsegmentation.h"
+
+ClassImp(AliITSsegmentation)

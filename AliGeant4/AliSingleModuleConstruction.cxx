@@ -6,15 +6,14 @@
 #include "AliSingleModuleConstruction.h"
 #include "AliSingleModuleConstructionMessenger.h"
 #include "AliSDManager.h"
-#include "AliSensitiveDetector.h"
 #include "AliGlobals.h"
 #include "AliFiles.h"
 #include "AliRun.h"
+#include "AliModule.h"
 
 #include "TG4GeometryManager.h"
 
 #include <G3SensVolVector.hh>
-#include <G4SDManager.hh>
 #include <G4UImanager.hh>
 //#include <G4Element.hh>
 #include <G4LogicalVolume.hh>
@@ -46,15 +45,11 @@ AliSingleModuleConstruction::AliSingleModuleConstruction(
   : AliModuleConstruction(right)				
 {
 //
-  fVersion = right.fVersion;
-  fType = right.fType;
-  fProcessConfig = right.fProcessConfig;
-  fAllLVSensitive = right.fAllLVSensitive;
-  fSDManager = right.fSDManager;
-
-  G4String moduleName = right.fModuleName;
-  moduleName.toLower();
-  fMessenger = new AliSingleModuleConstructionMessenger(this, moduleName);
+  // allocation in assignement operator
+  fMessenger = 0;
+  
+  // copy stuff
+  *this = right;
 }
 
 AliSingleModuleConstruction::AliSingleModuleConstruction() {
@@ -82,7 +77,13 @@ AliSingleModuleConstruction::operator=(const AliSingleModuleConstruction& right)
   fProcessConfig = right.fProcessConfig;
   fAllLVSensitive = right.fAllLVSensitive;
   fSDManager = right.fSDManager;
-  
+ 
+  // messenger is protected from copying  
+  if (fMessenger) delete fMessenger;
+  G4String moduleName = right.fModuleName;
+  moduleName.toLower();
+  fMessenger = new AliSingleModuleConstructionMessenger(this, moduleName);
+ 
   return *this;
 }
 
@@ -142,7 +143,7 @@ void AliSingleModuleConstruction::CreateSensitiveDetectors2()
 
 // public methods 
 
-void AliSingleModuleConstruction::Configure()
+void AliSingleModuleConstruction::Configure(const AliFiles& files)
 { 
 // Executes the detector setup Root macro
 // (extracted from AliRoot Config.C) and
@@ -150,67 +151,26 @@ void AliSingleModuleConstruction::Configure()
 // ---
    	  
   // filepaths and macro names 
-  G4String rootFilePath;
-  G4String g4FilePath;
-
-  if (fType == kDetector) {
-    // macro file path 
-    //$AG4_INSTALL/macro/XXX/Config.C
-    //$AG4_INSTALL/macro/XXX/Config.in
-    rootFilePath = AliFiles::DetConfig1();
-    rootFilePath.append(fModuleName);
-    rootFilePath.append(AliFiles::DetConfig2());
-    g4FilePath = rootFilePath;
-
-    rootFilePath.append(AliFiles::DetConfig3());
-    g4FilePath.append(AliFiles::DetConfig4());
-
-    // path to g3calls.dat file
-    //$AG4_INSTALL/macro/XXX/g3calls_vN.dat
-    fDataFilePath = AliFiles::DetData1();
-    fDataFilePath.append(fModuleName);
-    fDataFilePath.append(AliFiles::DetData2());
-    G4String version("v");
-    AliGlobals::AppendNumberToString(version,fVersion);
-    fDataFilePath.append(version);
-    fDataFilePath.append(AliFiles::DetData3());   	  
-  }  
-  else if (fType == kStructure) {    
-    // macro file path is set to 
-    //$AG4_INSTALL/macro/STRUCT/XXXConfig.C
-    //$AG4_INSTALL/macro/STRUCT/XXXConfig.in
-    rootFilePath = AliFiles::DetConfig1();
-    rootFilePath.append(AliFiles::STRUCT());
-    rootFilePath.append(AliFiles::DetConfig2());
-    rootFilePath.append(fModuleName);
-    g4FilePath = rootFilePath;
-
-    rootFilePath.append(AliFiles::DetConfig3());
-    g4FilePath.append(AliFiles::DetConfig4());
-
-    // path to g3calls.dat file
-    //$AG4_INSTALL/macro/STRUCT/g3calls_XXXvN.dat
-    fDataFilePath = AliFiles::DetData1();
-    fDataFilePath.append(AliFiles::STRUCT());
-    fDataFilePath.append(AliFiles::DetData2());
-    fDataFilePath.append(fModuleName);
-    G4String version("v");
-    AliGlobals::AppendNumberToString(version,fVersion);
-    fDataFilePath.append(version);
-    fDataFilePath.append(AliFiles::DetData3());
-  }  
+  G4bool isStructure = (fType == kStructure);
+  G4String rootFilePath 
+    = files.GetRootMacroPath(fModuleName, isStructure);
+  G4String g4FilePath
+    = files.GetG4MacroPath(fModuleName, isStructure);
+  fDataFilePath 
+    = files.GetG3CallsDatPath(fModuleName, fVersion, isStructure); 
   
+  // load and execute aliroot config macro
   if (fProcessConfig) {
-    // load and execute aliroot macro
     gROOT->LoadMacro(rootFilePath);
-    G4String macroName = AliFiles::DetConfigName1();
+    G4String macroName = files.GetDefaultMacroName();
+    //macroName = macroName + "_" + fModuleName;
+    macroName = macroName + "(";
     AliGlobals::AppendNumberToString(macroName, fVersion);
-    macroName.append(AliFiles::DetConfigName2());
+    macroName = macroName + ")";
     gInterpreter->ProcessLine(macroName);
   } 
   
-  // add process g4 config macro
-  // execute Geant4 macro if file is specified as an argument 
+  // process g4 config macro
   G4String command = "/control/execute ";
   G4UImanager* pUI = G4UImanager::GetUIpointer();  
   pUI->ApplyCommand(command + g4FilePath);
@@ -232,12 +192,12 @@ void AliSingleModuleConstruction::Construct()
 
   // print default element table
   // const G4ElementTable* table = G4Element::GetElementTable();
-  // G4cout << "Default elemnt table: " << endl;
+  // G4cout << "Default elemnt table: " << G4endl;
   // for (G4int i=0; i<table->entries(); i++) {
-  //   G4cout << *(*table)[i] << endl;
+  //   G4cout << *(*table)[i] << G4endl;
   // }  
 
-  Configure();
+  // Configure();
 
   // get geometry manager
   TG4GeometryManager* pGeometryManager = TG4GeometryManager::Instance();
@@ -263,6 +223,9 @@ void AliSingleModuleConstruction::Construct()
 
     // construct G3 geometry
     fAliModule->CreateGeometry();
+        
+    if (fWriteGeometry) 
+      pGeometryManager->CloseOutFile();
   }  
   
   // construct G4 geometry
@@ -279,12 +242,15 @@ void AliSingleModuleConstruction::Construct()
   // build sensitive detectors table
   fAliModule->Init();
 
+  // construct geometry for display
+  fAliModule->BuildGeometry();
+
   // reset TG4GeometryManager 
   pGeometryManager->ClearG3Tables();
   
   // print current total number of logical volumes
   G4cout << "Current total number of sensitive volumes: "
-         << pGeometryManager->NofVolumes() << endl;
+         << pGeometryManager->NofVolumes() << G4endl;
 
 #ifdef ALICE_VISUALIZE
   if (GetDetFrame()) {

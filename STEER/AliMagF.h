@@ -1,89 +1,67 @@
-#ifndef AliMagF_H
-#define AliMagF_H
+#ifndef ALIMAGF_H
+#define ALIMAGF_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
 
 #include "TNamed.h"
-#include "TVector.h"
 
-enum Field_t {Undef=1, Const=1, ConMesh=2};
+enum Field_t {kUndef=1, kConst=1, kConMesh=2, kDipoMap=3};
 
 class AliMagF : public TNamed {
 
+public:
+  AliMagF(){}
+  AliMagF(const char *name, const char *title, const Int_t integ, 
+	  const Float_t factor = 1., const Float_t fmax = 10.);
+  virtual ~AliMagF() {}
+  virtual void Field(Float_t *x, Float_t *b);
+  virtual Int_t Type() const {return fType;}
+  virtual Float_t Max() const {return fMax;}
+  virtual Int_t Map() const {return fMap;}
+  virtual Int_t Integ() const {return fInteg;}
+  virtual Float_t Factor() const {return fFactor;}
+  virtual void ReadField() {}
+  virtual void SetDebug(Int_t level=0) {fDebug=level;}
+  virtual Int_t GetDebug() const {return fDebug;}
+  
 protected:
   Int_t     fMap;    // Field Map identifier
   Int_t     fType;   // Mag Field type
   Int_t     fInteg;  // Integration method as indicated in Geant
   Float_t   fFactor; // Multiplicative factor
   Float_t   fMax;    // Max Field as indicated in Geant
+  Int_t     fDebug;  // Debug flag
 
-public:
-  AliMagF(){}
-  AliMagF(const char *name, const char *title, const Int_t integ, const Int_t map, 
-	  const Float_t factor, const Float_t fmax);
-  virtual ~AliMagF() {}
-  virtual void Field(Float_t *x, Float_t *b);
-  virtual Int_t Type() {return fType;}
-  virtual Float_t Max() const {return fMax;}
-  virtual Int_t Map() const {return fMap;}
-  virtual Int_t Integ() const {return fInteg;}
-  virtual Float_t Factor() const {return fFactor;}
-  virtual void ReadField() {}
-  
   ClassDef(AliMagF,1)  //Base class for all Alice MagField
 };
 
-class AliMagFC  : public AliMagF
-{
-  //Alice Constant Magnetic Field
-private:
+//ZDC part -------------------------------------------------------------------
 
-public:
-  AliMagFC(){}
-  AliMagFC(const char *name, const char *title, const Int_t integ, const Int_t map, 
-	   const Float_t factor, const Float_t fmax);
-  virtual ~AliMagFC() {}
-  virtual void Field(Float_t *x, Float_t *b);
-  virtual void ReadField() {}
-  
-  ClassDef(AliMagFC,1)  //Class for all Alice Constant MagField 
-};
+  const Float_t kG1=20.03;
+  const Float_t kFDIP=-37.34;
+  const Float_t kFDIMU=6.;
+  const Float_t kFCORN2=-9.4;
+//
+// ZBEG       Beginning of the inner triplet
+// D1BEG      Beginning of separator dipole 1
+// D2BEG      Beginning of separator dipole 2
+// CORBEG     Corrector dipole beginning (because of dimuon arm)
+//
+  const Float_t kCORBEG2=19216.,kCOREND2=kCORBEG2+170., kCOR2RA2=4.5*4.5;
+//
+  const Float_t kZBEG=2300.;
+  const Float_t kZ1BEG=kZBEG+   0.,kZ1END=kZ1BEG+630.,kZ1RA2=3.5*3.5;
+  const Float_t kZ2BEG=kZBEG+ 880.,kZ2END=kZ2BEG+550.,kZ2RA2=3.5*3.5;
+  const Float_t kZ3BEG=kZBEG+1530.,kZ3END=kZ3BEG+550.,kZ3RA2=3.5*3.5;
+  const Float_t kZ4BEG=kZBEG+2430.,kZ4END=kZ4BEG+630.,kZ4RA2=3.5*3.5;
+  const Float_t kD1BEG=5838.3    ,kD1END=kD1BEG+945.,kD1RA2=4.5*4.5;
+  const Float_t kD2BEG=12147.6   ,kD2END=kD2BEG+945.,kD2RA2=4.5*4.5;
+//
+  const Float_t kXCEN1D2=-9.7    ,kYCEN1D2=0.;
+  const Float_t kXCEN2D2=9.7     ,kYCEN2D2=0.;
 
-class AliMagFCM : public AliMagF
-{
-  //Alice Magnetic Field with constan mesh
-protected:
-
-  Float_t    fXbeg;  // Start of mesh in x
-  Float_t    fYbeg;  // Start of mesh in y
-  Float_t    fZbeg;  // Start of mesh in z
-  Float_t    fXdel;  // Mesh step in x
-  Float_t    fYdel;  // Mesh step in y
-  Float_t    fZdel;  // Mesh step in z
-  Double_t   fXdeli; // Inverse of Mesh step in x
-  Double_t   fYdeli; // Inverse of Mesh step in y
-  Double_t   fZdeli; // Inverse of Mesh step in z
-  Int_t      fXn;    // Number of mesh points in x
-  Int_t      fYn;    // Number of mesh points in y
-  Int_t      fZn;    // Number of mesh points in z
-  TVector   *fB;     // Field map
-public:
-  AliMagFCM(){}
-  AliMagFCM(const char *name, const char *title, const Int_t integ, const Int_t map, 
-	   const Float_t factor, const Float_t fmax);
-  virtual ~AliMagFCM() {delete fB;}
-  virtual void Field(Float_t *x, Float_t *b);
-  virtual void ReadField();
-
-  inline Float_t Bx(const Int_t ix, const Int_t iy, const Int_t iz) {
-    return (*fB)(3*(iz*(fXn*fYn)+iy*fXn+ix));
-  }
-  inline Float_t By(const Int_t ix, const Int_t iy, const Int_t iz) {
-    return (*fB)(3*(iz*(fXn*fYn)+iy*fXn+ix)+1);
-  }
-  inline Float_t Bz(const Int_t ix, const Int_t iy, const Int_t iz) {
-    return (*fB)(3*(iz*(fXn*fYn)+iy*fXn+ix)+2);
-  }
-  
-  ClassDef(AliMagFCM,1)  //Class for all Alice MagField with Constant Mesh
-};
+//ZDC part -------------------------------------------------------------------
 
 #endif

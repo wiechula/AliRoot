@@ -1,26 +1,102 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.20  2001/05/04 10:09:47  vicinanz
+Major upgrades to the strip structure
+
+Revision 1.19  2001/03/12 17:47:25  hristov
+Changes needed on Sun with CC 5.0
+
+Revision 1.18  2001/01/26 19:57:42  hristov
+Major upgrade of AliRoot code
+
+Revision 1.17  2000/10/19 09:58:14  vicinanz
+Updated Hits2Digit procedure
+
+Revision 1.16  2000/10/02 21:28:17  fca
+Removal of useless dependecies via forward declarations
+
+Revision 1.15  2000/05/18 14:33:01  vicinanz
+Modified to be full HP compliant
+
+Revision 1.14  2000/05/15 19:32:36  fca
+Add AddHitList !!
+
+Revision 1.13  2000/05/10 16:52:18  vicinanz
+New TOF version with holes for PHOS/RICH
+
+Revision 1.11.2.1  2000/05/10 09:37:15  vicinanz
+New version with Holes for PHOS/RICH
+
+Revision 1.11  1999/11/05 22:39:06  fca
+New hits structure
+
+Revision 1.10  1999/11/01 20:41:57  fca
+Added protections against using the wrong version of FRAME
+
+Revision 1.9  1999/10/15 15:35:19  fca
+New version for frame1099 with and without holes
+
+Revision 1.9  1999/09/29 09:24:33  fca
+Introduction of the Copyright and cvs Log
+
+*/
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
-//  Time Of Flight                                                           //
+//  Time Of Flight                               FCA                         //
 //  This class contains the basic functions for the Time Of Flight           //
 //  detector. Functions specific to one particular geometry are              //
 //  contained in the derived classes                                         //
-//                                                                           //
-//Begin_Html
+//
+//  VERSIONE WITH 5 SYMMETRIC MODULES ALONG Z AXIS
+//  ==============================================
+//  
+//  VERSION WITH HOLES FOR PHOS AND TRD IN SPACEFRAME WITH HOLES
+//
+//  Volume sensibile : FPAD
+//
+//
+//
+// Begin_Html
 /*
-<img src="gif/AliTOFClass.gif">
+<img src="picts/AliTOFClass.gif">
 */
 //End_Html
-//                                                                           //
+//             
+//
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <iostream.h>
+
 #include "AliTOF.h"
-#include <TNode.h>
-#include <TTUBE.h>
-#include <TBRIK.h>
+#include "AliTOFD.h"
+#include "TBRIK.h"
+#include "TNode.h"
+#include "TObject.h"
+#include "TRandom.h"
+#include "TTree.h"
+#include "TFile.h"
+
 #include "AliRun.h"
 #include "AliMC.h"
+#include "AliMagF.h"
 #include "AliConst.h"
+
  
 ClassImp(AliTOF)
  
@@ -40,13 +116,60 @@ AliTOF::AliTOF(const char *name, const char *title)
   //
   // AliTOF standard constructor
   // 
-  fHits   = new TClonesArray("AliTOFhit",  405);
+  // Here are fixed some important parameters
   //
-  fIshunt     =  0;
+
+  // Initialization of hits and digits array
+  //
+  fHits   = new TClonesArray("AliTOFhit",  405);
+  gAlice->AddHitList(fHits);
+  fIshunt  = 0;
+  fDigits = new TClonesArray("AliTOFdigit",405);
+  //
+  // Digitization parameters
+  //
+  // (Transfer Functions to be inserted here)
   //
   SetMarkerColor(7);
   SetMarkerStyle(2);
   SetMarkerSize(0.4);
+
+// General Geometrical Parameters
+  fNTof    =  18;  // number of sectors
+  fRmax    = 399.0;//cm 
+  fRmin    = 370.0;//cm
+  fZlenC   = 177.5;//cm length of module C
+  fZlenB   = 141.0;//cm length of module B
+  fZlenA   = 106.0;//cm length of module A
+  fZtof    = 370.5;//cm total semi-length of TOF detector
+
+// Strip Parameters
+  fStripLn = 122.0;//cm  Strip Length
+  fSpace   =   5.5;//cm  Space Beetween the strip and the bottom of the plate 
+  fDeadBndZ=   1.5;//cm  Dead Boundaries of a Strip along Z direction (width)
+  fDeadBndX=   1.0;//cm  Dead Boundaries of a Strip along X direction (length)
+  fXpad    =   2.5;//cm  X size of a pad
+  fZpad    =   3.5;//cm  Z size of a pad
+  fGapA    =   4.; //cm  Gap beetween tilted strip in A-type plate
+  fGapB    =   6.; //cm  Gap beetween tilted strip in B-type plate
+  fOverSpc =  15.3;//cm Space available for sensitive layers in radial direction
+  fNpadX   =  48;  // Number of pads in a strip along the X direction
+  fNpadZ   =   2;  // Number of pads in a strip along the Z direction
+  fPadXStr = fNpadX*fNpadZ; //Number of pads per strip
+  fNStripA = 15; // number of strips in A type module 
+  fNStripB = 19; // number of strips in B type module
+  fNStripC = 20; // number of strips in C type module
+ 
+// Physical performances
+  fTimeRes = 100.;//ps
+  fChrgRes = 100.;//pC
+
+// DAQ characteristics
+  fPadXSector = 1932;
+  fNRoc       = 14;
+  fNFec       = 32;
+  fNTdc       = 32;
+  fNPadXRoc   = (Int_t)fPadXSector/fNRoc;
 }
 
 //_____________________________________________________________________________
@@ -56,405 +179,81 @@ void AliTOF::AddHit(Int_t track, Int_t *vol, Float_t *hits)
   // Add a TOF hit
   //
   TClonesArray &lhits = *fHits;
-  new(lhits[fNhits++]) AliTOFhit(fIshunt,track,vol,hits);
+  new(lhits[fNhits++]) AliTOFhit(fIshunt, track, vol, hits);
 }
  
 //_____________________________________________________________________________
-void AliTOF::BuildGeometry()
+void AliTOF::AddDigit(Int_t *tracks, Int_t *vol, Float_t *digits)
 {
   //
-  // Build TOF ROOT geometry for the ALICE event viewver
+  // Add a TOF digit
   //
-  TNode *Node, *Top;
-  const int kColorTOF  = 27;
-  //
-  // Find top TNODE
-  Top=gAlice->GetGeometry()->GetNode("alice");
-  //
-  // Define rotation matrixes
-  new TRotMatrix("rot501","rot501",90,-18.94737,90,71.05263,0,0);
-  new TRotMatrix("rot502","rot502",90,-37.89474,90,52.10526,0,0);
-  new TRotMatrix("rot503","rot503",90,-56.84211,90,33.15789,0,0);
-  new TRotMatrix("rot504","rot504",90,-75.78947,90,14.21053,0,0);
-  new TRotMatrix("rot505","rot505",90,-94.73685,90,-4.736847,0,0);
-  new TRotMatrix("rot506","rot506",90,-113.6842,90,-23.68421,0,0);
-  new TRotMatrix("rot507","rot507",90,-132.6316,90,-42.63158,0,0);
-  new TRotMatrix("rot508","rot508",90,-151.5789,90,-61.57895,0,0);
-  new TRotMatrix("rot509","rot509",90,-170.5263,90,-80.52632,0,0);
-  new TRotMatrix("rot510","rot510",90,-189.4737,90,-99.47369,0,0);
-  new TRotMatrix("rot511","rot511",90,-208.4211,90,-118.4211,0,0);
-  new TRotMatrix("rot512","rot512",90,-227.3684,90,-137.3684,0,0);
-  new TRotMatrix("rot513","rot513",90,-246.3158,90,-156.3158,0,0);
-  new TRotMatrix("rot514","rot514",90,-265.2632,90,-175.2632,0,0);
-  new TRotMatrix("rot515","rot515",90,-284.2105,90,-194.2105,0,0);
-  new TRotMatrix("rot516","rot516",90,-303.1579,90,-213.1579,0,0);
-  new TRotMatrix("rot517","rot517",90,-322.1053,90,-232.1053,0,0);
-  new TRotMatrix("rot518","rot518",90,-341.0526,90,-251.0526,0,0);
-  new TRotMatrix("rot519","rot519",90,-360,90,-270,0,0);
-  //
-  // Define TOF basic volume
-  new TBRIK("S_TOF1","TOF box","void",60.,6.,175.);
-  //
-  // Position the different copies
-  Top->cd();
-  Node = new TNode("FTO11","FTO11","S_TOF1",224.8018,288.8254,175,"rot502");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO12","FTO12","S_TOF1",306.4029,200.183,175,"rot503");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();  
-  Node = new TNode("FTO13","FTO13","S_TOF1",354.8005,89.84769,175,"rot504");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node);
-  //
-  Top->cd();
-  Node = new TNode("FTO14","FTO14","S_TOF1",364.7499,-30.22407,175,"rot505");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO15","FTO15","S_TOF1",335.173,-147.0205,175,"rot506");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();  
-  Node = new TNode("FTO16","FTO16","S_TOF1",-335.1731,-147.0205,175,"rot513");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO17","FTO17","S_TOF1",-364.7499,-30.22407,175,"rot514");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO18","FTO18","S_TOF1",-354.8005,89.84778,175,"rot515");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO19","FTO19","S_TOF1",-306.4029,200.183,175,"rot516");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO110","FTO110","S_TOF1",-224.8019,288.8254,175,"rot517");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO111","FTO111","S_TOF1",224.8018,288.8254,-175,"rot502");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO112","FTO112","S_TOF1",306.4029,200.183,-175,"rot503");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO113","FTO113","S_TOF1",354.8005,89.84769,-175,"rot504");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO114","FTO114","S_TOF1",364.7499,-30.22407,-175,"rot505");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO115","FTO115","S_TOF1",335.173,-147.0205,-175,"rot506");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO116","FTO116","S_TOF1",-335.1731,-147.0205,-175,"rot513");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO117","FTO117","S_TOF1",-364.7499,-30.22407,-175,"rot514");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO118","FTO118","S_TOF1",-354.8005,89.84778,-175,"rot515");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO119","FTO119","S_TOF1",-306.4029,200.183,-175,"rot516");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO120","FTO120","S_TOF1",-224.8019,288.8254,-175,"rot517");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node);
-  //
-  // Define second TOF volume
-  new TBRIK("S_TOF2","TOF box","void",60.,6.,100.);
-  //
-  // Position the volume
-  Top->cd();
-  Node = new TNode("FTO21","FTO21","S_TOF2",269.275,-247.885,250,"rot507");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO22","FTO22","S_TOF2",174.1967,-321.8874,250,"rot508");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO23","FTO23","S_TOF2",60.24158,-361.0082,250,"rot509");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO24","FTO24","S_TOF2",-60.24168,-361.0082,250,"rot510");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO25","FTO25","S_TOF2",-174.1967,-321.8874,250,"rot511");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO26","FTO26","S_TOF2",-269.275,-247.885,250,"rot512");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO27","FTO27","S_TOF2",269.275,-247.885,-250,"rot507");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO28","FTO28","S_TOF2",174.1967,-321.8874,-250,"rot508");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO29","FTO29","S_TOF2",60.24158,-361.0082,-250,"rot509");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO210","FTO210","S_TOF2",-60.24168,-361.0082,-250,"rot510");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO211","FTO211","S_TOF2",-174.1967,-321.8874,-250,"rot511");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO212","FTO212","S_TOF2",-269.275,-247.885,-250,"rot512");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  // Define third TOF volume
-  new TBRIK("S_TOF3","TOF box","void",60.,6.,75.);
-  //
-  // Position it
-  Top->cd();
-  Node = new TNode("FTO31","FTO31","S_TOF3",118.84,346.1691,275,"rot501");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO32","FTO32","S_TOF3",-118.8399,346.1691,275,"rot518");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO33","FTO33","S_TOF3",0.,366.,275.,"rot519");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO34","FTO34","S_TOF3",118.84,346.1691,-275.,"rot501");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO35","FTO35","S_TOF3",-118.8399,346.1691,-275,"rot518");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
-  //
-  Top->cd();
-  Node = new TNode("FTO36","FTO36","S_TOF3",0.,366.,-275.,"rot519");
-  Node->SetLineColor(kColorTOF);
-  fNodes->Add(Node); 
+  TClonesArray &ldigits = *fDigits;
+  new (ldigits[fNdigits++]) AliTOFdigit(tracks, vol, digits);
 }
+
 
 //_____________________________________________________________________________
 void AliTOF::CreateGeometry()
 {
   //
-  // Common geometry code for version 2 and version 3 of the TOF
+  // Common geometry code 
   //
   //Begin_Html
   /*
-    <img src="gif/AliTOFv23.gif">
+    <img src="picts/AliTOFv23.gif">
   */
   //End_Html
   //
-
-  AliMC* pMC = AliMC::GetMC();
-  
   const Double_t kPi=TMath::Pi();
-  const Double_t kDegrad=kPi/180;
-  const Double_t kRaddeg=180/kPi;
+  const Double_t kDegrad=kPi/180.;
   //
-  Float_t fil_rich;
-  Int_t lmax;
-  Float_t xtof, ytof, fil_step, phos_phi, phos_min, phos_max;
-  Int_t lmax1;
-  Float_t zcor1, zcor2, zcor3;
-  Float_t ztof0, ztof1, ztof2, xcor2, ycor2;
-  Int_t i;
-  Float_t dx, dz, zl, xm, ym, phos_r;
-  Int_t idrotm[101];
-  Float_t phos_x;
-  Float_t rp2, zm0, zm1, zm2;
-  Float_t par[10], fil_min, fil_max;
-  Float_t fil1;
-  //
-  Int_t *idtmed = gAlice->Idtmed();
-  //
-  phos_x = 214.6;
-  phos_r = 467.;
-  //phos_z = 260.;
-  //rich_z = 472.5;
-  xtof = 120.;
-  ytof = 12.;
-  ztof0 = 350.;
-  ztof1 = 200.;
-  ztof2 = 150.;
-  //
-  // frame thick along Z axis
-  dz = 0.;
-  //
-  // frame thick along X axis
-  dx = 0.;
-  //
-  // barrel length along Z axis
-  zl = 720.;
-  //
-  // PHOS openings 
-  fil_rich = 30.;
-  phos_phi = TMath::ATan(phos_x / (phos_r * 2.));
-  phos_min = (kPi - phos_phi * 4.) * kRaddeg;
-  phos_max = (phos_phi * 4. + kPi) * kRaddeg;
-  //
-  // barrel radius in module contact point 
-  par[0] = 355.;
-  par[1] = 385.;
-  par[2] = zl / 2.;
-  pMC->Gsvolu("FBAR", "TUBE", idtmed[500], par, 3);
-  //
-  // --- Set module unseen ---
-  pMC->Gspos("FBAR", 1, "ALIC", 0., 0., 0., 0, "ONLY");
-  pMC->Gsatt("FBAR", "SEEN", 0);
-  //
-  // Number of TOF-block 
-  lmax = 19;
-  //
-  // New size YTOF
-  par[0] = xtof / 2.;
-  par[1] = ytof / 2.;
-  par[2] = ztof0 / 2.;
-  pMC->Gsvolu("FTO1", "BOX ", idtmed[506], par, 3);
-  pMC->Gsatt("FTO1", "SEEN", -2);
-  par[2] = ztof1 / 2.;
-  pMC->Gsvolu("FTO2", "BOX ", idtmed[506], par, 3);
-  pMC->Gsatt("FTO2", "SEEN", -2);
-  par[2] = ztof2 / 2.;
-  pMC->Gsvolu("FTO3", "BOX ", idtmed[506], par, 3);
-  pMC->Gsatt("FTO3", "SEEN", -2);
-  //
-  // Subtraction of TOF module boundaries 
-  xm = xtof - dx * 2.;
-  ym = ytof;
-  zm0 = ztof0 - dz * 2.;
-  zm1 = ztof1 - dz * 2.;
-  zm2 = ztof2 - dz * 2.;
-  //  
-  // TOF module internal definitions
-  //  
-  TOFpc(xm, ym, zm0, zm1, zm2);
-  //
-  //rp1 = 382.;
-  rp2 = 366.;
-  fil_step = 360. / lmax;
-  fil_min = phos_min - fil_step * .5;
-  fil_max = phos_max + fil_step * .5;
-  zcor1 = 175.;
-  zcor2 = ztof0 - ztof1 / 2.;
-  zcor3 = ztof0 - ztof2 / 2.;
-  for (i = 1; i <= lmax; ++i) {
-    fil1 = fil_step * i;
-    //xcor1 = rp1 * TMath::Sin(fil1 * kDegrad) + dx * TMath::Cos(fil1 * kDegrad);
-    //ycor1 = rp1 * TMath::Cos(fil1 * kDegrad) - dx * TMath::Sin(fil1 * kDegrad);
-    xcor2 = rp2 * TMath::Sin(fil1 * kDegrad);
-    ycor2 = rp2 * TMath::Cos(fil1 * kDegrad);
-    lmax1 = i + lmax;
-    AliMatrix(idrotm[i], 90., -fil1, 90., 90. - fil1, 0., 0.);
-    if (fil1 >= fil_min  && fil1 <= fil_max) {
-      pMC->Gspos("FTO2", i, "FBAR", xcor2, ycor2, zcor2, idrotm[i], "ONLY");
-      pMC->Gspos("FTO2", lmax1, "FBAR", xcor2, ycor2, -zcor2, idrotm[i], "ONLY");
-    } else if (fil1 <= fil_rich || fil1 >= 360. - fil_rich) {
-      par[2] = ztof2 / 2.;
-      pMC->Gspos("FTO3", i, "FBAR", xcor2, ycor2, zcor3, idrotm[i], "ONLY");
-      pMC->Gspos("FTO3", lmax1, "FBAR", xcor2, ycor2, -zcor3, idrotm[i], "ONLY");
-    } else {
-      par[2] = ztof0 / 2.;
-      pMC->Gspos("FTO1", i, "FBAR", xcor2, ycor2, zcor1, idrotm[i], "ONLY");
-      pMC->Gspos("FTO1", lmax1, "FBAR", xcor2, ycor2, -zcor1, idrotm[i], "ONLY");
-    }
-  }
+  Float_t xTof, yTof, wall;
+
+  // frame inbetween TOF modules
+  wall = 4.;//cm
+
+  // Sizes of TOF module with its support etc..
+  xTof = 2.*(fRmin*TMath::Tan(10*kDegrad)-wall/2-.5);
+  yTof = fRmax-fRmin;
+
+//  TOF module internal definitions 
+  TOFpc(xTof, yTof, fZlenC, fZlenB, fZlenA, fZtof);
 }
 
 //_____________________________________________________________________________
-void AliTOF::DrawDetector()
+void AliTOF::DrawModule()
 {
   //
   // Draw a shaded view of the common part of the TOF geometry
-  // for versions 2 and 3
   //
 
-  AliMC* pMC = AliMC::GetMC();
-  
+   cout << " Drawing of AliTOF"<< endl; 
   // Set everything unseen
-  pMC->Gsatt("*", "seen", -1);
+  gMC->Gsatt("*", "seen", -1);
   // 
   // Set ALIC mother transparent
-  pMC->Gsatt("ALIC","SEEN",0);
+  gMC->Gsatt("ALIC","SEEN",0);
   //
   // Set the volumes visible
-  pMC->Gsatt("FBAR","SEEN",0);
-  pMC->Gsatt("FTO1","SEEN",1);
-  pMC->Gsatt("FTO2","SEEN",1);
-  pMC->Gsatt("FTO3","SEEN",1);
+  gMC->Gsatt("FTOA","SEEN",1);
+  gMC->Gsatt("FTOB","SEEN",1);
+  gMC->Gsatt("FTOC","SEEN",1);
+  gMC->Gsatt("FLTA","SEEN",1);
+  gMC->Gsatt("FLTB","SEEN",1);
+  gMC->Gsatt("FLTC","SEEN",1);
+  gMC->Gsatt("FSTR","SEEN",1);
   //
-  pMC->Gdopt("hide", "on");
-  pMC->Gdopt("shad", "on");
-  pMC->Gsatt("*", "fill", 7);
-  pMC->SetClipBox(".");
-  pMC->SetClipBox("*", 0, 1000, -1000, 1000, -1000, 1000);
-  pMC->DefaultRange();
-  pMC->Gdraw("alic", 40, 30, 0, 12, 9.5, .02, .02);
-  pMC->Gdhead(1111, "Time Of Flight");
-  pMC->Gdman(18, 4, "MAN");
-  pMC->Gdopt("hide","off");
+  gMC->Gdopt("hide", "on");
+  gMC->Gdopt("shad", "on");
+  gMC->Gsatt("*", "fill", 7);
+  gMC->SetClipBox(".");
+  gMC->SetClipBox("*", 0, 1000, -1000, 1000, -1000, 1000);
+  gMC->DefaultRange();
+  gMC->Gdraw("alic", 40, 30, 0, 12, 9.5, .02, .02);
+  gMC->Gdhead(1111, "Time Of Flight");
+  gMC->Gdman(18, 4, "MAN");
+  gMC->Gdopt("hide","off");
 }
 
 //_____________________________________________________________________________
@@ -462,65 +261,131 @@ void AliTOF::CreateMaterials()
 {
   //
   // Defines TOF materials for all versions
-  // Authors :   Maxim Martemianov, Boris Zagreev (ITEP)   18/09/98 
+  // Authors :   Maxim Martemianov, Boris Zagreev (ITEP) 
+  //            18/09/98 
+  // Revision: F. Pierella 5-3-2001
+  // Bologna University
   //
-  Int_t   ISXFLD = gAlice->Field()->Integ();
-  Float_t SXMGMX = gAlice->Field()->Max();
+  Int_t   isxfld = gAlice->Field()->Integ();
+  Float_t sxmgmx = gAlice->Field()->Max();
   //
-  Float_t ac[2]   = { 12.,16. };
-  Float_t zc[2]   = { 6.,8. };
-  Float_t wc[2]   = { 1.,2. };
-  Float_t ag10[4] = { 12.,1.,16.,28. };
-  Float_t zg10[4] = { 6.,1.,8.,14. };
-  Float_t wmatg10[4] = { .259,.288,.248,.205 };
-  Float_t adme[5] = { 12.,1.,16.,19.,79. };
-  Float_t zdme[5] = { 6.,1.,8.,9.,35. };
-  Float_t wmatdme[5] = { .4056,.0961,.2562,.1014,.1407 };
-  Float_t aal[2] = { 27.,16. };
-  Float_t zal[2] = { 13.,8. };
-  Float_t wmatal[2] = { 2.,3. };
-  //
-  Int_t nlmatdme;
-  Float_t epsil, stmin, dc, densg10, densal, deemax, stemax;
-  Float_t densdme;
-  Int_t nlmatg10, nlmatal;
-  //
-  // --- Vacuum
-  AliMaterial(0, "Vacuum$", 1e-16, 1e-16, 1e-16, 1e16, 1e16);
-  // --- Air
-  AliMaterial(1, "Air$",14.61,7.3,0.001205,30423.24,67500.);
+  //--- Quartz (SiO2) 
+  Float_t   aq[2] = { 28.0855,15.9994 };
+  Float_t   zq[2] = { 14.,8. };
+  Float_t   wq[2] = { 1.,2. };
+  Float_t   dq = 2.20;
+  Int_t nq = -2;
+  // --- Freon C2F4H2 (TOF-TDR pagg.)
+  // Geant Manual CONS110-1, pag. 43 (Geant, Detector Description and Simulation Tool)
+  Float_t afre[3]  = {12.011,18.998,1.007};
+  Float_t zfre[3]  = { 6., 9., 1.}; 
+  Float_t wfre[3]  = { 2., 4., 2.};
+  Float_t densfre  = 0.00375;   
+// http://www.fi.infn.it/sezione/prevprot/gas/freon.html
+  Int_t nfre = -3; 
+/*
+  //-- Isobutane quencher C4H10 (5% in the sensitive mixture)
+  Float_t aiso[2]  = {12.011,1.007};
+  Float_t ziso[2]  = { 6.,  1.};
+  Float_t wiso[2]  = { 4., 10.};
+  Float_t densiso  = .......;  // (g/cm3) density
+  Int_t nfre = -2; // < 0 i.e. proportion by number of atoms of each kind
+  //-- SF6 (5% in the sensitive mixture)
+  Float_t asf[3]  = {32.066,18.998};
+  Float_t zsf[3]  = { 16., 9.};
+  Float_t wsf[3]  = {  1., 6.}; 
+  Float_t denssf  = .....;   // (g/cm3) density
+  Int_t nfre = -2; // < 0 i.e. proportion by number of atoms of each kind
+*/
   // --- CO2 
-  dc = .001977;
-  AliMixture(7, "CO2$", ac, zc, dc, -2, wc);
+  Float_t ac[2]   = {12.,16.};
+  Float_t zc[2]   = { 6., 8.};
+  Float_t wc[2]   = { 1., 2.};
+  Float_t dc = .001977;
+  Int_t nc = -2;
+   // For mylar (C5H4O2) 
+  Float_t amy[3] = { 12., 1., 16. };
+  Float_t zmy[3] = {  6., 1.,  8. };
+  Float_t wmy[3] = {  5., 4.,  2. };
+  Float_t dmy    = 1.39;
+  Int_t nmy = -3;
+ // For polyethilene (CH2) - honeycomb -
+  Float_t ape[2] = { 12., 1. };
+  Float_t zpe[2] = {  6., 1. };
+  Float_t wpe[2] = {  1., 2. };
+  Float_t dpe    = 0.935*0.479; //To have 1%X0 for 1cm as for honeycomb
+  Int_t npe = -2;
   // --- G10 
-  densg10  = 1.7;
-  nlmatg10 = -4;
-  AliMixture(5, "G10$", ag10, zg10, densg10, nlmatg10, wmatg10);
+  Float_t ag10[4] = { 12.,1.,16.,28. };
+  Float_t zg10[4] = {  6.,1., 8.,14. };
+  Float_t wmatg10[4] = { .259,.288,.248,.205 };
+  Float_t densg10  = 1.7;
+  Int_t nlmatg10 = -4;
   // --- DME 
-  densdme  = .00205;
-  nlmatdme = 5;
-  AliMixture(6, "DME ", adme, zdme, densdme, nlmatdme, wmatdme);
+  Float_t adme[5] = { 12.,1.,16.,19.,79. };
+  Float_t zdme[5] = {  6.,1., 8., 9.,35. };
+  Float_t wmatdme[5] = { .4056,.0961,.2562,.1014,.1407 };
+  Float_t densdme  = .00205;
+  Int_t nlmatdme = 5;
   // ---- ALUMINA (AL203) 
-  densal  = 2.3;
-  nlmatal = -2;
-  AliMixture(8, "ALUMINA$", aal, zal, densal, nlmatal, wmatal);
-  //       Previous data 
+  Float_t aal[2] = { 27.,16.};
+  Float_t zal[2] = { 13., 8.};
+  Float_t wmatal[2] = { 2.,3. };
+  Float_t densal  = 2.3;
+  Int_t nlmatal = -2;
+  // -- Water
+  Float_t awa[2] = {  1., 16. };
+  Float_t zwa[2] = {  1.,  8. };
+  Float_t wwa[2] = {  2.,  1. };
+  Float_t dwa    = 1.0;
+  Int_t nwa = -2;
+  //
+  //AliMaterial(0, "Vacuum$", 1e-16, 1e-16, 1e-16, 1e16, 1e16);
+  AliMaterial( 1, "Air$",14.61,7.3,0.001205,30423.24,67500.);
+  AliMaterial( 2, "Cu $",  63.54, 29.0, 8.96, 1.43, 14.8);
+  AliMaterial( 3, "C  $",  12.01,  6.0, 2.265,18.8, 74.4);
+  AliMixture ( 4, "Polyethilene$", ape, zpe, dpe, npe, wpe);
+  AliMixture ( 5, "G10$", ag10, zg10, densg10, nlmatg10, wmatg10);
+  AliMixture ( 6, "DME ", adme, zdme, densdme, nlmatdme, wmatdme);
+  AliMixture ( 7, "CO2$", ac, zc, dc, nc, wc);
+  AliMixture ( 8, "ALUMINA$", aal, zal, densal, nlmatal, wmatal);
+  AliMaterial( 9, "Al $", 26.98, 13., 2.7, 8.9, 37.2);
+  AliMaterial(10, "C-TRD$", 12.01, 6., 2.265*18.8/69.282*15./100, 18.8, 74.4); // for 15%
+  AliMixture (11, "Mylar$",  amy, zmy, dmy, nmy, wmy);
+  AliMixture (12, "Freon$",  afre, zfre, densfre, nfre, wfre);
+  AliMixture (13, "Quartz$", aq, zq, dq, nq, wq);
+  AliMixture (14, "Water$",  awa, zwa, dwa, nwa, wwa);
+
+  Float_t epsil, stmin, deemax, stemax;
+ 
+  //   Previous data
   //       EPSIL  =  0.1   ! Tracking precision, 
   //       STEMAX = 0.1      ! Maximum displacement for multiple scattering
   //       DEEMAX = 0.1    ! Maximum fractional energy loss, DLS 
   //       STMIN  = 0.1 
-  //       New data from 
-  epsil  = .001;
-  stemax = -1.;
-  deemax = -.3;
+  //
+  //   New data  
+  epsil  = .001;  // Tracking precision,
+  stemax = -1.;   // Maximum displacement for multiple scattering
+  deemax = -.3;   // Maximum fractional energy loss, DLS
   stmin  = -.8;
-  AliMedium(500, "Vacuum  $", 0, 0, ISXFLD, SXMGMX, 10., stemax, deemax, epsil, stmin);
-  AliMedium(501, "Air $", 0, 0, ISXFLD, SXMGMX, 10., stemax, deemax, epsil, stmin);
-  AliMedium(505, "G10$", 5, 0, ISXFLD, SXMGMX, 10., stemax, deemax, epsil, stmin);
-  AliMedium(506, "DME$", 6, 0, ISXFLD, SXMGMX, 10., stemax, deemax, epsil, stmin);
-  AliMedium(507, "CO2$", 7, 0, ISXFLD, SXMGMX, 10., -.01, -.1, .01, -.01);
-  AliMedium(508, "ALUMINA$", 8, 0, ISXFLD, SXMGMX, 10., stemax, deemax, epsil, stmin);
-  AliMedium(510, "DME$", 6, 1, ISXFLD, SXMGMX, 10., stemax, deemax, epsil, stmin);
+
+  AliMedium( 1, "Air$"  ,  1, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium( 2, "Cu $"  ,  2, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium( 3, "C  $"  ,  3, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium( 4, "Pol$"  ,  4, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium( 5, "G10$"  ,  5, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium( 6, "DME$"  ,  6, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium( 7, "CO2$"  ,  7, 0, isxfld, sxmgmx, 10., -.01, -.1, .01, -.01);
+  AliMedium( 8,"ALUMINA$", 8, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium( 9,"Al Frame$",9, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium(10, "DME-S$",  6, 1, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium(11, "C-TRD$", 10, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium(12, "Myl$"  , 11, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium(13, "Fre$"  , 12, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium(14, "Fre-S$", 12, 1, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium(15, "Glass$", 13, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  AliMedium(16, "Water$", 14, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
 }
 
 //_____________________________________________________________________________
@@ -538,48 +403,483 @@ void AliTOF::Init()
   //
   // Initialise TOF detector after it has been built
   //
-  Int_t i;
-  AliMC *pMC=AliMC::GetMC();
-  //
-  printf("\n");
-  for(i=0;i<35;i++) printf("*");
-  printf(" TOF_INIT ");
-  for(i=0;i<35;i++) printf("*");
-  printf("\n");
-  //
   // Set id of TOF sensitive volume
-  fIdSens=pMC->VolId("FPG2");
+  if (IsVersion() !=0) fIdSens=gMC->VolId("FPAD");
   //
-  for(i=0;i<80;i++) printf("*");
-  printf("\n");
 }
 
- 
-ClassImp(AliTOFhit)
- 
-//___________________________________________
-AliTOFhit::AliTOFhit(Int_t shunt, Int_t track, Int_t *vol, Float_t *hits):
-  AliHit(shunt, track)
+//____________________________________________________________________________
+void AliTOF::MakeBranch(Option_t* option, const char *file)
 {
-  //
-  // Store a TOF hit
-  //
-  Int_t i;
-  for (i=0;i<3;i++) fVolume[i] = vol[i];
-  //
-  // Position
-  fX=hits[0];
-  fY=hits[1];
-  fZ=hits[2];
-  //
-  // Momentum
-  fPx=hits[3];
-  fPy=hits[4];
-  fPz=hits[5];
-  fPmom=hits[6];
-  //
-  // Time Of Flight
-  fTof=hits[7];
+ //
+ // Initializes the Branches of the TOF inside the 
+ // trees written for each event. 
+ //  AliDetector::MakeBranch initializes just the 
+ // Branch inside TreeH. Here we add the branch in 
+ // TreeD.
+ //
+
+  AliDetector::MakeBranch(option,file);
+
+  Int_t buffersize = 4000;
+  Char_t branchname[10];
+  sprintf(branchname,"%s",GetName());
+  
+  const char *D = strstr(option,"D");
+
+  if (fDigits && gAlice->TreeD() && D){
+     MakeBranchInTree(gAlice->TreeD(), 
+                              branchname, &fDigits,buffersize, file) ;
+  }
+}
+
+//____________________________________________________________________________
+void AliTOF::FinishEvent()
+{
+//  Hits2Digits();
+}
+
+//___________________________________________
+void AliTOF::SDigits2Digits()
+{
+//
+// Genneratedigits
+//
+    int nparticles = gAlice->GetNtrack();
+    cout << "Particles       :" <<nparticles<<endl;
+    if (nparticles > 0 ) {
+      Hits2Digits(0);
+    }
+}
+
+//____________________________________________________________________________
+void AliTOF::Hits2Digits(Int_t evNumber)
+{
+//
+//  Starting from the Hits Tree (TreeH), this
+// function writes the Digits Tree (TreeD) storing 
+// the digits informations.
+// Has to be called just at the end of an event or 
+// at the end of a whole run.
+//  It could  also be called by AliTOF::Finish Event()
+// but it can be too heavy.
+// Just for MC events. 
+//
+// Called by the macro H2D.C
+//
+
+  AliTOFhit* currentHit;
+  TTree    *tD, *tH;
+  Int_t    tracks[3];
+  Int_t    vol[5];
+  Float_t  digit[2];
+  TClonesArray* tofhits=this->Hits();
+
+  Int_t nparticles =  gAlice->GetNtrack();
+  if (nparticles <= 0) return;
+
+  tD = gAlice->TreeD();
+  tH = gAlice->TreeH();
+  Int_t    ntracks =(Int_t) tH->GetEntries();
+  Int_t    nbytes, nhits;
+  TRandom* rnd = new TRandom();
+
+  for (Int_t ntk=0; ntk<ntracks; ntk++){
+
+     nbytes = tH->GetEvent(ntk);
+     nhits  = tofhits->GetEntriesFast();
+
+     for (Int_t hit=0; hit<nhits; hit++){
+
+        currentHit = (AliTOFhit*)(tofhits->At(hit));
+
+        vol[0] = currentHit->GetSector();
+        vol[1] = currentHit->GetPlate();
+        vol[2] = currentHit->GetPadx();
+        vol[3] = currentHit->GetPadz();
+        vol[4] = currentHit->GetStrip();
+
+        Float_t idealtime = currentHit->GetTof();
+        Float_t tdctime   = rnd->Gaus(idealtime, fTimeRes);	
+        digit[0] = tdctime;
+
+        Float_t idealcharge = currentHit->GetEdep();
+        Float_t adccharge = rnd->Gaus(idealcharge, fChrgRes);
+        digit[1] = adccharge;
+
+        Int_t tracknum = currentHit -> GetTrack();
+        tracks[0] = tracknum;
+	tracks[1] = 0;
+	tracks[2] = 0;
+
+        Bool_t overlap = CheckOverlap(vol, digit, tracknum);
+        if(!overlap) AddDigit(tracks, vol, digit);
+     }
+  }
+  delete rnd;
+  rnd = 0;
+  tD->Fill();
+  tD->Write();  
+}
+
+//___________________________________________________________________________
+Bool_t AliTOF::CheckOverlap(Int_t* vol, Float_t* digit,Int_t Track)
+{
+//
+// Checks if 2 or more hits belong to the same pad.
+// In this case the data assigned to the digit object
+// are the ones of the first hit in order of Time.
+//
+// Called only by Hits2Digits.
+//
+
+        Bool_t overlap = 0;
+        Int_t  vol2[5];
+
+        for (Int_t ndig=0; ndig<fNdigits; ndig++){
+	   AliTOFdigit* currentDigit = (AliTOFdigit*)(fDigits->UncheckedAt(ndig));
+           currentDigit->GetLocation(vol2);
+           Bool_t idem=1;
+           for (Int_t i=0;i<=4;i++){
+               if (vol[i]!=vol2[i]) idem=0;}
+           if (idem){
+ 	      Float_t tdc2 = digit[0];
+              Float_t tdc1 = currentDigit->GetTdc();
+              if (tdc1>tdc2){
+                  currentDigit->SetTdc(tdc2); 
+                  currentDigit->SetAdc(digit[1]);
+              }
+              currentDigit->AddTrack(Track);
+              overlap = 1;
+           }
+        }
+        return overlap;
+}
+
+
+//____________________________________________________________________________
+void AliTOF::Digits2Raw(Int_t evNumber)
+{
+//
+// Starting from digits, writes the 
+// Raw Data objects, i.e. a 
+// TClonesArray of 18 AliTOFRawSector objects
+//
+
+  TTree* tD;
+
+  Int_t nparticles = gAlice->GetEvent(evNumber); 
+  if (nparticles <= 0) return;
+
+  tD = gAlice->TreeD();
+  
+  TClonesArray* tofdigits = this->Digits();
+  Int_t ndigits = tofdigits->GetEntriesFast();
+
+  TClonesArray* rawsectors = new TClonesArray("AliTOFRawSector",fNTof+2); 
+
+  for (Int_t isect=1;isect<=fNTof;isect++){
+     AliTOFRawSector* currentSector = (AliTOFRawSector*)rawsectors->UncheckedAt(isect);
+     TClonesArray* rocData = (TClonesArray*)currentSector->GetRocData();
+
+     for (Int_t digit=0; digit<ndigits; digit++){
+        AliTOFdigit* currentDigit = (AliTOFdigit*)tofdigits->UncheckedAt(digit);
+        Int_t sector = currentDigit->GetSector();
+        if (sector==isect){
+	    Int_t   pad    = currentDigit -> GetTotPad();
+	    Int_t   roc    = (Int_t)(pad/fNPadXRoc)-1;
+	    if (roc>=fNRoc) printf("Wrong n. of ROC ! Roc = %i",roc);
+            Int_t   padRoc = (Int_t) pad%fNPadXRoc;
+	    Int_t   fec    = (Int_t)(padRoc/fNFec)-1;
+            Int_t   tdc    = (Int_t)(padRoc%fNFec)-1;
+            Float_t time   = currentDigit->GetTdc();
+            Float_t charge = currentDigit->GetAdc();
+	    AliTOFRoc* currentROC = (AliTOFRoc*)rocData->UncheckedAt(roc);
+	    Int_t error    = 0;
+            currentROC->AddItem(fec, tdc, error, charge, time);
+	}
+     }
+     
+     UInt_t totSize=16,rocSize=0;
+     UInt_t rocHead[14],rocChek[14];
+     UInt_t globalCheckSum=0;
+
+     for (UInt_t iRoc = 1; iRoc<(UInt_t)fNRoc; iRoc++){
+        AliTOFRoc* currentRoc = (AliTOFRoc*)rocData->UncheckedAt(iRoc); 
+	rocSize  = currentRoc->GetItems()*2+1;
+	totSize += rocSize*4;
+	if (rocSize>=TMath::Power(2,16)) rocSize=0;
+	rocHead[iRoc]   = iRoc<<28;
+	rocHead[iRoc]  += rocSize;
+	rocChek[iRoc]   = currentRoc->GetCheckSum();
+        Int_t headCheck = currentRoc->BitCount(rocHead[iRoc]);
+	globalCheckSum += headCheck;
+	globalCheckSum += rocChek[iRoc];
+     }
+     
+     AliTOFRoc* dummyRoc = new AliTOFRoc();
+     totSize *= 4;
+     if (totSize>=TMath::Power(2,24)) totSize=0;
+     UInt_t header = totSize;
+     UInt_t sectId = ((UInt_t)isect)<<24;
+     header += sectId;
+     globalCheckSum += dummyRoc->BitCount(header);
+     currentSector->SetGlobalCS(globalCheckSum);
+     currentSector->SetHeader(header);
+  }  
 }
  
+//____________________________________________________________________________
+void AliTOF::Raw2Digits(Int_t evNumber)
+{
+//
+//  Converts Raw Data objects into digits objects.
+//  We schematize the raw data with a 
+//  TClonesArray of 18 AliTOFRawSector objects
+//
+
+  TTree    *tD;
+  Int_t    vol[5];
+  Int_t    tracks[3];
+  Float_t  digit[2];
  
+  tracks[0]=0;
+  tracks[1]=0;
+  tracks[2]=0;
+ 
+  Int_t nparticles = gAlice->GetEvent(evNumber); 
+  if (nparticles <= 0) return;
+
+  tD = gAlice->TreeD();
+  
+  TClonesArray* rawsectors = new TClonesArray("AliTOFRawSector",fNTof+2);
+  
+  for(Int_t nSec=1; nSec<=fNTof; nSec++){
+     AliTOFRawSector* currentSector = (AliTOFRawSector*)rawsectors->UncheckedAt(nSec);
+     TClonesArray* rocData = (TClonesArray*)currentSector->GetRocData();
+     for(Int_t nRoc=1; nRoc<=14; nRoc++){
+        AliTOFRoc* currentRoc = (AliTOFRoc*)rocData->UncheckedAt(nRoc);
+        Int_t currentItems = currentRoc->GetItems();
+        for(Int_t item=1; item<currentItems; item++){ 
+           Int_t nPad = currentRoc->GetTotPad(item);        
+	   vol[0] = nSec;
+	   Int_t nStrip = (Int_t)(nPad/fPadXStr)+1;
+	   Int_t nPlate = 5;
+	   if (nStrip<=fNStripC+2*fNStripB+fNStripA) nPlate = 4;
+	   if (nStrip<=fNStripC+fNStripB+fNStripA)   nPlate = 3;
+	   if (nStrip<=fNStripC+fNStripB)            nPlate = 2;
+	   if (nStrip<=fNStripC)                     nPlate=1;
+	   vol[1] = nPlate;
+	   switch (nPlate){
+	   case 1: break;
+	   case 2: nStrip -= (fNStripC);
+	           break;
+	   case 3: nStrip -= (fNStripC+fNStripB);
+	           break;
+	   case 4: nStrip -= (fNStripC+fNStripB+fNStripA);
+	           break;
+	   case 5: nStrip -= (fNStripC+2*fNStripB+fNStripA);
+	           break;
+	   }
+           vol[2] = nStrip;
+           Int_t pad = nPad%fPadXStr;
+	   if (pad==0) pad=fPadXStr;
+	   Int_t nPadX=0, nPadZ=0;
+	   (pad>fNpadX)? nPadX -= fNpadX : nPadX = pad ;
+	   vol[3] = nPadX;
+	   (pad>fNpadX)? nPadZ = 2 : nPadZ = 1 ;
+	   vol[4] = nPadZ;
+	   UInt_t error=0;
+	   Float_t tdc = currentRoc->GetTime(item,error);
+	   if (!error) digit[0]=tdc;
+	   digit[1] = currentRoc->GetCharge(item);
+	   AddDigit(tracks,vol,digit);
+        }
+     }
+  }
+  tD->Fill();
+  tD->Write();
+} 
+
+
+/******************************************************************************/
+
+ClassImp(AliTOFhit)
+
+//____________________________________________________________________________
+AliTOFhit::AliTOFhit(const AliTOFhit & hit)
+{
+   //
+   // copy ctor for AliTOFhit object
+   //
+  fTrack  = hit.fTrack;  
+  fX      = hit.fX;
+  fY      = hit.fY;
+  fZ      = hit.fZ;
+  fSector = hit.fSector;
+  fPlate  = hit.fPlate;
+  fStrip  = hit.fStrip;
+  fPadx   = hit.fPadx;
+  fPadz   = hit.fPadz;
+  fPx     = hit.fPx;
+  fPy     = hit.fPy;
+  fPz     = hit.fPz;
+  fPmom   = hit.fPmom;
+  fTof    = hit.fTof;
+  fDx     = hit.fDx;
+  fDy     = hit.fDy;
+  fDz     = hit.fDz;
+  fIncA   = hit.fIncA;
+  fEdep   = hit.fEdep;
+
+}
+ 
+//______________________________________________________________________________
+AliTOFhit::AliTOFhit(Int_t shunt, Int_t track, Int_t *vol,
+                     Float_t *hits)
+:AliHit(shunt, track)
+{
+//
+// Constructor of hit object
+//
+  //
+  // Hit Volume
+  // 
+  fSector= vol[0];
+  fPlate = vol[1];
+  fStrip = vol[2];
+  fPadx = vol[3];
+  fPadz = vol[4];
+  //
+  //Position of the hit
+  fX = hits[0];
+  fY = hits[1];
+  fZ = hits[2];
+  //
+  // Momentum components of the particle in the ALICE frame when hit is produced
+  fPx  = hits[3];
+  fPy  = hits[4];
+  fPz  = hits[5];
+  fPmom= hits[6];
+  //
+  // Time Of Flight for the particle that produces hit
+  fTof = hits[7];   //TOF[s]
+  //
+  // Other Data
+  fDx  = hits[8];   //Distance from the edge along x axis
+  fDy  = hits[9];   //Y cohordinate of the hit
+  fDz  = hits[10];  //Distance from the edge along z axis
+  fIncA= hits[11];  //Incidence angle
+  fEdep= hits[12];  //Energy loss in TOF pad
+}
+
+//******************************************************************************
+
+ClassImp(AliTOFdigit)
+
+//______________________________________________________________________________
+AliTOFdigit::AliTOFdigit(Int_t *tracks, Int_t *vol,Float_t *digit)
+:AliDigit(tracks)
+{
+//
+// Constructor of digit object
+//
+
+  fSector = vol[0];
+  fPlate  = vol[1];
+  fStrip  = vol[2];
+  fPadx  = vol[3];
+  fPadz  = vol[4];
+  fTdc    = digit[0];
+  fAdc    = digit[1];
+}
+
+//____________________________________________________________________________
+AliTOFdigit::AliTOFdigit(const AliTOFdigit & digit)
+{
+  // 
+  // copy ctor for AliTOFdigit object
+  //
+
+  Int_t i ;
+  for ( i = 0; i < 3 ; i++)
+    fTracks[i]  = digit.fTracks[i] ;
+  fSector = digit.fSector;
+  fPlate  = digit.fPlate;
+  fStrip  = digit.fStrip;
+  fPadx   = digit.fPadx;
+  fPadz   = digit.fPadz;
+  fTdc    = digit.fTdc;
+  fAdc    = digit.fAdc;
+
+}
+   
+//______________________________________________________________________________
+void AliTOFdigit::GetLocation(Int_t *Loc)
+{
+//
+// Get the cohordinates of the digit
+// in terms of Sector - Plate - Strip - Pad
+//
+
+   Loc[0]=fSector;
+   Loc[1]=fPlate;
+   Loc[2]=fStrip;
+   Loc[3]=fPadx;
+   Loc[4]=fPadz;
+}
+
+//______________________________________________________________________________
+Int_t AliTOFdigit::GetTotPad()
+{
+//
+// Get the "total" index of the pad inside a Sector
+// starting from the digits data.
+//
+
+  AliTOF* tof;
+  
+  if(gAlice){
+     tof =(AliTOF*) gAlice->GetDetector("TOF");
+  }else{
+     printf("AliTOFdigit::GetTotPad - No AliRun object present, exiting");
+     return 0;
+  }
+  
+  Int_t pad = fPadx+tof->GetNpadX()*(fPadz-1);
+  Int_t before=0;
+
+  switch(fPlate){ 
+  case 1: before = 0;
+          break;
+  case 2: before = tof->GetNStripC();
+          break;
+  case 3: before = tof->GetNStripB() + tof->GetNStripC();
+          break;
+  case 4: before = tof->GetNStripA() + tof->GetNStripB() + tof->GetNStripC();
+          break;
+  case 5: before = tof->GetNStripA() + 2*tof->GetNStripB() + tof->GetNStripC();
+          break;
+  }
+  
+  Int_t strip = fStrip+before;
+  Int_t padTot = tof->GetPadXStr()*(strip-1)+pad;
+  return padTot;
+}
+
+//______________________________________________________________________________
+void AliTOFdigit::AddTrack(Int_t track)
+{
+//
+// Add a track to the digit 
+//
+
+  if (fTracks[1]==0){
+     fTracks[1] = track;
+  }else if (fTracks[2]==0){
+     fTracks[2] = track;
+  }else{
+  //   printf("AliTOFdigit::AddTrack ERROR: Too many Tracks (>3) \n");
+  }
+}
+

@@ -20,7 +20,7 @@
 # ====== AG4_VERSION
 # Geant4 version
 # If set: the provided Geant4 version and not the default one is set
-#setenv AG4_VERSION 1.1
+#setenv AG4_VERSION 2.0_test
 
 #
 # ====== AG4_VISUALIZE
@@ -33,14 +33,6 @@ setenv AG4_VISUALIZE 1
 # Set/Unset to get OPACS as a Geant4 visualisation driver.
 #setenv AG4_OPACS 1
 unsetenv AG4_OPACS
-
-#
-# ====== AG4_STACKING
-# If set: the secondary particles are not tracked immediatelly
-#       when they are created but after the urgent stack is exhausted
-# If not set: the G4 default stacking is used
-setenv AG4_STACKING 1
-#unsetenv AG4_STACKING
 
 #
 # ====== AG4_NOPHYSICS
@@ -182,16 +174,6 @@ if ( "$VERBOSE" == "YES" ) then
   else
     echo "OPACS driver         is NOT selected."
   endif
-  if ("$?AG4_TOY" == 1) then
-    echo "Toy geometry         is     selected"
-  else
-    echo "Full geometry        is     selected"
-  endif
-  if ("$?AG4_STACKING" == 1) then
-    echo "Secondaries will be tracked after the urgent stack is exhausted."
-  else
-    echo "The Geant4 default stackin will be used."
-  endif
   if ("$?AG4_NOPHYSICS" == 1) then
     echo "Only geantino or charged geantino can be shooted."
   else
@@ -283,9 +265,9 @@ else
 endif
 
 if ("$?AG4_MAKESHLIB" == 0) then
-  unsetenv G4MAKESHLIB 
-else 
-  setenv G4MAKESHLIB ${G4INSTALL}/config/makeshlib.sh
+  unsetenv G4LIB_BUILD_SHARED
+else  
+  setenv G4LIB_BUILD_SHARED 1
 endif  
 
 # path to data files needed by hadronic processes
@@ -295,11 +277,19 @@ setenv G4LEVELGAMMADATA ${G4INSTALL}/data/PhotonEvaporation
 set SYSTEM = `uname`
 if ( $SYSTEM == "HP-UX" ) then
   setenv G4SYSTEM "HP-aCC"
-  setenv G4USE_OSPACE 1
+  #setenv G4USE_OSPACE 1        # compiling with Object Space STL
 endif 
 if ( $SYSTEM == "Linux" ) then
   setenv G4SYSTEM "Linux-g++"
 endif
+if ( $SYSTEM == "OSF1" ) then
+  setenv G4SYSTEM "DEC-cxx"
+  #setenv G4NO_STD_NAMESPACE 1  # compiling witn non ISO/ANSI setup
+endif 
+if ( $SYSTEM == "SunOS" ) then
+  setenv G4SYSTEM "SUN-CC"
+  setenv G4USE_OSPACE 1         # compiling with Object Space STL
+endif 
 if ( "$VERBOSE" == "YES" ) then
   echo "Architecture is $SYSTEM"
   echo "Geant4 is istalled in $G4INSTALL"
@@ -315,8 +305,8 @@ endif
 # ==================================
 #
 
-if ( -d $LHCXX_BASE/CLHEP/new ) then
-  setenv CLHEP_BASE_DIR $LHCXX_BASE/CLHEP/new
+if ( -d $LHCXX_BASE/CLHEP/1.5.0.0 ) then
+  setenv CLHEP_BASE_DIR $LHCXX_BASE/CLHEP/1.6.0.0
 else
   echo "WARNING: CLHEP has not been found in the default path."
   if ( "$VERBOSE" == "YES" ) then
@@ -438,13 +428,21 @@ if ( "$?AG4_VISUALIZE" == 1 ) then
   setenv G4VIS_BUILD_OPENGLXM_DRIVER 1
   setenv G4VIS_USE_OPENGLX           1
   setenv G4VIS_USE_OPENGLXM          1
-  if ( $SYSTEM == "Linux" ) then
-    setenv OGLHOME /usr/local
-    setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
-  else
-    setenv OGLHOME $LHCXX_BASE/OpenGL/pro
+  setenv OGLHOME /usr/local
+  setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
+  if ( $SYSTEM == "HP-UX" ) then
+    setenv OGLLIBS "-L/usr/lib ${OGLLIBS}"
   endif
-
+  if ( $SYSTEM == "OSF1" ) then
+    # temporarily excluded
+    # due to problems with Root
+    unsetenv G4VIS_BUILD_OPENGLX_DRIVER
+    unsetenv G4VIS_BUILD_OPENGLXM_DRIVER
+    unsetenv G4VIS_USE_OPENGLX
+    unsetenv G4VIS_USE_OPENGLXM
+    unsetenv OGLHOME
+    unsetenv OGLLIBS
+  endif
   if ( "$VERBOSE" == "YES" ) then
     if ("$?G4VIS_USE_OPENGLX" == 1) then
       echo "  OpenGL and  X11 driver activated"
@@ -622,11 +620,10 @@ if ( "$?AG4_OPACS" == 1 ) then
   #
   setenv G4VIS_BUILD_OPENGLX_DRIVER 1
   setenv G4VIS_USE_OPENGLX          1
-  if ( $SYSTEM == "Linux" ) then
-    setenv OGLHOME /usr/local
-    setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
-  else
-    setenv OGLHOME $LHCXX_BASE/OpenGL/pro
+  setenv OGLHOME /usr/local
+  setenv OGLLIBS "-L$OGLHOME/lib -lMesaGLU -lMesaGL"
+  if ( $SYSTEM == "HP-UX" ) then
+    setenv OGLLIBS "-L/usr/lib ${OGLLIBS}"
   endif
 
   #
@@ -670,14 +667,8 @@ else
 endif
 
 #
-# path to Alice executable and config scripts
+# path to AliGeant4 config scripts
 #  
-if ( "`echo ${PATH} | grep ${AG4_INSTALL}/bin/${G4SYSTEM} `" == "" ) then
-  if ( "$VERBOSE" == "YES" ) then
-    echo Adding $AG4_INSTALL/bin/$G4SYSTEM to the path...
-  endif
-  setenv PATH "${PATH}:${AG4_INSTALL}/bin/${G4SYSTEM}"
-endif
 if ( "`echo ${PATH} | grep ${AG4_INSTALL}/config `" == "" ) then
   if ( "$VERBOSE" == "YES" ) then
     echo Adding ${AG4_INSTALL}/config to the path...
@@ -696,11 +687,13 @@ if ( $SYSTEM == "Linux" ) then
   set SHLIBVAR = $LD_LIBRARY_PATH
   set SHLIBVARNAME = LD_LIBRARY_PATH
 endif
-if ( "`echo ${SHLIBVAR} | grep ${AG4_INSTALL}/lib/${G4SYSTEM} `" == "" ) then
-  if ( "$VERBOSE" == "YES" ) then
-    echo Adding ${AG4_INSTALL}/lib/${G4SYSTEM} to the shared libraries path...
-  endif
-  set SHLIBVAR="${AG4_INSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
+if ( $SYSTEM == "OSF1" ) then
+  set SHLIBVAR = $LD_LIBRARY_PATH
+  set SHLIBVARNAME = LD_LIBRARY_PATH
+endif
+if ( $SYSTEM == "SunOS" ) then
+  set SHLIBVAR = $LD_LIBRARY_PATH
+  set SHLIBVARNAME = LD_LIBRARY_PATH
 endif
 
 if ( "`echo ${SHLIBVAR} | grep ${G4INSTALL}/lib/${G4SYSTEM} `" == "" ) then
@@ -708,6 +701,12 @@ if ( "`echo ${SHLIBVAR} | grep ${G4INSTALL}/lib/${G4SYSTEM} `" == "" ) then
     echo Adding ${G4INSTALL}/lib/${G4SYSTEM} to the shared libraries path...
   endif
   set SHLIBVAR="${G4INSTALL}/lib/${G4SYSTEM}:${SHLIBVAR}"
+endif
+if ( "`echo ${SHLIBVAR} | grep ${CLHEP_BASE_DIR}/lib `" == "" ) then
+  if ( "$VERBOSE" == "YES" ) then
+    echo Adding ${CLHEP_BASE_DIR}/lib to the shared libraries path...
+  endif
+  set SHLIBVAR="${SHLIBVAR}:${CLHEP_BASE_DIR}/lib"
 endif
 
 setenv $SHLIBVARNAME $SHLIBVAR

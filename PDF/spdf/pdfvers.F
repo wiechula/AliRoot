@@ -2,8 +2,23 @@
 * $Id$
 *
 * $Log$
-* Revision 1.1.1.7  1997/07/13 13:25:18  cernlib
-* Import version 7.09
+* Revision 1.1.1.8  2000/04/19 13:29:31  mclareni
+* Import version 8.04
+*
+* Revision 1.12  2000/04/17 18:54:47  plothow
+* version 8.04: small mods, dlog to log
+*
+* Revision 1.11  2000/04/15 14:10:46  plothow
+* Version 8.03: Nuclear PDFs introduced
+*
+* Revision 1.10  2000/04/09 14:47:30  plothow
+* version 8.02 - add CTEQ4 ref2 PDFs
+*
+* Revision 1.9  2000/04/09 10:06:26  plothow
+* new version 8.00 - MRS 98 and 99, CTEQ5 and GRV98 added
+*
+* Revision 1.8  2000/03/23 11:39:42  pdflib
+* beta function changed to pdf_beta function
 *
 * Revision 1.7  1997/07/02 15:03:08  pdflib
 * potential bug removed in GRSGALO
@@ -30,6 +45,7 @@ C
 #include "pdf/w5051p7.inc"
 #include "pdf/w50516.inc"
 #include "pdf/w50517.inc"
+#include "pdf/w505190.inc"
       CHARACTER*80 CARD
       IDATQQ = 0
       ITIMQQ = 0
@@ -40,22 +56,39 @@ C
       IQCHAW = 8
 #endif
       CALL CFILL(' ',CARD,1,80)
-      CALL UHTOC(
-     + 78H PDF      7.09      970702 16.05 in the CERN Computer Program 
-     +Library  W5051  ,IQCHAW,CARD,80)
+C      CALL UHTOC(
+C     + 78H PDF      7.09      970702 16.05 in the CERN Computer Program 
+C     +Library  W5051  ,IQCHAW,CARD,80)
+C
+       PDFVER(1) = '8.04      '
+       PDFVER(2) = '2000-04-17'
+       PDFVER(3) = '12.24     '
 C
 C print here selected fields of the CARD string
          IF(N6.LE.0) N6 = L6
          IF(FIRST) THEN
-            WRITE(N6,*)  ' '
-            WRITE(N6,*)  ' *****  PDFLIB Version:  ',CARD(10:14),
-     +      '  Released on  ',CARD(20:26),'  at  ',CARD(27:32),
-     +      ' ',CARD(33:76),'  *****'
+C            WRITE(N6,*)  ' '
+C            WRITE(N6,*)  ' *****  PDFLIB Version:  ',CARD(10:14),
+C     +      '  Released on  ',CARD(20:26),'  at  ',CARD(27:32),
+C     +      ' ',CARD(33:76),'  *****'
 C     +      '  in the  ',CARD(33:62),'  *****'
+C
 C            WRITE(N6,*)  ' *****  Library compiled on ',IDATQQ,
-            WRITE(N6,*)  ' *****  Library compiled on ',CARD(20:26),
-     +      ' at ',CARD(27:32),'  *****'
 C     +      ' at ',ITIMQQ,'  *****'
+C
+C            WRITE(N6,*)  ' *****  Library compiled on ',CARD(20:26),
+C     +      ' at ',CARD(27:32),'  *****'
+C
+            WRITE(N6,*)  ' '
+C
+            WRITE(N6,*)  
+     +      ' *****  CERN Computer Program Library     -    ',
+     +      ' Reference:  W5051  *****'
+C
+            WRITE(N6,*)  ' *****  PDFLIB Version:  ',PDFVER(1)(1:4),
+     +      '  Released on  ',PDFVER(2)(1:10),
+     +      '  at  ',PDFVER(3)(1:5),'  *****'
+C
          ENDIF
       RETURN
       END

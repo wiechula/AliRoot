@@ -4,15 +4,15 @@
 // See the class description in the header file.
 
 #include "TG4VRunConfiguration.h"
+#include "TG4TrackingAction.h"
+#include "TG4SteppingAction.h"
 #include "TG4Globals.h"
 
 #include <G4VUserDetectorConstruction.hh>
-#include <G4VUserPhysicsList.hh>
+#include <G4VModularPhysicsList.hh>
 #include <G4VUserPrimaryGeneratorAction.hh>
 #include <G4UserRunAction.hh>
 #include <G4UserEventAction.hh>
-#include <G4UserTrackingAction.hh>
-#include <G4UserSteppingAction.hh>
 #include <G4UserStackingAction.hh>
 #include <G4RunManager.hh>
 
@@ -52,7 +52,7 @@ TG4VRunConfiguration& TG4VRunConfiguration::operator=(
   return *this;  
 }    
           
-// protected methods
+// public methods
 
 void TG4VRunConfiguration::ConfigureRunManager(G4RunManager* runManager)
 {
@@ -74,3 +74,12 @@ void TG4VRunConfiguration::ConfigureRunManager(G4RunManager* runManager)
   if (fSteppingAction) runManager->SetUserAction(fSteppingAction);
   if (fStackingAction) runManager->SetUserAction(fStackingAction);
 }
+
+G4VModularPhysicsList* TG4VRunConfiguration::GetPhysicsList() const
+{
+// Returns the modular physics list.
+// ---
+  
+  return fPhysicsList;
+}
+

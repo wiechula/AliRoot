@@ -1,44 +1,59 @@
-#ifndef FMD_H
-#define FMD_H
+#ifndef ALIFMD_H
+#define ALIFMD_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
 ////////////////////////////////////////////////
-//  Manager and hits classes for set:FMD     //
+//  Manager and hits classes for set:Si-FMD     //
 ////////////////////////////////////////////////
  
 #include "AliDetector.h"
-#include "AliHit.h"
+#include "TString.h"
+#include "AliFMDMerger.h" 
  
- 
-class AliFMD : public AliDetector {
+ class TFile;
+ class TTree;
+ class AliFMDMerger;
+ class AliFMD : public AliDetector {
  
 public:
   AliFMD();
   AliFMD(const char *name, const char *title);
-  virtual       ~AliFMD() {}
+  virtual       ~AliFMD(); 
   virtual void   AddHit(Int_t, Int_t*, Float_t*);
+  virtual void   AddDigit(Int_t*);
   virtual void   BuildGeometry();
   virtual void   CreateGeometry() {}
-  virtual void   CreateMaterials() {}
-  Int_t          DistancetoPrimitive(Int_t, Int_t);
+  virtual void   CreateMaterials()=0; 
+  virtual Int_t  DistanceToPrimitive(Int_t px, Int_t py);
   virtual Int_t  IsVersion() const =0;
   virtual void   Init();
+  virtual void   MakeBranch(Option_t *opt=" ",const char *file=0);
+  virtual void   SetTreeAddress();
+  virtual void   ResetHits();
+  virtual void   ResetDigits();
   virtual void   DrawDetector()=0;
-  virtual void   StepManager();
-  
-  ClassDef(AliFMD,1)  //Class for the FMD detector
-};
+  virtual void   StepManager() {}
+  void  Eta2Radius(Float_t, Float_t, Float_t*);
+  void Hits2SDigits();//
+  void Digits2Reco(); 
+   // Digitisation
+  TClonesArray *SDigits() const {return fSDigits;}
+//  virtual void   SDigits2Digits();
+  virtual void   SDigits2Digits();
+  virtual void   SetMerger(AliFMDMerger* merger);
+  virtual AliFMDMerger* Merger();
+  TClonesArray *ReconParticles() const {return fReconParticles;}   
+  Int_t   fNevents ;        // Number of events to digitize
 
-//_____________________________________________________________________________
- 
-class AliFMDhit : public AliHit {
-public:
-  Int_t      fVolume;  //Volume copy identifier
-  
-public:
-  AliFMDhit() {}
-  AliFMDhit(Int_t shunt, Int_t track, Int_t *vol, Float_t *hits);
-  virtual ~AliFMDhit() {}
-  
-  ClassDef(AliFMDhit,1)  //Hits for detector FMD
-};
+ protected:
+  Int_t fIdSens1;     //Si sensetive volume
+  AliFMDMerger *fMerger;   // ! pointer to merger
+  TClonesArray *fSDigits      ; // List of summable digits
+  TClonesArray *fReconParticles;
 
-#endif
+ ClassDef(AliFMD,3)  //Class for the FMD detector
+};
+#endif // AliFMD_H
+
+

@@ -7,7 +7,6 @@
 #include "AliSteppingAction.h"
 #include "AliGlobals.h"
 
-#include <G4UIdirectory.hh>
 #include <G4UIcmdWithAnInteger.hh>
 
 AliSteppingActionMessenger::AliSteppingActionMessenger(
@@ -22,6 +21,13 @@ AliSteppingActionMessenger::AliSteppingActionMessenger(
   fLoopVerboseCmd->SetDefaultValue(1);
   fLoopVerboseCmd->SetRange("LoopVerboseLevel >= 0 && LoopVerboseLevel <= 5");
   fLoopVerboseCmd->AvailableForStates(Idle);
+
+  fMaxNofStepsCmd = new G4UIcmdWithAnInteger("/aliTracking/maxNofSteps", this);
+  fMaxNofStepsCmd
+    ->SetGuidance("Set tracking verbose level for detected looping tracks.");
+  fMaxNofStepsCmd->SetParameterName("MaxNofSteps", false);
+  fMaxNofStepsCmd->SetRange("MaxNofSteps >= 0");
+  fMaxNofStepsCmd->AvailableForStates(Idle);
 }
 
 AliSteppingActionMessenger::AliSteppingActionMessenger() {
@@ -38,6 +44,7 @@ AliSteppingActionMessenger::AliSteppingActionMessenger(
 AliSteppingActionMessenger::~AliSteppingActionMessenger() {
 //
   delete fLoopVerboseCmd;
+  delete fMaxNofStepsCmd;
 }
 
 // operators
@@ -65,5 +72,9 @@ void AliSteppingActionMessenger::SetNewValue(G4UIcommand* command,
   if(command == fLoopVerboseCmd) { 
     fSteppingAction
       ->SetLoopVerboseLevel(fLoopVerboseCmd->GetNewIntValue(newValue)); 
+  }   
+  else if(command == fMaxNofStepsCmd) { 
+    fSteppingAction
+      ->SetMaxNofSteps(fMaxNofStepsCmd->GetNewIntValue(newValue)); 
   }   
 }

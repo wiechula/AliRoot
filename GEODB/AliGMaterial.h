@@ -1,5 +1,9 @@
 #ifndef ALIGMATERIAL_H
 #define ALIGMATERIAL_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
 
 #include <TNamed.h>
 
@@ -14,10 +18,10 @@ class AliGMaterial: public TNamed {
         Float_t  fDeemax;
         Float_t  fEpsil;
         Float_t  fStmin; 
-
-        Float_t* fUbuf; 
-        
         Int_t    fNbuf;
+
+        Float_t* fUbuf; //[fNbuf]
+        
         Float_t  fA;
         Float_t  fZ;
         Float_t  fDens;
@@ -27,7 +31,7 @@ class AliGMaterial: public TNamed {
 
         Float_t* fBuf;
         
-        Int_t    fNwbuf;
+        Int_t    fNwbuf;  //[fNbuf]
         Float_t  fRho; /* Density of material */
 
     public:

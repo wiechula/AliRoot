@@ -7,13 +7,15 @@ include $(ALICE_ROOT)/conf/MachineDef.$(ALICE_TARGET)
 
 PACKAGE = PDF
 
+PDFDIRS = spdf npdf 
+
 # C++ sources
 
 SRCS          =
 
-FSRCS	= $(wildcard spdf/*.F)
+FSRCS	= $(wildcard $(patsubst %,%/*.F,$(PDFDIRS)))
 
-FOBJS	= $(FSRCS:.F=.o)
+FOBJS	=  $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 SRCS	= $(FSRCS)
 OBJS	= $(FOBJS)
@@ -28,16 +30,16 @@ CFLAGS      = $(COPT) $(CLIBCOPT) $(CLIBDEFS) -I.
  
 # FORTRAN compilation flags
 
-FFLAGS      = $(FOPT) $(CLIBFOPT) $(CLIBDEFS) -I.
+FFLAGS      = $(FOPT) $(CLIBFOPT) $(CLIBDEFS) -DCERNLIB_DOUBLE  -I.
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libpdf.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libpdf.a
+SLIBRARY	= $(LIBDIR)/libpdf.$(SL)
+ALIBRARY	= $(LIBDIR)/libpdf.a
 
 default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libpdf.$(SL):  $(OBJS)
+$(LIBDIR)/libpdf.$(SL):  $(OBJS)
 
 depend:			$(SRCS)
 
@@ -49,4 +51,4 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 

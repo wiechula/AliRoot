@@ -30,18 +30,16 @@
 //   myVisManager -> RegisterGraphicsSystem (new MyGraphicsSystem);
 
 
+#ifdef G4VIS_USE
+
+#include "TG4VisManager.h"
 #include "TG4Globals.h"
 
 #include <G4LogicalVolumeStore.hh>
 #include <G4PhysicalVolumeStore.hh>
-#include <G4PhysicalVolumeModel.hh>
-#include <G4LogicalVolumeModel.hh>
 #include <G4TransportationManager.hh>
 #include <G4Material.hh>
-
-#ifdef G4VIS_USE
-#include "TG4VisManager.h"
-
+#include <G4PhysicalVolumeModel.hh>
 #include <G4VVisManager.hh>
 
 // Supported drivers...
@@ -185,9 +183,9 @@ void TG4VisManager::RegisterGraphicsSystems()
 #endif
 
   if (fVerbose > 0) {
-    cout <<
+    G4cout <<
       "\nYou have successfully chosen to use the following graphics systems."
-	 << endl;
+	 << G4endl;
     PrintAvailableGraphicsSystems();
   }
 }
@@ -287,7 +285,7 @@ G4bool TG4VisManager::CaseInsensitiveEqual(const G4String string1,
  
 
 void TG4VisManager::SetAtt4Daughters(G4LogicalVolume* const lv, 
-				     const TG3Attribute att, const G4int val)
+				     const TG4G3Attribute att, const G4int val)
 {
 // Iterator for setting a visual attribute for all daughters
 // ---
@@ -339,7 +337,7 @@ G4bool TG4VisManager::IsSharedVisAttributes(const G4LogicalVolume* pLV)
 
 
 void TG4VisManager::SetG4Attribute(G4LogicalVolume* const lv,
-				   const TG3Attribute att, const G4int val)
+				   const TG4G3Attribute att, const G4int val)
 {
 // Set the G4 attribute fo volume LV accordingly to the G3 description
 //  of (att- val)    
@@ -351,10 +349,13 @@ void TG4VisManager::SetG4Attribute(G4LogicalVolume* const lv,
  G4VisAttributes* newVisAttributes;
  if (!visAttributes)
    newVisAttributes    = new G4VisAttributes(false);
- else
-   newVisAttributes    = new G4VisAttributes(visAttributes);
+ else {
+   G4bool visibility = visAttributes->IsVisible();
+   G4Colour colour   = visAttributes->GetColour();
+   newVisAttributes = new G4VisAttributes(visibility, colour);
+ }
 
- const G4int absVal = abs(val);	// the functionality is given by the abs value
+ const G4int kAbsVal = abs(val);	// the functionality is given by the abs value
 
  // Default visible attributes
  G4double red(0),green(0),blue(0); // default is black
@@ -410,7 +411,7 @@ void TG4VisManager::SetG4Attribute(G4LogicalVolume* const lv,
    }       
    break;
   case kLSTY:
-   switch (absVal)
+   switch (kAbsVal)
    {
     case 1:
      lineStyle = G4VisAttributes::unbroken; break;
@@ -420,26 +421,26 @@ void TG4VisManager::SetG4Attribute(G4LogicalVolume* const lv,
      lineStyle = G4VisAttributes::dotted; break;
     default:
      if (fVerbose > 0)
-      G4cout << "TG4VisManager::Gsatt() Usage of LSTY :" << endl
-    	     << "ATT = 1,2,3 means line unbroken, dashed or dotted" << endl
-	     << "any other value resets to the default : unbroken" << endl;
+      G4cout << "TG4VisManager::Gsatt() Usage of LSTY :" << G4endl
+    	     << "ATT = 1,2,3 means line unbroken, dashed or dotted" << G4endl
+	     << "any other value resets to the default : unbroken" << G4endl;
      lineStyle = G4VisAttributes::unbroken;
    }       
    break;
   case kLWID:
-   lineWidth = absVal;
+   lineWidth = kAbsVal;
    if (lineWidth > 7) lineWidth = 7;
    if (fVerbose > 0) 
-       G4cout << "TG4VisManager::Gsatt() Usage for LWID :" << endl
+       G4cout << "TG4VisManager::Gsatt() Usage for LWID :" << G4endl
               << "  The VAL you supply means the width of lines in pixels "
-	      << "for the screen and in 0.1*mm for paper." << endl
+	      << "for the screen and in 0.1*mm for paper." << G4endl
 	      << "  Negative values means the same, but for all daughters"
-	      << endl;
+	      << G4endl;
    break;
   case kCOLO:
-   if (absVal < 8)	// G3 base colours
+   if (kAbsVal < 8)	// G3 base colours
    {
-    switch (absVal)
+    switch (kAbsVal)
     {
      case 1:
        red=0; green=0; blue=0;    	//black
@@ -464,40 +465,40 @@ void TG4VisManager::SetG4Attribute(G4LogicalVolume* const lv,
     }
     luminosity = 0.;
    }
-   if (absVal>=8 && absVal<=16)
+   if (kAbsVal>=8 && kAbsVal<=16)
    {
      red=0; green=0; blue=0;
-     luminosity = (absVal-7)*luminosityBin;
+     luminosity = (kAbsVal-7)*luminosityBin;
    }
-   if (absVal>=17 && absVal<=41)
+   if (kAbsVal>=17 && kAbsVal<=41)
    {
      red=1; green=0; blue=0;
-     luminosity = (absVal-16)*luminosityBin;
+     luminosity = (kAbsVal-16)*luminosityBin;
    }
-   if (absVal>=67 && absVal<=91)
+   if (kAbsVal>=67 && kAbsVal<=91)
    {
      red=0; green=1; blue=0;
-     luminosity = (absVal-66)*luminosityBin;
+     luminosity = (kAbsVal-66)*luminosityBin;
    }
-   if (absVal>=117 && absVal<=141)
+   if (kAbsVal>=117 && kAbsVal<=141)
    {
      red=0; green=0; blue=1;
-     luminosity = (absVal-116)*luminosityBin;
+     luminosity = (kAbsVal-116)*luminosityBin;
    }
-   if (absVal>=42 && absVal<=66)
+   if (kAbsVal>=42 && kAbsVal<=66)
    {
      red=1; green=1; blue=0;
-     luminosity = (absVal-41)*luminosityBin;
+     luminosity = (kAbsVal-41)*luminosityBin;
    }
-   if (absVal>=142 && absVal<=166)
+   if (kAbsVal>=142 && kAbsVal<=166)
    {
      red=1; green=0; blue=1;
-     luminosity = (absVal-141)*luminosityBin;
+     luminosity = (kAbsVal-141)*luminosityBin;
    }
-   if (absVal>=92 && absVal<=116)
+   if (kAbsVal>=92 && kAbsVal<=116)
    {
      red=0; green=1; blue=1;
-     luminosity = (absVal-91)*luminosityBin;
+     luminosity = (kAbsVal-91)*luminosityBin;
    }
    if (red < luminosityBin) 	red += luminosity;
    if (green < luminosityBin) green += luminosity;
@@ -505,7 +506,7 @@ void TG4VisManager::SetG4Attribute(G4LogicalVolume* const lv,
    break;
   case kFILL:
    isForceDrawingStyle = true;
-   switch (absVal)
+   switch (kAbsVal)
    {
     case 0:
      drawingStyle = G4VisAttributes::wireframe;
@@ -515,12 +516,12 @@ void TG4VisManager::SetG4Attribute(G4LogicalVolume* const lv,
      break;
     default:
      if (fVerbose > 0)
-         G4cout << "TG4VisManager::Gsatt() FILL usage :" << endl
-	        << "  The FILL values you can supply are only :" << endl
-		<< "+/- 1 : forces wireframe drawing (default)" << endl
-		<< "+/- 2 : forces solid drawing" << endl
+         G4cout << "TG4VisManager::Gsatt() FILL usage :" << G4endl
+	        << "  The FILL values you can supply are only :" << G4endl
+		<< "+/- 1 : forces wireframe drawing (default)" << G4endl
+		<< "+/- 2 : forces solid drawing" << G4endl
 		<< "other values sets the drawing style to solid"
-		<< endl;		
+		<< G4endl;		
      drawingStyle = G4VisAttributes::solid;
    }      
  }
@@ -568,18 +569,18 @@ void TG4VisManager::SetColors()
   for (G4int i=0; i<pLVStore->entries(); i++)
   {
     pLV = pLVStore->at(i);
-//    G4cout << "VOLUME : " << pLV->GetName() << endl;
+//    G4cout << "VOLUME : " << pLV->GetName() << G4endl;
     const G4Material* pMaterial = pLV->GetMaterial();
-    const G4State state = pMaterial->GetState();
+    const G4State kState = pMaterial->GetState();
     G4double density = (pMaterial->GetDensity())*cm3/g;
     G4String nState = "Undefined";
     G4int colour = 1;			//black by default
     G4double luminosity = 0.;
-    if (state == kStateUndefined) 
+    if (kState == kStateUndefined) 
     {
       nState = "Undefined";
     }
-    if (state == kStateSolid) 
+    if (kState == kStateSolid) 
     {
       nState = "Solid";
       if (density < 2)
@@ -608,13 +609,13 @@ void TG4VisManager::SetColors()
 	luminosity = 9 - 9*(density-15)/5;
       }
     }
-    if (state == kStateLiquid) 
+    if (kState == kStateLiquid) 
     {
       nState = "Liquid";
       colour = 142;	//violet
       luminosity = 25 - 25*density/2;
     }
-    if (state == kStateGas) 
+    if (kState == kStateGas) 
     {
       nState = "Gas";
       if (density < 0.001)  {colour = 42;}	//yellow
@@ -651,7 +652,7 @@ void TG4VisManager::Gsatt(const char* name, const char* att, Int_t val)
           satt(att);		
 
  // seek for known attributes
- TG3Attribute attribute = kUNKNOWN;
+ TG4G3Attribute attribute = kUNKNOWN;
  if (CaseInsensitiveEqual(att,"WORK"))
  {
    G4String message = "TG4VisManager::Gsatt: G3Attribute ";
@@ -778,7 +779,7 @@ void TG4VisManager::Gdraw(const char *name,Float_t theta, Float_t phi, Float_t p
     SetColourFlag(false);
   }
   
-  const G4double rad = M_PI/180.;
+  const G4double kRad = M_PI/180.;
   G4RWTPtrOrderedVector<G4VPhysicalVolume> pvList;
   G4String sname(name);
   G4bool  successful 		= false;
@@ -806,7 +807,6 @@ void TG4VisManager::Gdraw(const char *name,Float_t theta, Float_t phi, Float_t p
     pPV = pvList[i];
     G4LogicalVolume* pLV = pPV->GetLogicalVolume();
     G4VSolid* pSolid = pLV->GetSolid();
-
     successful = fpScene->AddRunDurationModel(new G4PhysicalVolumeModel(pPV));
     if (!successful) 
     {
@@ -817,12 +817,12 @@ void TG4VisManager::Gdraw(const char *name,Float_t theta, Float_t phi, Float_t p
     }  
   }
   // get the standard target point of the scene
-  const G4Point3D targetPoint = fpScene->GetStandardTargetPoint();
+  const G4Point3D kTargetPoint = fpScene->GetStandardTargetPoint();
 
   // set the viewpoint and the rotation on the screen
-  G4Vector3D viewpointDirection(sin(theta*rad)*cos(phi*rad), 
-                                sin(theta*rad)*sin(phi*rad), cos(theta*rad)); 
-  G4Vector3D upVector(sin(psi*rad), cos(psi*rad),0);			       
+  G4Vector3D viewpointDirection(sin(theta*kRad)*cos(phi*kRad), 
+                                sin(theta*kRad)*sin(phi*kRad), cos(theta*kRad)); 
+  G4Vector3D upVector(sin(psi*kRad), cos(psi*kRad),0);			       
 
   // set and register view parameters to the viewer
   
@@ -831,7 +831,7 @@ void TG4VisManager::Gdraw(const char *name,Float_t theta, Float_t phi, Float_t p
   fVP.UnsetViewHits();
   fVP.UnsetViewDigis();
   fVP.SetNoOfSides(48);
-  fVP.SetCurrentTargetPoint(targetPoint);
+  fVP.SetCurrentTargetPoint(kTargetPoint);
   fVP.SetViewpointDirection(viewpointDirection);
   fVP.SetUpVector(upVector);
   fVP.SetDensityCulling(true);

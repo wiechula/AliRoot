@@ -9,8 +9,8 @@
 #ifndef TG4_NAME_MAP_H
 #define TG4_NAME_MAP_H
 
-#include "g4std/map"
-#include "globals.hh"
+#include <g4std/map>
+#include <globals.hh>
 
 class TG4NameMap
 {
@@ -41,8 +41,7 @@ class TG4NameMap
     static G4String fgUndefined;  //the value of undefined second
 
     // data members
-    G4std::map<G4String, G4String, G4std::less<G4String> > fMap;
-                                  //map container
+    G4std::map<G4String, G4String, G4std::less<G4String> > fMap; //map container
     G4String  fSecond;            //the current second
 };
 

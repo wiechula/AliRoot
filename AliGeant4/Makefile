@@ -22,17 +22,21 @@ TARGET  = aligeant4
 # C++ sources
 
 SRCS           = $(wildcard *.cxx)
+SRCS          := $(filter-out $(TARGET).cxx,$(SRCS))
 
 # C++ Headers
 
 HDRS          =  $(wildcard *.icc) $(wildcard *.h)
 
-# Library dictionary
+# Library Root dictionary
 # only for selected classes
+# (temporarily excluded for OSF1 due to compilation errors)
 
+ifneq ($(ALICE_TARGET),OSF1)
 DICT          = AliGeant4Cint.cxx
 DICTH         = AliRunConfiguration.h AliGeant4LinkDef.h
 DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
+endif
 
 # C++ Objects
 
@@ -45,21 +49,21 @@ POBJ          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(PSRC))
 
 # C++ compilation flags
 
-CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include/ \
-		-I$(ALICE_ROOT)/TGeant4/
- 
+CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include \
+	        -I$(ALICE_ROOT)/TGeant4       
 
 ##### TARGETS #####
  
 # Target
 
 SLIBRARY	= $(LIBDIR)/libAliGeant4.$(SL)
-ALIBRARY	= $(LIBDIR)/lib/libAliGeant4.a
+ALIBRARY	= $(LIBDIR)/libAliGeant4.a
 PROGRAM		= $(BINDIR)/$(TARGET)
 
 default:	$(SLIBRARY) $(PROGRAM)
 
 $(LIBDIR)/libAliGeant4.$(SL):		$(OBJS)
+$(LIBDIR)/libAliGeant4.a:		$(OBJS)
 
 $(BINDIR)/$(TARGET):			$(POBJ)
 
@@ -67,17 +71,21 @@ $(DICT):				$(DICTH)
 
 depend:					$(SRCS)
 
+clean: macroclean
+
 #HEADERS =	$(filter-out %LinkDef.h,$(HDRS))
 
 # filter-out Geant3 dependent libraries (ZDC requires symbols from G3)
 # and add Geant4 dependent ones
 ALILIBS := $(filter-out -lTGeant3,$(ALILIBS))
 ALILIBS := $(filter-out -lZDC,$(ALILIBS))
-ALILIBS += -lTGeant4 -lAliGeant4
+ALILIBS := $(filter-out -lITS,$(ALILIBS))
+ALILIBS += -lAliGeant4 -lTGeant4
 
-LIBS = $(ALILIBS) $(G4LDLIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia -lpythia -lpdf
+LIBS = $(ALILIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia6 -lpythia6 -lpdf \
+	-lTHijing -lhijing  -lTMevSim -lmevsim $(G4LDLIBS)
 
-TOCLEAN	      = $(OBJS) *Cint.cxx *Cint.h
+TOCLEAN	      = $(OBJS) $(POBJ) *Cint.cxx *Cint.h
 
 CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
 

@@ -1943,8 +1943,8 @@ C 1=UV 2=DV 3=GLUE 4=UBAR 5=CBAR 7=BBAR 6=SBAR 8=DBAR
       IF(XXX.GT.XX(N+1)) GOTO 70
       A=(XXX-XX(N))/(XX(N+1)-XX(N))
       RM= LOG(QSQ/QSQMIN)/ LOG(TWOD)
-      B=RM-DINT(RM)
-      M=1+IDINT(RM)
+      B=RM-AINT(RM)
+      M=1+  INT(RM)
       DO 60 I=1,8
       G(I)= (ONED-A)*(ONED-B)*F(I,N,M)+(ONED-A)*B*F(I,N,M+1)
      .    + A*(ONED-B)*F(I,N+1,M)  + A*B*F(I,N+1,M+1)

@@ -1,3 +1,49 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.13  2001/05/16 14:57:22  alibrary
+New files for folders and Stack
+
+Revision 1.12  2001/03/12 17:47:03  hristov
+Changes needed on Sun with CC 5.0
+
+Revision 1.11  2001/01/26 19:58:46  hristov
+Major upgrade of AliRoot code
+
+Revision 1.10  2001/01/17 10:50:50  hristov
+Corrections to destructors
+
+Revision 1.9  2000/12/12 18:19:06  alibrary
+Introduce consistency check when loading points
+
+Revision 1.8  2000/11/30 07:12:48  alibrary
+Introducing new Rndm and QA classes
+
+Revision 1.7  2000/10/02 21:28:14  fca
+Removal of useless dependecies via forward declarations
+
+Revision 1.6  2000/07/12 08:56:25  fca
+Coding convention correction and warning removal
+
+Revision 1.5  1999/09/29 09:24:29  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 // Base class for ALICE modules. Both sensitive modules (detectors) and      //
@@ -10,19 +56,26 @@
 //                                                                           //
 //Begin_Html
 /*
-<img src="gif/AliDetectorClass.gif">
+<img src="picts/AliDetectorClass.gif">
 */
 //End_Html
 //                                                                           //
 ///////////////////////////////////////////////////////////////////////////////
+
+#include <assert.h>
+#include <iostream.h>
+
+#include <TTree.h>
+#include <TBrowser.h>
+#include <TFile.h>
+#include <TROOT.h>
+#include <TFolder.h>
+
+#include "AliConfig.h"
 #include "AliDetector.h"
 #include "AliRun.h"
 #include "AliHit.h"
 #include "AliPoints.h"
-#include "AliMC.h"
-#include <TClass.h>
-#include <TNode.h>
-#include <TRandom.h>
 
 // Static variables for the hit iterator routines
 static Int_t sMaxIterHit=0;
@@ -38,18 +91,16 @@ AliDetector::AliDetector()
   //
   fNhits      = 0;
   fNdigits    = 0;
-  fHistograms = 0;
-  fNodes      = 0;
   fPoints     = 0;
   fHits       = 0;
   fDigits     = 0;
   fTimeGate   = 200.e-9;
-  fActive     = kTRUE;
   fBufferSize = 16000;
+  fDigitsFile = 0;
 }
  
 //_____________________________________________________________________________
-AliDetector::AliDetector(const char* name,const char *title):TNamed(name,title)
+AliDetector::AliDetector(const char* name,const char *title):AliModule(name,title)
 {
   //
   // Normal constructor invoked by all Detectors.
@@ -65,35 +116,9 @@ AliDetector::AliDetector(const char* name,const char *title):TNamed(name,title)
   fNdigits    = 0;
   fPoints     = 0;
   fBufferSize = 16000;
-  //
-  // Initialises the histogram list
-  fHistograms = new TList();
-  //
-  // Initialises the list of ROOT TNodes
-  fNodes      = new TList();
-  //  
-  // Get the detector numeric ID
-  Int_t id = gAlice->GetDetectorID(name);
-  if (id < 0) {
-    // Unknown detector !
-     printf(" * AliRun::Ctor * ERROR Unknown detector: %s\n",name);
-     return;
-  }
-  //
-  // Add this detector to the list of detectors
-  gAlice->Detectors()->AddAtAndExpand(this,id);
-  //
-  //
-  SetMarkerColor(3);
-  //
-  // Allocate space for tracking media and material indexes
-  fIdtmed = new TArrayI(100);
-  fIdmate  = new TArrayI(100);
-  for(Int_t i=0;i<100;i++) (*fIdmate)[i]=(*fIdtmed)[i]=0;
-  //
-  // Prepare to find the tracking media range
-  fLoMedium = 65536;
-  fHiMedium = 0;
+  fDigitsFile = 0;
+
+  AliConfig::Instance()->Add(this);
 }
  
 //_____________________________________________________________________________
@@ -104,22 +129,108 @@ AliDetector::~AliDetector()
   //
   fNhits      = 0;
   fNdigits    = 0;
-  fHistograms = 0;
-  //
-  // Delete ROOT geometry
-  fNodes->Clear();
-  delete fNodes;
   //
   // Delete space point structure
-  if (fPoints) fPoints->Delete();
-  delete fPoints;
-  fPoints     = 0;
-  //
-  // Delete TArray objects
-  delete fIdtmed;
-  delete fIdmate;
+  if (fPoints) {
+    fPoints->Delete();
+    delete fPoints;
+    fPoints     = 0;
+  }
+  // Delete digits structure
+  if (fDigits) {
+    fDigits->Delete();
+    delete fDigits;
+    fDigits     = 0;
+  }
+  if (fDigitsFile) delete [] fDigitsFile;
 }
- 
+
+//_____________________________________________________________________________
+void AliDetector::Publish(const char *dir, void *address, const char *name)
+{
+  //
+  // Register pointer to detector objects. 
+  // 
+  TFolder *topFolder = (TFolder *)gROOT->FindObjectAny("/Folders");
+  if  (topFolder) { 
+    TFolder *folder = (TFolder *)topFolder->FindObjectAny(dir);
+    // TFolder *folder = (TFolder *)gROOT->FindObjectAny(dir);
+    if (!folder)  {
+      cerr << "Cannot register: Missing folder: " << dir << endl;
+    } else {
+      TFolder *subfolder = (TFolder *) folder->FindObjectAny(this->GetName()); 
+
+      if(!subfolder)
+         subfolder = folder->AddFolder(this->GetName(),this->GetTitle());
+      if (address) {
+        TObject **obj = (TObject **) address;
+        if ((*obj)->InheritsFrom(TCollection::Class())) {
+           TCollection *collection = (TCollection *) (*obj); 
+           if (name)
+             collection->SetName(name);
+        } 
+        subfolder->Add(*obj);
+      } 
+    }  
+  }
+}
+
+//_____________________________________________________________________________
+TBranch* AliDetector::MakeBranchInTree(TTree *tree, const char* name, void* address, Int_t size,const char *file)
+{ 
+    return(MakeBranchInTree(tree,name,0,address,size,1,file));
+}
+
+//_____________________________________________________________________________
+TBranch* AliDetector::MakeBranchInTree(TTree *tree, const char* name, const char *classname, void* address,Int_t size, Int_t splitlevel, const char *file)
+{ 
+    //
+    // Makes branch in given tree and diverts them to a separate file
+    //  
+    if (GetDebug()>1)
+      printf("* MakeBranch * Making Branch %s \n",name);
+      
+    TDirectory *cwd = gDirectory;
+    TBranch *branch = 0;
+    
+    if (classname) {
+      branch = tree->Branch(name,classname,address,size,splitlevel);
+    } else {
+      branch = tree->Branch(name,address,size);
+    }
+       
+    if (file) {
+        char * outFile = new char[strlen(gAlice->GetBaseFile())+strlen(file)+2];
+        sprintf(outFile,"%s/%s",gAlice->GetBaseFile(),file);
+        branch->SetFile(outFile);
+        TIter next( branch->GetListOfBranches());
+        while ((branch=(TBranch*)next())) {
+           branch->SetFile(outFile);
+        } 
+       delete outFile;
+        
+       cwd->cd();
+        
+       if (GetDebug()>1)
+           printf("* MakeBranch * Diverting Branch %s to file %s\n",name,file);
+    }
+    char *folder = 0;
+        
+    if (!strncmp(tree->GetName(),"TreeE",5)) folder = "RunMC/Event/Data";
+    if (!strncmp(tree->GetName(),"TreeK",5)) folder = "RunMC/Event/Data";
+    if (!strncmp(tree->GetName(),"TreeH",5)) folder = "RunMC/Event/Data";
+    if (!strncmp(tree->GetName(),"TreeD",5)) folder = "Run/Event/Data";
+    if (!strncmp(tree->GetName(),"TreeS",5)) folder = "Run/Event/Data";
+    if (!strncmp(tree->GetName(),"TreeR",5)) folder = "Run/Event/RecData";
+
+    if (folder) {
+      if (GetDebug())
+          printf("%15s: Publishing %s to %s\n",ClassName(),name,folder);
+      Publish(folder,address,name);
+    }  
+    return branch;
+}
+
 //_____________________________________________________________________________
 void AliDetector::Browse(TBrowser *b)
 {
@@ -140,47 +251,12 @@ void AliDetector::Browse(TBrowser *b)
 }
 
 //_____________________________________________________________________________
-void AliDetector::Disable()
+void AliDetector::Copy(AliDetector &det) const
 {
   //
-  // Disable detector on viewer
+  // Copy *this onto det -- not implemented
   //
-  fActive = kFALSE;
-  TIter next(fNodes);
-  TNode *node;
-  //
-  // Loop through geometry to disable all
-  // nodes for this detector
-  while((node = (TNode*)next())) {
-    node->SetVisibility(0);
-  }   
-}
-
-//_____________________________________________________________________________
-Int_t AliDetector::DistancetoPrimitive(Int_t, Int_t)
-{
-  //
-  // Return distance from mouse pointer to object
-  // Dummy routine for the moment
-  //
-  return 9999;
-}
-
-//_____________________________________________________________________________
-void AliDetector::Enable()
-{
-  //
-  // Enable detector on the viewver
-  //
-  fActive = kTRUE;
-  TIter next(fNodes);
-  TNode *node;
-  //
-  // Loop through geometry to enable all
-  // nodes for this detector
-  while((node = (TNode*)next())) {
-    node->SetVisibility(1);
-  }   
+  Fatal("Copy","Not implemented~\n");
 }
 
 //_____________________________________________________________________________
@@ -237,158 +313,96 @@ void AliDetector::LoadPoints(Int_t)
   //
   if (fHits == 0) return;
   //
-  if (fPoints == 0) fPoints = new TObjArray(gAlice->GetNtrack());
   Int_t nhits = fHits->GetEntriesFast();
   if (nhits == 0) return;
+  Int_t tracks = gAlice->GetNtrack();
+  if (fPoints == 0) fPoints = new TObjArray(tracks);
   AliHit *ahit;
   //
+  Int_t *ntrk=new Int_t[tracks];
+  Int_t *limi=new Int_t[tracks];
+  Float_t **coor=new Float_t*[tracks];
+  for(Int_t i=0;i<tracks;i++) {
+    ntrk[i]=0;
+    coor[i]=0;
+    limi[i]=0;
+  }
+  //
   AliPoints *points = 0;
-  Int_t trko=-99, trk;
+  Float_t *fp=0;
+  Int_t trk;
+  Int_t chunk=nhits/4+1;
   //
   // Loop over all the hits and store their position
   for (Int_t hit=0;hit<nhits;hit++) {
     ahit = (AliHit*)fHits->UncheckedAt(hit);
-    if(trko!=(trk=ahit->GetTrack())) {
+    trk=ahit->GetTrack();
+    assert(trk<=tracks);
+    if(ntrk[trk]==limi[trk]) {
       //
       // Initialise a new track
-      trko=trk;
-      points = new AliPoints(nhits);
-      fPoints->AddAt(points,trk);
+      fp=new Float_t[3*(limi[trk]+chunk)];
+      if(coor[trk]) {
+	memcpy(fp,coor[trk],sizeof(Float_t)*3*limi[trk]);
+	delete [] coor[trk];
+      }
+      limi[trk]+=chunk;
+      coor[trk] = fp;
+    } else {
+      fp = coor[trk];
+    }
+    fp[3*ntrk[trk]  ] = ahit->X();
+    fp[3*ntrk[trk]+1] = ahit->Y();
+    fp[3*ntrk[trk]+2] = ahit->Z();
+    ntrk[trk]++;
+  }
+  //
+  for(trk=0; trk<tracks; ++trk) {
+    if(ntrk[trk]) {
+      points = new AliPoints();
       points->SetMarkerColor(GetMarkerColor());
-      points->SetMarkerStyle(GetMarkerStyle());
       points->SetMarkerSize(GetMarkerSize());
       points->SetDetector(this);
       points->SetParticle(trk);
+      points->SetPolyMarker(ntrk[trk],coor[trk],GetMarkerStyle());
+      fPoints->AddAt(points,trk);
+      delete [] coor[trk];
+      coor[trk]=0;
     }
-    points->SetPoint(hit,ahit->fX,ahit->fY,ahit->fZ);
   }
+  delete [] coor;
+  delete [] ntrk;
+  delete [] limi;
 }
 
 //_____________________________________________________________________________
-void AliDetector::MakeBranch(Option_t *option)
+void AliDetector::MakeBranch(Option_t *option, const char *file)
 {
   //
   // Create a new branch in the current Root Tree
   // The branch of fHits is automatically split
   //
+ 
   char branchname[10];
   sprintf(branchname,"%s",GetName());
   //
   // Get the pointer to the header
-  char *H = strstr(option,"H");
+  const char *cH = strstr(option,"H");
   //
-  if (fHits   && gAlice->TreeH() && H) {
-    gAlice->TreeH()->Branch(branchname,&fHits, fBufferSize);
-    printf("* AliDetector::MakeBranch * Making Branch %s for hits\n",branchname);
+  if (fHits && gAlice->TreeH() && cH) {
+    MakeBranchInTree(gAlice->TreeH(), 
+                     branchname, &fHits, fBufferSize, file) ;              
   }	
-}
-
-//_____________________________________________________________________________
-void AliDetector::AliMaterial(Int_t imat, const char* name, Float_t a, 
-			      Float_t z, Float_t dens, Float_t radl,
-			      Float_t absl, Float_t *buf, Int_t nwbuf) const
-{
-  //
-  // Store the parameters for a material
-  //
-  // imat        the material index will be stored in (*fIdmate)[imat]
-  // name        material name
-  // a           atomic mass
-  // z           atomic number
-  // dens        density
-  // radl        radiation length
-  // absl        absorbtion length
-  // buf         adress of an array user words
-  // nwbuf       number of user words
-  //
-  Int_t kmat;
-  AliMC::GetMC()->Material(kmat, name, a, z, dens, radl, absl, buf, nwbuf);
-  (*fIdmate)[imat]=kmat;
-}
   
+  const char *cD = strstr(option,"D");
 
-//_____________________________________________________________________________
-void AliDetector::AliMixture(Int_t imat, const char *name, Float_t *a,
-			     Float_t *z, Float_t dens, Int_t nlmat,
-			     Float_t *wmat) const
-{ 
-  //
-  // Defines mixture or compound imat as composed by 
-  // nlmat materials defined by arrays a, z and wmat
-  // 
-  // If nlmat > 0 wmat contains the proportion by
-  // weights of each basic material in the mixture  
-  // 
-  // If nlmat < 0 wmat contains the number of atoms 
-  // of eack kind in the molecule of the compound
-  // In this case, wmat is changed on output to the relative weigths.
-  //
-  // imat        the material index will be stored in (*fIdmate)[imat]
-  // name        material name
-  // a           array of atomic masses
-  // z           array of atomic numbers
-  // dens        density
-  // nlmat       number of components
-  // wmat        array of concentrations
-  //
-  Int_t kmat;
-  AliMC::GetMC()->Mixture(kmat, name, a, z, dens, nlmat, wmat);
-  (*fIdmate)[imat]=kmat;
-} 
- 
-//_____________________________________________________________________________
-void AliDetector::AliMedium(Int_t numed, const char *name, Int_t nmat,
-			    Int_t isvol, Int_t ifield, Float_t fieldm,
-			    Float_t tmaxfd, Float_t stemax, Float_t deemax,
-			    Float_t epsil, Float_t stmin, Float_t *ubuf,
-			    Int_t nbuf) const
-{ 
-  //
-  // Store the parameters of a tracking medium
-  //
-  // numed       the medium number is stored into (*fIdtmed)[numed-1]
-  // name        medium name
-  // nmat        the material number is stored into (*fIdmate)[nmat]
-  // isvol       sensitive volume if isvol!=0
-  // ifield      magnetic field flag (see below)
-  // fieldm      maximum magnetic field
-  // tmaxfd      maximum deflection angle due to magnetic field
-  // stemax      maximum step allowed
-  // deemax      maximum fractional energy loss in one step
-  // epsil       tracking precision in cm
-  // stmin       minimum step due to continuous processes
-  //
-  // ifield =  0       no magnetic field
-  //        = -1       user decision in guswim
-  //        =  1       tracking performed with Runge Kutta
-  //        =  2       tracking performed with helix
-  //        =  3       constant magnetic field along z
-  //  
-  Int_t kmed;
-  Int_t *idtmed = gAlice->Idtmed();
-  AliMC::GetMC()->Medium(kmed,name, (*fIdmate)[nmat], isvol, ifield, fieldm,
-			 tmaxfd, stemax, deemax, epsil,	stmin, ubuf, nbuf); 
-  idtmed[numed-1]=kmed;
-} 
- 
-//_____________________________________________________________________________
-void AliDetector::AliMatrix(Int_t &nmat, Float_t theta1, Float_t phi1,
-			    Float_t theta2, Float_t phi2, Float_t theta3,
-			    Float_t phi3) const
-{
-  // 
-  // Define a rotation matrix. Angles are in degrees.
-  //
-  // nmat        on output contains the number assigned to the rotation matrix
-  // theta1      polar angle for axis I
-  // phi1        azimuthal angle for axis I
-  // theta2      polar angle for axis II
-  // phi2        azimuthal angle for axis II
-  // theta3      polar angle for axis III
-  // phi3        azimuthal angle for axis III
-  //
-  AliMC::GetMC()->Matrix(nmat, theta1, phi1, theta2, phi2, theta3, phi3); 
-} 
+  if (cD) {
+    if (file) {
+       fDigitsFile = new char[strlen (file)];
+       strcpy(fDigitsFile,file);
+    }
+  }
+}
 
 //_____________________________________________________________________________
 void AliDetector::ResetDigits()
@@ -423,34 +437,6 @@ void AliDetector::ResetPoints()
   }
 }
 
-  
-//_____________________________________________________________________________
-void AliDetector::StepManager()
-{
-  //
-  // Procedure called at every step inside the detector
-  //
-  printf("* AliDetector::StepManager * Generic Step Manager called for Detector: %s\n",fName.Data());
-}
-
-//_____________________________________________________________________________
-void AliDetector::SetEuclidFile(char* material, char* geometry)
-{
-  //
-  // Sets the name of the Euclid file
-  //
-  fEuclidMaterial=material;
-  if(geometry) {
-    fEuclidGeometry=geometry;
-  } else {
-    char* name = new char[strlen(material)];
-    strcpy(name,material);
-    strcpy(&name[strlen(name)-4],".euc");
-    fEuclidGeometry=name;
-    delete [] name;
-  }
-}
- 
 //_____________________________________________________________________________
 void AliDetector::SetTreeAddress()
 {
@@ -476,49 +462,4 @@ void AliDetector::SetTreeAddress()
   }
 }
 
-//_____________________________________________________________________________
-void AliDetector::Streamer(TBuffer &R__b)
-{
-  //
-  // Stream an object of class Detector.
-  //
-  if (R__b.IsReading()) {
-    Version_t R__v = R__b.ReadVersion(); if (R__v) { }
-    TNamed::Streamer(R__b);
-    TAttLine::Streamer(R__b);
-    TAttMarker::Streamer(R__b);
-    fEuclidMaterial.Streamer(R__b);
-    fEuclidGeometry.Streamer(R__b);
-    R__b >> fTimeGate;
-    R__b >> fActive;
-    R__b >> fIshunt;
-    //R__b >> fNhits;
-    R__b >> fHistograms;
-    //
-    // Stream the pointers but not the TClonesArrays
-    R__b >> fNodes; // diff
-
-    R__b >> fHits; // diff
-    R__b >> fDigits; // diff
-    
-  } else {
-    R__b.WriteVersion(AliDetector::IsA());
-    TNamed::Streamer(R__b);
-    TAttLine::Streamer(R__b);
-    TAttMarker::Streamer(R__b);
-    fEuclidMaterial.Streamer(R__b);
-    fEuclidGeometry.Streamer(R__b);
-    R__b << fTimeGate;
-    R__b << fActive;
-    R__b << fIshunt;
-    //R__b << fNhits;
-    R__b << fHistograms;
-    //
-    // Stream the pointers but not the TClonesArrays
-    R__b << fNodes; // diff
-    
-    R__b << fHits; // diff
-    R__b << fDigits; // diff
-  }
-}
  

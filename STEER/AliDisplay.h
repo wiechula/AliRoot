@@ -1,5 +1,9 @@
-#ifndef AliDisplay_H
-#define AliDisplay_H
+#ifndef ALIDISPLAY_H
+#define ALIDISPLAY_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
 
 //////////////////////////////////////////////////////////////////////////
 //                                                                      //
@@ -9,9 +13,7 @@
 //                                                                      //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef ROOT_TObject
 #include <TObject.h>
-#endif
 
 class TCanvas;
 class TPad;
@@ -20,11 +22,51 @@ class TSlider;
 class TButton;
 class TArc;
 
-const Int_t kMAXZOOMS = 20;
+static const Int_t kMAXZOOMS = 20;
 
 class AliDisplay : public TObject {
-
-private:
+   
+public:
+                     AliDisplay();
+                     AliDisplay(Int_t size);
+                     AliDisplay(const AliDisplay &disp);
+   virtual          ~AliDisplay();
+   virtual Bool_t    AllViews() const {return fDrawAllViews;}
+   virtual void      Clear(Option_t *option="");
+   TSlider          *CutSlider() {return fCutSlider;}
+   virtual void      ShowTrack(Int_t trackNumber); // *MENU*
+   virtual void      HideTrack(Int_t trackNumber); // *MENU*
+           void      Copy(AliDisplay &disp) const;
+   virtual void      DisableDetector(const char *name); // *MENU*
+   virtual void      DisplayButtons();
+   virtual Int_t     DistancetoPrimitive(Int_t px, Int_t py);
+   virtual void      Draw(Option_t *option="");
+   virtual void      DrawAllViews();
+   virtual void      DrawHits();
+   virtual void      DrawTitle(Option_t *option="");
+   virtual void      DrawView(Float_t theta, Float_t phi, Float_t psi=0);
+   virtual void      DrawViewGL();
+   virtual void      DrawViewX3D();
+   virtual void      EnableDetector(const char *name); // *MENU*
+   TSlider          *EtaSlider() {return fEtaSlider;}
+   virtual void      ExecuteEvent(Int_t event, Int_t px, Int_t py);
+   Int_t             GetZoomMode() const {return fZoomMode;}
+   virtual void      LoadPoints();
+   TPad             *Pad() const {return fPad;}
+   virtual void      Paint(Option_t *option="");
+   Float_t           PTcut() const {return fPTcut;}
+   virtual void      SetDrawHits(Bool_t draw=kTRUE) {fDrawHits=draw;}   // *MENU*
+   virtual void      SetDrawParticles(Bool_t draw=kTRUE) {fDrawParticles=draw;} // *MENU*
+   virtual void      SetPTcut(Float_t ptcut=1.5); // *MENU*
+   virtual void      SetRange(Float_t rrange=350, Float_t zrange=350); // *MENU*
+   virtual void      SetView(Float_t theta, Float_t phi, Float_t psi=0);
+   virtual void      SetPickMode();
+   virtual void      SetZoomMode();
+   virtual void      ShowNextEvent(Int_t delta=1);
+   virtual void      UnZoom(); // *MENU*
+   AliDisplay&       operator= (const AliDisplay &disp);
+   
+protected:
    Int_t             fZoomMode;             //=1 if in zoom mode
    Bool_t            fDrawAllViews;         //Flag True if AllViews selected
    Bool_t            fDrawParticles;        //Flag True if particles to be drawn
@@ -54,44 +96,7 @@ private:
    TButton          *fZoomButton;           //Button to activate Zoom mode
    TArc             *fArcButton;            //Gren/Red button to show Pick/Zoom mode
    TList            *fFruits;               //List for fruits
-   
-public:
-                     AliDisplay();
-                     AliDisplay(Int_t size);
-   virtual          ~AliDisplay();
-   virtual Bool_t    AllViews() {return fDrawAllViews;}
-   virtual void      Clear(Option_t *option="");
-   TSlider          *CutSlider() {return fCutSlider;}
-   virtual void      ShowTrack(Int_t track_number); // *MENU*
-   virtual void      HideTrack(Int_t track_number); // *MENU*
-   virtual void      DisableDetector(const char *name); // *MENU*
-   virtual void      DisplayButtons();
-   virtual Int_t     DistancetoPrimitive(Int_t px, Int_t py);
-   virtual void      Draw(Option_t *option="");
-   virtual void      DrawAllViews();
-   virtual void      DrawHits();
-   virtual void      DrawTitle(Option_t *option="");
-   virtual void      DrawView(Float_t theta, Float_t phi, Float_t psi=0);
-   virtual void      DrawViewGL();
-   virtual void      DrawViewX3D();
-   virtual void      EnableDetector(const char *name); // *MENU*
-   TSlider          *EtaSlider() {return fEtaSlider;}
-   virtual void      ExecuteEvent(Int_t event, Int_t px, Int_t py);
-   Int_t             GetZoomMode() {return fZoomMode;}
-   virtual void      LoadPoints();
-   TPad             *Pad() {return fPad;}
-   virtual void      Paint(Option_t *option="");
-   Float_t           PTcut() {return fPTcut;}
-   virtual void      SetDrawHits(Bool_t draw=kTRUE) {fDrawHits=draw;}   // *MENU*
-   virtual void      SetDrawParticles(Bool_t draw=kTRUE) {fDrawParticles=draw;} // *MENU*
-   virtual void      SetPTcut(Float_t ptcut=1.5); // *MENU*
-   virtual void      SetRange(Float_t rrange=350, Float_t zrange=350); // *MENU*
-   virtual void      SetView(Float_t theta, Float_t phi, Float_t psi=0);
-   virtual void      SetPickMode();
-   virtual void      SetZoomMode();
-   virtual void      ShowNextEvent(Int_t delta=1);
-   virtual void      UnZoom(); // *MENU*
-   
+
    ClassDef(AliDisplay, 0)   //Utility class to display ALICE outline, tracks, hits,..
 };
 

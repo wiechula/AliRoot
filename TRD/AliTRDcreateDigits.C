@@ -1,0 +1,49 @@
+Int_t AliTRDcreateDigits()
+{
+  //
+  // Creates the digits from the hits of the slow simulator
+  //
+
+  Int_t rc = 0;
+
+  if (!gAlice) {
+    cout << "<AliTRDcreateDigits> No AliRun object found" << endl;
+    rc = 1;
+    return rc;
+  }
+  gAlice->GetEvent(0);
+
+  // Create the TRD digitzer 
+  AliTRDdigitizer *Digitizer = new AliTRDdigitizer("digitizer","Digitizer class");
+  Digitizer->InitDetector();
+
+  // Set the parameter (for TRF ~200ns)
+  Digitizer->SetGasGain(1600.);
+  Digitizer->SetChipGain(8.0);
+  Digitizer->SetNoise(1000.);
+  Digitizer->SetADCinRange(1000.);
+  Digitizer->SetADCoutRange(1023.);
+  Digitizer->SetADCthreshold(0);
+  Digitizer->SetVerbose(1);
+
+  // Create the digits
+  if (!(Digitizer->MakeDigits())) {
+    rc = 2;
+    return rc;
+  }
+
+  // Write the digits into the input file
+  if (!(Digitizer->WriteDigits())) {
+    rc = 3;
+    return rc;
+  }
+
+  // Save the digitizer class in the AliROOT file
+  if (!(Digitizer->Write())) {
+    rc = 4;
+    return rc;
+  }
+
+  return rc;
+
+}

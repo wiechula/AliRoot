@@ -7,13 +7,13 @@
 #define ALI_STACKING_ACTION_H
 
 #include <G4UserStackingAction.hh>
-#include <G4TrackStack.hh>
-
 #include <globals.hh>
 
 class AliStackingActionMessenger;
 class AliTrackingAction;
+
 class G4Track;
+class G4TrackStack;
 
 class AliStackingAction : public G4UserStackingAction
 {

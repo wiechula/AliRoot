@@ -9,35 +9,47 @@ PACKAGE = EVGEN
 
 # C++ sources
 
-SRCS          = AliSimpleGen.cxx AliGenCocktail.cxx AliGenFLUKAsource.cxx \
+SRCS          = AliGenHIJINGpara.cxx AliGenBox.cxx AliGenFixed.cxx \
+		AliGenCocktail.cxx AliGenFLUKAsource.cxx \
+		AliGenLib.cxx \
                 AliGenMUONlib.cxx AliGenParam.cxx AliGenPythia.cxx \
-                AliPythia.cxx DimuonCombinator.cxx AliGenHalo.cxx
-
+                AliPythia.cxx AliDimuCombinator.cxx AliGenHalo.cxx \
+                AliGenHaloProtvino.cxx \
+                AliGenExtFile.cxx AliGenScan.cxx AliGenPHOSlib.cxx \
+		AliGenDoubleScan.cxx AliGenCocktailEntry.cxx \
+		AliGenGSIlib.cxx AliGenPMDlib.cxx\
+	        AliGenHijing.cxx \
+		AliGenHijingEventHeader.cxx \
+		AliDecayer.cxx AliDecayerPythia.cxx \
+                AliGenMevSim.cxx AliMevSimParticle.cxx AliMevSimConfig.cxx
 # C++ Headers
 
-HDRS          = $(SRCS:.cxx=.h) EVGENLinkDef.h
+HDRS          = $(SRCS:.cxx=.h) $(ALICE_ROOT)/include/THijing.h \
+		$(ROOTSYS)/include/TF1.h $(ROOTSYS)/include/TChain.h \
+		$(ROOTSYS)/include/TParticle.h \
+		EVGENLinkDef.h
 
 # Library dictionary
 
 DICT          = EVGENCint.cxx
-DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTH         = $(DICT:.cxx=.h) 
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.F=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
-CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(ALICE_ROOT)/include/
+CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I$(ALICE_ROOT)/include/ -I$(ALICE_ROOT)/TMevSim -I.
  
 # FORTRAN compilation flags
 
@@ -47,20 +59,22 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libEVGEN.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libEVGEN.a
+SLIBRARY	= $(LIBDIR)/libEVGEN.$(SL)
+ALIBRARY	= $(LIBDIR)/libEVGEN.a
 
-default:	$(SLIBRARY) headers
+default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libEVGEN.$(SL):		$(OBJS)
+$(LIBDIR)/libEVGEN.$(SL):		$(OBJS)
 
 $(DICT):				$(HDRS)
 
 depend:					$(SRCS)
 
-HEADERS		=	$(filter-out %LinkDef.h,$(HDRS))
+HEADERS       = AliPythia.h AliDecayer.h AliDecayerPythia.h
 
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
+
+CHECKS        = $(patsubst %.cxx,check/%.viol,$(SRCS))
 
 ############################### General Macros ################################
 
@@ -68,4 +82,11 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
+

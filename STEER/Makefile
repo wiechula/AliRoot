@@ -9,33 +9,41 @@ PACKAGE = STEER
 
 # C++ sources
 
-SRCS          = AliDetector.cxx  AliHeader.cxx    AliMagF.cxx GParticle.cxx \
-                AliDigit.cxx     AliHit.cxx       AliPoints.cxx \
-                AliDisplay.cxx   AliMC.cxx        AliRun.cxx AliGenerator.cxx \
-		AliLego.cxx
-
+SRCS          = AliDetector.cxx	AliHeader.cxx	AliMagF.cxx \
+                AliDigit.cxx	AliHit.cxx	AliPoints.cxx \
+                AliDisplay.cxx	AliMC.cxx	AliRun.cxx AliGenerator.cxx \
+		AliLego.cxx	AliModule.cxx	AliDigitNew.cxx \
+		AliGeometry.cxx	AliRecPoint.cxx	AliSegmentation.cxx \
+	        AliHitMap.cxx	AliMagFC.cxx	AliMagFCM.cxx \
+		AliMagFDM.cxx	AliLegoGenerator.cxx AliLegoGeneratorXYZ.cxx\
+                AliLegoGeneratorPhiZ.cxx AliLegoGeneratorEta.cxx \
+                AliRndm.cxx \
+		AliKalmanTrack.cxx AliCluster.cxx AliTracker.cxx\
+		AliMCQA.cxx AliPDG.cxx AliDebugVolume.cxx \
+		AliGenEventHeader.cxx AliStack.cxx AliConfig.cxx
 
 # C++ Headers
 
-HDRS          = $(SRCS:.cxx=.h) STEERLinkDef.h
+HDRS          = $(SRCS:.cxx=.h) AliPDG.h $(ROOTSYS)/include/TH2.h \
+				$(ROOTSYS)/include/TRandom.h STEERLinkDef.h 
 
 # Library dictionary
 
 DICT          = STEERCint.cxx
 DICTH         = $(DICT:.cxx=.h)
-DICTO         = $(DICT:.cxx=.o)
+DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
 # FORTRAN Objectrs
 
-FOBJS         = $(FSRCS:.f=.o)
+FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
 
 # C Objects
 
-COBJS         = $(CSRCS:.c=.o)
+COBJS         = $(patsubst %.c,tgt_$(ALICE_TARGET)/%.o,$(CSRCS))
 
 # C++ Objects
 
-OBJS          = $(SRCS:.cxx=.o) $(DICTO)
+OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
@@ -49,20 +57,22 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(ALICE_ROOT)/lib/libSTEER.$(SL)
-ALIBRARY	= $(ALICE_ROOT)/lib/libSTEER.a
+SLIBRARY	= $(LIBDIR)/libSTEER.$(SL)
+ALIBRARY	= $(LIBDIR)/lib/libSTEER.a
 
-default:	$(SLIBRARY) headers
+default:	$(SLIBRARY)
 
-$(ALICE_ROOT)/lib/libSTEER.$(SL):		$(OBJS)
+$(LIBDIR)/libSTEER.$(SL):		$(OBJS)
 
 $(DICT):				$(HDRS)
 
 depend:					$(SRCS)
 
-HEADERS =	$(filter-out %LinkDef.h,$(HDRS) AliConst.h AliCallf77.h)
+HEADERS 	= $(SRCS:.cxx=.h) AliPDG.h AliConst.h AliCallf77.h AliMCProcess.h AliConfig.h AliGenEventHeader.h
 
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
+
+CHECKS        	= $(patsubst %.cxx,check/%.viol,$(SRCS))
 
 ############################### General Macros ################################
 
@@ -70,4 +80,11 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 
 ############################ Dependencies #####################################
 
-include Make-depend 
+-include tgt_$(ALICE_TARGET)/Make-depend 
+
+
+
+
+
+
+

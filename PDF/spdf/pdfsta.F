@@ -2,8 +2,11 @@
 * $Id$
 *
 * $Log$
-* Revision 1.1.1.2  1996/10/30 08:28:58  cernlib
-* Version 7.04
+* Revision 1.1.1.3  2000/04/19 13:28:20  mclareni
+* Import version 8.04
+*
+* Revision 1.2  2000/04/09 10:06:26  plothow
+* new version 8.00 - MRS 98 and 99, CTEQ5 and GRV98 added
 *
 * Revision 1.1.1.1  1996/04/12 15:29:25  plothow
 * Version 7.01
@@ -50,15 +53,16 @@ C print values
      +               MODECR(NPTYPE,NGROUP,NSET)
       WRITE(N6,2002) NFL,LO,TMAS
       WRITE(N6,2003) QCDL4,QCDL5
-      WRITE(N6,2004) XMIN,XMAX,Q2MIN,Q2MAX
+      WRITE(N6,2004) XMIN,XMAX
+      WRITE(N6,2005) Q2MIN,Q2MAX
  2000 FORMAT(/,'  PDFLIB : Summary from PDFSTA')
- 2001 FORMAT(1H ,' Nptype = ',I1,'  Ngroup = ',I1,'  Nset = ',I2,
+ 2001 FORMAT(1H ,' Nptype = ',I1,'  Ngroup = ',I2,'  Nset = ',I3,
      +         '  Name  = "',A8,'"  CrMode = ',I3)
  2002 FORMAT(1H ,' Nfl    = ',I2,',  LO = ',I1,
      +           ',  Tmas = ',F7.2,' GeV/c**2')
  2003 FORMAT(1H ,' QCDL4  = ',F7.4,' GeV,  QCDL5 = ',F7.4,' GeV')
- 2004 FORMAT(1H ,' Xmin   = ',1X,E8.2,',  Xmax = ',E11.5,
-     +          ',  Q2min = ',F7.3,' (GeV/c)**2,  Q2max = ',E8.2,
+ 2004 FORMAT(1H ,' Xmin   = ',1X,E8.2,',    Xmax = ',E11.5)
+ 2005 FORMAT(1H ,' Q2min  =',F7.3,' (GeV/c)**2,  Q2max = ',E8.2,
      +          ' (GeV/c)**2')
 C.
       WRITE(N6,3000)

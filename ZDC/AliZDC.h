@@ -1,11 +1,15 @@
-#ifndef ZDC_H
-#define ZDC_H
+#ifndef ALIZDC_H
+#define ALIZDC_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
-//  Manager and hits classes for set:ZDC      //
+//  Manager and classes for set ZDC           //
 ////////////////////////////////////////////////
  
 #include "AliDetector.h"
-#include "AliHit.h"
 
  
 class AliZDC : public AliDetector {
@@ -13,52 +17,33 @@ class AliZDC : public AliDetector {
 public:
   AliZDC();
   AliZDC(const char *name, const char *title);
-  virtual      ~AliZDC() {}
-  virtual void  AddHit(Int_t, Int_t*, Float_t*);
+  virtual       ~AliZDC();
+  virtual void  AddHit(Int_t track, Int_t *vol, Float_t *hits);
   virtual void  BuildGeometry();
   virtual void  CreateGeometry() {}
   virtual void  CreateMaterials() {}
   Int_t         DistancetoPrimitive(Int_t px, Int_t py);
   virtual Int_t IsVersion() const =0;
-  virtual void  SetBeam(Int_t beam, Float_t fx, Float_t fy, Float_t sx, Float_t sy,
-			Float_t div, Float_t angle, Int_t cross);
-  virtual void  SetHijing(Int_t hij, Int_t hijf, Int_t hijsp, const char *file);
-  virtual void  SetVenus(Int_t hiv, Int_t hivf, Int_t hivsp, const char *file);
-  virtual void  SetKine(Int_t code, Float_t pmom, Float_t cx, Float_t cy, Float_t cz, Int_t type, Int_t fermi);
+  virtual Float_t ZMin() const;	// Minimum overall dimension of the ZDC
+  virtual Float_t ZMax() const;	// Maximum overall dimension of the ZDC
+  virtual void  ResetDigits();
   virtual void  StepManager();
- 
-   ClassDef(AliZDC,1)  // Zero Degree Calorimeter base class
-};
- 
- 
-//____________________________________________________________________________ 
-class AliZDCv1 : public AliZDC {
+  
+  // Switching off the shower development in ZDCs
+  void  NoShower(){fNoShower=1;}
+  void  Shower()  {fNoShower=0;}
+  
+protected:
+  // TClonesArray of stored hits -> not reset et finish event
+  // 	 (for digitization at the end of the event)
+//  TClonesArray *fStHits;
+//  Int_t fNStHits;
+  
+//  Int_t   fNPrimaryHits;	// Number of primary particles
 
-public:
-  AliZDCv1();
-  AliZDCv1(const char *name, const char *title);
-  virtual      ~AliZDCv1() {}
-  virtual void  CreateGeometry();
-  virtual void  CreateMaterials();
-  virtual Int_t IsVersion() const {return 1;}
-  virtual void  DrawDetector();
- 
-   ClassDef(AliZDCv1,1)  // Zero Degree Calorimeter version 1
-};
- 
- 
-//_____________________________________________________________________________
-class AliZDChit : public AliHit {
-public:
-  Int_t      fVolume[4];  //array of volumes
-  Float_t    fEnergy;     //Total energy deposited in eV
- 
-public:
-  AliZDChit() {}
-  AliZDChit(Int_t shunt, Int_t track, Int_t *vol, Float_t *hits);
-  virtual ~AliZDChit() {}
- 
-  ClassDef(AliZDChit,1)  // Hits for the Zero Degree Calorimeter
+  Int_t   fNoShower;		// Flag to switch off the shower	
+
+  ClassDef(AliZDC,1)  	// Zero Degree Calorimeter base class
 };
  
 #endif

@@ -9,23 +9,25 @@
 
 #include "TG4NameMap.h"
 #include "TG4Globals.h"
-#include "TG3Cut.h"
-#include "TG3Flag.h"
+#include "TG4G3Cut.h"
+#include "TG4G3Control.h"
 
 #include <globals.hh>
 #include <G3SensVolVector.hh>
 
 #include <Rtypes.h>
 
-#include "g4std/fstream"
-#include "g4std/vector"
+#include <g4std/fstream>
+#include <g4std/vector>
 
 class TG4CutVector;
 class TG4FlagVector;
 class TG4GeometryOutputManager;
+class TG4GeometryServices;
 
 class G4Material;
 class G4VPhysicalVolume;
+class G4LogicalVolume;
 
 class TG4GeometryManager
 {
@@ -55,10 +57,6 @@ class TG4GeometryManager
                      Float_t thetaY, Float_t phiY, Float_t thetaZ, 
 		     Float_t phiZ);
 
-    // NEW - for G4 only
-    G4Material* MixMaterials(G4String name, G4double density,
-                     TG4StringVector* matNames, TG4doubleVector* matWeights);
-
     // functions from GBASE 
     void  Ggclos(); 
 
@@ -67,7 +65,7 @@ class TG4GeometryManager
   		         Float_t &dens, Float_t &radl, Float_t &absl,
 		         Float_t* ubuf, Int_t& nbuf); 
     void  Gstpar(Int_t itmed, const char *param, Float_t parval); 
-    void  Gsckov(Int_t itmed, Int_t npckov, Float_t *ppckov,
+    void  SetCerenkov(Int_t itmed, Int_t npckov, Float_t *ppckov,
 			 Float_t *absco, Float_t *effic, Float_t *rindex); 
 
     // functions from GGEOM 
@@ -92,12 +90,14 @@ class TG4GeometryManager
                          const char *konly, Float_t *upar, Int_t np); 
         
     // Euclid		       
-    void WriteEuclid(const char*, const char*, Int_t, Int_t); //new
+    void WriteEuclid(const char* fileName, const char* topVolName, 
+                         Int_t number, Int_t nlevel); //new
 		               
     // get methods
     Int_t VolId(const Text_t* volName) const;                
-    const char* VolName(Int_t id) const; //new
+    const char* VolName(Int_t id) const;
     Int_t NofVolumes() const; 
+    Int_t VolId2Mate(Int_t volumeId) const;
     
     // end of methods
     // 
@@ -108,36 +108,20 @@ class TG4GeometryManager
     G4VPhysicalVolume* CreateG4Geometry();
     void ReadG3Geometry(G4String filePath);
     void UseG3TrackingMediaLimits();
+    void FillMediumIdVector();
     void ClearG3Tables();       
     void ClearG3TablesFinal();
     void OpenOutFile(G4String filePath);
+    void CloseOutFile();
     void PrintNameMap();
     
     // set methods
     void SetWriteGeometry(G4bool writeGeometry);
     void SetMapSecond(const G4String& name);
 
-    // get methods
-          // volumes
-    Int_t NofG3Volumes() const; 
-    Int_t NofG4LogicalVolumes() const; 
-    Int_t NofG4PhysicalVolumes() const; 
-    Int_t NofSensitiveDetectors() const; 
-    G4bool IsG3Volume(G4String lvName) const;
-    void G4ToG3VolumeName(G4String& name) const;
-    const G4String& GetMapSecond(const G4String& name);
-
-          // sensitive volumes
+    // get methods 
     G3SensVolVector GetG3SensVolVector() const;
-
-          // materials
-    G4int GetMediumId(G4Material* material) const;    
-    G4double GetEffA(G4Material* material) const;
-    G4double GetEffZ(G4Material* material) const;
-
-    // end of methods for Geant4 only 
-    //
-    
+     
   protected:
     TG4GeometryManager(const TG4GeometryManager& right);
 
@@ -146,26 +130,24 @@ class TG4GeometryManager
 
   private:
     // methods
-    G4double* CreateG4doubleArray(Float_t* array, G4int size) const;
-    G4String  CutName(const char* name) const;
-    void GstparCut(G4int itmed, TG3Cut par, G4double parval);
-    void GstparFlag(G4int itmed, TG3Flag par, G4double parval);
-    void FillMediumIdVector();
+    void GstparCut(G4int itmed, TG4G3Cut par, G4double parval);
+    void GstparControl(G4int itmed, TG4G3Control control, G4double parval);
         
     // static data members
     static TG4GeometryManager*  fgInstance;     //this instance
 
     // data members
-    TG4GeometryOutputManager*   fOutputManager; //output manager 
-    TG4NameMap       fNameMap;         //map of volumes names to modules names
-    vector<G4int>    fMediumIdVector;  //vector of second indexes for materials
-    G4int            fMediumCounter;   //global medium counter
-    G4int            fMaterialCounter; //global material counter
-    G4int            fMatrixCounter;   //global matrix counter
-    G4bool           fUseG3TMLimits;   //if true: G3 limits are passed to G4 
-                                       //(in development)
-    G4bool           fWriteGeometry;   //if true: geometry parameters are written
-                                       //in a file (ASCII)  
+    TG4GeometryOutputManager*   fOutputManager;   //output manager 
+    TG4GeometryServices*        fGeometryServices;//geometry services
+    TG4intVector  fMediumIdVector;  //vector of second indexes for materials
+    TG4NameMap    fNameMap;         //map of volumes names to modules names
+    G4int         fMediumCounter;   //global medium counter
+    G4int         fMaterialCounter; //global material counter
+    G4int         fMatrixCounter;   //global matrix counter
+    G4bool        fUseG3TMLimits;   //if true: G3 limits are passed to G4 
+                                    //(in development)
+    G4bool        fWriteGeometry;   //if true: geometry parameters are written
+                                    //in a file (ASCII)  
 };
 
 // inline methods

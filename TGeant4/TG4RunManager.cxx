@@ -6,14 +6,12 @@
 #include "TG4RunManager.h"
 #include "TG4RunMessenger.h"
 #include "TG4VRunConfiguration.h"
-#include "TGeant4.h"
 #include "TG4Globals.h"
 #include "TG4GeometryManager.h"
 #include "TG4PhysicsManager.h"
-//#include "TG4StepManager.h"
+#include "TG4G3PhysicsManager.h"
 
 #include <G4RunManager.hh>
-#include <G4StateManager.hh>
 #include <G4UIsession.hh>
 #include <G4UImanager.hh>
 #include <G4UIterminal.hh>
@@ -24,7 +22,6 @@
 #ifdef G4UI_USE_GAG
 #include <G4UIGAG.hh>
 #endif
-#include <globals.hh>
 
 #include <TRint.h>
 #include <TROOT.h> 
@@ -59,7 +56,7 @@ TG4RunManager::TG4RunManager(TG4VRunConfiguration* runConfiguration,
   fRunManager =  new G4RunManager();
   fRunConfiguration->ConfigureRunManager(fRunManager);
   // add verbose level
-  //G4cout << "G4RunManager has been created." << endl;
+  //G4cout << "G4RunManager has been created." << G4endl;
 
   // create geant4 UI
   CreateGeantUI();
@@ -106,7 +103,7 @@ TG4RunManager::TG4RunManager(TG4VRunConfiguration* runConfiguration)
   fRunManager =  new G4RunManager();
   fRunConfiguration->ConfigureRunManager(fRunManager);
   // add verbose level
-  //G4cout << "G4RunManager has been created." << endl;
+  //G4cout << "G4RunManager has been created." << G4endl;
 
   // create geant4 UI
   CreateGeantUI();
@@ -221,12 +218,16 @@ void TG4RunManager::Initialize()
 // Initializes G4.
 // ---
 
+  // create physics constructor
+  // (this operation has to precede the "Init" phase)
+  TG4PhysicsManager* physicsManager = TG4PhysicsManager::Instance();
+  physicsManager->CreatePhysicsConstructors();
+
   // initialize Geant4 
   fRunManager->Initialize();
   
   // activate/inactivate physics processes
   // (this operation is not allowed in "Init" phase)
-  TG4PhysicsManager* physicsManager = TG4PhysicsManager::Instance();
   physicsManager->SetProcessActivation();
 }
 
@@ -254,9 +255,9 @@ void TG4RunManager::StartGeantUI()
   if (!fGeantUISession) CreateGeantUI();
   if (fGeantUISession) {  
     // interactive session
-    G4cout << "Welcome back in Geant4" << endl;
+    G4cout << "Welcome back in Geant4" << G4endl;
     fGeantUISession->SessionStart();
-    G4cout << "Welcome back in Root" << endl;  
+    G4cout << "Welcome back in Root" << G4endl;  
   }
   else {
     // execute Geant4 macro if file is specified as an argument 
@@ -272,9 +273,9 @@ void TG4RunManager::StartRootUI()
 
   if (!fRootUISession) CreateRootUI();
   if (fRootUISession) { 
-    G4cout << "Welcome back in Root" << endl;
+    G4cout << "Welcome back in Root" << G4endl;
     fRootUISession->Run(kTRUE);
-    G4cout << "Welcome back in Geant4" << endl;  
+    G4cout << "Welcome back in Geant4" << G4endl;  
   }
 }
  
@@ -326,8 +327,8 @@ void TG4RunManager::UseG3Defaults()
 // ---
 
   TG4GeometryManager::Instance()->UseG3TrackingMediaLimits();
-  TG4PhysicsManager::Instance()->SetG3DefaultCuts();
-  TG4PhysicsManager::Instance()->SetG3DefaultProcesses();
+  TG4G3PhysicsManager::Instance()->SetG3DefaultCuts();
+  TG4G3PhysicsManager::Instance()->SetG3DefaultControls();
 }
 
 Int_t TG4RunManager::CurrentEvent() const

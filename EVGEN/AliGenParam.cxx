@@ -1,13 +1,93 @@
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+
+/*
+$Log$
+Revision 1.28  2001/03/09 13:01:41  morsch
+- enum constants for paramterisation type (particle family) moved to AliGen*lib.h
+- use AliGenGSIlib::kUpsilon, AliGenPHOSlib::kEtaPrime to access the constants
+
+Revision 1.27  2001/02/02 15:21:10  morsch
+Set high water mark after last particle.
+Use Vertex() method for Vertex.
+
+Revision 1.26  2000/12/21 16:24:06  morsch
+Coding convention clean-up
+
+Revision 1.25  2000/11/30 07:12:50  alibrary
+Introducing new Rndm and QA classes
+
+Revision 1.24  2000/10/18 19:11:27  hristov
+Division by zero fixed
+
+Revision 1.23  2000/10/02 21:28:06  fca
+Removal of useless dependecies via forward declarations
+
+Revision 1.22  2000/09/12 14:14:55  morsch
+Call fDecayer->ForceDecay() at the beginning of Generate().
+
+Revision 1.21  2000/09/08 15:39:01  morsch
+Handle the case fForceDecay=all during the generation, i.e. select all secondaries.
+
+Revision 1.20  2000/09/06 14:35:44  morsch
+Use AliDecayerPythia for particle decays.
+
+Revision 1.19  2000/07/11 18:24:56  fca
+Coding convention corrections + few minor bug fixes
+
+Revision 1.18  2000/06/29 21:08:27  morsch
+All paramatrisation libraries derive from the pure virtual base class AliGenLib.
+This allows to pass a pointer to a library directly to AliGenParam and avoids the
+use of function pointers in Config.C.
+
+Revision 1.17  2000/06/09 20:33:30  morsch
+All coding rule violations except RS3 corrected
+
+Revision 1.16  2000/05/02 07:51:31  morsch
+- Control precision of pT sampling TF1::SetNpx(..)
+- Correct initialisation of child-cuts in all constructors.
+- Most coding rule violations corrected.
+
+Revision 1.15  2000/04/03 15:42:12  morsch
+Cuts on primary particles are separated from those on the decay products. Methods
+SetChildMomentumRange, SetChildPtRange, SetChildPhiRange, SetChildThetaRange added.
+
+Revision 1.14  1999/11/09 07:38:48  fca
+Changes for compatibility with version 2.23 of ROOT
+
+Revision 1.13  1999/11/04 11:30:31  fca
+Correct the logics for SetForceDecay
+
+Revision 1.12  1999/11/03 17:43:20  fca
+New version from G.Martinez & A.Morsch
+
+Revision 1.11  1999/09/29 09:24:14  fca
+Introduction of the Copyright and cvs Log
+
+*/
+
 #include "AliGenParam.h"
+#include "AliDecayerPythia.h"
 #include "AliGenMUONlib.h"
 #include "AliRun.h"
-#include "TGeant3.h"
-#include "AliPythia.h"
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TTree.h>
-#include <stdlib.h>
-#include <TMCParticle.h>
+#include <TParticle.h>
+#include <TParticlePDG.h>
+#include <TDatabasePDG.h>
+#include <TLorentzVector.h>
+
+#include <TF1.h>
 
 ClassImp(AliGenParam)
 
@@ -15,46 +95,120 @@ ClassImp(AliGenParam)
 
   //Begin_Html
   /*
-    <img src="gif/AliGenParam.gif">
+    <img src="picts/AliGenParam.gif">
   */
   //End_Html
 
 //____________________________________________________________
 //____________________________________________________________
 AliGenParam::AliGenParam()
-                 :AliGenerator()
 {
-  fPtPara = 0;
-  fYPara  = 0;
-  fIpart  = 0;
-  fAnalog = 1;
+// Deafault constructor
+    fPtPara = 0;
+    fYPara  = 0;
+    fParam  = 0;
+    fAnalog = kAnalog;
+    SetCutOnChild();
+    SetChildMomentumRange();
+    SetChildPtRange();
+    SetChildPhiRange();
+    SetChildThetaRange();  
+    SetDeltaPt();
+//
+// Set random number generator   
+    sRandom = fRandom;
+}
+
+AliGenParam::AliGenParam(Int_t npart, AliGenLib * Library,  Int_t param, char* tname):AliGenerator(npart)
+{
+// Constructor using number of particles parameterisation id and library
+    
+    fPtParaFunc = Library->GetPt(param, tname);
+    fYParaFunc  = Library->GetY (param, tname);
+    fIpParaFunc = Library->GetIp(param, tname);
+    
+    fPtPara = 0;
+    fYPara  = 0;
+    fParam  = param;
+    fAnalog = kAnalog;
+    fChildSelect.Set(5);
+    for (Int_t i=0; i<5; i++) fChildSelect[i]=0;
+    SetForceDecay();
+    SetCutOnChild();
+    SetChildMomentumRange();
+    SetChildPtRange();
+    SetChildPhiRange();
+    SetChildThetaRange(); 
+    SetDeltaPt(); 
+//
+// Set random number generator   
+    sRandom = fRandom;
 }
 
 //____________________________________________________________
-AliGenParam::AliGenParam(Int_t npart, Int_t Ipart) 
-//				   Double_t (*PtPara)(Double_t*, Double_t*), 
-//				   Double_t (*YPara) (Double_t* ,Double_t*))
+
+AliGenParam::AliGenParam(Int_t npart, Int_t param, char* tname):AliGenerator(npart)
+{
+// Constructor using parameterisation id and number of particles
+//      
+    AliGenLib* pLibrary = new AliGenMUONlib();
+ 
+    fPtParaFunc = pLibrary->GetPt(param, tname);
+    fYParaFunc  = pLibrary->GetY (param, tname);
+    fIpParaFunc = pLibrary->GetIp(param, tname);
+    
+    fPtPara = 0;
+    fYPara  = 0;
+    fParam  = param;
+    fAnalog = kAnalog;
+    fChildSelect.Set(5);
+    for (Int_t i=0; i<5; i++) fChildSelect[i]=0;
+    SetForceDecay();
+    SetCutOnChild();
+    SetChildMomentumRange();
+    SetChildPtRange();
+    SetChildPhiRange();
+    SetChildThetaRange(); 
+    SetDeltaPt(); 
+}
+
+AliGenParam::AliGenParam(Int_t npart, Int_t param,
+                         Double_t (*PtPara) (Double_t*, Double_t*),
+                         Double_t (*YPara ) (Double_t* ,Double_t*),
+		         Int_t    (*IpPara) (TRandom *))		 
     :AliGenerator(npart)
 {
-  //
-  //  fName="HMESONpara";
-  //  fTitle="Heavy Mesons Parametrisation";
-  fPtParaFunc = AliGenMUONlib::GetPt(Ipart);
-  fYParaFunc  = AliGenMUONlib::GetY(Ipart);
-  fIpParaFunc = AliGenMUONlib::GetIp(Ipart);
-  
-  fPtPara = 0;
-  fYPara  = 0;
-  fIpart  = Ipart;
-  fAnalog = 1;
-  fChildSelect.Set(5);
-  for (Int_t i=0; i<5; i++) fChildSelect[i]=0;
-  ForceDecay();
+// Constructor
+// Gines Martinez 1/10/99 
+    fPtParaFunc = PtPara; 
+    fYParaFunc  = YPara;  
+    fIpParaFunc = IpPara;
+//  
+    fPtPara = 0;
+    fYPara  = 0;
+    fParam  = param;
+    fAnalog = kAnalog;
+    fChildSelect.Set(5);
+    for (Int_t i=0; i<5; i++) fChildSelect[i]=0;
+    SetForceDecay();
+    SetCutOnChild();
+    SetChildMomentumRange();
+    SetChildPtRange();
+    SetChildPhiRange();
+    SetChildThetaRange();  
+    SetDeltaPt();
+}
+
+
+AliGenParam::AliGenParam(const AliGenParam & Paramd)
+{
+// copy constructor
 }
 
 //____________________________________________________________
 AliGenParam::~AliGenParam()
 {
+// Destructor
     delete  fPtPara;
     delete  fYPara;
 }
@@ -62,101 +216,144 @@ AliGenParam::~AliGenParam()
 //____________________________________________________________
 void AliGenParam::Init()
 {
-    SetMC(new AliPythia());
-    fPythia= (AliPythia*) fgMCEvGen;
+// Initialisation
 
-//  End of the test !!!
+    fDecayer = new AliDecayerPythia();
   //Begin_Html
   /*
-    <img src="gif/AliGenParam.gif">
+    <img src="picts/AliGenParam.gif">
   */
   //End_Html
  
-  fPtPara = new TF1("Pt-Parametrization",fPtParaFunc,0,15,0);
-  fYPara  = new TF1("Y -Parametrization",fYParaFunc,-6,6,0);
+    fPtPara = new TF1("Pt-Parametrization",fPtParaFunc,fPtMin,fPtMax,0);
+//  Set representation precision to 10 MeV
+    Int_t npx= Int_t((fPtMax-fPtMin)/fDeltaPt);
+    
+    fPtPara->SetNpx(npx);
+    
+    fYPara  = new TF1("Y -Parametrization",fYParaFunc,fYMin,fYMax,0);
+    TF1* ptPara = new TF1("Pt-Parametrization",fPtParaFunc,0,15,0);
+    TF1* yPara  = new TF1("Y -Parametrization",fYParaFunc,-6,6,0);
+
 //
 // dN/dy| y=0
-  Double_t y1=0;
-  Double_t y2=0;
-  
-  fdNdy0=fYParaFunc(&y1,&y2);
+    Double_t y1=0;
+    Double_t y2=0;
+    
+    fdNdy0=fYParaFunc(&y1,&y2);
 //
 // Integral over generation region
-  Float_t IntYS  = fYPara ->Integral(fYMin, fYMax);
-  Float_t IntPt0 = fPtPara->Integral(0,15);
-  Float_t IntPtS = fPtPara->Integral(fPtMin,fPtMax);
-  Float_t PhiWgt=(fPhiMax-fPhiMin)/2./TMath::Pi();
-  if (fAnalog) {
-     fYWgt  = IntYS/fdNdy0;
-     fPtWgt = IntPtS/IntPt0;
-     fParentWeight = fYWgt*fPtWgt*PhiWgt/fNpart;
-  } else {
-      fYWgt = IntYS/fdNdy0;
-      fPtWgt = (fPtMax-fPtMin)/IntPt0;
-      fParentWeight = fYWgt*fPtWgt*PhiWgt/fNpart;
-  }
+    Float_t intYS  = yPara ->Integral(fYMin, fYMax);
+    Float_t intPt0 = ptPara->Integral(0,15);
+    Float_t intPtS = ptPara->Integral(fPtMin,fPtMax);
+    Float_t phiWgt=(fPhiMax-fPhiMin)/2./TMath::Pi();
+    if (fAnalog == kAnalog) {
+	fYWgt  = intYS/fdNdy0;
+	fPtWgt = intPtS/intPt0;
+	fParentWeight = fYWgt*fPtWgt*phiWgt/fNpart;
+    } else {
+	fYWgt = intYS/fdNdy0;
+	fPtWgt = (fPtMax-fPtMin)/intPt0;
+	fParentWeight = fYWgt*fPtWgt*phiWgt/fNpart;
+    }
 //
 // particle decay related initialization
-  fPythia->DefineParticles();
-// semimuonic decays of charm and beauty
-  fPythia->ForceDecay(fForceDecay);
+    fDecayer->SetForceDecay(fForceDecay);
+    fDecayer->Init();
+
 //
     switch (fForceDecay) 
     {
-    case semielectronic:
-    case dielectron:
-    case b_jpsi_dielectron:
-    case b_psip_dielectron:
+    case kSemiElectronic:
+    case kDiElectron:
+    case kBJpsiDiElectron:
+    case kBPsiPrimeDiElectron:
 	fChildSelect[0]=11;	
 	break;
-    case semimuonic:
-    case dimuon:
-    case b_jpsi_dimuon:
-    case b_psip_dimuon:
+    case kSemiMuonic:
+    case kDiMuon:
+    case kBJpsiDiMuon:
+    case kBPsiPrimeDiMuon:
 	fChildSelect[0]=13;
 	break;
+    case kPiToMu:
+	fChildSelect[0]=13;
+	break;
+    case kKaToMu:
+	fChildSelect[0]=13;
+	break;
+    case kHadronicD:
+// Implement me !!
+	break;
+    case kNoDecay:
+	break;
+    case kAll:
+	break;
     }
-
 }
 
 //____________________________________________________________
 void AliGenParam::Generate()
 {
-// Generate 'npart' of heavy mesons (J/Psi, upsilon or phi) in the
-// the desired theta, phi and momentum windows; Gaussian smearing 
-// on the vertex is done if selected
-
-  AliMC* pMC = AliMC::GetMC();
-
-  Float_t polar[3]= {0,0,0};
-  //
-  Float_t origin[3], origin0[3];
-  Float_t pt, pl, ptot;
-  Float_t phi, theta;
-  Float_t p[3];
+//
+// Generate 'npart' of light and heavy mesons (J/Psi, upsilon or phi, Pion,
+// Kaons, Etas, Omegas) and Baryons (proton, antiprotons, neutrons and 
+// antineutrons in the the desired theta, phi and momentum windows; 
+// Gaussian smearing on the vertex is done if selected. 
+// The decay of heavy mesons is done using lujet, 
+//    and the childern particle are tracked by GEANT
+// However, light mesons are directly tracked by GEANT 
+// setting fForceDecay = nodecay (SetForceDecay(nodecay)) 
+//
+//
+//  Reinitialize decayer
+    fDecayer->Init();
+//
+  Float_t polar[3]= {0,0,0};  // Polarisation of the parent particle (for GEANT tracking)
+  Float_t origin0[3];         // Origin of the generated parent particle (for GEANT tracking)
+  Float_t pt, pl, ptot;       // Transverse, logitudinal and total momenta of the parent particle
+  Float_t phi, theta;         // Phi and theta spherical angles of the parent particle momentum
+  Float_t p[3], pc[3], 
+          och[3], pch[10][3]; // Momentum, polarisation and origin of the children particles from lujet
   Float_t ty, xmt;
-  Int_t i, nt, j;
+  Int_t nt, i, j, kfch[10];
   Float_t  wgtp, wgtch;
   Double_t dummy;
+  static TClonesArray *particles;
   //
+  if(!particles) particles=new TClonesArray("TParticle",1000);
+
+  static TDatabasePDG *pDataBase = new TDatabasePDG();
+  if(!pDataBase) pDataBase = new TDatabasePDG();
   //
   Float_t random[6];
+ 
+// Calculating vertex position per event
   for (j=0;j<3;j++) origin0[j]=fOrigin[j];
-  if(fVertexSmear==perEvent) {
-      pMC->Rndm(random,6);
-      for (j=0;j<3;j++) {
-	  origin0[j]+=fOsigma[j]*TMath::Cos(2*random[2*j]*TMath::Pi())*
-	      TMath::Sqrt(-2*TMath::Log(random[2*j+1]));
-      }
+  if(fVertexSmear==kPerEvent) {
+//      Rndm(random,6);
+//      for (j=0;j<3;j++) {
+//	  origin0[j]+=fOsigma[j]*TMath::Cos(2*random[2*j]*TMath::Pi())*
+//	      TMath::Sqrt(-2*TMath::Log(random[2*j+1]));
+//	      TMath::Sqrt(-2*TMath::Log(random[2*j+1]));
+//      }
+//    }
+      Vertex();
+      for (j=0;j<3;j++) origin0[j]=fVertex[j];
   }
-  for(i=0;i<fNpart;i++) {
+  
+  Int_t ipa=0;
+// Generating fNpart particles
+  while (ipa<fNpart) {
       while(1) {
 //
 // particle type
-	  Int_t Ipart = fIpParaFunc();
-	  fChildWeight=(fPythia->GetBraPart(Ipart))*fParentWeight;	  
-	  Float_t am=fPythia->GetPMAS(fPythia->LuComp(Ipart),1);
-	  pMC->Rndm(random,2);
+	  Int_t iPart = fIpParaFunc(fRandom);
+	  fChildWeight=(fDecayer->GetPartialBranchingRatio(iPart))*fParentWeight;	   
+	  TParticlePDG *particle = pDataBase->GetParticle(iPart);
+	  Float_t am = particle->Mass();
+
+	  Rndm(random,2);
 //
 // phi
 	  phi=fPhiMin+random[0]*(fPhiMax-fPhiMin);
@@ -165,7 +362,7 @@ void AliGenParam::Generate()
 	  ty=Float_t(TMath::TanH(fYPara->GetRandom()));
 //
 // pT
-	  if (fAnalog) {
+	  if (fAnalog == kAnalog) {
 	      pt=fPtPara->GetRandom();
 	      wgtp=fParentWeight;
 	      wgtch=fChildWeight;
@@ -176,16 +373,19 @@ void AliGenParam::Generate()
 	      wgtch=fChildWeight*fPtParaFunc(& ptd, &dummy);
 	  }
 	  xmt=sqrt(pt*pt+am*am);
+      if (TMath::Abs(ty)==1) ty=0;
 	  pl=xmt*ty/sqrt(1.-ty*ty);
 	  theta=TMath::ATan2(pt,pl);
+// Cut on theta
 	  if(theta<fThetaMin || theta>fThetaMax) continue;
 	  ptot=TMath::Sqrt(pt*pt+pl*pl);
+// Cut on momentum
 	  if(ptot<fPMin || ptot>fPMax) continue;
 	  p[0]=pt*TMath::Cos(phi);
 	  p[1]=pt*TMath::Sin(phi);
 	  p[2]=pl;
-	  if(fVertexSmear==perTrack) {
-	      pMC->Rndm(random,6);
+	  if(fVertexSmear==kPerTrack) {
+	      Rndm(random,6);
 	      for (j=0;j<3;j++) {
 		  origin0[j]=
 		      fOrigin[j]+fOsigma[j]*TMath::Cos(2*random[2*j]*TMath::Pi())*
@@ -193,48 +393,98 @@ void AliGenParam::Generate()
 	      }
 	  }
 	  
-	  Int_t kg=fPythia->GetGeantCode(Ipart);
+// Looking at fForceDecay : 
+// if fForceDecay != none Primary particle decays using 
+// AliPythia and children are tracked by GEANT
 //
-// parent
-
-	  gAlice->
-	      SetTrack(0,-1,kg,p,origin,polar,0,"Primary",nt,wgtp);
-	  Int_t iparent=nt;
+// if fForceDecay == none Primary particle is tracked by GEANT 
+// (In the latest, make sure that GEANT actually does all the decays you want)	  
 //
-// use lujet to decay particle
-
-	  Float_t energy=TMath::Sqrt(ptot*ptot+am*am);
-	  fPythia->DecayParticle(Ipart,energy,theta,phi);
+	  if (fForceDecay != kNoDecay) {
+// Using lujet to decay particle
+	      Float_t energy=TMath::Sqrt(ptot*ptot+am*am);
+	      TLorentzVector pmom(p[0], p[1], p[2], energy);
+	      fDecayer->Decay(iPart,&pmom);
 //
-// select muons
-	  TObjArray* particles = fPythia->GetPrimaries() ;
-	  Int_t np = particles->GetEntriesFast();
-	  for (Int_t i = 0; i<np; i++) {
-	      TMCParticle *  iparticle = (TMCParticle *) particles->At(i);
-	      Int_t kf = iparticle->GetKF();
+// select decay particles
+	      Int_t np=fDecayer->ImportParticles(particles);
+	      Int_t ncsel=0;
+	      for (i = 1; i<np; i++) {
+		  TParticle *  iparticle = (TParticle *) particles->At(i);
+		  Int_t kf = iparticle->GetPdgCode();
 //
 // children
-	      if (ChildSelected(TMath::Abs(kf)))
-	      {
-		  p[0]=iparticle->GetPx();
-		  p[1]=iparticle->GetPy();
-		  p[2]=iparticle->GetPz();
-		  origin[0]=origin0[0]+iparticle->GetVx()/10;
-		  origin[1]=origin0[1]+iparticle->GetVy()/10;
-		  origin[2]=origin0[2]+iparticle->GetVz()/10;
-		  gAlice->SetTrack(1,iparent,fPythia->GetGeantCode(kf),
-				   p,origin,polar,
-  				   0,"Decay",nt,wgtch);
-		  gAlice->KeepTrack(nt);
-	      } // select muon
-	  } // decay particle loop
+		  if (ChildSelected(TMath::Abs(kf)) || fForceDecay == kAll)
+		  {
+		      pc[0]=iparticle->Px();
+		      pc[1]=iparticle->Py();
+		      pc[2]=iparticle->Pz();
+		      och[0]=origin0[0]+iparticle->Vx()/10;
+		      och[1]=origin0[1]+iparticle->Vy()/10;
+		      och[2]=origin0[2]+iparticle->Vz()/10;
+		      if (fCutOnChild) {
+			  Float_t ptChild=TMath::Sqrt(pc[0]*pc[0]+pc[1]*pc[1]);
+			  Float_t pChild=TMath::Sqrt(ptChild*ptChild+pc[2]*pc[2]);
+			  Float_t thetaChild=TMath::ATan2(ptChild,pc[2]);
+			  Float_t phiChild=TMath::ATan2(pc[1],pc[0]);
+			  Bool_t childok = 
+			      ((ptChild    > fChildPtMin    && ptChild    <fChildPtMax)      &&
+			       (pChild     > fChildPMin     && pChild     <fChildPMax)       &&
+			       (thetaChild > fChildThetaMin && thetaChild <fChildThetaMax)   &&
+			       (phiChild   > fChildPhiMin   && phiChild   <fChildPhiMax));
+			  if(childok)
+			  {
+			      pch[ncsel][0]=pc[0];
+			      pch[ncsel][1]=pc[1];
+			      pch[ncsel][2]=pc[2];
+			      kfch[ncsel]=kf;
+			      ncsel++;
+			  } else {
+			      ncsel=-1;
+			      break;
+			  } // child kine cuts
+		      } else {
+			  pch[ncsel][0]=pc[0];
+			  pch[ncsel][1]=pc[1];
+			  pch[ncsel][2]=pc[2];
+			  kfch[ncsel]=kf;
+			  ncsel++;
+		      } // if child selection
+		  } // select muon
+	      } // decay particle loop
+	      Int_t iparent;
+	      if ((fCutOnChild && ncsel >0) || !fCutOnChild){
+		  ipa++;
+//
+// parent
+		  gAlice->
+		      SetTrack(0,-1,iPart,p,origin0,polar,0,kPPrimary,nt,wgtp);
+		  iparent=nt;
+		  gAlice->KeepTrack(nt); 
+		  for (i=0; i< ncsel; i++) {
+		      gAlice->SetTrack(fTrackIt,iparent,kfch[i],
+				       &pch[i][0],och,polar,
+				       0,kPDecay,nt,wgtch);
+		      gAlice->KeepTrack(nt); 
+		  }
+	      }  // Decays by Lujet
+	  } // kinematic selection
+	  else  // nodecay option, so parent will be tracked by GEANT (pions, kaons, eta, omegas, baryons)
+	  {
+	    gAlice->
+		SetTrack(fTrackIt,-1,iPart,p,origin0,polar,0,kPPrimary,nt,wgtp);
+            ipa++; 
+	  }
 	  break;
-      } // kinematic selection
+    } // while
   } // event loop
+  gAlice->SetHighWaterMark(nt);
+  
 }
 
 Bool_t AliGenParam::ChildSelected(Int_t ip)
 {
+// True if particle is in list of selected children
     for (Int_t i=0; i<5; i++)
     {
 	if (fChildSelect[i]==ip) return kTRUE;
@@ -242,11 +492,12 @@ Bool_t AliGenParam::ChildSelected(Int_t ip)
     return kFALSE;
 }
 
-Bool_t AliGenParam::KinematicSelection(TMCParticle *particle)
+Bool_t AliGenParam::KinematicSelection(TParticle *particle)
 {
-    Float_t px=particle->GetPx();
-    Float_t py=particle->GetPy();
-    Float_t pz=particle->GetPz();
+// Perform kinematic cuts
+    Float_t px=particle->Px();
+    Float_t py=particle->Py();
+    Float_t pz=particle->Pz();
 //
 // momentum cut
     Float_t p=TMath::Sqrt(px*px+py*py+pz*pz);
@@ -269,6 +520,12 @@ Bool_t AliGenParam::KinematicSelection(TMCParticle *particle)
     return kTRUE;
 }
 
+
+AliGenParam& AliGenParam::operator=(const  AliGenParam& rhs)
+{
+// Assignment operator
+    return *this;
+}
 
 
 

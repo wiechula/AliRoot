@@ -6,19 +6,15 @@
 #include "AliMoreModulesConstruction.h"
 #include "AliSingleModuleConstruction.h"
 #include "AliSDManager.h"
-#include "AliSensitiveDetector.h"
 #include "AliModule.h"
-#include "AliRun.h"
 #include "AliGlobals.h"
+#include "AliFiles.h"
 
 #include "TG4GeometryManager.h"
 
 #include <G4SDManager.hh>
 #include <G4LogicalVolume.hh>
 #include <G4LogicalVolumeStore.hh>
-
-#include <TROOT.h> 
-#include <TCint.h> 
 
 AliMoreModulesConstruction::AliMoreModulesConstruction() {
 //
@@ -28,20 +24,8 @@ AliMoreModulesConstruction::AliMoreModulesConstruction() {
 AliMoreModulesConstruction::AliMoreModulesConstruction(
                                const AliMoreModulesConstruction& right)
 {
-  // delete current module constructions
-  fModuleConstructionVector.erase(
-    fModuleConstructionVector.begin(), fModuleConstructionVector.end());
-    
-  // create new module constructions   
-  G4int nofModules = right.fModuleConstructionVector.size();
-  for (G4int i=0; i<nofModules; i++) {
-    G4String name = right.fModuleConstructionVector[i]->GetDetName();
-    G4int version = right.fModuleConstructionVector[i]->GetVersion();
-    AliModuleType type = right.fModuleConstructionVector[i]->GetType();
-    AddModule(name, version, type);
-  }  
-  
-  fSDManager = right.fSDManager;
+  // copy stuff
+  *this = right;
 }  
   			       
 
@@ -72,7 +56,7 @@ AliMoreModulesConstruction::operator=(const AliMoreModulesConstruction& right)
     AliModuleType type = right.fModuleConstructionVector[i]->GetType();
     AddModule(name, version, type);
   }  
-  
+
   fSDManager = right.fSDManager;
 
   return *this;  
@@ -150,6 +134,25 @@ void AliMoreModulesConstruction::AddModule(G4String moduleName, G4int version,
   fModuleConstructionVector.push_back(moduleConstruction);
 }  
   					   
+void AliMoreModulesConstruction::Configure(const AliFiles& files)
+{ 
+// Executes the detectors setup Root macros
+// (extracted from AliRoot Config.C) and
+// G4 macros.
+// ---
+  
+  // number of modules
+  G4int nofModules = fModuleConstructionVector.size();
+
+  if (nofModules == 0) {
+    AliGlobals::Warning(
+      "AliMoreModulesConstruction::Construct(): No modules are defined.");
+  }
+  else 
+    for (G4int i=0; i<nofModules; i++) 
+      fModuleConstructionVector[i]->Configure(files);
+}      
+
 void AliMoreModulesConstruction::Construct()
 { 
 // Constructs geometry.
@@ -171,7 +174,7 @@ void AliMoreModulesConstruction::Construct()
     G4int i;
     for (i=0; i<nofModules; i++) {
 
-      fModuleConstructionVector[i]->Configure();
+      // fModuleConstructionVector[i]->Configure(files);
     
       // register module name in the name map
       AliModule* module = fModuleConstructionVector[i]->GetAliModule();
@@ -182,9 +185,17 @@ void AliMoreModulesConstruction::Construct()
       G4String dataFilePath = fModuleConstructionVector[i]->GetDataFilePath();
 
       if (readGeometry) {
-        // create G3 geometry from g3calls.dat
-        pGeometryManager->SetWriteGeometry(false);
-        pGeometryManager->ReadG3Geometry(dataFilePath);
+        // TG4GeometryManager uses g3tog4 methods for reading
+	// g3calls.dat files - as these methods do not fill name map
+	// they cannot be used for constructing more modules
+	// together
+	//
+        // pGeometryManager->SetWriteGeometry(false);
+        // pGeometryManager->ReadG3Geometry(dataFilePath);
+	
+	G4String text = "AliMoreModulesConstruction::Construct - Limitation:\n";
+	text = text + "    Reading g3calls.dat is not implemented.";
+	AliGlobals::Exception(text);
       }
       else {	            
         // set geometry output stream for this module
@@ -199,6 +210,9 @@ void AliMoreModulesConstruction::Construct()
 
         // construct G3 geometry
         module->CreateGeometry();
+        
+        if (writeGeometry) 
+          pGeometryManager->CloseOutFile();
       }	
 
       // all logical volumes will be made sensitive if any
@@ -215,9 +229,6 @@ void AliMoreModulesConstruction::Construct()
     
     // create sensitive detectors
     CreateSensitiveDetectors(allLVSensitive);
-         // each single module construction can build sensitive detectors
-         // for all modules as all modules are in memory
-         // (volumes entities do not know to which module belong)
   
     for (i=0; i<nofModules; i++) {
       // set the detector frame (envelope)
@@ -226,6 +237,9 @@ void AliMoreModulesConstruction::Construct()
 
       // build sensitive detectors table
       fModuleConstructionVector[i]->GetAliModule()->Init();
+
+      // construct geometry for display
+      fModuleConstructionVector[i]->GetAliModule()->BuildGeometry();
     }  
 
     // reset TG4GeometryManager 
@@ -233,7 +247,7 @@ void AliMoreModulesConstruction::Construct()
   
     // print current total number of logical volumes
     G4cout << "Current total number of sensitive volumes: "
-           << pGeometryManager->NofVolumes() << endl;
+           << pGeometryManager->NofVolumes() << G4endl;
 
 #ifdef ALICE_VISUALIZE
     // set visualization attributes

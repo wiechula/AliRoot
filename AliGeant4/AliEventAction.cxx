@@ -3,22 +3,21 @@
 //
 // See the class description in the header file.
 
+#include <G4Timer.hh>
+   // in order to avoid the odd dependency for the
+   // times system function this include must be the first
+
 #include "AliEventAction.h"
 #include "AliEventActionMessenger.h"
-#include "AliRun.h"
 #include "AliTrackingAction.h"
-#include "AliSensitiveDetector.h"
 #include "AliGlobals.h"
-
-#include "TG4GeometryManager.h"
+#include "AliRun.h"
 
 #include <G4Event.hh>
 #include <G4TrajectoryContainer.hh>
 #include <G4Trajectory.hh>
 #include <G4VVisManager.hh>
 #include <G4UImanager.hh>
-#include <G4LogicalVolumeStore.hh>
-#include <G4VSensitiveDetector.hh>
 
 AliEventAction::AliEventAction()
   : fVerboseLevel(1), 
@@ -26,6 +25,7 @@ AliEventAction::AliEventAction()
 {
 //
   fMessenger = new AliEventActionMessenger(this);
+  fTimer = new G4Timer();
 }
 
 AliEventAction::AliEventAction(const AliEventAction& right) {
@@ -36,6 +36,7 @@ AliEventAction::AliEventAction(const AliEventAction& right) {
 AliEventAction::~AliEventAction() {
 //
   delete fMessenger;
+  delete fTimer;
 }
 
 // operators
@@ -57,7 +58,6 @@ void AliEventAction::DisplayEvent(const G4Event* event) const
 // Draws trajectories.
 // ---
 
-
   // trajectories processing
   G4TrajectoryContainer* trajectoryContainer 
     = event->GetTrajectoryContainer();
@@ -66,9 +66,9 @@ void AliEventAction::DisplayEvent(const G4Event* event) const
   if (trajectoryContainer)
   { nofTrajectories = trajectoryContainer->entries(); }
   
-  if (fVerboseLevel>0) {
+  if (fVerboseLevel>0 && nofTrajectories>0) {
     G4cout << "    " << nofTrajectories; 
-    G4cout << " trajectories stored." << endl;
+    G4cout << " trajectories stored." << G4endl;
   }  
 
   G4VVisManager* pVVisManager = G4VVisManager::GetConcreteInstance();
@@ -84,9 +84,11 @@ void AliEventAction::DisplayEvent(const G4Event* event) const
         AliGlobals::Exception(
 	  "AliEventAction::DisplayEvent: Unknown trajectory type.");
       }
-      else if ( (fDrawFlag == "ALL") ||
-               ((fDrawFlag == "CHARGED") && (trajectory->GetCharge() != 0.))){
-        trajectory->DrawTrajectory(2000); 
+      if ( (fDrawFlag == "ALL") ||
+          ((fDrawFlag == "CHARGED") && (trajectory->GetCharge() != 0.))){
+	 trajectory->DrawTrajectory(50); 
+	    // the argument number defines the size of the step points
+	    // use 2000 to make step points well visible
       }	
     }      
     G4UImanager::GetUIpointer()->ApplyCommand("/vis~/show/view");
@@ -102,13 +104,13 @@ void AliEventAction::BeginOfEventAction(const G4Event* event)
 
   G4int eventID = event->GetEventID();
 
-  // reset the counters (primary tracks, saved tracks)
-  AliTrackingAction* trackingAction
-    = AliTrackingAction::Instance();
-  trackingAction->PrepareNewEvent();   
+  // reset the tracks counters
+  AliTrackingAction::Instance()->PrepareNewEvent();   
 
   if (fVerboseLevel>0)
-    G4cout << ">>> Event " << event->GetEventID() << endl;
+    G4cout << ">>> Event " << event->GetEventID() << G4endl;
+
+  fTimer->Start();
 }
 
 void AliEventAction::EndOfEventAction(const G4Event* event)
@@ -116,30 +118,34 @@ void AliEventAction::EndOfEventAction(const G4Event* event)
 // Called by G4 kernel at the end of event.
 // ---
 
-  // save the last primary track store of
-  // the current event
-  AliTrackingAction* trackingAction
-    = AliTrackingAction::Instance();
-  trackingAction->SaveAndDestroyTrack();   
+  // finish the last primary track of the current event
+  AliTrackingAction* trackingAction = AliTrackingAction::Instance();
+  trackingAction->FinishPrimaryTrack();   
 
+  // verbose output 
   if (fVerboseLevel>0) {
-    G4int nofPrimaryTracks = trackingAction->GetNofPrimaryTracks();
+    //G4int nofPrimaryTracks = trackingAction->GetNofPrimaryTracks();
+    G4int nofPrimaryTracks = gAlice->GetHeader()->GetNprimary();
+    G4int nofSavedTracks = gAlice->GetNtrack();
+    G4int nofAllTracks = trackingAction->GetNofTracks();
+    
     G4cout  << "    " << nofPrimaryTracks << 
-               " primary tracks processed." << endl;
+               " primary tracks processed." << G4endl;
+    G4cout  << "    " << nofSavedTracks << 
+               " tracks saved." << G4endl;
+    G4cout  << "    " << nofAllTracks << 
+               " all tracks processed." << G4endl;
   }	       
 
   // display event
   DisplayEvent(event);
 
-  // aliroot
-  // store event header data
-  gAlice->GetHeader()->SetEvent(event->GetEventID());
-  gAlice->GetHeader()->SetNvertex(event->GetNumberOfPrimaryVertex());
-  gAlice->GetHeader()->SetNprimary(trackingAction->GetNofPrimaryTracks());
-  gAlice->GetHeader()->SetNtrack(trackingAction->GetNofSavedTracks());
-
+  // aliroot finish event
   gAlice->FinishEvent();    
-}
 
-
-
+  if (fVerboseLevel>0) {
+    // print time
+    fTimer->Stop();
+    G4cout << "Time of this event: " << *fTimer << G4endl;
+  }  
+ }

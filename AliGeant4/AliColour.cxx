@@ -4,7 +4,8 @@
 // See the class description in the header file.
 
 #include "AliColour.h"
-   
+#include <G4Colour.hh>
+  
 AliColour::AliColour()
   : fName (""),
     fRed(0.),
@@ -25,10 +26,8 @@ AliColour::AliColour(G4String name, G4double red, G4double blue, G4double green)
 
 AliColour::AliColour(const AliColour& right) {
 //
-  fName = right.fName;
-  fRed = right.fRed;
-  fBlue = right.fBlue;
-  fGreen = right.fGreen;
+  // copy stuff
+  *this = right;
 }
 
 AliColour::~AliColour() {

@@ -2,8 +2,11 @@
 * $Id$
 *
 * $Log$
-* Revision 1.1.1.2  1996/10/30 08:32:54  cernlib
-* Version 7.04
+* Revision 1.1.1.3  2000/04/19 13:30:02  mclareni
+* Import version 8.04
+*
+* Revision 1.2  2000/04/09 10:06:56  plothow
+* new version 8.00 - MRS 98 and 99, CTEQ5 and GRV98 added
 *
 * Revision 1.1.1.1  1996/04/12 15:30:17  plothow
 * Version 7.01
@@ -29,13 +32,13 @@ C
      +       DX,DQ,DXPDF(-6:6),
      +       ALF,ALPHAS2
       REAL    X, Q, UPV, DNV, USEA, DSEA, SSEA, CSEA, BOT, TOP, GLUE
-      DIMENSION XX(3),Q2(3)
+      DIMENSION XX(5),Q2(5)
       CHARACTER*20 PARM(NCHDIM)
 #include "pdf/expdp.inc"
      +       VAL(NCHDIM)
 C
-      DATA NXX,XX/3, .002,.140,.700/
-      DATA NQ2,Q2/3, 1.30,24.0,33.5/
+      DATA NXX,XX/5, .002,.140,.700,0.01,0.05/
+      DATA NQ2,Q2/5, 1.30,24.0,33.5,200.0,200.0/
 C
       N6 = L6
       IFLPRT = LFLPRT
@@ -57,7 +60,7 @@ C Test new PDFLIB versions (4.0 or bigger)
             DO ISET=-9,NPGSMX(KPTY,KGRO)
                IF((KPTY*KGRO).NE.1 .AND. ISET.LE.0) GOTO 300
                WRITE (N6,*) ' ==========================================
-     +================================================================='
+     +============================================'
                FIRST=.TRUE.
                IF(ISET.LE.-8) IFLSET = 0
                IF(ISET.LT.0) GOTO 50
@@ -134,8 +137,8 @@ C
                WRITE(N6,4000) NPTYPE,NGROUP,NSET,
      +         SFNAME(NPTYPE,NGROUP,NSET),MODECR(NPTYPE,NGROUP,NSET)
                WRITE(N6,4001) QCDL4,QCDL5,DQ,ALF
- 4000          FORMAT(/,'  Nptype = ',I1,'  Ngroup = ',I1,
-     +                  '  Nset = ',I2,'  Name  = "',A8,
+ 4000          FORMAT(/,'  Nptype = ',I1,'  Ngroup = ',I2,
+     +                  '  Nset = ',I3,'  Name  = "',A8,
      +                  '"  CrMode = ',I3)
  4001          FORMAT(1H ,' QCDL4, QCDL5 = ',2F7.4,
      +                    '    Scale = ',F8.4,'  alpha(s) = ',F7.5)

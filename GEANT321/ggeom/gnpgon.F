@@ -2,6 +2,12 @@
 * $Id$
 *
 * $Log$
+* Revision 1.2  2001/02/24 10:46:32  fca
+* Moving to double precision and introducing an additional security check
+*
+* Revision 1.1.1.1  1999/05/18 15:55:17  fca
+* AliRoot sources
+*
 * Revision 1.1.1.1  1995/10/24 10:20:54  cernlib
 * Geant
 *
@@ -31,9 +37,11 @@ C.    *         Author  A.McPherson,  P.Weidhaas  *********            *
 C.    *                                                                *
 C.    ******************************************************************
 C.
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
 #include "geant321/gconsp.inc"
  
-      DIMENSION X(6), PAR(50), TPAR(50)
+      REAL X(6), PAR(100), SNEXT, SNXT, SAFE
+      DIMENSION TPAR(100)
  
 C-----------------------------------------------------------------
  
@@ -263,6 +271,9 @@ C---------------------------------------------------------------------------
               SRIN = RIN
               DIST = ABS (COSPHC * X(1) + SINPHC * X(2) - SRIN)
               FACTC = (PT4 - PT2) * ZLENI
+            ELSE
+              PRINT *, 'GNPGON: FACTC not calculated!!!'
+              FACTC=0
             ENDIF
  
           ENDIF

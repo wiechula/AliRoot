@@ -5,22 +5,21 @@
 
 #include "AliRunConfiguration.h"
 #include "AliRunMessenger.h"
-#include "AliGlobals.h"
-
 #include "AliDetConstruction.h"
-#include "AliEmptyPhysicsList.h"
 #include "AliPrimaryGeneratorAction.h"
 #include "AliRunAction.h"
 #include "AliEventAction.h"
 #include "AliTrackingAction.h"
 #include "AliStackingAction.h"
-#include "AliSteppingAction.h"
+#include "AliFiles.h"
 
-#include "TG4PhysicsList.h"
+#include "TG4ModularPhysicsList.h"
+#include "TG4SteppingAction.h"
 
 AliRunConfiguration::AliRunConfiguration(){
 //
   fRunMessenger = new AliRunMessenger();
+  fFiles = new AliFiles();
  
   CreateUserConfiguration();
 }
@@ -34,6 +33,7 @@ AliRunConfiguration::AliRunConfiguration(const AliRunConfiguration& right)
 AliRunConfiguration::~AliRunConfiguration() {
 //
   delete fRunMessenger;
+  delete fFiles;
 
   // all user action data members are deleted 
   // in G4RunManager::~G4RunManager()
@@ -64,19 +64,30 @@ void AliRunConfiguration::CreateUserConfiguration()
 
   // create mandatory Geant4 classes
   fDetectorConstruction = new AliDetConstruction();
-#ifndef ALICE_EMPTY_PHYSICS_LIST
-  fPhysicsList = new TG4PhysicsList();
-#else
-  fPhysicsList = new AliEmptyPhysicsList();
-#endif
+  fPhysicsList = new TG4ModularPhysicsList();
   fPrimaryGenerator = new AliPrimaryGeneratorAction();
 
   // create the other user action classes
   fRunAction = new AliRunAction();
   fEventAction = new AliEventAction();
   fTrackingAction = new AliTrackingAction();
-  fSteppingAction = new AliSteppingAction();
-#ifdef ALICE_STACKING
+  fSteppingAction = new TG4SteppingAction();
   fStackingAction = new AliStackingAction();
-#endif
 }
+
+// public methods
+
+void AliRunConfiguration::SetConfigName(const char* name)
+{
+// Sets the configuration macro name 
+// ---
+  fFiles->SetMacroName(name);
+}  
+
+void AliRunConfiguration::SetG3CallsName(const char* name)
+{
+// Sets the configuration macro name 
+// ---
+  fFiles->SetG3CallsName(name);
+}  
+

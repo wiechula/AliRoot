@@ -1,3 +1,5 @@
+# $Id$
+ 
 # Which Machine 
 PLATFORM      = solaris
 
@@ -8,13 +10,15 @@ F77	      = f77
 
 # Global optimisation
 OPT           = -O
-OPT           = -g
 
 # Shared library suffix
 SL	      = so
 
+# AWK
+AWK	      = /usr/xpg4/bin/awk
+
 # The options
-CXXOPTS       = +w -KPIC
+CXXOPTS       = $(OPT) +w -KPIC -features=rtti
 COPT	      = $(OPT) -KPIC -erroff=%none
 FOPT	      = $(OPT) -KPIC
 
@@ -23,19 +27,18 @@ FOPT	      = $(OPT) -KPIC
 CLIBDEFS      = -DCERNLIB_SUN -DCERNLIB_BLDLIB -DCERNLIB_CZ
 CLIBCXXOPTS   = 
 CLIBCOPT      = 
-CLIBFOPT      =
+CLIBFOPT      = -xpp=cpp
 
 # Additional directories for dependencies
 
-DEPINC        = -I/opt/SUNWspro/SC4.0/include/CC -I/opt/SUNWspro/SC4.0/include/cc
+DEPINC        = -I/opt/SUNWspro/SC4.2/include/CC -I/opt/SUNWspro/SC4.2/include/cc
 		
 LD            = /opt/SUNWspro/bin/CC
 LDFLAGS       = $(OPT) -Qoption ld -t
+
+SHLD	      = $(LD)
 SOFLAGS       = -G
 SHLIB         = -L/opt/SUNWspro/lib -lF77 -lM77 /opt/SUNWspro/lib/libsunmath.so.1
-
-G3LIBS        = -lgeant321
-CLIBS         = -lminicern
 
 LIBS          = $(ROOTLIBS) -lm -lgen -ldl -lsocket -lsunmath
 GLIBS         = $(ROOTLIBS) $(ROOTGLIBS) -L/usr/dt/lib -L/usr/openwin/lib \

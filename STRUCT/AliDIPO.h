@@ -1,25 +1,24 @@
-#ifndef DIPO_H
-#define DIPO_H
+#ifndef ALIDIPO_H
+#define ALIDIPO_H
+/* Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 ////////////////////////////////////////////////
-//  Manager class for detector: DIPO          //
+//  Manager class for Module: DIPO          //
 ////////////////////////////////////////////////
  
-#include "AliDetector.h"
+#include "AliModule.h"
  
  
-class AliDIPO : public AliDetector {
+class AliDIPO : public AliModule {
  
 public:
   AliDIPO();
   AliDIPO(const char *name, const char *title);
   virtual      ~AliDIPO() {}
-  virtual void  BuildGeometry();
-  virtual void  CreateGeometry()=0;
-  virtual void  CreateMaterials()=0;
   virtual void  Init();
-  virtual Int_t IsVersion() const {return 0;}
-  virtual void  DrawDetector()=0;
-  virtual void  StepManager()=0;
   
   ClassDef(AliDIPO,1)  //Class for the dipole magnet
 };

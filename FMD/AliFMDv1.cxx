@@ -1,886 +1,321 @@
-///////////////////////////////////////////////////////////////////////////////
-//                                                                           //
-//  Forward Multiplicity Detector Version 1                                  //
-//                                                                           //
-//Begin_Html
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
+ /////////////////////////////////////////////////////////////////////
+//                                                                 //
+// Forward Multiplicity detector based on Silicon version 0        //
+//
+//Begin Html       
 /*
-<img src="gif/AliFMDv1Class.gif">
-</pre>
-<br clear=left>
-<font size=+2 color=red>
-<p>The responsible person for this module is
-<a href="mailto:Valeri.Kondratiev@cern.ch">Valeri Kondratiev</a>.
-</font>
-<pre>
+<img src="gif/AliFMDv0Class.gif">
 */
-//End_Html
-//                                                                           //
-///////////////////////////////////////////////////////////////////////////////
+//End Html
+//                                                                  //
+//                                                                  //
+//////////////////////////////////////////////////////////////////////
 
-#include "AliRun.h"
+#include <TMath.h>
+#include <TGeometry.h>
+#include <TTUBE.h>
+#include <TFile.h>
+#include <TTree.h>
+#include <TNode.h>
+#include <TClonesArray.h>
+#include <TLorentzVector.h>
+#include <TDirectory.h>
 #include "AliFMDv1.h"
+#include "AliRun.h"
 #include "AliMC.h"
-#include "AliConst.h"
- 
- 
+#include <iostream.h>
+#include <fstream.h>
+#include "AliMagF.h"
+#include "AliFMDhit.h"
+#include "AliFMDdigit.h"
+#include <stdlib.h>
+//#include "TGeant3.h"
+//class TGeant3;
 ClassImp(AliFMDv1)
- 
-//_____________________________________________________________________________
-AliFMDv1::AliFMDv1() : AliFMD()
+
+//--------------------------------------------------------------------
+AliFMDv1::AliFMDv1(const char *name, const char *title):
+ AliFMD(name,title)
 {
   //
-  // Defautl constructor for FMD version 1
+  // Standart constructor for Forward Multiplicity Detector version 0
   //
+  fIdSens1=0;
+//  setBufferSize(128000);
 }
- 
-//_____________________________________________________________________________
-AliFMDv1::AliFMDv1(const char *name, const char *title)
-  : AliFMD(name,title)
-{
-  //
-  // Standard constructor for FMD version 1
-  //
-}
- 
-//_____________________________________________________________________________
+//-------------------------------------------------------------------------
 void AliFMDv1::CreateGeometry()
 {
+ //
+  // Create the geometry of Forward Multiplicity Detector version 0
   //
-  // Creation of the geometry of the FMD version 1
-  //
-  //Begin_Html
+  //Detector consists of 6 volumes: 
+  // 1st covered pseudorapidity interval from 3.3 to 2.0
+  // and placed on 65cm in Z-direction;
+  // 2nd - from 2.0 to 1.6 and Z=85 cm;
+  // 3d  - the same pseudorapidity interval as the 1st 
+  // but on the other side from the interaction point z=-65cm;
+  // 4th - simmetricaly with the 2nd : 
+  // pseudorapidity from 2.0 to 1.6, Z=-85cm   
+  // 5th - from 3.6 to 4.7, Z=-270cm
+  // 6th - from 4.5 to 5.5 , Z=-630cm.
+  // Each part has 400mkm Si (sensetive area, detector itself),
+  // 0.75cm of plastic simulated electronics material,
+  // Al support ring 2cm thickness and 1cm width placed on 
+  // the outer radius of each Si disk;
+  //    
+  // begin Html
   /*
-    <img src="gif/AliFMDv1Tree.gif">
-  */
-  //End_Html
-  //Begin_Html
-  /*
-    <img src="gif/AliFMDv1.gif">
-  */
-  //End_Html
-
-  AliMC* pMC = AliMC::GetMC();
-  
-  Float_t rout;
-  Float_t z;
-  Float_t h1, h2, t0, t1, t2;
-  Float_t tt;
-  Float_t par[3], rin;
-  const Float_t v1 = 42.0;
-  const Float_t v2 = 4.5;
-  const Float_t v3 = 5.62;
-  const Float_t v4 = 16.0;
-  
-  Int_t *idtmed = gAlice->Idtmed();    
-  
-  // ******************************************************** 
-  //     DEFINE RIGHT DISK#3  OF FMD 
-  // ******************************************************** 
-  
-  //     Define parameters 
-  
-  rin  = 4.5;
-  rout = 10.5;
-  z    = 85.;
-  tt   = 2.5;
-  h1   = TMath::Sqrt(rout * rout + v1/ (tt * kPI)) - rout;
-  h2   = .4;
-  t0   = v2/ (h1 * kPI * (h1 + rout * 2.));
-  t1   = v3/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  t2   = v4/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  
-  // *******Inner slice*********** 
-  //     Inner steel wall 
-  par[0] = rin - .02;
-  par[1] = rin;
-  par[2] = 1.5;
-  pMC->Gsvolu("IWR3", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("IWR3", 1, "ALIC", 0., 0., z + 1.5, 0, "ONLY");
-  //     Front steel wall 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("FWR3", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("FWR3", 1, "ALIC", 0., 0., z + .01, 0, "ONLY");
-  //     Rear steel wall 
-  pMC->Gsvolu("RWR3", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("RWR3", 1, "ALIC", 0., 0., z + 2.99, 0, "ONLY");
-  //     MCP 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .07;
-  pMC->Gsvolu("MPR3", "TUBE", idtmed[900], par, 3);
-  pMC->Gspos("MPR3", 1, "ALIC", 0., 0., z + 1.57, 0, "ONLY");
-  //     Silicon plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .019;
-  pMC->Gsvolu("SPR3", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SPR3", 1, "ALIC", 0., 0., z + 1.719, 0, "ONLY");
-  //     Summator plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("SMR3", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SMR3", 1, "ALIC", 0., 0., z + 2.01, 0, "ONLY");
-  // *******Outer slice ******* 
-  //     Ceramic plate 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = 1.25;
-  pMC->Gsvolu("CPR3", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CPR3", 1, "ALIC", 0., 0., z + 1.5, 0, "ONLY");
-  //     Covar spring 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = t0 / 2.;
-  pMC->Gsvolu("C1R3", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C1R3", 1, "ALIC", 0., 0., z + .25 - t0 / 2., 0, "ONLY");
-  pMC->Gsvolu("C2R3", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C2R3", 1, "ALIC", 0., 0., z + 2.75 + t0 / 2., 0, "ONLY");
-  //     Getter camera 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t1 / 2.;
-  pMC->Gsvolu("GKR3", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("GKR3", 1, "ALIC", 0., 0., z + .25 + t1 / 2., 0, "ONLY");
-  //     Ceramic slice 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t2 / 2.;
-  pMC->Gsvolu("SCR3", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SCR3", 1, "ALIC", 0., 0., z + .25 + t1 + t2 / 2., 0, "ONLY");
-  // ******Electronic slice ******* 
-  //     Silicon ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("SER3", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SER3", 1, "ALIC", 0., 0., z + 1.57 - .025, 0, "ONLY");
-  //     Ceramic ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("CER3", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CER3", 1, "ALIC", 0., 0., z + 1.58 + .025, 0, "ONLY");
-  // *********************************************************** 
-  //     DEFINE LEFT DISK#3 OF FMD 
-  // *********************************************************** 
-  
-  //     Define parameters 
-  
-  rin  = 4.5;
-  rout = 10.5;
-  z    = -85.;
-  tt   = 2.5;
-  h1   = TMath::Sqrt(rout * rout + v1/ (tt * kPI)) - rout;
-  h2   = .4;
-  t0   = v2/ (h1 * kPI * (h1 + rout * 2.));
-  t1   = v3/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  t2   = v4/  (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  
-  // *******Inner slice*********** 
-  //     Inner steel wall 
-  par[0] = rin - .02;
-  par[1] = rin;
-  par[2] = 1.5;
-  pMC->Gsvolu("IWL3", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("IWL3", 1, "ALIC", 0., 0., z - 1.5, 0, "ONLY");
-  //     Front steel wall 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("FWL3", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("FWL3", 1, "ALIC", 0., 0., z - .01, 0, "ONLY");
-  //     Rear steel wall 
-  pMC->Gsvolu("RWL3", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("RWL3", 1, "ALIC", 0., 0., z - 2.99, 0, "ONLY");
-  //     MCP 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .07;
-  pMC->Gsvolu("MPL3", "TUBE", idtmed[900], par, 3);
-  pMC->Gspos("MPL3", 1, "ALIC", 0., 0., z - 1.57, 0, "ONLY");
-  //     Silicon plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .019;
-  pMC->Gsvolu("SPL3", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SPL3", 1, "ALIC", 0., 0., z - 1.719, 0, "ONLY");
-  //     Summator plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("SML3", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SML3", 1, "ALIC", 0., 0., z - 2.01, 0, "ONLY");
-  // *******Outer slice ******* 
-  //     Ceramic plate 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = 1.25;
-  pMC->Gsvolu("CPL3", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CPL3", 1, "ALIC", 0., 0., z - 1.5, 0, "ONLY");
-  //     Covar spring 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = t0 / 2.;
-  pMC->Gsvolu("C1L3", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C1L3", 1, "ALIC", 0., 0., z - .25 + t0 / 2., 0, "ONLY");
-  pMC->Gsvolu("C2L3", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C2L3", 1, "ALIC", 0., 0., z - 2.75 - t0 / 2., 0, "ONLY");
-  //     Getter camera 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t1 / 2.;
-  pMC->Gsvolu("GKL3", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("GKL3", 1, "ALIC", 0., 0., z - .25 - t1 / 2., 0, "ONLY");
-  //     Ceramic slice 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t2 / 2.;
-  pMC->Gsvolu("SCL3", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SCL3", 1, "ALIC", 0., 0., z - .25 - t1 - t2 / 2., 0, "ONLY");
-  // ******Electronic slice ******* 
-  //     Silicon ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("SEL3", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SEL3", 1, "ALIC", 0., 0., z - 1.57 + .025, 0, "ONLY");
-  //     Ceramic ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("CEL3", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CEL3", 1, "ALIC", 0., 0., z - 1.58 - .025, 0, "ONLY");
-  // ******************************************************** 
-  //     DEFINE RIGHT DISK#2  OF FMD 
-  // ******************************************************** 
-  
-  //     Define parameters 
-  
-  rin  = 8.;
-  rout = 14.;
-  z    = 69.7;
-  tt   = 2.5;
-  h1   = TMath::Sqrt(rout * rout + v1/ (tt * kPI)) - rout;
-  h2   = .4;
-  t0   = v2/ (h1 * kPI * (h1 + rout * 2.));
-  t1   = v3/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  t2   = v4/  (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  
-  // *******Inner slice*********** 
-  //     Inner steel wall 
-  par[0] = rin - .02;
-  par[1] = rin;
-  par[2] = 1.5;
-  pMC->Gsvolu("IWR2", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("IWR2", 1, "ALIC", 0., 0., z + 1.5, 0, "ONLY");
-  //     Front steel wall 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("FWR2", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("FWR2", 1, "ALIC", 0., 0., z + .01, 0, "ONLY");
-  //     Rear steel wall 
-  pMC->Gsvolu("RWR2", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("RWR2", 1, "ALIC", 0., 0., z + 2.99, 0, "ONLY");
-  //     MCP 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .07;
-  pMC->Gsvolu("MPR2", "TUBE", idtmed[900], par, 3);
-  pMC->Gspos("MPR2", 1, "ALIC", 0., 0., z + 1.57, 0, "ONLY");
-  //     Silicon plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .019;
-  pMC->Gsvolu("SPR2", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SPR2", 1, "ALIC", 0., 0., z + 1.719, 0, "ONLY");
-  //     Summator plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("SMR2", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SMR2", 1, "ALIC", 0., 0., z + 2.01, 0, "ONLY");
-  // *******Outer slice ******* 
-  //     Ceramic plate 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = 1.25;
-  pMC->Gsvolu("CPR2", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CPR2", 1, "ALIC", 0., 0., z + 1.5, 0, "ONLY");
-  //     Covar spring 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = t0 / 2.;
-  pMC->Gsvolu("C1R2", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C1R2", 1, "ALIC", 0., 0., z + .25 - t0 / 2., 0, "ONLY");
-  pMC->Gsvolu("C2R2", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C2R2", 1, "ALIC", 0., 0., z + 2.75 + t0 / 2., 0, "ONLY");
-  //     Getter camera 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t1 / 2.;
-  pMC->Gsvolu("GKR2", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("GKR2", 1, "ALIC", 0., 0., z + .25 + t1 / 2., 0, "ONLY");
-  //     Ceramic slice 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t2 / 2.;
-  pMC->Gsvolu("SCR2", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SCR2", 1, "ALIC", 0., 0., z + .25 + t1 + t2 / 2., 0, "ONLY");
-  // ******Electronic slice ******* 
-  //     Silicon ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("SER2", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SER2", 1, "ALIC", 0., 0., z + 1.57 - .025, 0, "ONLY");
-  //     Ceramic ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("CER2", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CER2", 1, "ALIC", 0., 0., z + 1.58 + .025, 0, "ONLY");
-  // *********************************************************** 
-  //       DEFINE LEFT DISK#2 OF FMD 
-  // *********************************************************** 
-  
-  //       Define parameters 
-  
-  rin  = 8.;
-  rout = 14.;
-  z    = -69.7;
-  tt   = 2.5;
-  h1   = TMath::Sqrt(rout * rout + v1/ (tt * kPI)) - rout;
-  h2   = .4;
-  t0   = v2/ (h1 * kPI * (h1 + rout * 2.));
-  t1   = v3/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  t2   = v4/  (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  
-  // *******Inner slice*********** 
-  //     Inner steel wall 
-  par[0] = rin - .02;
-  par[1] = rin;
-  par[2] = 1.5;
-  pMC->Gsvolu("IWL2", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("IWL2", 1, "ALIC", 0., 0., z - 1.5, 0, "ONLY");
-  //     Front steel wall 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("FWL2", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("FWL2", 1, "ALIC", 0., 0., z - .01, 0, "ONLY");
-  //     Rear steel wall 
-  pMC->Gsvolu("RWL2", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("RWL2", 1, "ALIC", 0., 0., z - 2.99, 0, "ONLY");
-  //     MCP 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .07;
-  pMC->Gsvolu("MPL2", "TUBE", idtmed[900], par, 3);
-  pMC->Gspos("MPL2", 1, "ALIC", 0., 0., z - 1.57, 0, "ONLY");
-  //     Silicon plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .019;
-  pMC->Gsvolu("SPL2", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SPL2", 1, "ALIC", 0., 0., z - 1.719, 0, "ONLY");
-  //     Summator plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("SML2", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SML2", 1, "ALIC", 0., 0., z - 2.01, 0, "ONLY");
-  // *******Outer slice ******* 
-  //     Ceramic plate 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = 1.25;
-  pMC->Gsvolu("CPL2", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CPL2", 1, "ALIC", 0., 0., z - 1.5, 0, "ONLY");
-  //     Covar spring 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = t0 / 2.;
-  pMC->Gsvolu("C1L2", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C1L2", 1, "ALIC", 0., 0., z - .25 + t0 / 2., 0, "ONLY");
-  pMC->Gsvolu("C2L2", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C2L2", 1, "ALIC", 0., 0., z - 2.75 - t0 / 2., 0, "ONLY");
-  //     Getter camera 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t1 / 2.;
-  pMC->Gsvolu("GKL2", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("GKL2", 1, "ALIC", 0., 0., z - .25 - t1 / 2., 0, "ONLY");
-  //     Ceramic slice 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t2 / 2.;
-  pMC->Gsvolu("SCL2", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SCL2", 1, "ALIC", 0., 0., z - .25 - t1 - t2 / 2., 0, "ONLY");
-  // ******Electronic slice ******* 
-  //     Silicon ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("SEL2", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SEL2", 1, "ALIC", 0., 0., z - 1.57 + .025, 0, "ONLY");
-  //     Ceramic ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("CEL2", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CEL2", 1, "ALIC", 0., 0., z - 1.58 - .025, 0, "ONLY");
-  // ******************************************************** 
-  //     DEFINE RIGHT DISK#1  OF FMD 
-  // ******************************************************** 
-  
-  //     Define parameters 
-
-  rin  = 8.;
-  rout = 17.5;
-  z    = 42.5;
-  tt   = 2.5;
-  h1   = TMath::Sqrt(rout * rout + v1/ (tt * kPI)) - rout;
-  h2   = .4;
-  t0   = v2/ (h1 * kPI * (h1 + rout * 2.));
-  t1   = v3/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  t2   = v4/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  
-  // *******Inner slice*********** 
-  //     Inner steel wall 
-  par[0] = rin - .02;
-  par[1] = rin;
-  par[2] = 1.5;
-  pMC->Gsvolu("IWR1", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("IWR1", 1, "ALIC", 0., 0., z + 1.5, 0, "ONLY");
-  //     Front steel wall 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("FWR1", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("FWR1", 1, "ALIC", 0., 0., z + .01, 0, "ONLY");
-  //     Rear steel wall 
-  pMC->Gsvolu("RWR1", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("RWR1", 1, "ALIC", 0., 0., z + 2.99, 0, "ONLY");
-  //     MCP 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .07;
-  pMC->Gsvolu("MPR1", "TUBE", idtmed[900], par, 3);
-  pMC->Gspos("MPR1", 1, "ALIC", 0., 0., z + 1.57, 0, "ONLY");
-  //     Silicon plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .019;
-  pMC->Gsvolu("SPR1", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SPR1", 1, "ALIC", 0., 0., z + 1.719, 0, "ONLY");
-  //     Summator plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("SMR1", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SMR1", 1, "ALIC", 0., 0., z + 2.01, 0, "ONLY");
-  // *******Outer slice ******* 
-  //     Ceramic plate 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = 1.25;
-  pMC->Gsvolu("CPR1", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CPR1", 1, "ALIC", 0., 0., z + 1.5, 0, "ONLY");
-  //     Covar spring 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = t0 / 2.;
-  pMC->Gsvolu("C1R1", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C1R1", 1, "ALIC", 0., 0., z + .25 - t0 / 2., 0, "ONLY");
-  pMC->Gsvolu("C2R1", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C2R1", 1, "ALIC", 0., 0., z + 2.75 + t0 / 2., 0, "ONLY");
-  //     Getter camera 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t1 / 2.;
-  pMC->Gsvolu("GKR1", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("GKR1", 1, "ALIC", 0., 0., z + .25 + t1 / 2., 0, "ONLY");
-  //     Ceramic slice 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t2 / 2.;
-  pMC->Gsvolu("SCR1", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SCR1", 1, "ALIC", 0., 0., z + .25 + t1 + t2 / 2., 0, "ONLY");
-  // ******Electronic slice ******* 
-  //     Silicon ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("SER1", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SER1", 1, "ALIC", 0., 0., z + 1.57 - .025, 0, "ONLY");
-  //     Ceramic ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("CER1", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CER1", 1, "ALIC", 0., 0., z + 1.58 + .025, 0, "ONLY");
-  // *********************************************************** 
-  //     DEFINE LEFT DISK#1 OF FMD 
-  // *********************************************************** 
-  
-  //     Define parameters 
-  
-  rin  = 8.;
-  rout = 17.5;
-  z    = -42.5;
-  tt   = 2.5;
-  h1   = TMath::Sqrt(rout * rout + v1/ (tt * kPI)) - rout;
-  h2   = .4;
-  t0   = v2/ (h1 * kPI * (h1 + rout * 2.));
-  t1   = v3/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  t2   = v4/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  
-  // *******Inner slice*********** 
-  //     Inner steel wall 
-  par[0] = rin - .02;
-  par[1] = rin;
-  par[2] = 1.5;
-  pMC->Gsvolu("IWL1", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("IWL1", 1, "ALIC", 0., 0., z - 1.5, 0, "ONLY");
-  //     Front steel wall 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("FWL1", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("FWL1", 1, "ALIC", 0., 0., z - .01, 0, "ONLY");
-  //     Rear steel wall 
-  pMC->Gsvolu("RWL1", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("RWL1", 1, "ALIC", 0., 0., z - 2.99, 0, "ONLY");
-  //     MCP 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .07;
-  pMC->Gsvolu("MPL1", "TUBE", idtmed[900], par, 3);
-  pMC->Gspos("MPL1", 1, "ALIC", 0., 0., z - 1.57, 0, "ONLY");
-  //     Silicon plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .019;
-  pMC->Gsvolu("SPL1", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SPL1", 1, "ALIC", 0., 0., z - 1.719, 0, "ONLY");
-  //     Summator plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("SML1", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SML1", 1, "ALIC", 0., 0., z - 2.01, 0, "ONLY");
-  // *******Outer slice ******* 
-  //     Ceramic plate 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = 1.25;
-  pMC->Gsvolu("CPL1", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CPL1", 1, "ALIC", 0., 0., z - 1.5, 0, "ONLY");
-  //     Covar spring 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = t0 / 2.;
-  pMC->Gsvolu("C1L1", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C1L1", 1, "ALIC", 0., 0., z - .25 + t0 / 2., 0, "ONLY");
-  pMC->Gsvolu("C2L1", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C2L1", 1, "ALIC", 0., 0., z - 2.75 - t0 / 2., 0, "ONLY");
-  //     Getter camera 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t1 / 2.;
-  pMC->Gsvolu("GKL1", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("GKL1", 1, "ALIC", 0., 0., z - .25 - t1 / 2., 0, "ONLY");
-  //     Ceramic slice 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t2 / 2.;
-  pMC->Gsvolu("SCL1", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SCL1", 1, "ALIC", 0., 0., z - .25 - t1 - t2 / 2., 0, "ONLY");
-  // ******Electronic slice ******* 
-  //     Silicon ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("SEL1", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SEL1", 1, "ALIC", 0., 0., z - 1.57 + .025, 0, "ONLY");
-  //     Ceramic ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("CEL1", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CEL1", 1, "ALIC", 0., 0., z - 1.58 - .025, 0, "ONLY");
-  // *********************************************************** 
-  //     DEFINE LEFT DISK#4 OF FMD 
-  // *********************************************************** 
-  
-  //     Define parameters 
-  
-  rin  = 4.2;
-  rout = 13.;
-  z    = -229.5;
-  tt   = 2.5;
-  h1   = TMath::Sqrt(rout * rout + v1/ (tt * kPI)) - rout;
-  h2   = .4;
-  t0   = v2/ (h1 * kPI * (h1 + rout * 2.));
-  t1   = v3/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  t2   = v4/ (h2 * kPI * (h2 + (h1 + rout) * 2.));
-  
-  // *******Inner slice*********** 
-  //     Inner steel wall 
-  par[0] = rin - .02;
-  par[1] = rin;
-  par[2] = 1.5;
-  pMC->Gsvolu("IWL4", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("IWL4", 1, "ALIC", 0., 0., z - 1.5, 0, "ONLY");
-  //     Front steel wall 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("FWL4", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("FWL4", 1, "ALIC", 0., 0., z - .01, 0, "ONLY");
-  //     Rear steel wall 
-  pMC->Gsvolu("RWL4", "TUBE", idtmed[899], par, 3);
-  pMC->Gspos("RWL4", 1, "ALIC", 0., 0., z - 2.99, 0, "ONLY");
-  //     MCP 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .07;
-  pMC->Gsvolu("MPL4", "TUBE", idtmed[900], par, 3);
-  pMC->Gspos("MPL4", 1, "ALIC", 0., 0., z - 1.57, 0, "ONLY");
-  //     Silicon plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .019;
-  pMC->Gsvolu("SPL4", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SPL4", 1, "ALIC", 0., 0., z - 1.719, 0, "ONLY");
-  //     Summator plate 
-  par[0] = rin;
-  par[1] = rout;
-  par[2] = .01;
-  pMC->Gsvolu("SML4", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SML4", 1, "ALIC", 0., 0., z - 2.01, 0, "ONLY");
-  // *******Outer slice ******* 
-  //     Ceramic plate 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = 1.25;
-  pMC->Gsvolu("CPL4", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CPL4", 1, "ALIC", 0., 0., z - 1.5, 0, "ONLY");
-  //     Covar spring 
-  par[0] = rout;
-  par[1] = rout + h1;
-  par[2] = t0 / 2.;
-  pMC->Gsvolu("C1L4", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C1L4", 1, "ALIC", 0., 0., z - .25 + t0 / 2., 0, "ONLY");
-  pMC->Gsvolu("C2L4", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("C2L4", 1, "ALIC", 0., 0., z - 2.75 - t0 / 2., 0, "ONLY");
-  //       Getter camera 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t1 / 2.;
-  pMC->Gsvolu("GKL4", "TUBE", idtmed[903], par, 3);
-  pMC->Gspos("GKL4", 1, "ALIC", 0., 0., z - .25 - t1 / 2., 0, "ONLY");
-  //     Ceramic slice 
-  par[0] = rout + h1;
-  par[1] = rout + h1 + h2;
-  par[2] = t2 / 2.;
-  pMC->Gsvolu("SCL4", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("SCL4", 1, "ALIC", 0., 0., z - .25 - t1 - t2 / 2., 0, "ONLY");
-  // ******Electronic slice ******* 
-  //     Silicon ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("SEL4", "TUBE", idtmed[901], par, 3);
-  pMC->Gspos("SEL4", 1, "ALIC", 0., 0., z - 1.57 + .025, 0, "ONLY");
-  //     Ceramic ring 
-  par[0] = rout + h1 + h2;
-  par[1] = rout + h1 + h2 + 5.;
-  par[2] = .025;
-  pMC->Gsvolu("CEL4", "TUBE", idtmed[902], par, 3);
-  pMC->Gspos("CEL4", 1, "ALIC", 0., 0., z - 1.58 - .025, 0, "ONLY");
-}
- 
-//_____________________________________________________________________________
-void AliFMDv1::DrawDetector()
-{
-  //
-  // Draw a shaded view of the FMD version 1
+   <img src="gif/AliFMDv0.gif">
+   */
   //
 
-  AliMC* pMC = AliMC::GetMC();
-  
-  // Set everything unseen
-  pMC->Gsatt("*", "seen", -1);
-  // 
-  // Set ALIC mother transparent
-  pMC->Gsatt("ALIC","SEEN",0);
-  //
-  // Set the volumes visible
-  pMC->Gsatt("IWR3","seen",1);
-  pMC->Gsatt("FWR3","seen",1);
-  pMC->Gsatt("RWR3","seen",1);
-  pMC->Gsatt("MPR3","seen",1);
-  pMC->Gsatt("SPR3","seen",1);
-  pMC->Gsatt("SMR3","seen",1);
-  pMC->Gsatt("CPR3","seen",1);
-  pMC->Gsatt("C1R3","seen",1);
-  pMC->Gsatt("C2R3","seen",1);
-  pMC->Gsatt("GKR3","seen",1);
-  pMC->Gsatt("SCR3","seen",1);
-  pMC->Gsatt("SER3","seen",1);
-  pMC->Gsatt("CER3","seen",1);
-  pMC->Gsatt("IWL3","seen",1);
-  pMC->Gsatt("FWL3","seen",1);
-  pMC->Gsatt("RWL3","seen",1);
-  pMC->Gsatt("MPL3","seen",1);
-  pMC->Gsatt("SPL3","seen",1);
-  pMC->Gsatt("SML3","seen",1);
-  pMC->Gsatt("CPL3","seen",1);
-  pMC->Gsatt("C1L3","seen",1);
-  pMC->Gsatt("C2L3","seen",1);
-  pMC->Gsatt("GKL3","seen",1);
-  pMC->Gsatt("SCL3","seen",1);
-  pMC->Gsatt("SEL3","seen",1);
-  pMC->Gsatt("CEL3","seen",1);
-  pMC->Gsatt("IWR2","seen",1);
-  pMC->Gsatt("FWR2","seen",1);
-  pMC->Gsatt("RWR2","seen",1);
-  pMC->Gsatt("MPR2","seen",1);
-  pMC->Gsatt("SPR2","seen",1);
-  pMC->Gsatt("SMR2","seen",1);
-  pMC->Gsatt("CPR2","seen",1);
-  pMC->Gsatt("C1R2","seen",1);
-  pMC->Gsatt("C2R2","seen",1);
-  pMC->Gsatt("GKR2","seen",1);
-  pMC->Gsatt("SCR2","seen",1);
-  pMC->Gsatt("SER2","seen",1);
-  pMC->Gsatt("CER2","seen",1);
-  pMC->Gsatt("IWL2","seen",1);
-  pMC->Gsatt("FWL2","seen",1);
-  pMC->Gsatt("RWL2","seen",1);
-  pMC->Gsatt("MPL2","seen",1);
-  pMC->Gsatt("SPL2","seen",1);
-  pMC->Gsatt("SML2","seen",1);
-  pMC->Gsatt("CPL2","seen",1);
-  pMC->Gsatt("C1L2","seen",1);
-  pMC->Gsatt("C2L2","seen",1);
-  pMC->Gsatt("GKL2","seen",1);
-  pMC->Gsatt("SCL2","seen",1);
-  pMC->Gsatt("SEL2","seen",1);
-  pMC->Gsatt("CEL2","seen",1);
-  pMC->Gsatt("IWR1","seen",1);
-  pMC->Gsatt("FWR1","seen",1);
-  pMC->Gsatt("RWR1","seen",1);
-  pMC->Gsatt("MPR1","seen",1);
-  pMC->Gsatt("SPR1","seen",1);
-  pMC->Gsatt("SMR1","seen",1);
-  pMC->Gsatt("CPR1","seen",1);
-  pMC->Gsatt("C1R1","seen",1);
-  pMC->Gsatt("C2R1","seen",1);
-  pMC->Gsatt("GKR1","seen",1);
-  pMC->Gsatt("SCR1","seen",1);
-  pMC->Gsatt("SER1","seen",1);
-  pMC->Gsatt("CER1","seen",1);
-  pMC->Gsatt("IWL1","seen",1);
-  pMC->Gsatt("FWL1","seen",1);
-  pMC->Gsatt("RWL1","seen",1);
-  pMC->Gsatt("MPL1","seen",1);
-  pMC->Gsatt("SPL1","seen",1);
-  pMC->Gsatt("SML1","seen",1);
-  pMC->Gsatt("CPL1","seen",1);
-  pMC->Gsatt("C1L1","seen",1);
-  pMC->Gsatt("C2L1","seen",1);
-  pMC->Gsatt("GKL1","seen",1);
-  pMC->Gsatt("SCL1","seen",1);
-  pMC->Gsatt("SEL1","seen",1);
-  pMC->Gsatt("CEL1","seen",1);
-  pMC->Gsatt("IWL4","seen",1);
-  pMC->Gsatt("FWL4","seen",1);
-  pMC->Gsatt("RWL4","seen",1);
-  pMC->Gsatt("MPL4","seen",1);
-  pMC->Gsatt("SPL4","seen",1);
-  pMC->Gsatt("SML4","seen",1);
-  pMC->Gsatt("CPL4","seen",1);
-  pMC->Gsatt("C1L4","seen",1);
-  pMC->Gsatt("C2L4","seen",1);
-  pMC->Gsatt("GKL4","seen",1);
-  pMC->Gsatt("SCL4","seen",1);
-  pMC->Gsatt("SEL4","seen",1);
-  pMC->Gsatt("CEL4","seen",1);
-  //
-  pMC->Gdopt("hide", "on");
-  pMC->Gdopt("shad", "on");
-  pMC->Gsatt("*", "fill", 7);
-  pMC->SetClipBox(".");
-  pMC->SetClipBox("*", 0, 1000, -1000, 1000, -1000, 1000);
-  pMC->DefaultRange();
-  pMC->Gdraw("alic", 40, 30, 0, 6, 9, .08, .08);
-  pMC->Gdhead(1111, "Forward Multiplicity Detector version 1");
-  pMC->Gdman(13, 9, "MAN");
-}
+  Int_t *idtmed = fIdtmed->GetArray();
+   
+  Int_t ifmd;
+  Int_t idrotm[999];
+  Float_t zfmd,par[3];
+  char name[5];
 
-//_____________________________________________________________________________
+  Float_t rin[6], rout[6],zpos;
+  Float_t etain[6]= {3.3, 2.0, 3.3, 2.0, 4.5, 5.5};
+  Float_t etaout[6]={2.0, 1.6, 2.0, 1.6, 3.3, 4.5};
+  //  Float_t z[6]={64., 85., -64., -85., -270., -630};
+  Float_t z[6]={64., 85., -64., -85., -240., -630};
+  Float_t zDet=0.04;
+  Float_t zElectronic=0.75;
+  Float_t zSupport=1.;
+  Float_t zFMD=3.;
+//-------------------------------------------------------------------
+ //  FMD 
+ //------------------------------------------------------------------
+
+  AliMatrix(idrotm[901], 90, 0, 90, 90, 180, 0);
+
+  gMC->Gsvolu("GFSI","TUBE", idtmed[1], par, 0);
+  gMC->Gsvolu("GEL ","TUBE", idtmed[4], par, 0);
+  gMC->Gsvolu("GSUP","TUBE", idtmed[2], par, 0);
+
+  for (ifmd =0; ifmd < 5; ifmd++){
+
+    sprintf(name,"FMD%d",ifmd);
+    if (fDebug)
+      printf("%s: %s",ClassName(),name);
+    
+    zfmd=TMath::Abs(z[ifmd]);
+    if (fDebug) printf("zfmd %f z[ifmd] %f",zfmd,z[ifmd]);
+    AliFMD::Eta2Radius(etain[ifmd],zfmd,&rin[ifmd]);
+    AliFMD::Eta2Radius(etaout[ifmd],zfmd,&rout[ifmd]);
+    
+    par[0]=rin[ifmd]; // pipe size
+    par[1]=rout[ifmd];
+    par[2]=zFMD/2;
+    gMC->Gsvolu(name,"TUBE", idtmed[3], par, 3);
+    
+    if (fDebug) printf ("rin %f rout %f ZFMD %f\n",par[0],par[1],z[ifmd]);
+    if (z[ifmd] < 0){  
+      gMC->Gspos(name,1,"ALIC",0,0,z[ifmd],0, "ONLY");}
+    else { 
+      gMC->Gspos(name,1,"ALIC",0,0,z[ifmd],idrotm[901], "ONLY");}
+  //Silicon detector
+    par[2]=zDet/2;
+    zpos=zFMD/2 -par[2];
+    gMC->Gsposp("GFSI",ifmd+1,name,0,0,zpos,0, "ONLY",par,3);
+     
+    //Plastic slice for electronics
+    par[2]=zElectronic/2;
+    zpos=zpos-zDet/2-par[2];
+    gMC->Gsposp("GEL ",ifmd+1,name,0,0,zpos,0, "ONLY",par,3);
+
+   //Simple Al support
+   par[1]=rout[ifmd];
+   par[0]=rout[ifmd]-2;
+   par[2]=zSupport/2;
+   zpos=zpos-zElectronic/2-par[2];
+   gMC->Gsposp("GSUP",ifmd+1,name,0,0,zpos,0, "ONLY",par,3);
+   
+
+  }  
+   
+   //Silicon
+
+
+  gMC->Gsdvn("GSEC", "GFSI", 16, 2);
+  gMC->Gsdvn("GRIN", "GSEC", 128, 1); 
+   /*
+      for (Int_t i=0; i<16; i++){
+      sprintf(ring,"GR%d",i);
+      printf(ring);
+      gMC->Gsdvn(ring, "GSEC", 128, 1);
+    }
+      */
+
+}    
+//------------------------------------------------------------------------
 void AliFMDv1::CreateMaterials()
 {
-  //
-  // Create materials for version 1 of FMD
-  //
+ Int_t isxfld   = gAlice->Field()->Integ();
+ Float_t sxmgmx = gAlice->Field()->Max();
 
-  //     Steel for chamber 
-  Float_t ast[4]  = { 55.847,58.71,51.996,47.9 };
-  Float_t zst[4]  = { 26.,28.,24.,22. };
-  Float_t wst[4]  = { .6,.18,.12,.1 };
-  //     Lead glass for MCP 
-  Float_t amcp[3] = { 15.9994,28.086,207.19 };
-  Float_t zmcp[3] = { 8.,14.,82. };
-  Float_t wmcp[3] = { .43,.375,.195 };
-  //     Ceramic for plates 
-  Float_t acer[2] = { 26.98,15.9994 };
-  Float_t zcer[2] = { 13.,8. };
-  Float_t wcer[2] = { .4,.6 };
-  
-  Float_t epsil, stmin, deemax, tmaxfd, stemax;
-  
-  Int_t   ISXFLD = gAlice->Field()->Integ();
-  Float_t SXMGMX = gAlice->Field()->Max();
-  
-  //     Silicon 
-  
-  AliMaterial(2, "SI$", 28.086, 14., 2.33, 9.36, 45.5);
-  
-  //     Covar 
-  
-  AliMaterial(4, "FE$", 55.85, 26., 8.3, 1.67, 15.9);
-  
-  //     Steel 
-  
-  AliMixture(0, "FMD_STEEL$", ast, zst, 7.9, 4, wst);
-  
-  //     Lead glass 
-  
-  AliMixture(1, "FMD_MCP$", amcp, zmcp, 1.55, 3, wmcp);
-  
-  //     Ceramic 
-  
-  AliMixture(3, "FMD_CERAMIC$", acer, zcer, 3.96, -2, wcer);
-  // ******************************************************* 
-  //     Defines tracking media parameters. 
-  // ******************************************************* 
-  epsil  = .001; // Tracking precision, DLS 
-  stemax = -1.;  // Maximum displacement for multiple scattering 
-  tmaxfd = -20.; // Maximum angle due to field deflection 
-  deemax = -.3;  // Maximum fractional energy loss, DLS 
-  stmin  = -.8;
-  // ******************************************************** 
-  AliMedium(900, "STEEL_L3          ", 0, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(901, "LEAD_GLASS_L3     ", 1, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(902, "SILICON_L3        ", 2, 1, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(903, "CERAMIC_L3        ", 3, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(904, "COVAR_L3          ", 4, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+ // Plastic CH
+ Float_t aPlastic[2]={1.01,12.01};
+ Float_t zPlastic[2]={1,6};
+ Float_t wPlastic[2]={1,1};
+ Float_t denPlastic=1.03;
+   //
+ 
+ //*** Definition Of avaible FMD materials ***
+ AliMaterial(0, "Si chip$", 28.0855,14.,2.33,9.36,999);
+ AliMaterial(1, "Al supprt$", 26.980,13.,2.70,8.9,999);
+ AliMaterial(2, "FMD Air$", 14.61, 7.3, .001205, 30423.,999); 
+ AliMixture( 5, "Plastic$",aPlastic,zPlastic,denPlastic,-2,wPlastic);
+ 
+
+//**
+ AliMedium(1, "Si chip$", 0, 1, isxfld, sxmgmx, 1., .001, 1., .001, .001);
+ AliMedium(2, "Al support$", 1, 0, isxfld, sxmgmx, 1., .001, 1., .001, .001);
+ AliMedium(3, "FMD air$", 2, 0, isxfld, sxmgmx, 1., .001, 1., .001, .001);
+ AliMedium(4, "Plastic$", 5, 0,isxfld, sxmgmx,  10., .01, 1., .003, .003);
+ 
+
+
 }
+//---------------------------------------------------------------------
+void AliFMDv1::DrawDetector()
+{
+//
+// Draw a shaded view of the Forward multiplicity detector version 0
+//
+
+AliMC* pMC = AliMC::GetMC();
+
+//Set ALIC mother transparent
+pMC->Gsatt("ALIC","SEEN",0);
+//
+//Set volumes visible
+gMC->Gsatt("FMD0","SEEN",1);
+gMC->Gsatt("FMD1","SEEN",1);
+gMC->Gsatt("FMD2","SEEN",1);
+gMC->Gsatt("FMD3","SEEN",1);
+gMC->Gsatt("FMD4","SEEN",1);
+gMC->Gsatt("FMD5","SEEN",1);
+
+//
+gMC->Gdopt("hide","on");
+gMC->Gdopt("shad","on");
+gMC->SetClipBox(".");
+gMC->SetClipBox("*",0,1000,-1000,1000,-1000,1000);
+gMC->DefaultRange();
+gMC->Gdraw("alic",40,30,0,12,9.5,.2,0.2);
+gMC->Gdhead(1111,"Forward multiplicity detector");
+gMC->Gdopt("hide","off");
+}
+//-------------------------------------------------------------------
+void AliFMDv1::Init()
+{
+// Initialises version 0 of the Forward Multiplicity Detector
+//
+  AliMC* gMC=AliMC::GetMC();
+  AliFMD::Init();
+  fIdSens1=gMC->VolId("GRIN");
+  if (fDebug) printf("*** FMD version 1 initialized ***\n");
+}
+
+//-------------------------------------------------------------------
+
+void AliFMDv1::StepManager()
+{
+  //
+  // Called for every step in the Forward Multiplicity Detector
+  //
+  Int_t id,copy,copy1,copy2;
+  static Float_t hits[9];
+  static Int_t vol[3];
+  static Float_t de;
+  TLorentzVector pos;
+  TLorentzVector mom;
+
+
+  TClonesArray &lhits = *fHits;
+  AliMC* gMC=AliMC::GetMC();
+  if(!gMC->IsTrackAlive()) return; // particle has disappeared
+
+  Float_t charge = gMC->TrackCharge();
+  if(TMath::Abs(charge)<=0.) return; //take only charged particles
+
+  //  printf(" in StepManeger \n");
+  id=gMC->CurrentVolID(copy);
+  
+// Check the sensetive volume
+   if(id==fIdSens1)
+     {
+       if(gMC->IsTrackEntering())
+	 {
+	   //	   ((TGeant3*)gMC)->Gpcxyz();
+	   vol[2]=copy;
+	   gMC->CurrentVolOffID(1,copy1);
+	   vol[1]=copy1;
+	   gMC->CurrentVolOffID(2,copy2);
+	   vol[0]=copy2;
+	   //	   printf("vol0 %d vol1 %d vol2 %d\n",vol[0],vol[1],vol[2]); 
+	   gMC->TrackPosition(pos);
+	   hits[0]=pos[0];
+	   hits[1]=pos[1];
+	   hits[2]=pos[2];
+	   //	   printf(" Zpos %f \n",hits[2]);
+	   gMC->TrackMomentum(mom);
+	   hits[3]=mom[0];
+	   hits[4]=mom[1];
+	   hits[5]=mom[2];
+
+	   Int_t iPart= gMC->TrackPid();
+	   Int_t partId=gMC->IdFromPDG(iPart);
+	   hits[7]=partId;
+	   hits[8]=1e9*gMC->TrackTime();
+	   de=0.;
+	   //	   for(i=0; i<9; i++) printf(" hits %f \n",hits[i]);
+	 }
+       if(gMC->IsTrackInside()){
+	   de=de+1000.*gMC->Edep();
+       }
+       
+       if(gMC->IsTrackExiting()
+	  ||gMC->IsTrackDisappeared()||
+	  gMC->IsTrackStop())
+	 {
+	     hits[6]=de+1000.*gMC->Edep();
+    new(lhits[fNhits++]) AliFMDhit(fIshunt,gAlice->CurrentTrack(),vol,hits);
+	 } // IsTrackExiting()
+     }
+  }
+//--------------------------------------------------------------------------
+
+void AliFMDv1::Response( Float_t Edep)
+{
+  Float_t I=1.664*0.04*2.33/22400; // = 0.69e-6;
+  Float_t chargeOnly=Edep/I;
+  //Add noise ~500electrons
+  Int_t charge=500;
+  if (Edep>0)
+     charge=Int_t(gRandom->Gaus(chargeOnly,500));	
+ }   
+
+
+
+
+
 

@@ -241,15 +241,17 @@ C
       IF (FIRST) WRITE(N6,*) ' '
 C Call default structure functions set
       IF    (NPTYPE.EQ.0 .OR. NGROUP.EQ.0 .OR. NSET.EQ.0) THEN
-C       IF (FIRST) WRITE(N6,*) ' Nucleon PDFs :  Ngroup = ',NGROUP,
-C    +             ',   Nset = ',NSET,
-C    +             ',  for GRV Set HO Structure Functions'
+C       IF (FIRST) WRITE(N6,*) 
+C     + ' Nucleon PDFs :  GRV Set HO Structure Functions'
+C          IF (FIRST) WRITE(N6,*) 
+C     + '                 Ngroup = ',NGROUP,',   Nset = ',NSET
 C       CALL GRVHO(DX,DQ,DUPV,DDNV,DUSEA,DSTR,DCHM,DBOT,DTOP,DGL)
 C       DDSEA = DUSEA
 C       GOTO 100
-          IF (FIRST) WRITE(N6,*) ' Nucleon PDFs :  Ngroup = ',NGROUP,
-     +             ',   Nset = ',NSET,
-     +             ',  for MRS Set (G) (L255-MSb) Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + ' Nucleon PDFs :  MRS Set (G) (L255-MSb) Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + '                 Ngroup = ',NGROUP,',   Nset = ',NSET
           CALL SFMRSG(DX,DQ,DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DGL)
           DTOP=ZEROD
           GOTO 100
@@ -269,9 +271,10 @@ C Now start PHOTON structure functions
          CALL STRUCTM(DX,DQ,
      +                DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DTOP,DGL)
         ELSEIF(NSET.EQ.4) THEN
-          IF (FIRST) WRITE(N6,*) ' Photon PDFs :  Ngroup = ',NGROUP,
-     +             ',   Nset = ',NSET,
-     +             ',  for GRS-G Set LO Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + ' Photon PDFs :  GRS-G Set LO Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + '                Ngroup = ',NGROUP,',   Nset = ',NSET
           CALL GRVGALO(DX,DQ,ZUPV,ZDNV,ZUSEA,ZDSEA,ZSTR,DCHM,DBOT,ZGL)
           CALL GRSGALO(DX,DQ2,DP2,
      +                     DUPV,DDNV,DUSEA,DDSEA,DSTR,ZCHM,ZBOT,DGL)
@@ -288,58 +291,66 @@ C Now start PHOTON structure functions
      +                DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DTOP,DGL)
       ELSEIF(NGROUP.EQ.9) THEN
         IF(NSET.EQ.1) THEN
-          IF (FIRST) WRITE(N6,*) ' Photon PDFs :  Ngroup = ',NGROUP,
-     +             ',   Nset = ',NSET,
-     +             ',  for SaS-G 95 Set 1D Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + ' Photon PDFs :  SaS-G 95 Set 1D Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + '                Ngroup = ',NGROUP,',   Nset = ',NSET
           CALL SFSAS11(DX,DQ2,DP2,
      +                DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DTOP,DGL)
           GOTO 100
         ELSEIF(NSET.EQ.2) THEN
-          IF (FIRST) WRITE(N6,*) ' Photon PDFs :  Ngroup = ',NGROUP,
-     +             ',   Nset = ',NSET,
-     +             ',  for SaS-G 95 Set 1M Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + ' Photon PDFs :  SaS-G 95 Set 1M Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + '                Ngroup = ',NGROUP,',   Nset = ',NSET
           CALL SFSAS12(DX,DQ2,DP2,
      +                DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DTOP,DGL)
           GOTO 100
         ELSEIF(NSET.EQ.3) THEN
-          IF (FIRST) WRITE(N6,*) ' Photon PDFs :  Ngroup = ',NGROUP,
-     +             ',   Nset = ',NSET,
-     +             ',  for SaS-G 95 Set 2D Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + ' Photon PDFs :  SaS-G 95 Set 2D Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + '                Ngroup = ',NGROUP,',   Nset = ',NSET
           CALL SFSAS13(DX,DQ2,DP2,
      +                DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DTOP,DGL)
           GOTO 100
         ELSEIF(NSET.EQ.4) THEN
-          IF (FIRST) WRITE(N6,*) ' Photon PDFs :  Ngroup = ',NGROUP,
-     +             ',   Nset = ',NSET,
-     +             ',  for SaS-G 95 Set 2M Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + ' Photon PDFs :  SaS-G 95 Set 2M Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + '                Ngroup = ',NGROUP,',   Nset = ',NSET
           CALL SFSAS14(DX,DQ2,DP2,
      +                DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DTOP,DGL)
           GOTO 100
         ELSEIF(NSET.EQ.5) THEN
-          IF (FIRST) WRITE(N6,*) ' Photon PDFs :  Ngroup = ',NGROUP,
-     +             ',   Nset = ',NSET,
-     +             ',  for SaS-G 96 Set 1D Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + ' Photon PDFs :  SaS-G 96 Set 1D Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + '                Ngroup = ',NGROUP,',   Nset = ',NSET
           CALL SFSAS21(DX,DQ2,DP2,IP2,
      +                DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DTOP,DGL)
           GOTO 100
         ELSEIF(NSET.EQ.6) THEN
-          IF (FIRST) WRITE(N6,*) ' Photon PDFs :  Ngroup = ',NGROUP,
-     +             ',   Nset = ',NSET,
-     +             ',  for SaS-G 96 Set 1M Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + ' Photon PDFs :  SaS-G 96 Set 1M Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + '                Ngroup = ',NGROUP,',   Nset = ',NSET
           CALL SFSAS22(DX,DQ2,DP2,IP2,
      +                DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DTOP,DGL)
           GOTO 100
         ELSEIF(NSET.EQ.7) THEN
-          IF (FIRST) WRITE(N6,*) ' Photon PDFs :  Ngroup = ',NGROUP,
-     +             ',   Nset = ',NSET,
-     +             ',  for SaS-G 96 Set 2D Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + ' Photon PDFs :  SaS-G 96 Set 2D Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + '                Ngroup = ',NGROUP,',   Nset = ',NSET
           CALL SFSAS23(DX,DQ2,DP2,IP2,
      +                DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DTOP,DGL)
           GOTO 100
         ELSEIF(NSET.EQ.8) THEN
-          IF (FIRST) WRITE(N6,*) ' Photon PDFs :  Ngroup = ',NGROUP,
-     +             ',   Nset = ',NSET,
-     +             ',  for SaS-G 96 Set 2M Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + ' Photon PDFs :  SaS-G 96 Set 2M Structure Functions'
+          IF (FIRST) WRITE(N6,*) 
+     + '                Ngroup = ',NGROUP,',   Nset = ',NSET
           CALL SFSAS24(DX,DQ2,DP2,IP2,
      +                DUPV,DDNV,DUSEA,DDSEA,DSTR,DCHM,DBOT,DTOP,DGL)
           GOTO 100
@@ -357,7 +368,7 @@ C Now start PHOTON structure functions
       ENDIF
   100 IF(FIRST) WRITE(N6,*)
      +' ----------------------------------------------------------------
-     +------------------------------------------------'
+     +----------------------'
       IF (FIRST) FIRST = .FALSE.
 C
       UPV = MAX( ZEROD,DUPV)
