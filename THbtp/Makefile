@@ -8,9 +8,9 @@ include $(ALICE_ROOT)/conf/MachineDef.$(ALICE_TARGET)
 
 
 
-PACKAGE = THBTprocessor
+PACKAGE = THbtp
 
-LIBS = $(ALILIBS) -lhbtprocessor
+LIBS = $(ALILIBS) -lHBTP
 
 # FORTRAN sources
 
@@ -59,12 +59,12 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(LIBDIR)/libTHBTprocessor.$(SL)
-ALIBRARY	= $(LIBDIR)/libTHBTprocessor.a
+SLIBRARY	= $(LIBDIR)/libTHbtp.$(SL)
+ALIBRARY	= $(LIBDIR)/libTHbtp.a
 
 default:	$(SLIBRARY)
 
-$(LIBDIR)/libTHBTprocessor.$(SL):		$(OBJS)
+$(LIBDIR)/libTHbtp.$(SL):		$(OBJS)
 
 $(DICT):				$(HDRS)
 

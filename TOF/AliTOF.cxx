@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.29  2001/10/17 14:19:24  hristov
+delete replaced by delete []
+
+Revision 1.28  2001/10/05 12:02:01  vicinanz
+Minor improvements on Merger and SDigitizer
+
 Revision 1.27  2001/10/02 13:03:13  vicinanz
 Minor improvements on the code
 
@@ -145,7 +151,9 @@ AliTOF::AliTOF()
   fIshunt   = 0;
   fSDigits       = 0 ;
   fDigits        = 0 ;
+  fReconParticles = 0;
   fName="TOF";
+  fMerger = 0;
 /* fp
   CreateTOFFolders();
 */
@@ -262,7 +270,7 @@ void AliTOF::CreateTOFFolders()
   fReTask = new TTask(GetName(), tempo);
   aliceRe->Add(fReTask) ;
 
-  delete tempo ;
+  delete [] tempo ;
  
   // creates the TOF geometry  folder
   geomF->AddFolder("TOF", "Geometry for TOF") ;

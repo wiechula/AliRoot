@@ -240,12 +240,13 @@ void AliITSsimulationSSD::HitToDigit(Int_t module, Double_t x0, Double_t y0,
 	    if((w<(-0.5)) || (w>(GetNStrips()-0.5))) {
 		// this check rejects hits in regions not covered by strips
 		// 0.5 takes into account boundaries 
-		if(k==0) cout<<"AliITSsimulationSSD::HitToDigit: "
-			     "Warning: no strip in this region of P side"
-			     <<endl;
-		else cout<<"AliITSsimulationSSD::HitToDigit: "
-			 "Warning: no strip in this region of N side"<<endl;
+		return; // There are dead region on the SSD sensitive volume.
+		/*
+		if(k==0) Warning("HitToDigit",
+		                 "no strip in this region of P side");
+		else Warning"HitToDigit","no strip in this region of N side");
 		return;
+		*/
 	    } // end if
 
 	    // sigma is the standard deviation of the diffusion gaussian
@@ -370,11 +371,11 @@ void AliITSsimulationSSD::IntegrateGaussian(Int_t k,Double_t par, Double_t w,
 
 	// for the time being, signal is the charge
 	// in ChargeToSignal signal is converted in ADC channel
-	fMapA2->AddSignal(k,strip,dXCharge1);
+	fMapA2->AddSignal(k,(Int_t)strip,dXCharge1);
 	if(((Int_t) strip) < (GetNStrips()-1)) {
 	    // strip doesn't have to be the last (remind: last=GetNStrips()-1)
 	    // otherwise part of the charge is lost
-	    fMapA2->AddSignal(k,(strip+1),dXCharge2);
+	    fMapA2->AddSignal(k,((Int_t)strip+1),dXCharge2);
 	} // end if
     
 	if(dXCharge1 > 1.) {
@@ -408,11 +409,11 @@ void AliITSsimulationSSD::IntegrateGaussian(Int_t k,Double_t par, Double_t w,
 
 	// for the time being, signal is the charge
 	// in ChargeToSignal signal is converted in ADC channel
-	fMapA2->AddSignal(k,strip,dXCharge1);
+	fMapA2->AddSignal(k,(Int_t)strip,dXCharge1);
 	if(((Int_t) strip) > 0) {
 	    // strip doesn't have to be the first
 	    // otherwise part of the charge is lost
-	    fMapA2->AddSignal(k,(strip-1),dXCharge2);
+	    fMapA2->AddSignal(k,((Int_t)strip-1),dXCharge2);
 	} // end if
     
 	if(dXCharge1 > 1.) {

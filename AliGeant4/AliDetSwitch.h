@@ -19,8 +19,7 @@ class AliDetSwitch
 {
   public:
     AliDetSwitch(G4String detName, G4int nofVersions, G4int defaultVersion,
-                 G4int pprVersion, AliModuleType modType = kDetector, 
-		 G4bool isStandalone = true);
+                 AliModuleType modType = kDetector, G4bool isStandalone = true);
     AliDetSwitch(const AliDetSwitch& right);
     virtual ~AliDetSwitch();
 
@@ -32,14 +31,12 @@ class AliDetSwitch
     // methods
     void SwitchOn(G4int version); 
     void SwitchOnDefault(); 
-    void SwitchOnPPR(); 
     void SwitchOff(); 
 
     // get methods
     G4String GetDetName() const;
     G4int GetNofVersions() const;
     G4int GetDefaultVersion() const;
-    G4int GetPPRVersion() const;
     G4bool IsStandalone() const;
     AliModuleType GetType() const;
     G4int GetSwitchedVersion() const;
@@ -49,7 +46,6 @@ class AliDetSwitch
     G4String       fDetName;         //module name
     G4int          fNofVersions;     //number of versions
     G4int          fDefaultVersion;  //default version
-    G4int          fPPRVersion;      //default PPR version
     G4bool         fIsStandalone;    //true if module can be built standalone
     AliModuleType  fType;            //type of module (detector or structure)
     G4int          fSwitchedVersion; //current selected version
@@ -65,9 +61,6 @@ inline G4int AliDetSwitch::GetNofVersions() const
 
 inline G4int AliDetSwitch::GetDefaultVersion() const
 { return fDefaultVersion; }
-
-inline G4int AliDetSwitch::GetPPRVersion() const
-{ return fPPRVersion; }
 
 inline G4int AliDetSwitch::GetSwitchedVersion() const
 { return fSwitchedVersion; }
