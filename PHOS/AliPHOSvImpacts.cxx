@@ -43,7 +43,7 @@
 ClassImp(AliPHOSvImpacts)
 
 //____________________________________________________________________________
-AliPHOSvImpacts::AliPHOSvImpacts():AliPHOSv1()
+AliPHOSvImpacts::AliPHOSvImpacts()
 {
   // ctor
 }
@@ -53,6 +53,9 @@ AliPHOSvImpacts::AliPHOSvImpacts(const char *name, const char *title):
 AliPHOSv1(name,title) 
 {
   // ctor : title is used to identify the layout
+  //        GPS2 = 5 modules (EMC + PPSD)
+  //        IHEP = 5 modules (EMC + CPV )
+  //        MIXT = 4 modules (EMC + CPV ) and 1 module (EMC + PPSD)
   //
   // We store hits :
   //   - fHits (the "normal" one), which retains the hits associated with
@@ -61,27 +64,34 @@ AliPHOSv1(name,title)
   //     This part inherits from AliPHOSv1
   //
   // We store impacts :
-  //  - fEMCImpacts, fCPVImpacts which are
-  //    TList of EMC and CPV modules respectively, each
+  //  - fEMCImpacts, fCPVImpacts, fPPSDImpacts which are
+  //    TList of EMC, CPV and PPSD modules respectively, each
   //    modules contains TClonesArray of AliPHOSImpacts
   
   fEMCImpacts  = new TList();
   fCPVImpacts  = new TList();
+  fPPSDImpacts = new TList();
 
   Int_t nPHOSModules = GetGeometry()->GetNModules();
-  Int_t nCPVModules  = GetGeometry()->GetNModules();
+  Int_t nCPVModules  = GetGeometry()->GetNCPVModules();
+  Int_t nPPSDModules = GetGeometry()->GetNPPSDModules();
 
   Int_t iPHOSModule;
   TClonesArray * impacts;
   for (iPHOSModule=0; iPHOSModule<nPHOSModules; iPHOSModule++) {
     fEMCImpacts->Add(new TClonesArray("AliPHOSImpact",200)) ;
     fNEMCImpacts[iPHOSModule] = 0;
-    impacts = dynamic_cast<TClonesArray *>(fEMCImpacts->At(iPHOSModule));
+    impacts = (TClonesArray *)fEMCImpacts->At(iPHOSModule);
   }
   for (iPHOSModule=0; iPHOSModule<nCPVModules; iPHOSModule++) {
     fCPVImpacts->Add(new TClonesArray("AliPHOSImpact",200)) ;
     fNCPVImpacts[iPHOSModule] = 0;
-    impacts = dynamic_cast<TClonesArray *>(fCPVImpacts->At(iPHOSModule));
+    impacts = (TClonesArray *)fCPVImpacts->At(iPHOSModule);
+  }
+  for (iPHOSModule=0; iPHOSModule<nPPSDModules; iPHOSModule++) {
+    fPPSDImpacts->Add(new TClonesArray("AliPHOSImpact",200)) ;
+    fNPPSDImpacts[iPHOSModule] = 0;
+    impacts = (TClonesArray *)fPPSDImpacts->At(iPHOSModule);
   }
 
 }
@@ -98,7 +108,7 @@ AliPHOSvImpacts::~AliPHOSvImpacts()
     fHits = 0 ; 
   }
 
-  // Delete impacts in EMC, CPV
+  // Delete impacts in EMC, CPV and PPSD
   if ( fEMCImpacts ) {
     fEMCImpacts->Delete() ; 
     delete fEMCImpacts ;
@@ -108,6 +118,11 @@ AliPHOSvImpacts::~AliPHOSvImpacts()
     fCPVImpacts->Delete() ; 
     delete fCPVImpacts ;
     fCPVImpacts = 0 ; 
+  }
+  if ( fPPSDImpacts ) {
+    fPPSDImpacts->Delete() ; 
+    delete fPPSDImpacts ;
+    fPPSDImpacts = 0 ; 
   }
 }
 
@@ -121,21 +136,26 @@ void AliPHOSvImpacts::AddImpact( char* det, Int_t shunt, Int_t primary, Int_t tr
   Int_t         nImpacts = 0;
 
   if (strcmp(det,"EMC ")==0) {
-    impacts = dynamic_cast<TClonesArray *>(fEMCImpacts->At(module));
+    impacts = (TClonesArray *)fEMCImpacts->At(module);
     nImpacts= fNEMCImpacts[module];
     fNEMCImpacts[module]++ ;
   }
   else if (strcmp(det,"CPV ")==0) {
-    impacts = dynamic_cast<TClonesArray *>(fCPVImpacts->At(module));
+    impacts = (TClonesArray *)fCPVImpacts->At(module);
     nImpacts= fNCPVImpacts[module];
     fNCPVImpacts[module]++ ;
+  }
+  else if (strcmp(det,"PPSD")==0) {
+    impacts = (TClonesArray *)fPPSDImpacts->At(module);
+    nImpacts= fNPPSDImpacts[module];
+    fNPPSDImpacts[module]++ ;
   }
 
   new((*impacts)[nImpacts]) AliPHOSImpact(shunt,primary,track,pid,p,xyz) ;
 
   if (fDebug==1) {
     printf("Module %d %s: ",module,det);
-    (dynamic_cast<AliPHOSImpact*>((impacts->At(nImpacts))))->Print();
+    ((AliPHOSImpact*)(impacts->At(nImpacts)))->Print();
   }
 }
 
@@ -151,6 +171,7 @@ void AliPHOSvImpacts::MakeBranch(Option_t *opt, const char *file)
   Int_t splitlevel = 0 ;
   gAlice->TreeH()->Branch("PHOSEmcImpacts" , "TList", &fEMCImpacts , bufferSize, splitlevel);
   gAlice->TreeH()->Branch("PHOSCpvImpacts" , "TList", &fCPVImpacts , bufferSize, splitlevel);
+  gAlice->TreeH()->Branch("PHOSPpsdImpacts", "TList", &fPPSDImpacts, bufferSize, splitlevel);
   
 }
 
@@ -163,13 +184,22 @@ void AliPHOSvImpacts::ResetHits()
 
   Int_t i;
   for (i=0; i<GetGeometry()->GetNModules(); i++) {
-    (dynamic_cast<TClonesArray*>(fEMCImpacts->At(i))) -> Clear();
+    ((TClonesArray*)fEMCImpacts->At(i)) -> Clear();
     fNEMCImpacts[i] = 0 ;
   }
 
-  for (i=0; i<GetGeometry()->GetNModules(); i++) {
-    (dynamic_cast<TClonesArray*>(fCPVImpacts->At(i))) -> Clear();
-    fNCPVImpacts[i] = 0 ;
+  if ( strcmp(GetGeometry()->GetName(),"IHEP") == 0 || strcmp(GetGeometry()->GetName(),"MIXT") == 0 ) {
+    for (i=0; i<GetGeometry()->GetNCPVModules(); i++) {
+      ((TClonesArray*)fCPVImpacts->At(i)) -> Clear();
+      fNCPVImpacts[i] = 0 ;
+    }
+  }
+
+  if ( strcmp(GetGeometry()->GetName(),"GPS2") == 0 || strcmp(GetGeometry()->GetName(),"MIXT") == 0 ) {
+    for (i=0; i<GetGeometry()->GetNPPSDModules(); i++) {
+      ((TClonesArray*)fPPSDImpacts->At(i)) -> Clear();
+      fNPPSDImpacts[i] = 0 ;
+    }
   }
   
 }
@@ -177,7 +207,7 @@ void AliPHOSvImpacts::ResetHits()
 //_____________________________________________________________________________
 void AliPHOSvImpacts::StepManager(void)
 {
-  // Find impacts (tracks which enter the EMC, CPV)
+  // Find impacts (tracks which enter the EMC, CPV or PPSD)
   // and add them to to the impact lists
 
   AliPHOSv1::StepManager();
@@ -214,6 +244,8 @@ void AliPHOSvImpacts::StepManager(void)
       Int_t pid = gMC->TrackPid();
       Int_t module;
       gMC->CurrentVolOffID(10,module);
+      if ( name == "MIXT" && strcmp(gMC->CurrentVolOffName(10),"PHO1") == 0 )
+	module += GetGeometry()->GetNModules() - GetGeometry()->GetNPPSDModules();
       module--;
       AddImpact("EMC ",fIshunt, primary,tracknumber, module, pid, pmom, xyzm);
     }
@@ -221,7 +253,8 @@ void AliPHOSvImpacts::StepManager(void)
 
   // Add impact to CPV
 
-  if( gMC->CurrentVolID(copy) == gMC->VolId("PCPQ") &&
+  if( (name == "IHEP" || name == "MIXT") &&
+      gMC->CurrentVolID(copy) == gMC->VolId("PCPQ") &&
       gMC->IsTrackEntering() ) {
     gMC->TrackMomentum(pmom);
     gMC->TrackPosition(pos) ;
@@ -239,5 +272,33 @@ void AliPHOSvImpacts::StepManager(void)
     module--;
     AddImpact("CPV ",fIshunt, primary,tracknumber, module, pid, pmom, xyzm);
   }
-  
+
+  // Add impact to PPSD
+
+  if( (name == "GPS2" || name == "MIXT") &&
+      gMC->CurrentVolID(copy) == gMC->VolId("PPCE") &&
+      gMC->IsTrackEntering() ) {
+    gMC->TrackMomentum(pmom);
+    gMC->TrackPosition(pos) ;
+
+    Int_t i;
+    for (i=0; i<3; i++) xyzm[i] = pos[i];
+
+    for (i=0; i<3; i++) {
+      xyzm[i] = pos[i] ;
+      pm[i]   = pmom[i];
+    }
+    gMC -> Gmtod (xyzm, xyzd, 1);    // transform coordinate from master to daughter system
+    gMC -> Gmtod (pm,   pd,   2);    // transform 3-momentum from master to daughter system
+
+    // Select tracks coming to the crystal from up or down sides
+    if (pd[1]<0 && xyzd[1] >  (GetGeometry()->GetConversionGap() +  GetGeometry()->GetAvalancheGap())/2-0.001 ||
+	pd[1]>0 && xyzd[1] < -(GetGeometry()->GetConversionGap() +  GetGeometry()->GetAvalancheGap())/2+0.001) {
+      Int_t pid = gMC->TrackPid();
+      Int_t module;
+      gMC->CurrentVolOffID(5,module);
+      module--;
+      AddImpact("PPSD",fIshunt, primary,tracknumber, module, pid, pmom, xyzm);
+    }
+  }
 }

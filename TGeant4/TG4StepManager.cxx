@@ -1080,7 +1080,7 @@ AliMCProcess TG4StepManager::ProdProcess(Int_t isec) const
 }
 
 //_____________________________________________________________________________
-Int_t TG4StepManager::StepProcesses(TArrayI& processes) const
+Int_t TG4StepManager::StepProcesses(TArrayI &proc) const
 {
 // Fills the array of processes that were active in the current step
 // and returns the number of them.
@@ -1088,9 +1088,10 @@ Int_t TG4StepManager::StepProcesses(TArrayI& processes) const
 // ---
 
  if (fStepStatus == kVertex) {
+   G4cout << "kVertex" << G4endl;
    G4int nofProcesses = 1;
-   processes.Set(nofProcesses);
-   processes[0] = kPNull;
+   proc.Set(nofProcesses);
+   proc[0] = kPNull;
    return nofProcesses;
  }  
    
@@ -1100,38 +1101,29 @@ Int_t TG4StepManager::StepProcesses(TArrayI& processes) const
 #endif
 
   // along step processes
-  G4ProcessVector* processVector 
-    = fStep->GetTrack()->GetDefinition()->GetProcessManager()
-        ->GetAlongStepProcessVector();
-  G4int nofAlongStep = processVector->entries();
+  G4ProcessManager* processManager
+    = fStep->GetTrack()->GetDefinition()->GetProcessManager();
+  G4ProcessVector* alongStepProcessVector 
+    = processManager->GetAlongStepProcessVector();
+  G4int nofProcesses = alongStepProcessVector->entries();
   
   // process defined step
   const G4VProcess* kpLastProcess 
     = fStep->GetPostStepPoint()->GetProcessDefinedStep();
 
-  // set array size
-  processes.Set(nofAlongStep+1);
-     // maximum number of processes:
-     // nofAlongStep (along step) - 1 (transportations) + 1 (post step process)
-     // + possibly 1 (additional process if kPLightScattering)
-     // => nofAlongStep + 1
- 
-  // fill array with (nofAlongStep-1) along step processes 
+  // fill the array of processes 
+  proc.Set(nofProcesses);
   TG4PhysicsManager* physicsManager = TG4PhysicsManager::Instance();
-  G4int counter = 0;  
-  for (G4int i=0; i<nofAlongStep; i++) {
-    G4VProcess* g4Process = (*processVector)[i];    
+  G4int i;  
+  for (i=0; i<nofProcesses-1; i++) {
+    G4VProcess* g4Process = (*alongStepProcessVector)[i];    
     // do not fill transportation along step process
-    if (g4Process->GetProcessName() != "Transportation")
-      processes[counter++] = physicsManager->GetMCProcess(g4Process);
-  }
+    if (g4Process->GetProcessName() != "Transportation") {
+      physicsManager->GetMCProcess(g4Process);   
+      proc[i] = physicsManager->GetMCProcess(g4Process);
+    }  
+  }  
+  proc[nofProcesses-1] = physicsManager->GetMCProcess(kpLastProcess);
     
-  // fill array with 1 or 2 (if kPLightScattering) last process
-  processes[counter++] = physicsManager->GetMCProcess(kpLastProcess);
-  if (processes[counter-1] == kPLightScattering) {
-     // add reflection/absorption as additional process
-     processes[counter++] = physicsManager->GetOpBoundaryStatus(kpLastProcess);
-  }	
-    
-  return counter;  
+  return nofProcesses;  
 }

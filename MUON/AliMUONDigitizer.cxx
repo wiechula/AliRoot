@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.2  2001/07/28 10:46:04  hristov
-AliRunDigitizer.h included; typos corrected
-
 Revision 1.1  2001/07/27 15:41:01  jchudoba
 merging/digitization classes
 
@@ -50,7 +47,7 @@ ClassImp(AliMUONDigitizer)
 AliMUONDigitizer::AliMUONDigitizer() :AliDigitizer()
 {
 // Default ctor - don't use it
-  ;
+  cerr<<"Error: AliMUONDigitizer default ctor must not be used"<<endl;
 }
 
 //___________________________________________
@@ -58,13 +55,14 @@ AliMUONDigitizer::AliMUONDigitizer(AliRunDigitizer* manager)
     :AliDigitizer(manager)
 {
 // ctor which should be used
+  fManager = manager;
   fHitMap  = 0;
   fTDList  = 0;
+  fTrH1    = 0;
   fHits    = 0;
-  fPadHits = 0;
-  fTrList  = 0;
-  fAddress = 0;
-  fDebug   = 0; 
+  fPadHits    = 0;
+  fTrList     = 0;
+  fAddress    = 0; 
   if (GetDebug()>2) 
     cerr<<"AliMUONDigitizer::AliMUONDigitizer"
 	<<"(AliRunDigitizer* manager) was processed"<<endl;
@@ -74,6 +72,7 @@ AliMUONDigitizer::AliMUONDigitizer(AliRunDigitizer* manager)
 AliMUONDigitizer::~AliMUONDigitizer()
 {
 // Destructor
+  if (fTrH1)       delete fTrH1;
   if (fHits)       delete fHits;
   if (fPadHits)    delete fPadHits;
   if (fHitMap)     delete fHitMap;
@@ -161,15 +160,12 @@ Bool_t AliMUONDigitizer::Init()
 
 
 //------------------------------------------------------------------------
-//void AliMUONDigitizer::Digitize()
-void AliMUONDigitizer::Exec(Option_t* option)
+void AliMUONDigitizer::Digitize()
 {
 
-  TString optionString = option;
-  if (optionString.Data() == "deb") {
-    cout<<"AliMUONDigitizer::Exec: called with option deb "<<endl;
-    fDebug = 3;
-  }
+  // keep galice.root for signal and name differently the file for 
+  // background when add! otherwise the track info for signal will be lost !
+  
   AliMUONChamber*   iChamber;
   AliSegmentation*  segmentation;
   
@@ -211,8 +207,8 @@ void AliMUONDigitizer::Exec(Option_t* option)
 	 inputFile++) {
 // Connect MUON branches
 
-      TBranch *branchHits = 0;
-      TBranch *branchPadHits = 0;
+      TBranch *branch = 0;
+      TBranch *branch2 = 0;
       TTree *treeH = fManager->GetInputTreeH(inputFile);
       if (GetDebug()>2) {
 	cerr<<"   inputFile , cathode = "<<inputFile<<" "
@@ -220,24 +216,24 @@ void AliMUONDigitizer::Exec(Option_t* option)
 	cerr<<"   treeH, fHits "<<treeH<<" "<<fHits<<endl;
       }
       if (treeH && fHits) {
-	branchHits = treeH->GetBranch("MUON");
-	if (branchHits) {
+	branch = treeH->GetBranch("MUON");
+	if (branch) {
 	  fHits->Clear();
-	  branchHits->SetAddress(&fHits);
+	  branch->SetAddress(&fHits);
 	}
 	else
 	  Error("Digitize","branch MUON was not found");
       }
-      if (GetDebug()>2) cerr<<"   branchHits = "<<branchHits<<endl;
+      if (GetDebug()>2) cerr<<"   branch = "<<branch<<endl;
 
       if (treeH && fPadHits) {
-	branchPadHits = treeH->GetBranch("MUONCluster");
-	if (branchPadHits) 
-	  branchPadHits->SetAddress(&fPadHits);
+	branch2 = treeH->GetBranch("MUONCluster");
+	if (branch2) 
+	  branch2->SetAddress(&fPadHits);
 	else
 	  Error("Digitize","branch MUONCluster was not found");
       }
-      if (GetDebug()>2) cerr<<"   branchPadHits = "<<branchPadHits<<endl;
+      if (GetDebug()>2) cerr<<"   branch2 = "<<branch2<<endl;
 
 //
 //   Loop over tracks
@@ -248,9 +244,8 @@ void AliMUONDigitizer::Exec(Option_t* option)
       for (fTrack = 0; fTrack < ntracks; fTrack++) {
 	if (GetDebug()>2) cerr<<"   fTrack = "<<fTrack<<endl;
 	fHits->Clear();
-	fPadHits->Clear();
-	branchHits->GetEntry(fTrack);
-	branchPadHits->GetEntry(fTrack);
+	cerr<<" branch->GetEntry(fTrack) "<<branch->GetEntry(fTrack)<<endl;
+	cerr<<" branch2->GetEntry(fTrack) "<<branch2->GetEntry(fTrack)<<endl;
 	
 //
 //   Loop over hits
@@ -348,7 +343,7 @@ void AliMUONDigitizer::Exec(Option_t* option)
 
       // this was changed to accomodate the real number of tracks
 
-      if (nptracks > 10 && GetDebug() >0) {
+      if (nptracks > 10) {
 	cerr<<"Attention - nptracks > 10 "<<nptracks<<endl;
 	nptracks = 10;
       }
@@ -397,19 +392,20 @@ void AliMUONDigitizer::Exec(Option_t* option)
     delete [] nmuon;    
   } //end loop over cathodes
   if (GetDebug()>2) 
-    cerr<<"AliMUONDigitizer::Exec: writing the TreeD: "
+    cerr<<"DDDDD: writing the TreeD: "
 	<<fManager->GetTreeD()->GetName()<<endl;
-  fManager->GetTreeD()->Write(0,TObject::kOverwrite);
+  fManager->GetTreeD()->Write();
   delete [] fHitMap;
   delete fTDList;
     
   if (fAddress)    fAddress->Delete();
   if (fHits)    fHits->Delete();
   if (fPadHits) fPadHits->Delete();
+  // gObjectTable->Print();
 }
 
 
-//------------------------------------------------------------------------
+
 void AliMUONDigitizer::SortTracks(Int_t *tracks,Int_t *charges,Int_t ntr)
 {
   //
@@ -463,3 +459,30 @@ void AliMUONDigitizer::SortTracks(Int_t *tracks,Int_t *charges,Int_t ntr)
     }
   }
 }
+
+
+/*
+void AliMUONDigitizer::MixWith(char* HeaderFile, char* SDigitsFile){
+//
+
+  if(HeaderFile == 0){
+    cout << "Specify  header file to merge"<< endl;
+    return;
+  }
+  
+  Int_t inputs;
+  for(inputs = 0; inputs < fNinputs ; inputs++){
+    if(strcmp(((TObjString *)fHeaderFiles->At(inputs))->GetString(),HeaderFile) == 0 ){
+      cout << "Entry already exists, do not add" << endl ;
+      return ;
+    }
+  }  
+  
+  fHeaderFiles->Expand(fNinputs+1) ;
+  new((*fHeaderFiles)[fNinputs]) TObjString(HeaderFile) ;
+
+  TFile * file ;
+  file = new TFile(((TObjString *) fHeaderFiles->At(fNinputs))->GetString()) ;  
+  file->cd() ;
+
+*/

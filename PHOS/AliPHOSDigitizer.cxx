@@ -76,7 +76,6 @@
 #include "AliPHOSDigitizer.h"
 #include "AliPHOSSDigitizer.h"
 #include "AliPHOSGeometry.h"
-#include "AliPHOSTick.h"
 
 ClassImp(AliPHOSDigitizer)
 
@@ -90,19 +89,12 @@ ClassImp(AliPHOSDigitizer)
   fEMCDigitThreshold  = 0.01 ;
   fCPVNoise           = 0.01;
   fCPVDigitThreshold  = 0.09 ;
-  fTimeResolution     = 1.0e-9 ;
-  fTimeSignalLength   = 1.0e-9 ;
+  fPPSDNoise          = 0.0000001;
+  fPPSDDigitThreshold = 0.0000002 ;  
   fDigitsInRun  = 0 ; 
-  fADCchanelEmc = 0.0015;        // width of one ADC channel in GeV
-  fADCpedestalEmc = 0.005 ;      //
-  fNADCemc = (Int_t) TMath::Power(2,16) ;  // number of channels in EMC ADC
-
-  fADCchanelCpv = 0.0012 ;          // width of one ADC channel in CPV 'popugais'
-  fADCpedestalCpv = 0.012 ;         // 
-  fNADCcpv = (Int_t) TMath::Power(2,12);      // number of channels in CPV ADC
-
-  fTimeThreshold = 0.001*10000000 ; //Means 1 MeV in terms of SDigits amplitude
-  fARD = 0 ;                        // We work in the standalong mode
+  fPedestal = 0.;                // Calibration parameters 
+  fSlope = 10000000. ;
+  fARD = 0 ;                     // We work in the standalong mode
 }
 
 //____________________________________________________________________________ 
@@ -111,7 +103,17 @@ AliPHOSDigitizer::AliPHOSDigitizer(const char *headerFile,const char * name)
   // ctor
   SetName(name) ;
   SetTitle(headerFile) ;
+  fPinNoise           = 0.01 ;
+  fEMCDigitThreshold  = 0.01 ;
+  fCPVNoise           = 0.01;
+  fCPVDigitThreshold  = 0.09 ;
+  fPPSDNoise          = 0.0000001;
+  fPPSDDigitThreshold = 0.0000002 ;  
+  fDigitsInRun  = 0 ; 
+  fPedestal = 0.;                // Calibration parameters 
+  fSlope = 10000000. ;
   fARD = 0 ;                     // We work in the standalong mode
+
   Init() ;
   
 }
@@ -123,6 +125,17 @@ AliPHOSDigitizer::AliPHOSDigitizer(AliRunDigitizer * ard)
   fARD = ard ;
   SetName("Default");
   SetTitle("aliroot") ;
+
+  fPinNoise           = 0.01 ;
+  fEMCDigitThreshold  = 0.01 ;
+  fCPVNoise           = 0.01;
+  fCPVDigitThreshold  = 0.09 ;
+  fPPSDNoise          = 0.0000001;
+  fPPSDDigitThreshold = 0.0000002 ;  
+  fDigitsInRun  = 0 ; 
+  fPedestal = 0.;                // Calibration parameters 
+  fSlope = 10000000. ;
+
   Init() ;
   
 }
@@ -151,7 +164,6 @@ void AliPHOSDigitizer::Digitize(const Int_t event)
 
   AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
   TClonesArray * digits = gime->Digits(GetName()) ; 
-  AliPHOSSDigitizer * sdiz = gime->SDigitizer(GetName()) ; 
 
   digits->Clear() ;
 
@@ -161,13 +173,24 @@ void AliPHOSDigitizer::Digitize(const Int_t event)
   Int_t nEMC = geom->GetNModules()*geom->GetNPhi()*geom->GetNZ();
   
   Int_t nCPV ;
+  Int_t nPPSD ;
   Int_t absID ;
   TString name      =  geom->GetName() ;
   
-  nCPV = nEMC + geom->GetNumberOfCPVPadsZ()*geom->GetNumberOfCPVPadsPhi()*
-    geom->GetNModules() ;
+  if ( name == "IHEP" || name == "MIXT" )    
+    nCPV =nEMC + geom->GetNumberOfCPVPadsZ()*geom->GetNumberOfCPVPadsPhi()*
+      geom->GetNCPVModules()*geom->GetNumberOfCPVLayers() ;
+  else
+    nCPV = nEMC; 
+  
+  if ( name == "GPS2" || name == "MIXT" )    
+    nPPSD =nCPV+2*geom->GetNPPSDModules()*geom->GetNumberOfModulesPhi()*geom->GetNumberOfModulesZ()*
+      geom->GetNumberOfPadsPhi()*geom->GetNumberOfPadsZ() ;
+  else
+    nPPSD = nCPV; 
 
-  digits->Expand(nCPV) ;
+
+  digits->Expand(nPPSD) ;
 
 
   // sdigitize random gaussian noise and add it to all cells (EMCA+CPV+PPSD) 
@@ -177,163 +200,48 @@ void AliPHOSDigitizer::Digitize(const Int_t event)
     cerr << "ERROR: AliPHOSDigitizer::Digitize -> SDigitizer with name " << GetName() << " not found " << endl ; 
     abort() ; 
   }
-    
+  for(absID = 1; absID <= nEMC; absID++){
+    Float_t noise = gRandom->Gaus(0., fPinNoise) ; 
+    new((*digits)[absID-1]) AliPHOSDigit( -1,absID,sDigitizer->Digitize(noise) ) ;
+  }
+  
+  for(absID = nEMC+1; absID <= nCPV; absID++){
+    Float_t noise = gRandom->Gaus(0., fCPVNoise) ; 
+    new((*digits)[absID-1]) AliPHOSDigit( -1,absID,sDigitizer->Digitize(noise) ) ;
+  }
+  
+  for(absID = nCPV+1; absID <= nPPSD; absID++){
+    Float_t noise = gRandom->Gaus(0., fPPSDNoise) ; 
+    new((*digits)[absID-1]) AliPHOSDigit( -1,absID,sDigitizer->Digitize(noise) ) ;
+  }
+  
   // loop through the sdigits posted to the White Board and add them to the noise
-  TCollection * folderslist = gime->SDigitsFolder()->GetListOfFolders() ; 
+  TCollection * folderslist = ((TFolder*)gROOT->FindObjectAny("YSAlice/WhiteBoard/SDigits/PHOS"))->GetListOfFolders() ; 
   TIter next(folderslist) ; 
   TFolder * folder = 0 ; 
   TClonesArray * sdigits = 0 ;
   Int_t input = 0 ;
-  TObjArray * sdigArray = new TObjArray(2) ;
-  while ( (folder = (TFolder*)next()) ) 
+  while ( (folder = (TFolder*)next()) ) {
     if ( (sdigits = (TClonesArray*)folder->FindObject(GetName()) ) ) {
       cout << "INFO: AliPHOSDigitizer::Digitize -> Adding SDigits " 
 	   << GetName() << " from " << folder->GetName() << endl ; 
-      sdigArray->AddAt(sdigits, input) ;
-      input++ ;
-    }
-
-  //Find the first crystall with signal
-  Int_t nextSig = 200000 ; 
-  Int_t i;
-  for(i=0; i<input; i++){
-    sdigits = (TClonesArray *)sdigArray->At(i) ;
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ATTENTION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // if there are no SDigits in this event ===> Dmitri should check
-    if ( !sdigits->GetEntries() )
-      continue ; 
-    Int_t curNext = ((AliPHOSDigit *)sdigits->At(0))->GetId() ;
-     if(curNext < nextSig) 
-       nextSig = curNext ;
-  }
-
-  cout << " AliPHOSDigitizer::Digitize 2" << endl ;  
-  TArrayI index(input) ;
-  index.Reset() ;  //Set all indexes to zero
-
-  AliPHOSDigit * digit ;
-  AliPHOSDigit * curSDigit ;
-
-  TClonesArray * ticks = new TClonesArray("AliPHOSTick",1000) ;
-
-  //Put Noise contribution
-  for(absID = 1; absID <= nEMC; absID++){
-    Float_t noise = gRandom->Gaus(0., fPinNoise) ; 
-    new((*digits)[absID-1]) AliPHOSDigit( -1,absID,sDigitizer->Digitize(noise), TimeOfNoise() ) ;
-    //look if we have to add signal?
-    if(absID==nextSig){
-      //Add SDigits from all inputs 
-      digit = (AliPHOSDigit *) digits->At(absID-1) ;
-
-      ticks->Clear() ;
-      Int_t contrib = 0 ;
-      Float_t a = digit->GetAmp() ;
-      Float_t b = TMath::Abs( a /fTimeSignalLength) ;
-      //Mark the beginnign of the signal
-      new((*ticks)[contrib++]) AliPHOSTick(digit->GetTime(),0, b);  
-      //Mark the end of the ignal     
-      new((*ticks)[contrib++]) AliPHOSTick(digit->GetTime()+fTimeSignalLength, -a, -b); 
-
-      //loop over inputs
-      for(i=0; i<input; i++){
-	if(((TClonesArray *)sdigArray->At(i))->GetEntriesFast() > index[i] )
-	  curSDigit = (AliPHOSDigit*)((TClonesArray *)sdigArray->At(i))->At(index[i]) ; 	
-	else
-	  curSDigit = 0 ;
-	//May be several digits will contribute from the same input
-	while(curSDigit && curSDigit->GetId() == absID){	   
-	  //Shift primary to separate primaries belonging different inputs
-	  Int_t primaryoffset ;
-	  if(fARD)
-	    primaryoffset = fARD->GetMask(i) ; 
-	  else
-	    primaryoffset = 10000000*i ;
-	  curSDigit->ShiftPrimary(primaryoffset) ;
-	  
-	  a = curSDigit->GetAmp() ;
-	  b = a /fTimeSignalLength ;
-	  new((*ticks)[contrib++]) AliPHOSTick(curSDigit->GetTime(),0, b);  
-	  new((*ticks)[contrib++]) AliPHOSTick(curSDigit->GetTime()+fTimeSignalLength, -a, -b); 
-
-	  *digit = *digit + *curSDigit ;  //add energies
-
-	  index[i]++ ;
-	  if(((TClonesArray *)sdigArray->At(i))->GetEntriesFast() > index[i] )
-	    curSDigit = (AliPHOSDigit*)((TClonesArray *)sdigArray->At(i))->At(index[i]) ; 	
-	  else
-	    curSDigit = 0 ;
-	}
-      }
-
-      //calculate and set time
-      Float_t time = FrontEdgeTime(ticks) ;
-      digit->SetTime(time) ;
-
-      //Find next signal module
-      nextSig = 200000 ;
-      for(i=0; i<input; i++){
-	sdigits = ((TClonesArray *)sdigArray->At(i)) ;
-	Int_t curNext = nextSig ;
-	if(sdigits->GetEntriesFast() > index[i] ){
-	  curNext = ((AliPHOSDigit *) sdigits->At(index[i]))->GetId() ;
-	  
-	}
-	if(curNext < nextSig) nextSig = curNext ;
+      Int_t primaryoffset ;
+      if(fARD)
+	primaryoffset = fARD->GetMask(input) ; 
+      else
+	primaryoffset = 10000000*input ;
+ 
+      Int_t index ; 
+      AliPHOSDigit * curSDigit ; 
+      AliPHOSDigit * digit ; 
+      for ( index = 0 ; index < sdigits->GetEntriesFast(); index++) { 
+	curSDigit = (AliPHOSDigit*)sdigits->At(index) ; 
+	curSDigit->ShiftPrimary(primaryoffset) ;
+	digit = (AliPHOSDigit*)digits->At(curSDigit->GetId() - 1 ) ; 
+	*digit = *digit + *curSDigit ; 
       }
     }
   }
-  
-  ticks->Delete() ;
-  delete ticks ;
-
-
-  //Now CPV digits (different noise and no timing)
-  for(absID = nEMC+1; absID <= nCPV; absID++){
-    Float_t noise = gRandom->Gaus(0., fCPVNoise) ; 
-    new((*digits)[absID-1]) AliPHOSDigit( -1,absID,sDigitizer->Digitize(noise), TimeOfNoise() ) ;
-    //look if we have to add signal?
-    if(absID==nextSig){
-      digit = (AliPHOSDigit *) digits->At(absID-1) ;
-      //Add SDigits from all inputs
-      for(i=0; i<input; i++){
-	if(((TClonesArray *)sdigArray->At(i))->GetEntriesFast() > index[i] )
-	  curSDigit = (AliPHOSDigit*)((TClonesArray *)sdigArray->At(i))->At(index[i]) ; 	
-	else
-	  curSDigit = 0 ;
-	//May be several digits will contribute from the same input
-	while(curSDigit && curSDigit->GetId() == absID){	   
-	  //Shift primary to separate primaries belonging different inputs
-	  Int_t primaryoffset ;
-	  if(fARD)
-	    primaryoffset = fARD->GetMask(i) ; 
-	  else
-	    primaryoffset = 10000000*i ;
-	  curSDigit->ShiftPrimary(primaryoffset) ;
-
-	  //add energies
-	  *digit = *digit + *curSDigit ;  
-	  index[i]++ ;
-	  if(((TClonesArray *)sdigArray->At(i))->GetEntriesFast() > index[i] )
-	    curSDigit = (AliPHOSDigit*)((TClonesArray *)sdigArray->At(i))->At(index[i]) ; 	
-	  else
-	    curSDigit = 0 ;
-	}
-      }
-      
-      //Find next signal module
-      for(i=0; i<input; i++){
-	sdigits = (TClonesArray *)sdigArray->At(i) ;
-	Int_t curNext = nextSig ;
-	if(sdigits->GetEntriesFast() > index[i] )
-	  curNext = ((AliPHOSDigit *) sdigits->At(index[i]))->GetId() ;
-	if(curNext < nextSig) nextSig = curNext ;
-      }
-      
-    }
-  }
-  delete sdigArray ; //We should not delete its contents
-  
-  
   
   //remove digits below thresholds
   for(absID = 0; absID < nEMC ; absID++)
@@ -343,35 +251,25 @@ void AliPHOSDigitizer::Digitize(const Int_t event)
   for(absID = nEMC; absID < nCPV ; absID++)
     if(sDigitizer->Calibrate(((AliPHOSDigit*)digits->At(absID))->GetAmp()) < fCPVDigitThreshold)
       digits->RemoveAt(absID) ;
-    
+  
+  for(absID = nCPV; absID < nPPSD ; absID++)
+    if(sDigitizer->Calibrate(((AliPHOSDigit *)digits->At(absID))->GetAmp()) < fPPSDDigitThreshold)
+      digits->RemoveAt(absID) ;
+  
   digits->Compress() ;  
   
   Int_t ndigits = digits->GetEntriesFast() ;
   digits->Expand(ndigits) ;
 
-  //Set indexes in list of digits and make true digitization of the energy
+  //Set indexes in list of digits
+  Int_t i ;
   for (i = 0 ; i < ndigits ; i++) { 
     AliPHOSDigit * digit = (AliPHOSDigit *) digits->At(i) ; 
     digit->SetIndexInList(i) ;     
-    Float_t energy = sdiz->Calibrate(digit->GetAmp()) ;
-    digit->SetAmp(DigitizeEnergy(energy,digit->GetId()) ) ;
   }
 
 }
-//____________________________________________________________________________
-Int_t AliPHOSDigitizer::DigitizeEnergy(Float_t energy, Int_t absId)
-{
-  Int_t chanel ;
-  if(absId <= fEmcCrystals){ //digitize as EMC 
-    chanel = (Int_t) TMath::Ceil((energy - fADCpedestalEmc)/fADCchanelEmc) ;       
-    if(chanel > fNADCemc ) chanel =  fNADCemc ;
-  }
-  else{ //Digitize as CPV
-    chanel = (Int_t) TMath::Ceil((energy - fADCpedestalCpv)/fADCchanelCpv) ;       
-    if(chanel > fNADCcpv ) chanel =  fNADCcpv ;
-  }
-  return chanel ;
-}
+
 //____________________________________________________________________________
 void AliPHOSDigitizer::Exec(Option_t *option) 
 { 
@@ -472,47 +370,10 @@ void AliPHOSDigitizer::Exec(Option_t *option)
 }
 
 //____________________________________________________________________________ 
-Float_t AliPHOSDigitizer::FrontEdgeTime(TClonesArray * ticks) 
-{ // 
-  ticks->Sort() ; //Sort in accordance with times of ticks
-  TIter it(ticks) ;
-  AliPHOSTick * ctick = (AliPHOSTick *) it.Next() ;
-  Float_t time = ctick->CrossingTime(fTimeThreshold) ;    
-
-  AliPHOSTick * t ;  
-  while((t=(AliPHOSTick*) it.Next())){
-    if(t->GetTime() < time)  //This tick starts before crossing
-      *ctick+=*t ;
-    else
-      return time ;
-
-    time = ctick->CrossingTime(fTimeThreshold) ;    
-  }
-  return time ;
-}
-//____________________________________________________________________________ 
 Bool_t AliPHOSDigitizer::Init()
 {
-  fPinNoise           = 0.01 ;
-  fEMCDigitThreshold  = 0.01 ;
-  fCPVNoise           = 0.01;
-  fCPVDigitThreshold  = 0.09 ;
-  fTimeResolution     = 1.0e-9 ;
-  fTimeSignalLength   = 1.0e-9 ;
-  fDigitsInRun  = 0 ; 
-  fADCchanelEmc = 0.0015;        // width of one ADC channel in GeV
-  fADCpedestalEmc = 0.005 ;      //
-  fNADCemc = (Int_t) TMath::Power(2,16) ;  // number of channels in EMC ADC
-
-  fADCchanelCpv = 0.0012 ;          // width of one ADC channel in CPV 'popugais'
-  fADCpedestalCpv = 0.012 ;         // 
-  fNADCcpv = (Int_t) TMath::Power(2,12);      // number of channels in CPV ADC
-
-  fTimeThreshold = 0.001*10000000 ; //Means 1 MeV in terms of SDigits amplitude
-
   // Makes all memory allocations
   // Adds Digitizer task to the folder of PHOS tasks
-
    //============================================================= YS
   //  The initialisation is now done by AliPHOSGetter
     
@@ -527,9 +388,6 @@ Bool_t AliPHOSDigitizer::Init()
     cerr << "ERROR: AliPHOSDigitizer::Init -> Could not obtain the Getter object !" << endl ; 
     return kFALSE;
   } 
-  
-  const AliPHOSGeometry * geom = gime->PHOSGeometry() ;
-  fEmcCrystals = geom->GetNModules() *  geom->GetNCristalsInModule() ;
      
   // create a folder on the white board //YSAlice/WhiteBoard/Digits/PHOS/headerFile/digitsTitle
   gime->PostDigits(GetName() ) ;   
@@ -620,13 +478,14 @@ void AliPHOSDigitizer::Print(Option_t* option)const {
     cout << "  Threshold  in EMC  (fEMCDigitThreshold) = " << fEMCDigitThreshold  << endl ; ;
     cout << "                 Noise in CPV (fCPVNoise) = " << fCPVNoise << endl ; 
     cout << "    Threshold in CPV (fCPVDigitThreshold) = " << fCPVDigitThreshold << endl ; 
+    cout << "               Noise in PPSD (fPPSDNoise) = " << fPPSDNoise << endl ;
+    cout << "  Threshold in PPSD (fPPSDDigitThreshold) = " << fPPSDDigitThreshold << endl ;
     cout << "---------------------------------------------------" << endl ;
   }
   else
     cout << "AliPHOSDigitizer not initialized " << endl ;
   
 }
-
 //__________________________________________________________________
 void AliPHOSDigitizer::PrintDigits(Option_t * option){
   // Print a table of digits
@@ -637,51 +496,28 @@ void AliPHOSDigitizer::PrintDigits(Option_t * option){
   cout << "AliPHOSDigitiser: event " << gAlice->GetEvNumber() << endl ;
   cout << "       Number of entries in Digits list " << digits->GetEntriesFast() << endl ;
   cout << endl ;
-  if(strstr(option,"all")||strstr(option,"EMC")){
+  
+  fDigitsInRun +=  digits->GetEntriesFast() ; 
+
+  if(strstr(option,"all")){
     
     //loop over digits
     AliPHOSDigit * digit;
-    cout << "Digit Id    Amplitude     Index "  <<  " Nprim " << " Primaries list " <<  endl;      
-    Int_t maxEmc = gime->PHOSGeometry()->GetNModules()*gime->PHOSGeometry()->GetNCristalsInModule() ;
+    cout << "Digit Id " << " Amplitude " <<  " Index "  <<  " Nprim " << " Primaries list " <<  endl;      
     Int_t index ;
-    for (index = 0 ; (index < digits->GetEntries()) && 
-	 (((AliPHOSDigit * )  digits->At(index))->GetId() <= maxEmc) ; index++) {
+    for (index = 0 ; index < digits->GetEntries() ; index++) {
       digit = (AliPHOSDigit * )  digits->At(index) ;
-      if(digit->GetNprimary() == 0) continue;
-      cout << setw(6)  <<  digit->GetId() << "   "  << 	setw(10)  <<  digit->GetAmp() <<   "    "  
-	   << setw(6)  <<  digit->GetIndexInList() << "    "   
-	   << setw(5)  <<  digit->GetNprimary() <<"    ";
+      cout << setw(8)  <<  digit->GetId() << " "  << 	setw(3)  <<  digit->GetAmp() <<   "  "  
+	   << setw(6)  <<  digit->GetIndexInList() << "  "   
+	   << setw(5)  <<  digit->GetNprimary() <<"  ";
       
       Int_t iprimary;
       for (iprimary=0; iprimary<digit->GetNprimary(); iprimary++)
-	cout << setw(5)  <<  digit->GetPrimary(iprimary+1) << "    ";
+	cout << setw(5)  <<  digit->GetPrimary(iprimary+1) << " ";
       cout << endl;  	 
-    }    
-    cout << endl;
-  }
-
-  if(strstr(option,"all")||strstr(option,"CPV")){
-    
-    //loop over CPV digits
-    AliPHOSDigit * digit;
-    cout << "Digit Id " << " Amplitude " <<  " Index "  <<  " Nprim " << " Primaries list " <<  endl;      
-    Int_t maxEmc = gime->PHOSGeometry()->GetNModules()*gime->PHOSGeometry()->GetNCristalsInModule() ;
-    Int_t index ;
-    for (index = 0 ; index < digits->GetEntries(); index++) {
-      digit = (AliPHOSDigit * )  digits->At(index) ;
-      if(digit->GetId() > maxEmc){
-	cout << setw(6)  <<  digit->GetId() << "   "  << 	setw(10)  <<  digit->GetAmp() <<   "    "  
-	     << setw(6)  <<  digit->GetIndexInList() << "    "   
-	     << setw(5)  <<  digit->GetNprimary() <<"    ";
-	
-	Int_t iprimary;
-	for (iprimary=0; iprimary<digit->GetNprimary(); iprimary++)
-	  cout << setw(5)  <<  digit->GetPrimary(iprimary+1) << "    ";
-	cout << endl;  	 
-      }    
     }
+    
   }
-
 }
 
 //__________________________________________________________________
@@ -693,13 +529,6 @@ void AliPHOSDigitizer::SetSDigitsBranch(const char* title)
 
   AliPHOSGetter::GetInstance()->SDigits()->SetName(title) ; 
  
-}
-//__________________________________________________________________
-Float_t AliPHOSDigitizer::TimeOfNoise(void)
-{  // Calculates the time signal generated by noise
-  //to be rewritten, now returns just big number
-  return 1. ;
-
 }
 //____________________________________________________________________________
 void AliPHOSDigitizer::Reset() 

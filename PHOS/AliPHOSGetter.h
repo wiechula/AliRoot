@@ -18,20 +18,21 @@
 
 // --- ROOT system ---
 #include "TClonesArray.h"
-#include "TFolder.h"  
-#include "TTree.h"
-class TString ;
-class TParticle ;
-class TTask ;
-
-// --- Standard library ---
 #include <stdlib.h>
 #include <iostream.h>
 
+#include <TTree.h>
+class TString ;
+class TParticle ;
+class TTask ;
+class TFolder ; 
+
+// --- Standard library ---
+
 // --- AliRoot header files ---
 
-#include "AliRun.h"
-#include "AliPHOS.h" 
+#include <AliRun.h>
+class AliPHOS ;
 class AliPHOSGeometry ;
 class AliPHOSHit ;
 class AliPHOSDigit ;
@@ -60,8 +61,11 @@ class AliPHOSGetter : public TObject {
     abort() ; 
   } 
   
-  virtual ~AliPHOSGetter() ; 
+  virtual ~AliPHOSGetter(){
+    // dtor
+  }
   
+  Bool_t PostGeometry( void ) const ;  
   Bool_t PostHits(void ) const ;  
   Bool_t PostSDigits(      const char * name,  const char * file = 0) const ;  
   Bool_t PostDigits(       const char * name ) const ;  
@@ -78,8 +82,8 @@ class AliPHOSGetter : public TObject {
   Bool_t PostTrackSegmentMaker(AliPHOSTrackSegmentMaker * tsm) const ;  
   Bool_t PostTrackSegmentMaker(const char * name ) const ;  
   Bool_t PostPID  (AliPHOSPID * pid) const ;  
-  Bool_t PostPID  (const char * name ) const ;  
-  Bool_t PostQA   (void) const ;
+  Bool_t PostPID  (       const char * name ) const ;  
+  Bool_t PostQA   (       const char * headerFile ) const ;
   
 
   void   Event(const Int_t event, const char * opt = "HSDRQ") ;    
@@ -94,11 +98,10 @@ class AliPHOSGetter : public TObject {
 				     const char* branchTitle = "Default" ) ; 
   static AliPHOSGetter *   GetInstance() ; 
 
-  const AliPHOS *         PHOS()  ;  
-  const  AliPHOSGeometry * PHOSGeometry() ; 
+  const  AliPHOS *         PHOS() const ;  
+  const  AliPHOSGeometry * PHOSGeometry() const  ; 
    // Alarms
-  TFolder * Alarms() const { return (TFolder*)(ReturnO("Alarms", 0)) ; }
-  TObjArray *  Alarms(const char * name ) const { return (TObjArray*)(ReturnO("Alarms", name)) ; }
+  TFolder * Alarms(const char * name = 0) const { return (TFolder*)(ReturnO("Alarms", name)) ; }
 
   // QA Tasks
   TTask * QATasks(const char * name = 0) const { return (TTask*)(ReturnT("QATasks", name)) ; }
@@ -152,8 +155,6 @@ class AliPHOSGetter : public TObject {
     return *this ; 
   }
   
-  TFolder * SDigitsFolder() { return dynamic_cast<TFolder*>(fSDigitsFolder->FindObject("PHOS")) ; }
-
  private:
 
   AliPHOSGetter(const char* headerFile, const char* branchTitle ="Default") ; 
@@ -168,20 +169,19 @@ class AliPHOSGetter : public TObject {
   void ReadTreeQA() ;
   void ReadPrimaries() ;
 
-  void * HitsRef(void) const ;
-  void * SDigitsRef(const char * name, const char * file = 0 ) const;
-  void * DigitsRef (const char * name)   const ;
-  void * EmcRecPointsRef (const char * name) const ;
-  void * CpvRecPointsRef (const char * name) const ;
-  void * TrackSegmentsRef(const char * name)   const ;
-  void * RecParticlesRef (const char * name)   const ;
-  void * AlarmsRef (void)   const ;
+  TClonesArray ** HitsRef(void) const ;
+  TClonesArray ** SDigitsRef(const char * name, const char * file = 0 ) const;
+  TClonesArray ** DigitsRef (const char * name)   const ;
+  TObjArray    ** EmcRecPointsRef (const char * name) const ;
+  TObjArray    ** CpvRecPointsRef (const char * name) const ;
+  TClonesArray ** TrackSegmentsRef(const char * name)   const ;
+  TClonesArray ** RecParticlesRef (const char * name)   const ;
 
-  void * SDigitizerRef (const char * name) const ; 
-  void * DigitizerRef  (const char * name) const ; 
-  void * ClusterizerRef(const char * name) const ; 
-  void * TSMakerRef    (const char * name) const ; 
-  void * PIDRef        (const char * name) const ; 
+  AliPHOSSDigitizer        ** SDigitizerRef (const char * name) const ; 
+  AliPHOSDigitizer         ** DigitizerRef  (const char * name) const ; 
+  AliPHOSClusterizer       ** ClusterizerRef(const char * name) const ; 
+  AliPHOSTrackSegmentMaker ** TSMakerRef    (const char * name) const ; 
+  AliPHOSPID               ** PIDRef        (const char * name) const ; 
 
  private:
 
@@ -199,14 +199,6 @@ class AliPHOSGetter : public TObject {
   
   TObjArray *    fPrimaries ;         //! list of lists of primaries-for the case of mixing
 
-  TFolder *      fModuleFolder ;      //!Folder that contains the modules 
-  TFolder *      fHitsFolder ;        //!Folder that contains the Hits 
-  TFolder *      fSDigitsFolder ;     //!Folder that contains the SDigits 
-  TFolder *      fDigitsFolder ;      //!Folder that contains the Digits 
-  TFolder *      fRecoFolder ;        //!Folder that contains the reconstructed objects (RecPoints, TrackSegments, RecParticles) 
-  TFolder *      fQAFolder ;          //!Folder that contains the QA objects  
-  TFolder *      fTasksFolder ;       //!Folder that contains the Tasks (sdigitizer, digitizer, reconstructioner)
- 
   static AliPHOSGetter * fgObjGetter; // pointer to the unique instance of the singleton 
 
   ClassDef(AliPHOSGetter,1)  // Algorithm class that provides methods to retrieve objects from a list knowing the index 

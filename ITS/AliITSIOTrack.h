@@ -16,7 +16,6 @@ class AliITSIOTrack : public TObject {
   AliITSIOTrack();                        // constructor
   virtual ~AliITSIOTrack() {};            // distructor
   Int_t   GetLabel() const {return fLab;} // get track label
-  Int_t   GetTPCLabel() const {return fTPCLab;} // get TPC track label   
   Int_t   GetIdPoint(Int_t i) const {return fIdPoints[i];}   // get the identification number for the point
   Int_t   GetIdModule(Int_t i) const {return fIdModules[i];} // get the module number for the point
 
@@ -36,14 +35,13 @@ class AliITSIOTrack : public TObject {
   Float_t GetY() const {return fY;}     // gets the y cohordinate of the found vertex
   Float_t GetPx() const {return fPx;}   // gets the x momentum component at the found vertex 
   Float_t GetPy() const {return fPy;}   // gets the y momentum component at the found vertex 
-  Float_t GetPz() const {return fPz;}    // gets the z momentum component at the found vertex 
-
+  Float_t GetPz()const {return fPz;}    // gets the z momentum component at the found vertex 
+ 
   void SetCovMatrix(Double_t C00, Double_t C10, Double_t C11, Double_t C20, Double_t C21, 
        Double_t C22, Double_t C30, Double_t C31, Double_t C32, Double_t C33, Double_t C40, 
        Double_t C41, Double_t C42, Double_t C43, Double_t C44);
   
   void SetLabel(Int_t lab) {fLab=lab;}  // sets the track label
-  void SetTPCLabel(Int_t lab) {fTPCLab=lab;}  // sets the TPC track label    
   void SetIdPoint(Int_t i,Int_t pnt) {fIdPoints[i]=pnt;}   // set the identification number for the point
   void SetIdModule(Int_t i,Int_t mod) {fIdModules[i]=mod;} // set the module number for the point
    
@@ -65,14 +63,12 @@ class AliITSIOTrack : public TObject {
  private:
     
   Int_t     fLab;       // label of reconstructed track
-  Int_t     fTPCLab;       // label of TPC track  
   Float_t   fX ;        // x cohordinate of the found vertex
   Float_t   fY ;        // y cohordinate of the found vertex
   Float_t   fZ ;        // z cohordinate of the found vertex
   Float_t   fPx;        // x component of track momentum at the found vertex
   Float_t   fPy;        // y component of track momentum at the found vertex
   Float_t   fPz;        // z component of track momentum at the found vertex
-
    
   //
   Int_t     fIdPoints[6];   // points assigned to the track (entry # in fRecPoints is given by module #)

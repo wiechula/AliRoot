@@ -15,14 +15,6 @@
 
 /*
 $Log$
-Revision 1.40  2001/09/25 11:30:23  morsch
-Pass event vertex to header.
-
-Revision 1.39  2001/07/27 17:09:36  morsch
-Use local SetTrack, KeepTrack and SetHighWaterMark methods
-to delegate either to local stack or to stack owned by AliRun.
-(Piotr Skowronski, A.M.)
-
 Revision 1.38  2001/07/13 10:58:54  morsch
 - Some coded moved to AliGenMC
 - Improved handling of secondary vertices.
@@ -158,7 +150,6 @@ AliGenPythia::AliGenPythia(Int_t npart)
     fFlavorSelect   = 0;
     // Produced particles  
     fParticles = new TClonesArray("TParticle",1000);
-    fEventVertex.Set(3);
 }
 
 AliGenPythia::AliGenPythia(const AliGenPythia & Pythia)
@@ -256,6 +247,7 @@ void AliGenPythia::Generate()
 
     Float_t polar[3]   =   {0,0,0};
     Float_t origin[3]  =   {0,0,0};
+    Float_t origin0[3] =   {0,0,0};
     Float_t p[3];
 //  converts from mm/c to s
     const Float_t kconv=0.001/2.999792458e8;
@@ -266,6 +258,7 @@ void AliGenPythia::Generate()
     fTrials=0;
 
 //  Set collision vertex position 
+    for (j=0;j<3;j++) origin0[j]=fOrigin[j];
     if(fVertexSmear==kPerEvent) {
 	fPythia->SetMSTP(151,1);
 	for (j=0;j<3;j++) {
@@ -289,16 +282,6 @@ void AliGenPythia::Generate()
 	Int_t i;
 	
 	Int_t np = fParticles->GetEntriesFast();
-	if (np == 0 ) continue;
-// Get event vertex and discard the event if the Z coord. is too big	
-	TParticle *  iparticle = (TParticle *) fParticles->At(0);
-	Float_t distz = iparticle->Vz()/10. - fOrigin.At(2);
-	if(TMath::Abs(distz)>fCutVertexZ)continue;
-//
-	fEventVertex[0] = iparticle->Vx()/10.;
-	fEventVertex[1] = iparticle->Vy()/10.;	
-	fEventVertex[2] = iparticle->Vz()/10.;
-//
 	Int_t* pParent   = new Int_t[np];
 	Int_t* pSelected = new Int_t[np];
 	Int_t* trackIt   = new Int_t[np];
@@ -308,9 +291,10 @@ void AliGenPythia::Generate()
 	}
 	printf("\n **************************************************%d\n",np);
 	Int_t nc = 0;
+	if (np == 0 ) continue;
 	if (fProcess != kPyMb && fProcess != kPyJets && fProcess != kPyDirectGamma) {
 	    for (i = 0; i<np-1; i++) {
-		iparticle = (TParticle *) fParticles->At(i);
+		TParticle *  iparticle = (TParticle *) fParticles->At(i);
 		Int_t ks = iparticle->GetStatusCode();
 		kf = CheckPDGCode(iparticle->GetPdgCode());
 // No initial state partons
@@ -404,15 +388,16 @@ void AliGenPythia::Generate()
 		    if (!pSelected[i]) continue;
 		    TParticle *  iparticle = (TParticle *) fParticles->At(i);
 		    kf = CheckPDGCode(iparticle->GetPdgCode());
-		    p[0] = iparticle->Px();
-		    p[1] = iparticle->Py();
-		    p[2] = iparticle->Pz();
-		    origin[0] = fOrigin[0]+iparticle->Vx()/10.;
-		    origin[1] = fOrigin[1]+iparticle->Vy()/10.;
-		    origin[2] = fOrigin[2]+iparticle->Vz()/10.;
-		    Float_t tof   = kconv*iparticle->T();
-		    Int_t ipa     = iparticle->GetFirstMother()-1;
+		    p[0]=iparticle->Px();
+		    p[1]=iparticle->Py();
+		    p[2]=iparticle->Pz();
+		    origin[0]=origin0[0]+iparticle->Vx()/10.;
+		    origin[1]=origin0[1]+iparticle->Vy()/10.;
+		    origin[2]=origin0[2]+iparticle->Vz()/10.;
+		    Float_t tof=kconv*iparticle->T();
+		    Int_t ipa = iparticle->GetFirstMother()-1;
 		    Int_t iparent = (ipa > -1) ? pParent[ipa] : -1;
+//		    printf("\n SetTrack %d %d %d %d", i, iparent, kf, trackIt[i]);
 		    SetTrack(fTrackIt*trackIt[i] ,
 				     iparent, kf, p, origin, polar, tof, kPPrimary, nt, 1.);
 		    pParent[i] = nt;
@@ -446,6 +431,7 @@ Int_t  AliGenPythia::GenerateMB()
     Float_t p[3];
     Float_t polar[3]   =   {0,0,0};
     Float_t origin[3]  =   {0,0,0};
+    Float_t origin0[3] =   {0,0,0};
 //  converts from mm/c to s
     const Float_t kconv=0.001/2.999792458e8;
     
@@ -472,15 +458,15 @@ Int_t  AliGenPythia::GenerateMB()
 
 //
 // store track information
-	    p[0] = iparticle->Px();
-	    p[1] = iparticle->Py();
-	    p[2] = iparticle->Pz();
-	    origin[0] = fOrigin[0]+iparticle->Vx()/10.;
-	    origin[1] = fOrigin[1]+iparticle->Vy()/10.;
-	    origin[2] = fOrigin[2]+iparticle->Vz()/10.;
+	    p[0]=iparticle->Px();
+	    p[1]=iparticle->Py();
+	    p[2]=iparticle->Pz();
+	    origin[0]=origin0[0]+iparticle->Vx()/10.;
+	    origin[1]=origin0[1]+iparticle->Vy()/10.;
+	    origin[2]=origin0[2]+iparticle->Vz()/10.;
 	    Float_t tof=kconv*iparticle->T();
 	    SetTrack(fTrackIt*trackIt, iparent, kf, p, origin, polar,
-			 tof, kPPrimary, nt);
+			     tof, kPPrimary, nt);
 	    KeepTrack(nt);
 	    pParent[i] = nt;
 	} // select particle
@@ -524,9 +510,8 @@ void AliGenPythia::MakeHeader()
 {
 // Builds the event header, to be called after each event
     AliGenEventHeader* header = new AliGenPythiaEventHeader("Pythia");
-    ((AliGenPythiaEventHeader*) header)->SetProcessType(fPythia->GetMSTI(1));
-    header->SetPrimaryVertex(fEventVertex);
-    gAlice->SetGenEventHeader(header);
+   ((AliGenPythiaEventHeader*) header)->SetProcessType(fPythia->GetMSTI(1));
+   gAlice->SetGenEventHeader(header);
 }
 	
 	  

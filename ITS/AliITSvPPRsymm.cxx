@@ -15,12 +15,6 @@
 
 /*
 $Log$
-Revision 1.30  2001/10/01 19:34:09  nilsen
-Fixed a bug in asigning detector types in SetDefaults under SSD layer 6.
-
-Revision 1.29  2001/06/07 14:42:14  barbera
-Both chip and det thicknesses set to [100,300]
-
 Revision 1.28  2001/05/31 19:24:47  barbera
 Default values of SPD detector and chip thickness set to 200 microns as defined by the Technical Board
 
@@ -230,9 +224,6 @@ Introduction of the Copyright and cvs Log
 #include "AliITSsegmentationSPD.h"
 #include "AliITSsegmentationSDD.h"
 #include "AliITSsegmentationSSD.h"
-#include "AliITSsimulationSPD.h"
-#include "AliITSsimulationSDD.h"
-#include "AliITSsimulationSSD.h"
 #include "AliITSClusterFinderSPD.h"
 #include "AliITSClusterFinderSDD.h"
 #include "AliITSClusterFinderSSD.h"
@@ -4851,9 +4842,9 @@ void AliITSvPPRsymm::InitAliITSgeom(){
                                          new AliITSgeomSSD275and75(npar,par));
 			    break;
 			case 6:
-			    fITSgeom->CreatMatrix(mod,lay,lad,det,kSSD,t,r);
-			    if(!(fITSgeom->IsShapeDefined(kSSD))) 
-				fITSgeom->ReSetShape(kSSD,
+			    fITSgeom->CreatMatrix(mod,lay,lad,det,kSSDp,t,r);
+			    if(!(fITSgeom->IsShapeDefined(kSSDp))) 
+				fITSgeom->ReSetShape(kSSDp,
                                           new AliITSgeomSSD75and275(npar,par));
 			    break;
 			} // end switch
@@ -4903,10 +4894,10 @@ void AliITSvPPRsymm::SetDefaults(){
     Float_t bx[256],bz[280];
 
     //SPD
-    iDetType=DetType(kSPD);
+    iDetType=DetType(0);
     s0 = (AliITSgeomSPD*) fITSgeom->GetShape(kSPD);// Get shape info. Do it this way for now.
     AliITSresponse *resp0=new AliITSresponseSPD();
-    SetResponseModel(kSPD,resp0);
+    SetResponseModel(0,resp0);
     AliITSsegmentationSPD *seg0=new AliITSsegmentationSPD(fITSgeom);
     seg0->SetDetSize(s0->GetDx()*2.*kconv, // base this on AliITSgeomSPD
 		     s0->GetDz()*2.*kconv, // for now.
@@ -4921,41 +4912,41 @@ void AliITSvPPRsymm::SetDefaults(){
     bz[127] = bz[128] = 625.0; // first chip boundry
     bz[160] = 425.0; // Set so that there is no zero pixel size for fNz.
     seg0->SetBinSize(bx,bz); // Based on AliITSgeomSPD for now.
-    SetSegmentationModel(kSPD,seg0);
+    SetSegmentationModel(0,seg0);
     // set digit and raw cluster classes to be used
     const char *kData0=(iDetType->GetResponseModel())->DataType();
     if (strstr(kData0,"real")) iDetType->ClassNames("AliITSdigit",
 						    "AliITSRawClusterSPD");
     else iDetType->ClassNames("AliITSdigitSPD","AliITSRawClusterSPD");
-    SetSimulationModel(kSPD,new AliITSsimulationSPD(seg0,resp0));
-//    iDetType->ReconstructionModel(new AliITSClusterFinderSPD());
+    //iDetType->SimulationModel(new AliITSsimulationSPD(seg0,resp0));
+    //iDetType->ReconstructionModel(new AliITSClusterFinderSPD());
 
     // SDD
-    iDetType=DetType(kSDD);
+    iDetType=DetType(1);
     s1 = (AliITSgeomSDD*) fITSgeom->GetShape(kSDD);// Get shape info. Do it this way for now.
     AliITSresponseSDD *resp1=new AliITSresponseSDD();
     resp1->SetDriftSpeed(7.3); // set drift speed to 7.3 microns/ns.
-    SetResponseModel(kSDD,resp1);
+    SetResponseModel(1,resp1);
     AliITSsegmentationSDD *seg1=new AliITSsegmentationSDD(fITSgeom,resp1);
     seg1->SetDetSize(s1->GetDx()*kconv, // base this on AliITSgeomSDD
 		     s1->GetDz()*2.*kconv, // for now.
 		     s1->GetDy()*2.*kconv); // x,z,y full width in microns.
     bx[0] = 1000./((s1->GetDx()*kconv/seg1->Dpx(0))/resp1->DriftSpeed()); // clock in Mhz
     seg1->SetNPads(256,bx[0]);// Use AliITSgeomSDD for now
-    SetSegmentationModel(kSDD,seg1);
+    SetSegmentationModel(1,seg1);
     const char *kData1=(iDetType->GetResponseModel())->DataType();
     const char *kopt=iDetType->GetResponseModel()->ZeroSuppOption();
     if((!strstr(kopt,"2D")) && (!strstr(kopt,"1D")) || strstr(kData1,"real") ){
 	iDetType->ClassNames("AliITSdigit","AliITSRawClusterSDD");
     } else iDetType->ClassNames("AliITSdigitSDD","AliITSRawClusterSDD");
-    SetSimulationModel(kSDD,new AliITSsimulationSDD(seg1,resp1));
-//    iDetType->ReconstructionModel(new AliITSClusterFinderSDD());
+    //iDetType->SimulationModel(new AliITSsimulationSDD(seg1,resp1));
+    //iDetType->ReconstructionModel(new AliITSClusterFinderSDD());
 
     // SSD  Layer 5
-    iDetType=DetType(kSSD);
+    iDetType=DetType(2);
     s2 = (AliITSgeomSSD*) fITSgeom->GetShape(kSSD);// Get shape info. Do it this way for now.
     AliITSresponse *resp2=new AliITSresponseSSD();
-    SetResponseModel(kSSD,resp2);
+    SetResponseModel(2,resp2);
     AliITSsegmentationSSD *seg2=new AliITSsegmentationSSD(fITSgeom);
     seg2->SetDetSize(s2->GetDx()*2.*kconv, // base this on AliITSgeomSSD
 		     s2->GetDz()*2.*kconv, // for now.
@@ -4965,13 +4956,13 @@ void AliITSvPPRsymm::SetDefaults(){
     seg2->SetAngles(0.0075,0.0275); // strip angels rad P and N side.
     seg2->SetAnglesLay5(0.0075,0.0275); // strip angels rad P and N side.
     seg2->SetAnglesLay6(0.0275,0.0075); // strip angels rad P and N side.
-    SetSegmentationModel(kSSD,seg2); 
+    SetSegmentationModel(2,seg2); 
     const char *kData2=(iDetType->GetResponseModel())->DataType();
     if(strstr(kData2,"real") ) iDetType->ClassNames("AliITSdigit",
 						    "AliITSRawClusterSSD");
     else iDetType->ClassNames("AliITSdigitSSD","AliITSRawClusterSSD");
-    SetSimulationModel(kSSD,new AliITSsimulationSSD(seg2,resp2));
-//    iDetType->ReconstructionModel(new AliITSClusterFinderSSD());
+    //iDetType->SimulationModel(new AliITSsimulationSSD(seg2,resp2));
+    //iDetType->ReconstructionModel(new AliITSClusterFinderSSD());
 
     if(kNTYPES>3){
 	Warning("SetDefaults",

@@ -17,13 +17,14 @@
 // the information needed to do the coordinate transformation are kept in
 // a specialized structure for ease of implementation.
 /////////////////////////////////////////////////////////////////////////
-#include <fstream.h>
 #include <TObject.h>
 #include <TObjArray.h>
 #include <TVector.h>
 
 #include "AliITSgeomMatrix.h"
 
+class ofstream;
+class ifstream;
 
 typedef enum {kSPD=0, kSDD=1, kSSD=2, kSSDp=3,kSDDp=4} AliITSDetector;
 
@@ -87,9 +88,6 @@ class AliITSgeom : public TObject {
     Int_t GetModuleIndex(const Int_t *id){
 	return GetModuleIndex(id[0],id[1],id[2]);}
     void  GetModuleId(Int_t index,Int_t &lay,Int_t &lad,Int_t &det);
-    // Returns the detector type
-    Int_t GetModuleType(Int_t index){
-	                   return GetGeomMatrix(index)->GetDetectorIndex();}
 //
     Int_t GetStartDet(Int_t dtype );
     Int_t GetLastDet(Int_t dtype);

@@ -15,12 +15,6 @@
 
 /*
 $Log$
-Revision 1.78  2001/10/04 15:30:56  hristov
-Changes to accommodate the set of PHOS folders and tasks (Y.Schutz)
-
-Revision 1.77  2001/09/04 15:09:11  hristov
-fTreeE->Branch replaced temporary by fTreeE->BranchOld to avoid data corruption in case of many events per file
-
 Revision 1.76  2001/08/03 14:38:35  morsch
 Use original method to access TreeH.
 
@@ -270,7 +264,6 @@ AliRun::AliRun()
   fHeader    = 0;
   fRun       = 0;
   fEvent     = 0;
-  fEventNrInRun = 0;
   fStack     = 0;
   fModules   = 0;
   fGenerator = 0;
@@ -346,7 +339,6 @@ AliRun::AliRun(const char *name, const char *title)
   fHeader    = new AliHeader();
   fRun       = 0;
   fEvent     = 0;
-  fEventNrInRun = 0;
   //
   fDisplay = 0;
   //
@@ -653,7 +645,6 @@ void AliRun::FinishEvent()
   if (fTreeH) fTreeH->Write(0,TObject::kOverwrite);
   
   ++fEvent;
-  ++fEventNrInRun;
 }
 
 //_____________________________________________________________________________
@@ -698,9 +689,9 @@ void AliRun::FinishRun()
   if (fTreeR) {
     delete fTreeR; fTreeR = 0;
   }
-//   if (fTreeE) {
-//     delete fTreeE; fTreeE = 0;
-//   }
+  if (fTreeE) {
+    delete fTreeE; fTreeE = 0;
+  }
   if (fTreeS) {
     delete fTreeS; fTreeS = 0;
   }
@@ -908,7 +899,7 @@ Int_t AliRun::GetEvent(Int_t event)
 
   fEvent=event; //MI change
 
-  return fHeader->GetNtrack();
+  return fStack->GetNtrack();
 }
 
 //_____________________________________________________________________________
@@ -1341,7 +1332,7 @@ void AliRun::BeginEvent()
   char hname[30];
   //
   // Initialise event header
-  fHeader->Reset(fRun,fEvent,fEventNrInRun);
+  fHeader->Reset(fRun,fEvent);
   //
   fStack->BeginEvent(fEvent);
 
@@ -1740,27 +1731,27 @@ void AliRun::StepManager(Int_t id)
 //_____________________________________________________________________________
 void AliRun::Streamer(TBuffer &R__b)
 {
-  // Stream an object of class AliRun.
+   // Stream an object of class AliRun.
 
-  if (R__b.IsReading()) {
-    if (!gAlice) gAlice = this;
+   if (R__b.IsReading()) {
+      if (!gAlice) gAlice = this;
 
-    AliRun::Class()->ReadBuffer(R__b, this);
-    //
-    gROOT->GetListOfBrowsables()->Add(this,"Run");
+      AliRun::Class()->ReadBuffer(R__b, this);
+      //
+      gROOT->GetListOfBrowsables()->Add(this,"Run");
 
-    fTreeE = (TTree*)gDirectory->Get("TE");
-    if (fTreeE) {
+      fTreeE = (TTree*)gDirectory->Get("TE");
+      if (fTreeE) {
 	  fTreeE->SetBranchAddress("Header", &fHeader);
-    }
+      }
       
-    else    Error("Streamer","cannot find Header Tree\n");
-    fTreeE->GetEntry(0);
+      else    Error("Streamer","cannot find Header Tree\n");
+      fTreeE->GetEntry(0);
 
-    gRandom = fRandom;
-  } else {
-    AliRun::Class()->WriteBuffer(R__b, this);
-  }
+      gRandom = fRandom;
+   } else {
+      AliRun::Class()->WriteBuffer(R__b, this);
+   }
 }
 
 

@@ -29,12 +29,7 @@ public:
   Float_t GetSigmaY2()    const {return fSigmaY2;}
   Float_t GetSigmaZ2()    const {return fSigmaZ2;}
 
-  //PH  virtual void Use() = 0;
-  //PH The pure virtual function has been temporarily replaced by 
-  //PH virtual function with empty body. This correction somehow helps
-  //PH to write/read TClonesArray with AliITSclusterV2 objects, but obviously
-  //PH hides some more tricky problems (to be investigated)
-  virtual void Use() {;}
+  virtual void Use() = 0;
 
 protected:
   Int_t     fTracks[3];//labels of overlapped tracks

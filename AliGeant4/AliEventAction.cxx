@@ -115,8 +115,7 @@ void AliEventAction::BeginOfEventAction(const G4Event* event)
   G4int eventID = event->GetEventID();
 
   // reset the tracks counters
-  if(AliTrackingAction::Instance()) 
-    AliTrackingAction::Instance()->PrepareNewEvent();   
+  AliTrackingAction::Instance()->PrepareNewEvent();   
 
   if (fVerboseLevel>0)
     G4cout << ">>> Event " << event->GetEventID() << G4endl;
@@ -132,7 +131,7 @@ void AliEventAction::EndOfEventAction(const G4Event* event)
 
   // finish the last primary track of the current event
   AliTrackingAction* trackingAction = AliTrackingAction::Instance();
-  if (trackingAction) trackingAction->FinishPrimaryTrack();   
+  trackingAction->FinishPrimaryTrack();   
 
   // verbose output 
   if (fVerboseLevel>0) {
@@ -144,16 +143,14 @@ void AliEventAction::EndOfEventAction(const G4Event* event)
     //G4int nofPrimaryTracks = trackingAction->GetNofPrimaryTracks();
     G4int nofPrimaryTracks = gAlice->GetHeader()->GetNprimary();
     G4int nofSavedTracks = gAlice->GetNtrack();
-   
+    G4int nofAllTracks = trackingAction->GetNofTracks();
+    
     G4cout  << "    " << nofPrimaryTracks << 
                " primary tracks processed." << G4endl;
     G4cout  << "    " << nofSavedTracks << 
                " tracks saved." << G4endl;
-    if (trackingAction) {
-       G4int nofAllTracks = trackingAction->GetNofTracks();
-       G4cout  << "    " << nofAllTracks << 
-                  " all tracks processed." << G4endl;
-    }	  
+    G4cout  << "    " << nofAllTracks << 
+               " all tracks processed." << G4endl;
   }	       
 
   // display event

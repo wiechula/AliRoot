@@ -21,10 +21,7 @@ typedef enum
     kMRS_D0=3030,
     kMRS_G=3041,
     kCTEQ_2pM=4024,
-    kCTEQ_4M=4034,
-    kMRST_cg_LO=3072,
-    kCTEQ_5L=4046,
-    kGRV_LO_98=5012
+    kCTEQ_4M=4034
 }
 StrucFunc_t;
 

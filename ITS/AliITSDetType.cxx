@@ -15,9 +15,6 @@
 
 /*
  $Log$
- Revision 1.7  2001/09/07 14:43:15  hristov
- Destructor reverted after a temporary fix
-
  Revision 1.6  2001/09/07 08:44:43  hristov
  Deletion commented out because AliITSDetType was not the owner
 
@@ -38,7 +35,6 @@
 
 ClassImp(AliITSDetType)	 
 
-//______________________________________________________________________
 AliITSDetType::AliITSDetType(){
     // constructor
 
@@ -50,7 +46,6 @@ AliITSDetType::AliITSDetType(){
 //----------------------------------------------------------------------
 AliITSDetType::~AliITSDetType(){
     // destructor
-
     if(fSegmentation!=0) delete fSegmentation; fSegmentation = 0;
     //    if(fResponse!=0)     delete fResponse;     fResponse     = 0;
     if(fSimulation!=0)   delete fSimulation;   fSimulation   = 0;

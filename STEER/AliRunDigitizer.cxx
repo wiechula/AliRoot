@@ -59,9 +59,6 @@ Manager class for merging/digitization
 // manager->SetFirstOutputEventNr(Int_t) method. The particle numbers
 // in the output are shifted by MASK, which is taken from manager.
 //
-// The default output is to the signal file (stream 0). This can be 
-// changed with the SetOutputFile(TString fn)  method.
-//
 // Single input file is permitted. Maximum MAXSTREAMSTOMERGE can be merged.
 // Input from the memory (on-the-fly merging) is not yet 
 // supported, as well as access to the input data by invoking methods
@@ -76,10 +73,11 @@ Manager class for merging/digitization
 //  AliRunDigitizer * manager = new AliRunDigitizer(2,1);
 //  manager->SetInputStream(0,"1track_10events_phi45_60.root");
 //  manager->SetInputStream(1,"1track_10events_phi120_135.root");
+//  manager->SetOutputDir("/tmp");
 //  manager->SetOutputFile("digits.root");
 //  AliMUONDigitizer *dMUON  = new AliMUONDigitizer(manager);
 //  manager->SetNrOfEventsToWrite(1);
-//  manager->Exec("");
+//  manager->Digitize();
 //
 //////////////////////////////////////////////////////////////////////// 
 
@@ -91,7 +89,6 @@ Manager class for merging/digitization
 
 #include "TFile.h"
 #include "TTree.h"
-#include "TList.h"
 
 // AliROOT includes
 
@@ -106,7 +103,20 @@ Manager class for merging/digitization
 ClassImp(AliRunDigitizer)
 
 ////////////////////////////////////////////////////////////////////////
-AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliRunDigitizer","The manager for Merging")
+
+AliRunDigitizer::AliRunDigitizer() : TNamed("AliRunDigitizer","")
+{
+// default ctor
+  cerr<<"Don't use"<<endl;
+  fCombi = 0;
+  fInputFiles = 0;
+  fNDigitizers = 0;
+  fNinputs = 0;
+  fInputStreams = 0;
+}
+
+////////////////////////////////////////////////////////////////////////
+AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TNamed("AliRunDigitizer","")
 {
 // default ctor
   if (nInputStreams == 0) {
@@ -114,9 +124,11 @@ AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliR
     return;
   }
   Int_t i;
+  for (i=0;i<MAXDETECTORS;i++) fDigitizers[i]=0;
+  fNDigitizers = 0;
   fNinputs = nInputStreams;
-  fOutputFileName = "";
-  fOutputDirName = ".";
+  fOutputFileName = "digits.root";
+  fOutputDirName = "/tmp/";
   fCombination.Set(MAXSTREAMSTOMERGE);
   for (i=0;i<MAXSTREAMSTOMERGE;i++) {
     fArrayTreeS[i]=fArrayTreeH[i]=fArrayTreeTPCS[i]=NULL;
@@ -129,18 +141,17 @@ AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliR
   }
   fInputStreams = new TClonesArray("AliStream",nInputStreams);
   TClonesArray &lInputStreams = *fInputStreams;
-// the first Input is open RW to be output as well
-  new(lInputStreams[0]) AliStream("UPDATE");
-  for (i=1;i<nInputStreams;i++) {
+  for (i=0;i<nInputStreams;i++) {
     new(lInputStreams[i]) AliStream();
   }
+  fInputFiles = new TClonesArray("TFile",1);
   fOutput = 0;
   fEvent = 0;
-  fNrOfEventsToWrite = -1;
+  fNrOfEventsToWrite = 0;
   fNrOfEventsWritten = 0;
   fCopyTreesFromInput = -1;
   fCombi = new AliMergeCombi(nInputStreams,sperb);
-  fDebug = 0;
+  fDebug = 3;
   if (GetDebug()>2) 
     cerr<<"AliRunDigitizer::AliRunDigitizer() called"<<endl;
 }
@@ -150,6 +161,10 @@ AliRunDigitizer::AliRunDigitizer(Int_t nInputStreams, Int_t sperb) : TTask("AliR
 AliRunDigitizer::~AliRunDigitizer() {
 // dtor
 
+  if (fInputFiles) {
+    delete fInputFiles;
+    fInputFiles = 0;
+  }
   if (fInputStreams) {
     delete fInputStreams;
     fInputStreams = 0;
@@ -160,13 +175,23 @@ AliRunDigitizer::~AliRunDigitizer() {
   }
 
 }
+
 ////////////////////////////////////////////////////////////////////////
 void AliRunDigitizer::AddDigitizer(AliDigitizer *digitizer)
 {
 // add digitizer to the list of active digitizers
-  this->Add(digitizer);
+
+  if (fNDigitizers >= MAXDETECTORS) {
+    cerr<<"Too many detectors to digitize. Increase value of MAXDETECTORS"
+	<<" constant in AliRunDigitizer.h and recompile or decrease the"
+	<<" the number of detectors"<<endl;
+  } else {
+    fDigitizers[fNDigitizers++] = digitizer;
+  }
 }
+
 ////////////////////////////////////////////////////////////////////////
+
 void AliRunDigitizer::SetInputStream(Int_t i, char *inputFile)
 {
   if (i > fInputStreams->GetLast()) {
@@ -177,7 +202,7 @@ void AliRunDigitizer::SetInputStream(Int_t i, char *inputFile)
 }
 
 ////////////////////////////////////////////////////////////////////////
-void AliRunDigitizer::Digitize(Option_t* option)
+void AliRunDigitizer::Digitize()
 {
 // get a new combination of inputs, connect input trees and loop 
 // over all digitizers
@@ -194,13 +219,14 @@ void AliRunDigitizer::Digitize(Option_t* option)
     return;
   }
   Int_t eventsCreated = 0;
-// loop until there is anything on the input in case fNrOfEventsToWrite < 0
-  while ((eventsCreated++ < fNrOfEventsToWrite) || (fNrOfEventsToWrite < 0)) {
-    if (!ConnectInputTrees()) break;
+  while (eventsCreated++ < fNrOfEventsToWrite) {
+//    if (GetDebug()>2) PrintCombination();
+    ConnectInputTrees();
     InitEvent();
 // loop over all registered digitizers and let them do the work
-    ExecuteTasks("");
-    CleanTasks();
+    for (Int_t i=0;i<fNDigitizers; i++) {
+      fDigitizers[i]->Digitize();
+    }
     FinishEvent();
   }
   FinishGlobal();
@@ -214,7 +240,7 @@ Bool_t AliRunDigitizer::ConnectInputTrees()
 // null pointers can be in the output, AliDigitizer has to check it
 
   TTree *tree;
-  char treeName[50];
+  char treeName[20];
   Int_t serialNr;
   Int_t eventNr[MAXSTREAMSTOMERGE], delta[MAXSTREAMSTOMERGE];
   fCombi->Combination(eventNr, delta);
@@ -222,7 +248,6 @@ Bool_t AliRunDigitizer::ConnectInputTrees()
     if (delta[i] == 1) {
       AliStream *iStream = static_cast<AliStream*>(fInputStreams->At(i));
       if (!iStream->NextEventInStream(serialNr)) return kFALSE;
-      fInputFiles[i]=iStream->CurrentFile();
       sprintf(treeName,"TreeS%d",serialNr);
       tree = static_cast<TTree*>(iStream->CurrentFile()->Get(treeName));
       fArrayTreeS[i] = tree;
@@ -245,33 +270,24 @@ Bool_t AliRunDigitizer::InitGlobal()
 {
 // called once before Digitize() is called, initialize digitizers and output
 
-  TList* subTasks = this->GetListOfTasks();
-  if (subTasks) {
-    subTasks->ForEach(AliDigitizer,Init)();
-  }  
+  if (!InitOutputGlobal()) return kFALSE;
+  for (Int_t i=0;i<fNDigitizers; i++) {
+    if (!fDigitizers[i]->Init()) return kFALSE;
+  }
   return kTRUE;
-}
-
-////////////////////////////////////////////////////////////////////////
-
-void AliRunDigitizer::SetOutputFile(TString fn)
-// the output will be to separate file, not to the signal file
-{
-  fOutputFileName = fn;
-  (static_cast<AliStream*>(fInputStreams->At(0)))->ChangeMode("READ");
-  InitOutputGlobal();
 }
 
 ////////////////////////////////////////////////////////////////////////
 Bool_t AliRunDigitizer::InitOutputGlobal()
 {
-// Creates the output file, called by InitEvent()
+// Creates the output file, called once by InitGlobal()
 
   TString fn;
   fn = fOutputDirName + '/' + fOutputFileName;
   fOutput = new TFile(fn,"recreate");
   if (GetDebug()>2) {
-    cerr<<"AliRunDigitizer::InitOutputGlobal(): file "<<fn.Data()<<" was opened"<<endl;
+    cerr<<"file "<<fn.Data()<<" was opened"<<endl;
+    cerr<<"fOutput = "<<fOutput<<endl;
   }
   if (fOutput) return kTRUE;
   Error("InitOutputGlobal","Could not create output file.");
@@ -287,19 +303,11 @@ void AliRunDigitizer::InitEvent()
 
   if (GetDebug()>2) 
     cerr<<"AliRunDigitizer::InitEvent: fEvent = "<<fEvent<<endl;
-
-// if fOutputFileName was not given, write output to signal file
-  if (fOutputFileName == "") {
-    fOutput = (static_cast<AliStream*>(fInputStreams->At(0)))->CurrentFile();
-  }
   fOutput->cd();
-  char treeName[30];
-  sprintf(treeName,"TreeD%d",fEvent);
-  fTreeD = static_cast<TTree*>(fOutput->Get(treeName));
-  if (!fTreeD) {
-    fTreeD = new TTree(treeName,"Digits");
-    fTreeD->Write(0,TObject::kOverwrite);
-  }
+  char hname[30];
+  sprintf(hname,"TreeD%d",fEvent);
+  fTreeD = new TTree(hname,"Digits");
+  fTreeD->Write();   // Do I have to write it here???
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -312,9 +320,9 @@ void AliRunDigitizer::FinishEvent()
     char treeName[20];
     Int_t i = fCopyTreesFromInput; 
     sprintf(treeName,"TreeK%d",fCombination[i]);
-    fInputFiles[i]->Get(treeName)->Clone()->Write();
+    ((TFile*)fInputFiles->At(i))->Get(treeName)->Clone()->Write();
     sprintf(treeName,"TreeH%d",fCombination[i]);
-    fInputFiles[i]->Get(treeName)->Clone()->Write();
+    ((TFile*)fInputFiles->At(i))->Get(treeName)->Clone()->Write();
   }
   fEvent++;
   fNrOfEventsWritten++;
@@ -332,7 +340,8 @@ void AliRunDigitizer::FinishGlobal()
   fOutput->cd();
   this->Write();
   if (fCopyTreesFromInput > -1) {
-    fInputFiles[fCopyTreesFromInput]->Get("TE")->Clone()->Write();
+    ((TFile*)fInputFiles->At(fCopyTreesFromInput))->Get("TE")
+      ->Clone()->Write();
     gAlice->Write();
   }
   fOutput->Close();
@@ -402,7 +411,7 @@ Int_t* AliRunDigitizer::GetInputEventNumbers(Int_t event)
 // merged in the output event event
 
 // simplified for now, implement later
-  Int_t * a = new Int_t[MAXSTREAMSTOMERGE];
+  Int_t a[MAXSTREAMSTOMERGE];
   for (Int_t i = 0; i < fNinputs; i++) {
     a[i] = event;
   }
@@ -433,7 +442,7 @@ TParticle* AliRunDigitizer::GetParticle(Int_t i, Int_t input, Int_t event)
 // return pointer to particle with index i in the input file input
 // (index without mask)
 // event is the event number in the file input
-// return 0 i fit does not exist
+// return 0 if it does not exist
 
 // Must be revised in the version with AliStream
 
@@ -486,14 +495,5 @@ TParticle* AliRunDigitizer::GetParticle(Int_t i, Int_t input, Int_t event)
   return  0;
 */
 }
-
 ////////////////////////////////////////////////////////////////////////
-void AliRunDigitizer::ExecuteTask(Option_t* option)
-{
-// overwrite ExecuteTask to do Digitize only
 
-  if (!IsActive()) return;
-  Digitize(option);
-  fHasExecuted = kTRUE;
-  return;
-}

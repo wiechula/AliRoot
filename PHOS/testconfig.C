@@ -13,7 +13,7 @@ void Config()
   
   new     AliGeant3("C++ Interface to Geant3");
   
-  TFile  *rootfile = new TFile("testPHOS.root", "recreate");
+  TFile  *rootfile = new TFile("galice.root", "recreate");
   rootfile->SetCompressionLevel(2);
   
   
@@ -70,12 +70,12 @@ void Config()
   
   gener->SetPart(22) ;
   gener->SetPtRange(9.99, 10.00);
-  gener->SetPhiRange(250, 290); //(220, 320);
+  gener->SetPhiRange(220, 320);
   // Set pseudorapidity range from -8 to 8.
-  Float_t thmin = EtaToTheta(0.02); //(0.12);   // 220 theta min. <---> eta max
-  Float_t thmax = EtaToTheta(-0.02); //(-0.12);  // 320 theta max. <---> eta min 
+  Float_t thmin = EtaToTheta(0.12);   // 220 theta min. <---> eta max
+  Float_t thmax = EtaToTheta(-0.12);  // 320 theta max. <---> eta min 
  
-  gener->SetThetaRange(thmin, thmax);
+  gener->SetThetaRange(thmin,thmax);
   gener->SetOrigin(0, 0, 0);  //vertex position
   gener->SetSigma(0, 0, 0);   //Sigma in (X,Y,Z) (cm) on IP position
   gener->Init();
@@ -85,13 +85,13 @@ void Config()
   //
   //gener->SetVertexSmear(perTrack); 
   
-  gAlice->SetField(0,2);  //Specify maximum magnetic field in Tesla (neg. ==> default field)
+  gAlice->SetField(-999, 2);  //Specify maximum magnetic field in Tesla (neg. ==> default field)
   
   //=================== Alice BODY parameters =============================
   AliBODY *BODY = new AliBODY("BODY", "Alice envelop");
   
   
-  AliPHOS *PHOS = new AliPHOSv1("PHOS", "IHEP");
+  AliPHOS *PHOS = new AliPHOSv1("PHOS", "GPS2");
   AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ;
   AliPHOSQAMeanChecker * hm  = static_cast<AliPHOSQAMeanChecker *>gime->QATasks("HitsMul");
   AliPHOSQAMeanChecker * te  = static_cast<AliPHOSQAMeanChecker *>gime->QATasks("TotEner");

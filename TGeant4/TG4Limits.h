@@ -50,8 +50,6 @@ class TG4Limits: public G4UserLimits
 
     // get methods
     G4String GetName() const;
-    const TG4G3CutVector* GetCutVector() const;
-    const TG4G3ControlVector* GetControlVector() const;
     G4bool  IsCut() const;
     G4bool  IsControl() const;
     virtual G4double GetUserMinEkine(const G4Track& track);
@@ -100,12 +98,6 @@ inline void TG4Limits::SetName(const G4String& name)
 
 inline G4String TG4Limits::GetName() const
 { return fName; }
-
-inline const TG4G3CutVector* TG4Limits::GetCutVector() const
-{ return &fCutVector; }
-
-inline const TG4G3ControlVector* TG4Limits::GetControlVector() const
-{ return &fControlVector; }
 
 #endif //TG4_USER_LIMITS_H
 

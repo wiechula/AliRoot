@@ -81,8 +81,7 @@ enum TG4G3Control
 	     
   kMUNU, // muon nuclear interaction 
              // G3 default value: 0
-	     // G4 processes: G4MuNuclearInteraction,
-	     //               G4MuonMinusCaptureAtRest
+	     // G4 processes: G4MuNuclearInteraction
 	     //
 	     // Particles: mu
 	     // Physics:   Not set

@@ -48,7 +48,7 @@ TG4MaterialsFrames::TG4MaterialsFrames( TGTab* Tab, TGMainFrame* ActionFrame )
    fMatSubframe1->AddFrame(fMaterialsCombo, fMatFrameLayout);
 
 
-   fMaterialsCombo->Resize(200, 30);
+   fMaterialsCombo->Resize(200, 20);
    fMaterialsCombo->Associate(ActionFrame); 
 
 
@@ -163,22 +163,14 @@ void TG4MaterialsFrames::AddMaterialName( const char* name, Int_t index) const
    fMaterialsCombo->Resize(200, 20);
 }
 
-void TG4MaterialsFrames::DisplayMaterialCharacteristics( int qmat)
+void TG4MaterialsFrames::DisplayMaterialCharacteristics()
 {
   
-//---> shows informations about materials listed in G4MaterialTable
-//---> qmat eq 0 means clicking in the MaterialsFrames ComboBox
-//---> qmat gt 0 means clicking in the VolumesFrames ComboBox
+//-----> shows informations about materials listed in G4MaterialTable 
 
    const G4MaterialTable* lComboEntries = G4Material::GetMaterialTable();
    G4int ientr = lComboEntries->entries();
-   G4int index = qmat ;
-   
-   if ( !(qmat < 1) )
-        fMaterialsCombo->Select( index );
-   
-   if ( qmat < 1 )
-        index = fMaterialsCombo->GetSelected();
+   G4int index = fMaterialsCombo->GetSelected();
    
    G4cout << "\nThe clicked-on material has the index:  " << index << G4endl;
    
@@ -191,21 +183,20 @@ void TG4MaterialsFrames::DisplayMaterialCharacteristics( int qmat)
      G4cout << lvMaterial->GetName() << "  "
 	    << lvMaterial->GetNumberOfElements() << "  "
 	    << (*allElements )[0]->GetName() << "...  "
-	    << lvMaterial->GetDensity()/(g/cm3) << "(g/cm3)  "
+	    << lvMaterial->GetDensity()/(g/cm3) << "  "
 	    << lvMaterial->GetState() << "  "
-	    << lvMaterial->GetRadlen()/(cm) << "(cm)  "
+	    << lvMaterial->GetRadlen()/(cm) << "  "
 	    << G4endl;
 	  
    char buff[200];
-   G4String line = " ";
    
-    sprintf(buff, "%12i",index );
+    sprintf(buff, "%10i",index );
     fMatTextBuff[0]->Clear();
     fMatTextBuff[0]->AddText(0, buff);
     gClient->NeedRedraw(fMatTextEntry[0]);
     
     G4int noe = lvMaterial->GetNumberOfElements();
-    sprintf(buff, "%12i", noe);
+    sprintf(buff, "%10i", noe);
     fMatTextBuff[1]->Clear();
     fMatTextBuff[1]->AddText(0, buff);
     gClient->NeedRedraw(fMatTextEntry[1]);
@@ -220,37 +211,27 @@ void TG4MaterialsFrames::DisplayMaterialCharacteristics( int qmat)
     fMatTextBuff[2]->AddText(0, buff);
     gClient->NeedRedraw(fMatTextEntry[2]);
 
-    sprintf(buff, "   Multi element material" );
+    sprintf(buff, " Multi element material" );
     if( noe < 2 )
-        sprintf(buff, "%12.5e", lvMaterial->GetA()/(g) );
-    line += buff;
-    if( noe < 2 )
-         line += "   (g)";
+        sprintf(buff, "%10.2e", lvMaterial->GetA()/(g) );
     fMatTextBuff[3]->Clear();
-    fMatTextBuff[3]->AddText(0, line);
+    fMatTextBuff[3]->AddText(0, buff);
     gClient->NeedRedraw(fMatTextEntry[3]);
-    line = " ";
     
-    sprintf(buff, "%12.5e", lvMaterial->GetDensity()/(g/cm3) );
-    line += buff;
-    line += "   (g/cm3)";
+    sprintf(buff, "%10.2e", lvMaterial->GetDensity()/(g/cm3) );
     fMatTextBuff[4]->Clear();
-    fMatTextBuff[4]->AddText(0, line);
+    fMatTextBuff[4]->AddText(0, buff);
     gClient->NeedRedraw(fMatTextEntry[4]);
-    line = " ";
     
-    sprintf(buff,"%12i", lvMaterial->GetState());
+    sprintf(buff,"%10i", lvMaterial->GetState());
     fMatTextBuff[5]->Clear();
     fMatTextBuff[5]->AddText(0, buff);
     gClient->NeedRedraw(fMatTextEntry[5]);
     
-    sprintf(buff,"%12.5e", lvMaterial->GetRadlen()/(cm));
-    line += buff;
-    line += "  (cm)";    
+    sprintf(buff,"%10.2e", lvMaterial->GetRadlen()/(cm));
     fMatTextBuff[6]->Clear();
-    fMatTextBuff[6]->AddText(0, line);
+    fMatTextBuff[6]->AddText(0, buff);
     gClient->NeedRedraw(fMatTextEntry[6]);
-    line = " ";
     
     sprintf(buff, "           " );
     fMatTextBuff[7]->Clear();

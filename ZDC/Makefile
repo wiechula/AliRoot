@@ -13,8 +13,7 @@ FSRCS	      =
 
 # C++ sources
 
-SRCS          = AliZDC.cxx AliZDCv1.cxx AliZDCv2.cxx AliZDCHit.cxx AliZDCDigit.cxx \
-                AliGenZDC.cxx AliZDCFragment.cxx AliZDCMerger.cxx AliZDCMergedHit.cxx
+SRCS          = AliZDC.cxx AliZDCv1.cxx  AliZDCv2.cxx AliZDCHit.cxx AliZDCDigit.cxx AliGenZDC.cxx AliZDCFragment.cxx
 
 # C++ Headers
 

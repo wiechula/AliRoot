@@ -197,7 +197,7 @@ TG4VSensitiveDetector* TG4SDServices::GetSensitiveDetector(
   TG4VSensitiveDetector* tsd = dynamic_cast<TG4VSensitiveDetector*>(sd);
   
   if (!tsd) {
-    TG4Globals::Exception(
+    G4Exception(
       "TG4SDServices::GetSensitiveDetector: Wrong sensitive detector type.");
     return 0;
   }    

@@ -47,6 +47,7 @@ void tofanal (Int_t evNumber=0)
 
 // Get pointers to Alice detectors and Hits containers
    AliDetector *TOF  = gAlice->GetDetector("TOF");
+   TClonesArray *Particles = gAlice->Particles();
 
    Int_t ntracks    = gAlice->TreeH()->GetEntries();
 
@@ -58,10 +59,10 @@ void tofanal (Int_t evNumber=0)
      if(TOF) {
      // ======>Histogram TOF
        for(AliTOFhit* tofHit=(AliTOFhit*)TOF->FirstHit(track); tofHit; tofHit=(AliTOFhit*)TOF->NextHit()) {
-         tof = tofHit->GetTof();
+         tof = tofHit->fTof;
          hTOF->Fill(tof);
-         ipart    = tofHit->GetTrack();
-         particle = (TParticle*)gAlice->Particle(ipart);
+         ipart    = tofHit->fTrack;
+         particle = (TParticle*)Particles->UncheckedAt(ipart);
          if (particle->GetFirstMother() < 0) hTOFprim->Fill(tof);
        }
      }        

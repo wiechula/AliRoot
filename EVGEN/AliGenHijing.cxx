@@ -15,17 +15,6 @@
 
 /*
 $Log$
-Revision 1.27  2001/10/08 07:13:14  morsch
-Add setter for minimum transverse momentum of triggered jet.
-
-Revision 1.26  2001/10/04 08:12:24  morsch
-Redefinition of stable condition.
-
-Revision 1.25  2001/07/27 17:09:36  morsch
-Use local SetTrack, KeepTrack and SetHighWaterMark methods
-to delegate either to local stack or to stack owned by AliRun.
-(Piotr Skowronski, A.M.)
-
 Revision 1.24  2001/07/20 09:34:56  morsch
 Count the number of spectator neutrons and protons and add information
 to the event header. (Chiara Oppedisano)
@@ -124,7 +113,6 @@ AliGenerator interface class to HIJING using THijing (test version)
 #include <TParticle.h>
 #include <THijing.h>
 #include <TGraph.h>
-#include <TLorentzVector.h>
 
 
  ClassImp(AliGenHijing)
@@ -144,19 +132,17 @@ AliGenHijing::AliGenHijing(Int_t npart)
     SetImpactParameterRange();
     SetTarget();
     SetProjectile();
-    fKeep       =  0;
-    fQuench     =  1;
-    fShadowing  =  1;
-    fTrigger    =  0;
-    fDecaysOff  =  1;
-    fEvaluate   =  0;
-    fSelectAll  =  0;
-    fFlavor     =  0;
-    fSpectators =  1;
-    fDsigmaDb   =  0;
-    fDnDb       =  0;
-    fPtMinJet   = -2.5; 	
-    fRadiation  =  1;
+    fKeep       = 0;
+    fQuench     = 1;
+    fShadowing  = 1;
+    fTrigger    = 0;
+    fDecaysOff  = 1;
+    fEvaluate   = 0;
+    fSelectAll  = 0;
+    fFlavor     = 0;
+    fSpectators = 1;
+    fDsigmaDb   = 0;  
+    fDnDb       = 0; 
 //
 // Set random number generator   
     sRandom = fRandom;
@@ -187,13 +173,12 @@ void AliGenHijing::Init()
 		      fMinImpactParam, fMaxImpactParam));
 
     fHijing=(THijing*) fgMCEvGen;
-    fHijing->SetIHPR2(2,  fRadiation);
+
     fHijing->SetIHPR2(3,  fTrigger);
     fHijing->SetIHPR2(4,  fQuench);
     fHijing->SetIHPR2(6,  fShadowing);
     fHijing->SetIHPR2(12, fDecaysOff);    
     fHijing->SetIHPR2(21, fKeep);
-    fHijing->SetHIPR1(10, fPtMinJet); 	
     fHijing->Initialize();
 
     
@@ -290,12 +275,10 @@ void AliGenHijing::Generate()
 	    origin[2] = origin0[2]+iparticle->Vz()/10;
 	    tof = kconv*iparticle->T();
 	    imo = -1;
-	    TParticle* mother = 0;
 	    if (hasMother) {
 		imo = iparticle->GetFirstMother();
-		mother = (TParticle *) particles->At(imo);
+		TParticle* mother = (TParticle *) particles->At(imo);
 		imo = (mother->GetPdgCode() != 92) ? imo =* (newPos+imo) : -1;
-		
 	    }
 // Put particle on the stack ... 
 //		printf("\n set track mother: %d %d %d %d %d %d ",i,imo, kf, nt+1, selected, hasSelectedDaughters);
@@ -346,21 +329,21 @@ void AliGenHijing::Generate()
 	    origin[2] = origin0[2]+iparticle->Vz()/10;
 	    tof = kconv*iparticle->T();
 	    imo = -1;
-	    TParticle* mother = 0;
+	    
 	    if (hasMother) {
 		imo = iparticle->GetFirstMother();
-		mother = (TParticle *) particles->At(imo);
+		TParticle* mother = (TParticle *) particles->At(imo);
 		imo = (mother->GetPdgCode() != 92) ? imo=*(newPos+imo) : -1;
 	    }   
 // Put particle on the stack
 	    SetTrack(fTrackIt,imo,kf,p,origin,polar,
-						     tof,kPNoProcess,nt);
+			     tof,kPNoProcess,nt);
 	    KeepTrack(nt);
 	    *(newPos+i)=nt;
         } // selected
       } // particle loop final state
  
-      delete[] newPos;
+      delete newPos;
 
       printf("\n I've put %i particles on the stack \n",nc);
       if (nc > 0) {
@@ -492,7 +475,9 @@ Bool_t AliGenHijing::Stable(TParticle*  particle)
 {
 // Return true for a stable particle
 //
-    if (particle->GetFirstDaughter() < 0 )
+    Int_t kf = TMath::Abs(particle->GetPdgCode());
+    
+    if ( (particle->GetFirstDaughter() < 0 ) || (kf == 1000*fFlavor+122))
     {
 	return kTRUE;
     } else {
@@ -504,29 +489,18 @@ void AliGenHijing::MakeHeader()
 {
 // Builds the event header, to be called after each event
     AliGenEventHeader* header = new AliGenHijingEventHeader("Hijing");
-    ((AliGenHijingEventHeader*) header)->SetNProduced(fHijing->GetNATT());
-    ((AliGenHijingEventHeader*) header)->SetImpactParameter(fHijing->GetHINT1(19));
-    ((AliGenHijingEventHeader*) header)->SetTotalEnergy(fHijing->GetEATT());
-    ((AliGenHijingEventHeader*) header)->SetHardScatters(fHijing->GetJATT());
-    ((AliGenHijingEventHeader*) header)->SetParticipants(fHijing->GetNP(), fHijing->GetNT());
-    ((AliGenHijingEventHeader*) header)->SetCollisions(fHijing->GetN0(),
-						       fHijing->GetN01(),
-						       fHijing->GetN10(),
-						       fHijing->GetN11());
-    ((AliGenHijingEventHeader*) header)->SetSpectators(fSpecn, fSpecp);
-
-    TLorentzVector* jet1 = new TLorentzVector(fHijing->GetHINT1(21), 
-					      fHijing->GetHINT1(22),
-					      fHijing->GetHINT1(23),
-					      fHijing->GetHINT1(24));
-
-    TLorentzVector* jet2 = new TLorentzVector(fHijing->GetHINT1(31), 
-					      fHijing->GetHINT1(32),
-					      fHijing->GetHINT1(33),
-					      fHijing->GetHINT1(34));
-
-    ((AliGenHijingEventHeader*) header)->SetJets(jet1, jet2);
-    gAlice->SetGenEventHeader(header);    
+   ((AliGenHijingEventHeader*) header)->SetNProduced(fHijing->GetNATT());
+   ((AliGenHijingEventHeader*) header)->SetImpactParameter(fHijing->GetHINT1(19));
+   ((AliGenHijingEventHeader*) header)->SetTotalEnergy(fHijing->GetEATT());
+   ((AliGenHijingEventHeader*) header)->SetHardScatters(fHijing->GetJATT());
+   ((AliGenHijingEventHeader*) header)->SetParticipants(fHijing->GetNP(), fHijing->GetNT());
+   ((AliGenHijingEventHeader*) header)->SetCollisions(fHijing->GetN0(),
+			  fHijing->GetN01(),
+			  fHijing->GetN10(),
+			  fHijing->GetN11());
+   ((AliGenHijingEventHeader*) header)->SetSpectators(fSpecn, fSpecp);
+   gAlice->SetGenEventHeader(header);
+   
 }
 
 AliGenHijing& AliGenHijing::operator=(const  AliGenHijing& rhs)

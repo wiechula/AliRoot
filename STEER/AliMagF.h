@@ -39,9 +39,10 @@ protected:
 
 //ZDC part -------------------------------------------------------------------
 
-  const Float_t kG1=20.443;
-  const Float_t kFDIP=-37.96;
-  const Float_t kFCORN2=-9.14;
+  const Float_t kG1=20.03;
+  const Float_t kFDIP=-37.34;
+  const Float_t kFDIMU=6.;
+  const Float_t kFCORN2=-9.4;
 //
 // ZBEG       Beginning of the inner triplet
 // D1BEG      Beginning of separator dipole 1

@@ -78,6 +78,7 @@
 #include "AliPHOSDigitizer.h"
 #include "AliPHOSEmcRecPoint.h"
 #include "AliPHOS.h"
+#include "AliPHOSPpsdRecPoint.h"
 #include "AliPHOSGetter.h"
 #include "AliRun.h"
 
@@ -93,6 +94,7 @@ ClassImp(AliPHOSClusterizerv1)
   
   fCpvClusteringThreshold  = 0.0;
   fEmcClusteringThreshold  = 0.2;   
+  fPpsdClusteringThreshold = 0.0000002 ;
   
   fEmcLocMaxCut            = 0.03 ;
   fCpvLocMaxCut            = 0.03 ;
@@ -100,13 +102,9 @@ ClassImp(AliPHOSClusterizerv1)
   fW0                      = 4.5 ;
   fW0CPV                   = 4.0 ;
 
-  fEmcTimeGate             = 1.e-8 ; 
-
-  fToUnfold                = kTRUE ;
-
   fHeaderFileName          = "" ; 
   fDigitsBranchTitle       = "" ;
-  fRecPointsInRun          = 0 ;   
+  fRecPointsInRun          = 0 ; 
 }
 
 //____________________________________________________________________________
@@ -121,41 +119,29 @@ AliPHOSClusterizerv1::AliPHOSClusterizerv1(const char* headerFile,const char* na
   
   fCpvClusteringThreshold  = 0.0;
   fEmcClusteringThreshold  = 0.2;   
+  fPpsdClusteringThreshold = 0.0000002 ;
   
   fEmcLocMaxCut            = 0.03 ;
   fCpvLocMaxCut            = 0.03 ;
   
   fW0                      = 4.5 ;
   fW0CPV                   = 4.0 ;
-
-  fEmcTimeGate             = 1.e-8 ; 
   
   fToUnfold                = kTRUE ;
   
   fHeaderFileName          = GetTitle() ; 
   fDigitsBranchTitle       = GetName() ;
-  
-  TString clusterizerName( GetName()) ; 
-  clusterizerName.Append(":") ; 
-  clusterizerName.Append(Version()) ; 
-  SetName(clusterizerName) ;
+
+  TString tempo(GetName()) ; 
+  tempo.Append(":") ;
+  tempo.Append(Version()) ; 
+  SetName(tempo.Data()) ; 
   fRecPointsInRun          = 0 ; 
 
   Init() ;
 
 }
-//____________________________________________________________________________
-  AliPHOSClusterizerv1::~AliPHOSClusterizerv1()
-{
-}
-//____________________________________________________________________________
-Float_t  AliPHOSClusterizerv1::Calibrate(Int_t amp, Int_t absId) const
-{
-  if(absId <= fEmcCrystals) //calibrate as EMC 
-    return fADCpedestalEmc + amp*fADCchanelEmc ;       
-  else //Digitize as CPV
-    return fADCpedestalCpv+ amp*fADCchanelCpv ;       
-}
+
 //____________________________________________________________________________
 void AliPHOSClusterizerv1::Exec(Option_t * option)
 {
@@ -170,31 +156,30 @@ void AliPHOSClusterizerv1::Exec(Option_t * option)
   if(strstr(option,"print"))
     Print("") ; 
 
-  gAlice->GetEvent(0) ;
-  
  //check, if the branch with name of this" already exits?
+  gAlice->GetEvent(0) ;
   TObjArray * lob = (TObjArray*)gAlice->TreeR()->GetListOfBranches() ;
   TIter next(lob) ; 
   TBranch * branch = 0 ;  
   Bool_t phosemcfound = kFALSE, phoscpvfound = kFALSE, clusterizerfound = kFALSE ; 
-
-  TString branchname = GetName() ;
-  branchname.Remove(branchname.Index(Version())-1) ;
   
+  TString taskName(GetName()) ; 
+  taskName.Remove(taskName.Index(Version()) -1) ;
+
   while ( (branch = (TBranch*)next()) && (!phosemcfound || !phoscpvfound || !clusterizerfound) ) {
-    if ( (strcmp(branch->GetName(), "PHOSEmcRP")==0) && (strcmp(branch->GetTitle(), branchname.Data())==0) ) 
+    if ( (strcmp(branch->GetName(), "PHOSEmcRP")==0) && (strcmp(branch->GetTitle(), taskName.Data())==0) ) 
       phosemcfound = kTRUE ;
     
-    else if ( (strcmp(branch->GetName(), "PHOSCpvRP")==0) && (strcmp(branch->GetTitle(), branchname.Data())==0) ) 
+    else if ( (strcmp(branch->GetName(), "PHOSCpvRP")==0) && (strcmp(branch->GetTitle(), taskName.Data())==0) ) 
       phoscpvfound = kTRUE ;
    
-    else if ((strcmp(branch->GetName(), "AliPHOSClusterizer")==0) && (strcmp(branch->GetTitle(), GetName())==0) ) 
+    else if ( (strcmp(branch->GetName(), "AliPHOSClusterizer")==0) && (strcmp(branch->GetTitle(), taskName.Data())==0) ) 
       clusterizerfound = kTRUE ; 
   }
 
   if ( phoscpvfound || phosemcfound || clusterizerfound ) {
     cerr << "WARNING: AliPHOSClusterizer::Exec -> Emc(Cpv)RecPoints and/or Clusterizer branch with name " 
-	 << branchname.Data() << " already exits" << endl ;
+	 << taskName.Data() << " already exits" << endl ;
     return ; 
   }       
 
@@ -204,22 +189,27 @@ void AliPHOSClusterizerv1::Exec(Option_t * option)
 
   for(ievent = 0; ievent < nevents; ievent++){
 
-    if(ievent == 0) GetCalibrationParameters() ;
+
+    fPedestal = gime->Digitizer(taskName)->GetPedestal() ;
+    fSlope    = gime->Digitizer(taskName)->GetSlope() ;
+
 
     fNumberOfEmcClusters  = 0 ;
     fNumberOfCpvClusters  = 0 ;
    
     gime->Event(ievent,"D") ;
-    
-    //    if(!ReadDigits(ievent))   continue;  //reads digits for event ievent
-    
+    // if(!ReadDigits(ievent))  //reads digits for event fEvent
+    //  continue;
+
     MakeClusters() ;
     
-    if(fToUnfold)             MakeUnfolding() ;
+    if(fToUnfold) 
+      MakeUnfolding() ;
 
     WriteRecPoints(ievent) ;
 
-    if(strstr(option,"deb"))  PrintRecPoints(option) ;
+    if(strstr(option,"deb"))
+      PrintRecPoints(option) ;
   }
   
   if(strstr(option,"tim")){
@@ -326,20 +316,6 @@ Bool_t AliPHOSClusterizerv1::FindFit(AliPHOSEmcRecPoint * emcRP, int * maxAt, Fl
 }
 
 //____________________________________________________________________________
-void AliPHOSClusterizerv1::GetCalibrationParameters() 
-{
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ;
-  TString branchname = GetName() ;
-  branchname.Remove(branchname.Index(Version())-1) ;
-  AliPHOSDigitizer * dig = gime->Digitizer(branchname) ;
-  fADCchanelEmc   = dig->GetEMCchannel() ;
-  fADCpedestalEmc = dig->GetEMCpedestal();
-
-  fADCchanelCpv   = dig->GetCPVchannel() ;
-  fADCpedestalCpv = dig->GetCPVpedestal() ; 
-
-}
-//____________________________________________________________________________
 void AliPHOSClusterizerv1::Init()
 {
   // Make all memory allocations which can not be done in default constructor.
@@ -348,27 +324,25 @@ void AliPHOSClusterizerv1::Init()
   if ( strcmp(GetTitle(), "") == 0 )
     SetTitle("galice.root") ;
 
-  TString branchname = GetName() ;
-  branchname.Remove(branchname.Index(Version())-1) ;
+  TString taskName(GetName()) ; 
+  taskName.Remove(taskName.Index(Version()) -1) ;
 
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance(GetTitle(), branchname) ; 
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance(GetTitle(), taskName.Data()) ; 
   if ( gime == 0 ) {
     cerr << "ERROR: AliPHOSClusterizerv1::Init -> Could not obtain the Getter object !" << endl ; 
     return ;
   } 
     
-  const AliPHOSGeometry * geom = gime->PHOSGeometry() ;
-  fEmcCrystals = geom->GetNModules() *  geom->GetNCristalsInModule() ;
-
   if(!gMinuit) 
     gMinuit = new TMinuit(100) ;
 
+  //add Task to //YSAlice/tasks/Reconstructioner/PHOS
   gime->PostClusterizer(this) ;
   // create a folder on the white board //YSAlice/WhiteBoard/RecPoints/PHOS/recpointsName
-  gime->PostRecPoints(branchname ) ;
+  gime->PostRecPoints(taskName.Data() ) ;
 
-  gime->PostDigits(branchname) ;
-  gime->PostDigitizer(branchname) ;
+  gime->PostDigits(taskName.Data()) ;
+  gime->PostDigitizer(taskName.Data()) ;
   
 }
 
@@ -392,12 +366,11 @@ Int_t AliPHOSClusterizerv1::AreNeighbours(AliPHOSDigit * d1, AliPHOSDigit * d2)c
   Int_t relid2[4] ; 
   geom->AbsToRelNumbering(d2->GetId(), relid2) ; 
  
-  if ( (relid1[0] == relid2[0]) && (relid1[1]==relid2[1]) ) { // inside the same PHOS module 
+  if ( (relid1[0] == relid2[0]) && (relid1[1]==relid2[1]) ) { // inside the same PHOS module and the same PPSD Module 
     Int_t rowdiff = TMath::Abs( relid1[2] - relid2[2] ) ;  
     Int_t coldiff = TMath::Abs( relid1[3] - relid2[3] ) ;  
     
     if (( coldiff <= 1 )  && ( rowdiff <= 1 )){
-      if((relid1[1] != 0) || (TMath::Abs(d1->GetTime() - d2->GetTime() ) < fEmcTimeGate))
       rv = 1 ; 
     }
     else {
@@ -408,10 +381,15 @@ Int_t AliPHOSClusterizerv1::AreNeighbours(AliPHOSDigit * d1, AliPHOSDigit * d2)c
   } 
   else {
     
-    if( (relid1[0] < relid2[0]) || (relid1[1] != relid2[1]) )  
+    if( (relid1[0] < relid2[0]) || (relid1[1] < relid2[1]) )  
       rv=2 ;
 
   }
+
+  //Do NOT clusterize upper PPSD  
+  if( IsInPpsd(d1) && IsInPpsd(d2) &&
+     relid1[1] > 0                 &&
+     relid1[1] < geom->GetNumberOfPadsPhi()*geom->GetNumberOfPadsPhi() ) rv = 2 ;
 
   return rv ; 
 }
@@ -434,6 +412,22 @@ Bool_t AliPHOSClusterizerv1::IsInEmc(AliPHOSDigit * digit) const
 }
 
 //____________________________________________________________________________
+Bool_t AliPHOSClusterizerv1::IsInPpsd(AliPHOSDigit * digit) const
+{
+  // Tells if (true) or not (false) the digit is in a PHOS-PPSD module
+ 
+  Bool_t rv = kFALSE ; 
+  const AliPHOSGeometry * geom = AliPHOSGetter::GetInstance()->PHOSGeometry() ;
+
+  Int_t relid[4] ; 
+  geom->AbsToRelNumbering(digit->GetId(), relid) ; 
+
+  if ( relid[1] > 0 && relid[0] > geom->GetNCPVModules() ) rv = kTRUE; 
+
+  return rv ; 
+}
+
+//____________________________________________________________________________
 Bool_t AliPHOSClusterizerv1::IsInCpv(AliPHOSDigit * digit) const
 {
   // Tells if (true) or not (false) the digit is in a PHOS-CPV module
@@ -444,9 +438,65 @@ Bool_t AliPHOSClusterizerv1::IsInCpv(AliPHOSDigit * digit) const
   Int_t relid[4] ; 
   geom->AbsToRelNumbering(digit->GetId(), relid) ; 
 
-  if ( relid[1] != 0  ) rv = kTRUE; 
+  if ( relid[1] > 0 && relid[0] <= geom->GetNCPVModules() ) rv = kTRUE; 
 
   return rv ; 
+}
+//____________________________________________________________________________
+Bool_t AliPHOSClusterizerv1::ReadDigits(Int_t event)
+ {
+   // reads digitis with specified title from TreeD
+
+
+  if ( gAlice->TreeD()==0) {  
+   cerr << "ERROR: AliPHOSClusterizerv1::ReadDigits There is no Digit Tree" << endl;
+   return kFALSE;
+  }
+  
+  //set address of the Digits and Digitizer
+  TBranch * digitsBranch = 0;
+  TBranch * digitizerBranch = 0;
+  TObjArray * lob = (TObjArray*)gAlice->TreeD()->GetListOfBranches() ;
+  TIter next(lob) ; 
+  TBranch * branch = 0 ;  
+  Bool_t phosfound = kFALSE, digitizerfound = kFALSE ; 
+  
+  TString taskName(GetName()) ; 
+  taskName.ReplaceAll(Version(), "") ;
+
+  while ( (branch = (TBranch*)next()) && (!phosfound || !digitizerfound) ) {
+    if ( (strcmp(branch->GetName(), "PHOS")==0) && (strcmp(branch->GetTitle(), taskName.Data())==0) ) {
+      phosfound = kTRUE ;
+      digitsBranch = branch ; 
+    }
+    
+    else if ( (strcmp(branch->GetName(), "AliPHOSDigitizer")==0) && (strcmp(branch->GetTitle(), taskName.Data())==0) ) {
+      digitizerfound = kTRUE ; 
+      digitizerBranch = branch ;
+    }
+  }
+  if ( !phosfound || !digitizerfound ) {
+    cerr << "WARNING: AliPHOSClusterizerv1::ReadDigits -> Digits and/or Digitizer branch with name " << taskName.Data() 
+	 << " not found" << endl ;
+    return kFALSE ; 
+  }   
+  
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  
+  TClonesArray * digits = gime->Digits() ; 
+  digits->Clear() ;
+  digitsBranch->SetAddress(&digits) ;
+  
+  AliPHOSDigitizer * digitizer = gime->Digitizer() ; 
+  digitizerBranch->SetAddress(&digitizer) ;
+
+  digitsBranch->GetEntry(0) ;
+  digitizerBranch->GetEntry(0) ;
+  
+  fPedestal = digitizer->GetPedestal() ;
+  fSlope    = digitizer->GetSlope() ;
+ 
+  return kTRUE ;
 }
 
 //____________________________________________________________________________
@@ -455,10 +505,9 @@ void AliPHOSClusterizerv1::WriteRecPoints(Int_t event)
 
   // Creates new branches with given title
   // fills and writes into TreeR.
-
-  TString branchName(GetName() ) ;
-  branchName.Remove(branchName.Index(Version())-1) ;
-
+  TString branchName(GetName()) ; 
+  branchName.Remove(branchName.Index(Version())-1) ; 
+  
   AliPHOSGetter *gime = AliPHOSGetter::GetInstance() ; 
   TObjArray * emcRecPoints = gime->EmcRecPoints(branchName) ; 
   TObjArray * cpvRecPoints = gime->CpvRecPoints(branchName) ; 
@@ -486,6 +535,10 @@ void AliPHOSClusterizerv1::WriteRecPoints(Int_t event)
     ((AliPHOSRecPoint *)cpvRecPoints->At(index))->SetIndexInList(index) ;
 
   cpvRecPoints->Expand(cpvRecPoints->GetEntriesFast()) ;
+
+  gAlice->GetEvent(event) ; 
+  if(gAlice->TreeR()==0)
+    gAlice->MakeTree("R") ;
   
   //Make branches in TreeR for RecPoints and Clusterizer
   char * filename = 0;
@@ -581,9 +634,10 @@ void AliPHOSClusterizerv1::MakeClusters()
     TArrayI clusterdigitslist(1500) ;   
     Int_t index ;
 
-    if (( IsInEmc (digit) && Calibrate(digit->GetAmp(),digit->GetId()) > fEmcClusteringThreshold  ) || 
-        ( IsInCpv (digit) && Calibrate(digit->GetAmp(),digit->GetId()) > fCpvClusteringThreshold  ) ) {
-         
+    if (( IsInEmc (digit) && Calibrate(digit->GetAmp()) > fEmcClusteringThreshold  ) || 
+        ( IsInPpsd(digit) && Calibrate(digit->GetAmp()) > fPpsdClusteringThreshold ) ||
+        ( IsInCpv (digit) && Calibrate(digit->GetAmp()) > fCpvClusteringThreshold  ) ) {
+      
       Int_t iDigitInCluster = 0 ; 
       
       if  ( IsInEmc(digit) ) {   
@@ -594,22 +648,25 @@ void AliPHOSClusterizerv1::MakeClusters()
 	emcRecPoints->AddAt(new  AliPHOSEmcRecPoint(), fNumberOfEmcClusters) ;
 	clu = (AliPHOSEmcRecPoint *) emcRecPoints->At(fNumberOfEmcClusters) ; 
   	fNumberOfEmcClusters++ ; 
-	clu->AddDigit(*digit, Calibrate(digit->GetAmp(),digit->GetId())) ; 
+	clu->AddDigit(*digit, Calibrate(digit->GetAmp())) ; 
 	clusterdigitslist[iDigitInCluster] = digit->GetIndexInList() ;	
 	iDigitInCluster++ ; 
 	digitsC->Remove(digit) ; 
 
       } else { 
 	
-	// start a new CPV cluster
+	// start a new PPSD/CPV cluster
 	if(fNumberOfCpvClusters >= cpvRecPoints->GetSize()) 
 	  cpvRecPoints->Expand(2*fNumberOfCpvClusters+1);
 
-	cpvRecPoints->AddAt(new AliPHOSCpvRecPoint(), fNumberOfCpvClusters) ;
+	if(IsInPpsd(digit)) 
+	  cpvRecPoints->AddAt(new AliPHOSPpsdRecPoint(),fNumberOfCpvClusters) ;
+	else
+	  cpvRecPoints->AddAt(new AliPHOSCpvRecPoint(), fNumberOfCpvClusters) ;
 
-	clu =  (AliPHOSCpvRecPoint *) cpvRecPoints->At(fNumberOfCpvClusters)  ;  
+	clu =  (AliPHOSPpsdRecPoint *) cpvRecPoints->At(fNumberOfCpvClusters)  ;  
 	fNumberOfCpvClusters++ ; 
-	clu->AddDigit(*digit, Calibrate(digit->GetAmp(),digit->GetId()) ) ;	
+	clu->AddDigit(*digit, Calibrate(digit->GetAmp()) ) ;	
 	clusterdigitslist[iDigitInCluster] = digit->GetIndexInList()  ;	
 	iDigitInCluster++ ; 
 	digitsC->Remove(digit) ; 
@@ -642,7 +699,7 @@ void AliPHOSClusterizerv1::MakeClusters()
           case 0 :   // not a neighbour
 	    break ;
 	  case 1 :   // are neighbours 
-	    clu->AddDigit(*digitN, Calibrate( digitN->GetAmp(), digitN->GetId() ) ) ;
+	    clu->AddDigit(*digitN, Calibrate( digitN->GetAmp() ) ) ;
 	    clusterdigitslist[iDigitInCluster] = digitN->GetIndexInList() ; 
 	    iDigitInCluster++ ; 
 	    digitsC->Remove(digitN) ;
@@ -664,14 +721,14 @@ void AliPHOSClusterizerv1::MakeClusters()
   } // while digit
 
   delete digitsC ;
-
+ 
 }
 
 //____________________________________________________________________________
 void AliPHOSClusterizerv1::MakeUnfolding()
 {
   // Unfolds clusters using the shape of an ElectroMagnetic shower
-  // Performs unfolding of all EMC/CPV clusters
+  // Performs unfolding of all EMC/CPV but NOT ppsd clusters
 
   AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
   
@@ -717,7 +774,7 @@ void AliPHOSClusterizerv1::MakeUnfolding()
   // Unfold now CPV clusters
   if(fNumberOfCpvClusters > 0){
     
-    Int_t nModulesToUnfold = geom->GetNModules() ;
+    Int_t nModulesToUnfold = geom->GetNCPVModules() ;
 
     Int_t numberofCpvNotUnfolded = fNumberOfCpvClusters ;     
     Int_t index ;   
@@ -995,7 +1052,8 @@ void AliPHOSClusterizerv1::Print(Option_t * option)const
 	 << "                       CPV Clustering threshold = " << fCpvClusteringThreshold << endl
 	 << "                       CPV Local Maximum cut    = " << fCpvLocMaxCut << endl
        << "                       CPV Logarothmic weight   = " << fW0CPV << endl
-	 << endl ;
+	 << endl
+	 << "                      PPSD  Clustering threshold = " << fPpsdClusteringThreshold << endl;
     if(fToUnfold)
       cout << " Unfolding on " << endl ;
     else
@@ -1023,40 +1081,57 @@ void AliPHOSClusterizerv1::PrintRecPoints(Option_t * option)
 
   if(strstr(option,"all")) {
     cout << "EMC clusters " << endl ;
-    cout << " Index  Ene(MeV)   Multi  Module     X      Y      Z    Lambda 1   Lambda 2  # of prim  Primaries list "      <<  endl;      
+    cout << "  Index    " 
+	 << "  Ene(MeV) " 
+	 << "  Multi    "
+ 	 << "  Module   "  
+	 << "    X      "
+	 << "    Y      "
+	 << "    Z      "
+	 << " Lambda 1  "
+	 << " Lambda 2  "
+	 << " MaxEnergy "
+	 << " # of prim "
+	 << " Primaries list "      <<  endl;      
     
     Int_t index ;
     for (index = 0 ; index < emcRecPoints->GetEntries() ; index++) {
       AliPHOSEmcRecPoint * rp = (AliPHOSEmcRecPoint * )emcRecPoints->At(index) ; 
+
+      cout << setw(6) << rp->GetIndexInList() << "     ";
+      cout << setw(6) << rp->GetEnergy()      << "     ";
+      cout << setw(6) << rp->GetMultiplicity()<< "     ";
+      cout << setw(6) << rp->GetPHOSMod()     << "     ";
+
       TVector3  locpos;  
       rp->GetLocalPosition(locpos);
+      cout << setw(8) <<  locpos.X()          << "     ";
+      cout << setw(8) <<  locpos.Y()          << "     ";
+      cout << setw(8) <<  locpos.Z()          << "     ";
+
       Float_t lambda[2]; 
       rp->GetElipsAxis(lambda);
+      cout << setw(10)<<  lambda[0]           << "     ";
+      cout << setw(10)<<  lambda[1]           << "     ";
+      
+      
       Int_t * primaries; 
       Int_t nprimaries;
       primaries = rp->GetPrimaries(nprimaries);
+      cout << setw(8) <<    primaries         << "     ";
 
-      cout << setw(4) << rp->GetIndexInList() << "   " 
-	   << setw(7) << setprecision(3) << rp->GetEnergy() << "           " 
-	   << setw(3) <<         rp->GetMultiplicity() << "  " 
-	   << setw(1) <<              rp->GetPHOSMod() << "  " 
-	   << setw(6) << setprecision(2) << locpos.X() << "  " 
-	   << setw(6) << setprecision(2) << locpos.Y() << "  " 
-	   << setw(6) << setprecision(2) << locpos.Z() << "  "
-	   << setw(4) << setprecision(2) << lambda[0]  << "  "
-	   << setw(4) << setprecision(2) << lambda[1]  << "  "
-	   << setw(2) << nprimaries << "  " ;
-     
       for (Int_t iprimary=0; iprimary<nprimaries; iprimary++)
-	cout << setw(4) <<   primaries[iprimary] << "  "  ;
-      cout << endl ;  	 
+	cout << setw(4)  <<  primaries[iprimary] << " ";
+      cout << endl;  	 
     }
+    cout << endl ;
 
-    //Now plot CPV recPoints
+    //Now plot CPV/PPSD recPoints
     cout << "EMC clusters " << endl ;
     cout << "  Index    " 
 	 << "  Multi    "
  	 << "  Module   "  
+ 	 << "  Layer    "  
 	 << "    X      "
 	 << "    Y      "
 	 << "    Z      "
@@ -1066,18 +1141,28 @@ void AliPHOSClusterizerv1::PrintRecPoints(Option_t * option)
     for (index = 0 ; index < cpvRecPoints->GetEntries() ; index++) {
       AliPHOSRecPoint * rp = (AliPHOSRecPoint * )cpvRecPoints->At(index) ; 
       cout << setw(6) << rp->GetIndexInList() << "     ";
-      cout << setw(6) << rp->GetPHOSMod()     << "        CPV     ";
+      cout << setw(6) << rp->GetPHOSMod()     << "     ";
+
+      if( (strcmp(rp->ClassName() , "AliPHOSPpsdRecPoint" )) == 0){
+	AliPHOSPpsdRecPoint * ppsd = (AliPHOSPpsdRecPoint*) rp ;
+	if(ppsd->GetUp())
+	  cout <<"        CPV     ";
+	else
+	  cout <<"       PPSD     ";
+      }
+      else
+	cout <<"        CPV     ";
       
       TVector3  locpos;  
       rp->GetLocalPosition(locpos);
-      cout << setw(6) <<  locpos.X()          << "     ";
-      cout << setw(6) <<  locpos.Y()          << "     ";
-      cout << setw(6) <<  locpos.Z()          << "     ";
+      cout << setw(8) <<  locpos.X()          << "     ";
+      cout << setw(8) <<  locpos.Y()          << "     ";
+      cout << setw(8) <<  locpos.Z()          << "     ";
       
       Int_t * primaries; 
-      Int_t nprimaries ; 
+      Int_t nprimaries;
       primaries = rp->GetPrimaries(nprimaries);
-      cout << setw(6) <<    nprimaries         << "     ";
+      cout << setw(8) <<    primaries         << "     ";
 
       for (Int_t iprimary=0; iprimary<nprimaries; iprimary++)
 	cout << setw(4)  <<  primaries[iprimary] << " ";
@@ -1085,7 +1170,7 @@ void AliPHOSClusterizerv1::PrintRecPoints(Option_t * option)
     }
 
 
-    cout << "-----------------------------------------------------------------------"<<endl ;
+    cout << "-------------------------------------------------"<<endl ;
   }
 }
 

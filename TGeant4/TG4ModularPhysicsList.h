@@ -19,6 +19,10 @@
 #include <G4VModularPhysicsList.hh>
 #include <globals.hh>
 
+class TG4ExtDecayer;
+
+class G4VProcess;
+
 class TG4ModularPhysicsList: public G4VModularPhysicsList
 {
   public:
@@ -31,7 +35,6 @@ class TG4ModularPhysicsList: public G4VModularPhysicsList
     virtual void SetCuts();
     void SetProcessActivation();
     void PrintAllProcesses() const;
-    void DumpAllProcesses() const;
     
   protected:
     TG4ModularPhysicsList(const TG4ModularPhysicsList& right);
@@ -43,13 +46,27 @@ class TG4ModularPhysicsList: public G4VModularPhysicsList
     virtual void ConstructParticle();
     virtual void ConstructProcess();
 
+         // construct all particles in each category
+    void ConstructAllBosons();
+    void ConstructAllLeptons();
+    void ConstructAllMesons();
+    void ConstructAllBaryons();
+    void ConstructAllIons();
+    void ConstructAllShortLiveds();
+    
+        // construct general processes
+    void ConstructGeneral();	
+
   private:
     // methods
     void SetProcessActivation(G4ProcessManager* processManager,
                               G4int processId, G4bool activation);
 
     // static data members
-    static const G4double  fgkDefaultCutValue; //default cut value
+    static const G4bool  fgkDefaultCutValue;
+
+    // data members
+    TG4ExtDecayer*  fExtDecayer; //external decayer
 };
 
 #endif //TG4_MODULAR_PHYSICS_LIST_H

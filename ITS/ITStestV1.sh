@@ -2,21 +2,21 @@
 # delete eventual old files from the last run
 ./DeleteOldFiles
 # run the hit generation
-aliroot -q -b "$ALICE_ROOT/macros/grun.C($1)"
+aliroot -q -b grun.C
 # digitize TPC
-aliroot -q -b "$ALICE_ROOT/TPC/AliTPCHits2Digits.C($1)"
+aliroot -q -b AliTPCHits2Digits.C
+# do tracking in TPC
+aliroot -q -b AliTPCtracknew.C
 # prepare TPC tracks for matching with the ITS
-aliroot -q -b "$ALICE_ROOT/ITS/TPCtracking.C($1)"
+aliroot -q -b TPCtracks.C
 # digitize ITS
-aliroot -q -b "$ALICE_ROOT/ITS/AliITSHitsToDigitsDefault.C(0,$[$1-1])"
-# create reconstructed points for the ITS
-aliroot -q -b "$ALICE_ROOT/ITS/ITSDigitsToClusters.C(0,$[$1-1])"
+aliroot -q -b ITSHitsToDigits.C
+# create reconstruct point for the ITS
+aliroot -q -b ITSDigitsToClusters.C
 # prepare for tracking
-aliroot -q -b "$ALICE_ROOT/ITS/ITStracks.C(0,$[$1-1])"
+aliroot -q -b ITStracks.C
 # do the tracking
-aliroot -q -b "$ALICE_ROOT/ITS/ITStracking.C(0,$[$1-1])"
-# do the comparison
-aliroot -q -b "$ALICE_ROOT/ITS/AliITSComparisonV1.C(0,$[$1-1])"
+aliroot -q -b ITStracking.C
 #
 # after all of the above you can run ITSPlotTracks.C macro under aliroot to
 # see plots of the efficiency and track parameter resolution

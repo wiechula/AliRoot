@@ -60,9 +60,8 @@ class AliPHOSFastRecParticle : public TParticle {
     fIndexInList = val ; 
   } 
 
-  enum EParticleType { kUNDEFINED=-1, 
-		       kNEUTRALEMFAST, kNEUTRALHAFAST,  kNEUTRALEMSLOW, kNEUTRALHASLOW, 
-		       kCHARGEDEMFAST, kCHARGEDHAFAST,  kCHARGEDEMSLOW, kCHARGEDHASLOW } ; 
+  enum EParticleType { kUNDEFINED=-1, kNEUTRALEM,  kNEUTRALHA,  kGAMMA , kGAMMAHA , 
+		       kABSURDEM,  kABSURDHA ,  kELECTRON, kCHARGEDHA } ; 
 
   typedef TClonesArray  FastRecParticlesList ; 
 

@@ -15,12 +15,6 @@
 
 /*
 $Log$
-Revision 1.6  2001/09/26 16:07:40  coppedis
-Changes in StepManager suggested by J.Chudoba
-
-Revision 1.5  2001/06/15 14:51:39  coppedis
-Geometry bug corrected
-
 Revision 1.4  2001/06/13 11:17:49  coppedis
 Bug corrected
 
@@ -36,14 +30,14 @@ A different geometry for the ZDCs
 
 */
 
-///////////////////////////////////////////////////////////////////////
-//                                                                   //
-//  		AliZDCv2 --- new ZDC geometry,		     	     //
-//  	    with the EM ZDC at about 10 m from IP		     //
-//  		Just one set of ZDC is inserted			     //
-//      (on the same side of the dimuon arm realtive to IP)	     //
-//                                                                   //  
-///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//                                                                           //
+//  Zero Degree Calorimeter                                                  //
+//  This class contains the basic functions for the ZDC                      //
+//  Functions specific to one particular geometry are                        //
+//  contained in the derived classes                                         //
+//                                                                           //
+///////////////////////////////////////////////////////////////////////////////
 
 // --- Standard libraries
 #include "stdio.h"
@@ -60,6 +54,7 @@ A different geometry for the ZDCs
 // --- AliRoot classes
 #include "AliZDCv2.h"
 #include "AliZDCHit.h"
+#include "AliZDCDigit.h"
 #include "AliRun.h"
 #include "AliDetector.h"
 #include "AliMagF.h"
@@ -71,6 +66,13 @@ A different geometry for the ZDCs
  
  
 ClassImp(AliZDCv2)
+ 
+
+///////////////////////////////////////////////////////////////////////////////
+//                                                                           //
+//  Zero Degree Calorimeter version 2                                        //
+//                                                                           //
+///////////////////////////////////////////////////////////////////////////////
 
 //_____________________________________________________________________________
 AliZDCv2::AliZDCv2() : AliZDC()
@@ -141,16 +143,13 @@ AliZDCv2::AliZDCv2(const char *name, const char *title)
   }
 
   // Parameters for hadronic calorimeters geometry
-  fDimZN[0] = 3.52;
-  fDimZN[1] = 3.52;
-  fDimZN[2] = 50.;  
   fDimZP[0] = 11.2;
   fDimZP[1] = 6.;
   fDimZP[2] = 75.;    
   fPosZN[0] = 0.;
-  fPosZN[1] = 1.2;
+  fPosZN[1] = -1.2;
   fPosZN[2] = 11650.;
-  fPosZP[0] = -23.9;
+  fPosZP[0] = -24.;
   fPosZP[1] = 0.;
   fPosZP[2] = 11600.;
   fFibZN[0] = 0.;
@@ -163,10 +162,10 @@ AliZDCv2::AliZDCv2(const char *name, const char *title)
   // Parameters for EM calorimeter geometry
   fPosZEM[0] = 8.5;
   fPosZEM[1] = 0.;
-//  fPosZEM[2] = -830.;
-  fPosZEM[2] = -735.;
-  fZEMLength = 0.;
+  fPosZEM[2] = -1000.;
   
+
+  fDigits = new TClonesArray("AliZDCDigit",1000);
 }
  
 //_____________________________________________________________________________
@@ -620,6 +619,7 @@ void AliZDCv2::CreateZDC()
 
   // Parameters for hadronic calorimeters geometry
   // NB -> parameters used ONLY in CreateZDC()
+  Float_t fDimZN[3] = {3.52, 3.52, 50.};  // Dimensions of neutron detector
   Float_t fGrvZN[3] = {0.03, 0.03, 50.};  // Grooves for neutron detector
   Float_t fGrvZP[3] = {0.04, 0.04, 75.};  // Grooves for proton detector
   Int_t   fDivZN[3] = {11, 11, 0};  	  // Division for neutron detector
@@ -634,7 +634,6 @@ void AliZDCv2::CreateZDC()
   Float_t fFibRadZEM = 0.0315; 			// External fiber radius (including cladding)
   Int_t   fDivZEM[3] = {92, 0, 20}; 		// Divisions for EM detector
   Float_t fDimZEM0 = 2*fDivZEM[2]*(fDimZEMPb+fDimZEMAir+fFibRadZEM*(TMath::Sqrt(2.)));
-  fZEMLength = fDimZEM0;
   Float_t fDimZEM[6] = {fDimZEM0, 3.5, 3.5, 45., 0., 0.}; // Dimensions of EM detector
   Float_t fFibZEM2 = fDimZEM[2]/TMath::Sin(fDimZEM[3]*kDegrad)-fFibRadZEM;
   Float_t fFibZEM[3] = {0., 0.0275, fFibZEM2};  // Fibers for EM calorimeter
@@ -793,9 +792,6 @@ void AliZDCv2::CreateZDC()
   //	   beacause it's impossible to make a ZDC pcon volume to contain
   //	   both hadronics and EM calorimeters. (It causes many tracks abandoning).
   gMC->Gspos("ZEM ", 1,"ALIC", fPosZEM[0], fPosZEM[1], fPosZEM[2]+fDimZEM[0], irot1, "ONLY");
-  
-  // Second EM ZDC (same side w.r.t. IP, just on the other side w.r.t. beam pipe)
-  gMC->Gspos("ZEM ", 2,"ALIC", -fPosZEM[0], fPosZEM[1], fPosZEM[2]+fDimZEM[0], irot1, "ONLY");
   
   // --- Adding last slice at the end of the EM calorimeter 
 //  Float_t zLastSlice = fPosZEM[2]+fDimZEMPb+fDimZEM[0];
@@ -1189,6 +1185,165 @@ void AliZDCv2::InitTables()
   fclose(fp7);
   fclose(fp8);
 }
+
+//_____________________________________________________________________________
+Int_t AliZDCv2::Digitize(Int_t Det, Int_t Quad, Int_t Light)
+{
+  // Evaluation of the ADC channel corresponding to the light yield Light
+
+  if(fDebug == 1){
+    printf("\n	Digitize -> Det = %d, Quad = %d, Light = %d\n", Det, Quad, Light);
+  }   
+  
+  // Parameters for conversion of light yield in ADC channels
+  Float_t fPMGain[3][5];      // PM gain
+  Float_t fADCRes;            // ADC conversion factor
+  
+  Int_t j,i;
+  for(i=0; i<3; i++){
+     for(j=0; j<5; j++){
+        fPMGain[i][j]   = 100000.;
+     }
+  }
+  fADCRes   = 0.00000064; // ADC Resolution: 250 fC/ADCch
+  
+  Int_t ADCch = Int_t(Light*fPMGain[Det-1][Quad]*fADCRes);
+     
+  return ADCch;
+}
+
+
+//_____________________________________________________________________________
+void AliZDCv2::SDigits2Digits()
+{
+   Hits2Digits(gAlice->GetNtrack());
+}
+
+//_____________________________________________________________________________
+void AliZDCv2::Hits2Digits(Int_t ntracks)
+{
+  AliZDCDigit *newdigit;
+  AliZDCHit   *hit;
+
+  Int_t PMCZN = 0, PMCZP = 0, PMQZN[4], PMQZP[4], PMZEM = 0;
+  
+  Int_t i;
+  for(i=0; i<4; i++){
+     PMQZN[i] =0;
+     PMQZP[i] =0;
+  }
+  
+  Int_t itrack = 0;
+  for(itrack=0; itrack<ntracks; itrack++){
+     gAlice->ResetHits();
+     gAlice->TreeH()->GetEvent(itrack);
+     for(i=0; i<fHits->GetEntries(); i++){
+        hit = (AliZDCHit*)fHits->At(i);
+        Int_t det   = hit->GetVolume(0);
+        Int_t quad  = hit->GetVolume(1);
+        Int_t lightQ = Int_t(hit->GetLightPMQ());
+        Int_t lightC = Int_t(hit->GetLightPMC());
+	if(fDebug == 1)
+          printf("	   \n itrack = %d, fNhits = %d, det = %d, quad = %d,"
+	  "lightC = %d lightQ = %d\n", itrack, fNhits, det, quad, lightC, lightQ);
+	    
+        if(det == 1){   //ZN 
+          PMCZN = PMCZN + lightC;
+          PMQZN[quad-1] = PMQZN[quad-1] + lightQ;
+        }
+
+        if(det == 2){   //ZP 
+          PMCZP = PMCZP + lightC;
+          PMQZP[quad-1] = PMQZP[quad-1] + lightQ;
+        }
+
+        if(det == 3){   //ZEM 
+          PMZEM = PMZEM + lightC;
+        }
+     } // Hits loop
+  
+  } // Tracks loop
+  
+     if(fDebug == 1){
+       printf("\n	 PMCZN = %d, PMQZN[0] = %d, PMQZN[1] = %d, PMQZN[2] = %d, PMQZN[3] = %d\n"
+	    , PMCZN, PMQZN[0], PMQZN[1], PMQZN[2], PMQZN[3]);
+       printf("\n	 PMCZP = %d, PMQZP[0] = %d, PMQZP[1] = %d, PMQZP[2] = %d, PMQZP[3] = %d\n"
+	    , PMCZP, PMQZP[0], PMQZP[1], PMQZP[2], PMQZP[3]);
+       printf("\n	 PMZEM = %d\n", PMZEM);
+     }
+
+  // ------------------------------------    Hits2Digits
+  // Digits for ZN
+     newdigit = new AliZDCDigit(1, 0, Digitize(1, 0, PMCZN));
+     new((*fDigits)[fNdigits]) AliZDCDigit(*newdigit);
+     fNdigits++;
+     delete newdigit;
+  
+     Int_t j;
+     for(j=0; j<4; j++){
+        newdigit = new AliZDCDigit(1, j+1, Digitize(1, j+1, PMQZN[j]));
+        new((*fDigits)[fNdigits]) AliZDCDigit(*newdigit);
+        fNdigits++;
+        delete newdigit;
+     }
+  
+     // Digits for ZP
+     newdigit = new AliZDCDigit(2, 0, Digitize(2, 0, PMCZP));
+     new((*fDigits)[fNdigits]) AliZDCDigit(*newdigit);
+     fNdigits++;
+     delete newdigit;
+  
+     Int_t k;
+     for(k=0; k<4; k++){
+        newdigit = new AliZDCDigit(2, k+1, Digitize(2, k+1, PMQZP[k]));
+        new((*fDigits)[fNdigits]) AliZDCDigit(*newdigit);
+        fNdigits++;
+        delete newdigit;
+     }
+  
+     // Digits for ZEM
+     newdigit = new AliZDCDigit(3, 0, Digitize(3, 0, PMZEM));
+     new((*fDigits)[fNdigits]) AliZDCDigit(*newdigit);
+     fNdigits++;
+     delete newdigit;
+      
+  
+  gAlice->TreeD()->Fill();
+  gAlice->TreeD()->Write(0,TObject::kOverwrite);
+
+//  if(fDebug == 1){
+//    printf("\n  Event Digits -----------------------------------------------------\n");  
+//    fDigits->Print("");
+//  }
+  
+}
+//_____________________________________________________________________________
+ void AliZDCv2::MakeBranch(Option_t *opt, const char *file)
+{
+  //
+  // Create a new branch in the current Root Tree
+  //
+
+  AliDetector::MakeBranch(opt);
+  
+  Char_t branchname[10];
+  sprintf(branchname,"%s",GetName());
+  const char *cD = strstr(opt,"D");
+
+  if (gAlice->TreeD() && cD) {
+
+    // Creation of the digits from hits 
+
+    if(fDigits!=0) fDigits->Clear();
+    else fDigits = new TClonesArray ("AliZDCDigit",1000);
+    char branchname[10];
+    sprintf(branchname,"%s",GetName());
+    MakeBranchInTree(gAlice->TreeD(), 
+                     branchname, &fDigits, fBufferSize, file) ;
+    printf("* AliZDCv2::MakeBranch    * Making Branch %s for digits\n\n",branchname);
+  }
+       
+}
 //_____________________________________________________________________________
 void AliZDCv2::StepManager()
 {
@@ -1198,7 +1353,6 @@ void AliZDCv2::StepManager()
 
   Int_t j, vol[2], ibeta=0, ialfa, ibe, nphe;
   Float_t x[3], xdet[3], destep, hits[10], m, ekin, um[3], ud[3], be, radius, out;
-  Float_t xalic[3], z, GuiEff, GuiPar[4]={0.31,-0.0004,0.0197,0.7958};
   TLorentzVector s, p;
   const char *knamed;
 
@@ -1207,8 +1361,6 @@ void AliZDCv2::StepManager()
   if((gMC->GetMedium() == fMedSensZN) || (gMC->GetMedium() == fMedSensZP) ||
      (gMC->GetMedium() == fMedSensGR) || (gMC->GetMedium() == fMedSensF1) ||
      (gMC->GetMedium() == fMedSensF2) || (gMC->GetMedium() == fMedSensZEM)){
-
-//   --- This part is for no shower developement in beam pipe and TDI
 //     (gMC->GetMedium() == fMedSensPI) || (gMC->GetMedium() == fMedSensTDI)){
        
   // If particle interacts with beam pipe -> return
@@ -1240,68 +1392,41 @@ void AliZDCv2::StepManager()
 
   // Determine in which ZDC the particle is
     knamed = gMC->CurrentVolName();
-    if(!strncmp(knamed,"ZN",2)){
-      vol[0]=1;
-    }
-    else if(!strncmp(knamed,"ZP",2)){
-      vol[0]=2;
-    }
-    else if(!strncmp(knamed,"ZE",2)){
-      vol[0]=3;
-    }
+    if(!strncmp(knamed,"ZN",2))vol[0]=1;
+    if(!strncmp(knamed,"ZP",2))vol[0]=2;
+    if(!strncmp(knamed,"ZE",2))vol[0]=3;
   
   // Determine in which quadrant the particle is
-       
-    if(vol[0]==1){	//Quadrant in ZN
-      // Calculating particle coordinates inside ZN
+    
+    //Quadrant in ZN
+    if(vol[0]==1){
       xdet[0] = x[0]-fPosZN[0];
       xdet[1] = x[1]-fPosZN[1];
-      // Calculating quadrant in ZN
-      if(xdet[0]<=0.){
-        if(xdet[1]>=0.)     vol[1]=1;
-	else if(xdet[1]<0.) vol[1]=3;
-      }
-      else if(xdet[0]>0.){
-        if(xdet[1]>=0.)     vol[1]=2;
-        else if(xdet[1]<0.) vol[1]=4;
-      }
-      if((vol[1]!=1) && (vol[1]!=2) && (vol[1]!=3) && (vol[1]!=4))
-        printf("\n	StepManager->ERROR in ZN!!! vol[1] = %d, xdet[0] = %f,"
-	"xdet[1] = %f\n",vol[1], xdet[0], xdet[1]);
+      if((xdet[0]<=0.) && (xdet[1]>=0.))  vol[1]=1;
+      if((xdet[0]>0.)  && (xdet[1]>0.))   vol[1]=2;
+      if((xdet[0]<0.)  && (xdet[1]<0.))   vol[1]=3;
+      if((xdet[0]>0.)  && (xdet[1]<0.))   vol[1]=4;
     }
     
-    else if(vol[0]==2){	//Quadrant in ZP
-      // Calculating particle coordinates inside ZP
+    //Quadrant in ZP
+    if(vol[0]==2){
       xdet[0] = x[0]-fPosZP[0];
       xdet[1] = x[1]-fPosZP[1];
-      if(xdet[0]>=fDimZP[0])  xdet[0]=fDimZP[0]-0.01;
-      if(xdet[0]<=-fDimZP[0]) xdet[0]=-fDimZP[0]+0.01;
-      // Calculating tower in ZP
-      Float_t xqZP = xdet[0]/(fDimZP[0]/2.);
+      if(xdet[0]>fDimZP[0])xdet[0]=fDimZP[0]-0.01;
+      if(xdet[0]<-fDimZP[0])xdet[0]=-fDimZP[0]+0.01;
+      Float_t xqZP = xdet[0]/(fDimZP[0]/2);
       for(int i=1; i<=4; i++){
          if(xqZP>=(i-3) && xqZP<(i-2)){
  	   vol[1] = i;
  	   break;
  	 }
       }
-      if((vol[1]!=1) && (vol[1]!=2) && (vol[1]!=3) && (vol[1]!=4))
-        printf("	StepManager->ERROR in ZP!!! vol[1] = %d, xdet[0] = %f,"
-	"xdet[1] = %f",vol[1], xdet[0], xdet[1]);
     }
     
-    // Quadrant in ZEM: vol[1] = 1 -> particle in 1st ZEM (placed at x = 8.5 cm)
-    // 		 	vol[1] = 2 -> particle in 2nd ZEM (placed at x = -8.5 cm)
-    else if(vol[0] == 3){	
-      if(x[0]>0.){
-        vol[1] = 1;
-        // Particle x-coordinate inside ZEM1
-        xdet[0] = x[0]-fPosZEM[0];
-      }
-      else{
-   	vol[1] = 2;
-        // Particle x-coordinate inside ZEM2
-        xdet[0] = x[0]+fPosZEM[0];
-      }
+    //ZEM has only 1 quadrant
+    if(vol[0] == 3){
+      vol[1] = 1;
+      xdet[0] = x[0]-fPosZEM[0];
       xdet[1] = x[1]-fPosZEM[1];
     }
 
@@ -1362,26 +1487,14 @@ void AliZDCv2::StepManager()
      if((destep=gMC->Edep())){
 
        // Particle velocity
-       Float_t beta = 0.;
        gMC->TrackMomentum(p);
        Float_t ptot=TMath::Sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]);
-       if(p[3] > 0.00001) beta =  ptot/p[3];
-       else return;
-       if(beta<0.67){
-         return;
-       }
-       else if((beta>=0.67) && (beta<=0.75)){
-         ibeta = 0;
-       }
-       if((beta>0.75)  && (beta<=0.85)){
-         ibeta = 1;
-       }
-       if((beta>0.85)  && (beta<=0.95)){
-         ibeta = 2;
-       }
-       if(beta>0.95){
-         ibeta = 3;
-       }
+       Float_t beta =  ptot/p[3];
+       if(beta<0.67) return;
+       if((beta>=0.67) && (beta<=0.75)) ibeta = 0;
+       if((beta>0.75)  && (beta<=0.85)) ibeta = 1;
+       if((beta>0.85)  && (beta<=0.95)) ibeta = 2;
+       if(beta>0.95)   ibeta = 3;
  
        // Angle between particle trajectory and fibre axis
        // 1 -> Momentum directions
@@ -1409,18 +1522,15 @@ void AliZDCv2::StepManager()
          be = TMath::Abs(ud[0]);
        }
  
-       if((vol[0]==1)){
-         radius = fFibZN[1];
-       }
-       else if((vol[0]==2)){
-         radius = fFibZP[1];
-       }
+       if((vol[0]==1)) radius = fFibZN[1];
+       if((vol[0]==2)) radius = fFibZP[1];
        ibe = Int_t(be*1000.+1);
  
        //Looking into the light tables 
        Float_t charge = gMC->TrackCharge();
        
-       if((vol[0]==1)) {	// (1)  ZN fibres
+       // (1)  ZN
+       if((vol[0]==1)) {
          if(ibe>fNben) ibe=fNben;
          out =  charge*charge*fTablen[ibeta][ialfa][ibe];
 	 nphe = gRandom->Poisson(out);
@@ -1439,7 +1549,9 @@ void AliZDCv2::StepManager()
 	   AddHit(gAlice->CurrentTrack(), vol, hits);
 	 }
        } 
-       else if((vol[0]==2)) {	// (2) ZP fibres
+       
+       // (2) ZP
+       if((vol[0]==2)) {
          if(ibe>fNbep) ibe=fNbep;
          out =  charge*charge*fTablep[ibeta][ialfa][ibe];
 	 nphe = gRandom->Poisson(out);
@@ -1458,38 +1570,17 @@ void AliZDCv2::StepManager()
 	   AddHit(gAlice->CurrentTrack(), vol, hits);
 	 }
        } 
-       else if((vol[0]==3)) {	// (3) ZEM fibres
+       // (3) ZEM
+       if((vol[0]==3)) {
          if(ibe>fNbep) ibe=fNbep;
          out =  charge*charge*fTablep[ibeta][ialfa][ibe];
-	 gMC->TrackPosition(s);
-         for(j=0; j<=2; j++){
-            xalic[j] = s[j];
-         }
-	 // z-coordinate from ZEM front face 
-	 // NB-> fPosZEM[2]+fZEMLength = -1000.+2*10.3 = 979.69 cm
-	 z = -xalic[2]+fPosZEM[2]+2*fZEMLength-xalic[1];
-//	 z = xalic[2]-fPosZEM[2]-fZEMLength-xalic[1]*(TMath::Tan(45.*kDegrad));
-//         printf("\n	fPosZEM[2]+2*fZEMLength = %f", fPosZEM[2]+2*fZEMLength);
-	 GuiEff = GuiPar[0]*(GuiPar[1]*z*z+GuiPar[2]*z+GuiPar[3]);
-//         printf("\n	xalic[0] = %f	xalic[1] = %f	xalic[2] = %f	z = %f	\n",
-//	        xalic[0],xalic[1],xalic[2],z);
-	 out = out*GuiEff;
 	 nphe = gRandom->Poisson(out);
-//         printf("	out*GuiEff = %f	nphe = %d", out, nphe);
 //	 printf("ZEM --- ibeta = %d, ialfa = %d, ibe = %d"
 //	        "	-> out = %f, nphe = %d\n", ibeta, ialfa, ibe, out, nphe);
-	 if(vol[1] == 1){
-	   hits[7] = 0;  	
-	   hits[8] = nphe;	//fLightPMC (ZEM1)
-	   hits[9] = 0;
-	   AddHit(gAlice->CurrentTrack(), vol, hits);
-	 }
-	 else{
-	   hits[7] = nphe;  	//fLightPMQ (ZEM2)
-	   hits[8] = 0;		
-	   hits[9] = 0;
-	   AddHit(gAlice->CurrentTrack(), vol, hits);
-	 }
+	 hits[7] = 0;  	
+	 hits[8] = nphe;	//fLightPMC
+	 hits[9] = 0;
+	 AddHit(gAlice->CurrentTrack(), vol, hits);
        }
      }
    }

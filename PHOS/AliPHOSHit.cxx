@@ -19,7 +19,7 @@
 //  Hits class for PHOS     
 //  A hit in PHOS is the sum of all hits in a single crystal
 //*--
-//*-- Author: Maxime Volkov (RRC KI) & Yves Schutz (SUBATECH) & Dmitri Peressounko (RRC KI & SUBATECH)
+//*-- Author: Maxime Volkov (RRC KI) & Yves Schutz (SUBATECH)
 
 // --- ROOT system ---
 
@@ -37,12 +37,15 @@
 #include "AliPHOSGeometry.h"
 #include "AliPHOS.h"
 
+
+
 ClassImp(AliPHOSHit)
-  
-  //____________________________________________________________________________
-  AliPHOSHit::AliPHOSHit(const AliPHOSHit & hit) 
+
+//____________________________________________________________________________
+AliPHOSHit::AliPHOSHit(const AliPHOSHit & hit) 
 {
-  // copy ctor
+   // copy ctor
+   
   fX       = hit.fX ; 
   fY       = hit.fY ; 
   fZ       = hit.fZ ; 
@@ -50,8 +53,8 @@ ClassImp(AliPHOSHit)
   fELOS    = hit.fELOS ;
   fPrimary = hit.fPrimary ; 
   fTrack   = hit.fTrack ; 
-  fTime    = hit.fTime  ;
-  
+
+ 
 } 
 
 //____________________________________________________________________________
@@ -60,57 +63,41 @@ AliPHOSHit::AliPHOSHit(Int_t shunt, Int_t primary, Int_t track, Int_t id, Float_
   //
   // Create a CPV hit object
   //
-  
+
+  fId         = id ;
   fX          = hits[0] ;
   fY          = hits[1] ;
   fZ          = hits[2] ;
-  fTime       = hits[3] ;
-  fId         = id ;
-  fELOS       = hits[4] ;
+  fELOS       = hits[3] ;
   fPrimary    = primary ;
 }
+
 //____________________________________________________________________________
 Float_t AliPHOSHit::X() const
 {
-  //  if(fX < -1000.){
     TVector3  pos ;
     AliPHOS * phos = static_cast<AliPHOS*> (gAlice->GetDetector("PHOS")) ;
     phos->GetGeometry() ->RelPosInAlice(GetId(),  pos) ;
     return pos.X() ;
-    //    fX = pos.X() ;
-    //    fY = pos.Y() ;
-    //    fZ = pos.Z() ;
-    //  }
-    //  return fX;
 }
+
 //____________________________________________________________________________
 Float_t AliPHOSHit::Y() const
 {
-  //  if(fY < -1000.){
     TVector3  pos ;
     AliPHOS * phos = static_cast<AliPHOS*> (gAlice->GetDetector("PHOS")) ;
     phos->GetGeometry() ->RelPosInAlice(GetId(),  pos) ;
-    return pos.Y(); 
-    //    fX = pos.X() ;
-    //    fY = pos.Y() ;
-    //    fZ = pos.Z() ;
-    //  }
-    //  return fY;
+    return pos.Y() ;
 }
 //____________________________________________________________________________
 Float_t AliPHOSHit::Z() const
 {
-  //  if(fY < -1000.){
     TVector3  pos ;
     AliPHOS * phos = static_cast<AliPHOS*> (gAlice->GetDetector("PHOS")) ;
     phos->GetGeometry() ->RelPosInAlice(GetId(),  pos) ;
     return pos.Z() ;
-    //    fX = pos.X() ;
-    //    fY = pos.Y() ;
-    //    fZ = pos.Z() ;
-    //  }
-    //  return fZ;
 }
+
 //____________________________________________________________________________
 Bool_t AliPHOSHit::operator==(AliPHOSHit const &rValue) const
 { 
@@ -130,9 +117,6 @@ AliPHOSHit AliPHOSHit::operator+(const AliPHOSHit &rValue)
   // Add the energy of the hit
   
   fELOS += rValue.GetEnergy() ;
-
-  if(rValue.GetTime() < fTime)
-    fTime = rValue.GetTime() ;
     
    return *this;
 
@@ -143,7 +127,7 @@ ostream& operator << (ostream& out, const AliPHOSHit& hit)
 {
   // Print out Id and energy 
   
-  out << "AliPHOSHit = " << hit.GetId() << " " << hit.GetEnergy() << "  " << hit.GetTime() << endl ;
+  out << "AliPHOSHit = " << hit.GetId() << " " << hit.GetEnergy() << endl ;
   return out ;
 }
 

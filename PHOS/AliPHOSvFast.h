@@ -18,19 +18,17 @@
 #include "TClonesArray.h"
 #include "TRandom.h"
 
-class TVector3 ;
-class TFile;
-
 // --- AliRoot header files ---
 #include "AliPHOS.h"
-class AliPHOSGeometry ;
+#include "AliPHOSGeometry.h"
+#include "AliPHOSPID.h"
 class AliPHOSFastRecParticle ;
 
 class AliPHOSvFast : public AliPHOS {
 
 public:
 
-  AliPHOSvFast() ;
+  AliPHOSvFast(void) ;
   AliPHOSvFast(const char *name, const char *title="") ;
   AliPHOSvFast(const AliPHOSvFast & fast) {
     // cpy ctor: no implementation yet
@@ -39,20 +37,12 @@ public:
   }
   virtual ~AliPHOSvFast(void) ;
 
-  virtual void   AddHit( Int_t shunt, Int_t primary, Int_t track, Int_t id, Float_t *hits ) {
-    // useless since there are no hits
-    assert(0==1) ; 
-  }
   void           AddRecParticle(const AliPHOSFastRecParticle & rp) ; // adds primary particle to the RecParticles list
   virtual void   BuildGeometry(void) ;                               // creates the geometry for the ROOT display
   virtual void   CreateGeometry(void) ;                              // creates the geometry for GEANT
-  Float_t        GetBigBox(Int_t index) const;                             
+  Float_t        GetBigBox(Int_t index) ;                             
   virtual void   Init(void) ;                                        // does nothing
-  virtual Int_t  IsVersion(void) const {
-    // Gives the version number 
-    return 4 ; 
-  }
-
+  Int_t   IsVersion(void) const { return -1 ; }
   void    MakeBranch(Option_t* opt, const char *file=0) ;
   Double_t MakeEnergy(const Double_t energy) ;                       // makes the detected energy    
   TVector3 MakePosition(const Double_t energy, const TVector3 pos, const Double_t th, const Double_t ph) ; 
@@ -60,20 +50,17 @@ public:
   void MakeRecParticle(const Int_t modid, const TVector3 pos, AliPHOSFastRecParticle & rp) ;  // makes a reconstructes particle from primary
   Int_t   MakeType(AliPHOSFastRecParticle & rp) ;                    // gets the detected type of particle
   // gets TClonesArray of reconstructed particles
-  TClonesArray * FastRecParticles() const { return fFastRecParticles ; } 
+  TClonesArray * FastRecParticles() { return fFastRecParticles ; } 
   virtual void ResetPoints() ; 
   void         ResetFastRecParticles() ; 
   void         SetBigBox(Int_t index, Float_t value) ;                             
   Double_t     SigmaE(Double_t energy) ;    // calulates the energy resolution at a given Energy                           
-  Double_t     SigmaP(Double_t energy, Double_t inc) ; // calulates the position resolution at a given Energy at a given incidence                           
+  Double_t     SigmaP(Double_t energy, Int_t inc) ; // calulates the position resolution at a given Energy at a given incidence                           
   virtual void StepManager(void) ;          // does the tracking through PHOS and a preliminary digitalization
-  virtual TString Version(void){ 
-    // As IsVersion
-    return TString("vFast") ; 
-  }
 
-  AliPHOSvFast & operator = (const AliPHOSvFast & )  {
-    // assignement operator requested by coding convention but not needed
+  AliPHOSvFast & operator = (const AliPHOSvFast & rvalue)  {
+    // assignement operator requested by coding convention
+    // but not needed
     assert(0==1) ;
     return *this ; 
   }

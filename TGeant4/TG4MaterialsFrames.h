@@ -29,7 +29,7 @@ public:
     TG4MaterialsFrames(  TGTab* tab, TGMainFrame* ActionFrame);
     virtual ~TG4MaterialsFrames();
     
-    void DisplayMaterialCharacteristics( int qmat);
+    void DisplayMaterialCharacteristics();
     void SetMaterialsComboEntries() ;
 
 protected:

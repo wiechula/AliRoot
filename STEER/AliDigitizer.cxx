@@ -23,9 +23,6 @@
 
 /*
 $Log$
-Revision 1.1  2001/07/27 13:02:06  jchudoba
-ABC for detector digits merging/digitization
-
 */
 
 // system includes
@@ -39,17 +36,17 @@ ABC for detector digits merging/digitization
 
 ClassImp(AliDigitizer)
 
-AliDigitizer::AliDigitizer() :TTask("AliDigitizer","")
+AliDigitizer::AliDigitizer() :TNamed("AliDigitizer","")
 {
 // dummy default ctor
-  fManager = 0;
+  ;
 }
 
 AliDigitizer::AliDigitizer(AliRunDigitizer* manager) 
-  :TTask("AliDigitizer","")
+  :TNamed("AliDigitizer","")
 {
-  fManager = manager;
   manager->AddDigitizer(this);
+  fDebug=1;
 }
 
 AliDigitizer::~AliDigitizer() {;}
