@@ -1410,9 +1410,18 @@ void AliTPC::SDigits2Digits2(Int_t eventnumber)
   GenerNoise(500000); //create teble with noise
 
   //conect tree with sSDigits
-  fLoader->LoadSDigits("READ");
-  
   TTree *t = fLoader->TreeS();
+
+  if (t == 0x0) 
+   {
+     fLoader->LoadSDigits("READ");
+     t = fLoader->TreeS();
+     if (t == 0x0)
+      {
+        Error("SDigits2Digits2","Can not get input TreeS");
+        return;
+      }
+   }
   
   if (fLoader->TreeD() == 0x0) fLoader->MakeTree("D");
   
@@ -1508,135 +1517,6 @@ void AliTPC::SDigits2Digits2(Int_t eventnumber)
    
   delete arr;
 }
-//_________________________________________
-void AliTPC::Merge(TTree * intree, Int_t *mask, Int_t nin, Int_t outid)
-{
-  
-  //intree - pointer to array of trees with s digits
-  //mask   - mask for each 
-  //nin    - number of inputs
-  //outid  - event  number of the output event
-
-  //create digits from summable digits 
-  //conect tree with sSDigits
-
-    
-  AliSimDigits ** digarr = new AliSimDigits*[nin];
-  for (Int_t i1=0;i1<nin; i1++){
-    digarr[i1]=0;
-    intree[i1].GetBranch("Segment")->SetAddress(&digarr[i1]);
-  }
-  Stat_t nentries = intree[0].GetEntries();
-  
-  //make tree with digits   
-  char  dname[100];
-  sprintf(dname,"TreeD_%s_%d",fTPCParam->GetTitle(),outid);
-  AliTPCDigitsArray *arr = new AliTPCDigitsArray; 
-  arr->SetClass("AliSimDigits");
-  arr->Setup(fTPCParam);
-  arr->MakeTree(fDigitsFile);  
-
-  // set zero suppression
-
-  fTPCParam->SetZeroSup(2);
-
-  // get zero suppression
-
-  Int_t zerosup = fTPCParam->GetZeroSup();
-
-
-  AliTPCParam * par =fTPCParam;
-
-  //Loop over segments of the TPC
-  for (Int_t n=0; n<nentries; n++) {
-    
-    for (Int_t i=0;i<nin; i++){ 
-      //connect proper digits
-      intree[i].GetEvent(n);      
-      digarr[i]->ExpandBuffer();
-      digarr[i]->ExpandTrackBuffer();
-    }      
-    Int_t sec, row;
-    if (!par->AdjustSectorRow(digarr[0]->GetID(),sec,row)) {
-      cerr<<"AliTPC warning: invalid segment ID ! "<<digarr[0]->GetID()<<endl;
-      continue;
-    }
-
-    AliSimDigits * digrow =(AliSimDigits*) arr->CreateRow(sec,row);
-    Int_t nrows = digrow->GetNRows();
-    Int_t ncols = digrow->GetNCols();
-
-    digrow->ExpandBuffer();
-    digrow->ExpandTrackBuffer();
-   
-    for (Int_t rows=0;rows<nrows; rows++){
-      for (Int_t col=0;col<ncols; col++){
-        Float_t q=0;
-        Int_t label[1000]; // i hope no more than 300 events merged
-        Int_t labptr = 0;
-        // looop over digits
-        for (Int_t i=0;i<nin; i++){ 
-          q  += digarr[i]->GetDigitFast(rows,col);
-          for (Int_t tr=0;tr<3;tr++) {
-            Int_t lab = digarr[i]->GetTrackIDFast(rows,col,tr);
-            if ( lab > 1) {
-              label[labptr]=lab+mask[i]-2;
-              labptr++;
-            }
-          }
-        }
-        //add noise
-        q = gRandom->Gaus(q,fTPCParam->GetNoise()*fTPCParam->GetNoiseNormFac()*16); 
-        
-        q/=16;  //conversion faktor
-        q=(Short_t)q;
-
-        if (q> zerosup){
-
-          if(q > fTPCParam->GetADCSat()) q = fTPCParam->GetADCSat();
-          digrow->SetDigitFast((Short_t)q,rows,col);  
-          for (Int_t tr=0;tr<3;tr++){
-            if (tr<labptr)
-              ((AliSimDigits*)digrow)->SetTrackIDFast(label[tr],rows,col,tr);
-            else
-              ((AliSimDigits*)digrow)->SetTrackIDFast(-1,rows,col,tr);
-          }
-        }
-      } 
-     }         
-      arr->StoreRow(sec,row);
-
-      arr->ClearRow(sec,row);   
- 
-  }  
-  
-  delete digarr;
-  arr->GetTree()->SetName(dname); 
-  arr->GetTree()->Write(); 
- 
-  delete arr;  
-  
-}
-
-/*_________________________________________
-void AliTPC::SDigits2Digits(Int_t eventnumber)
-{
-
-
-  cerr<<"Digitizing TPC...\n";
-
-  Hits2Digits(eventnumber);
-   
-    
-  //write results
-
-  //  char treeName[100];
-
-  //  sprintf(treeName,"TreeD_%s_%d",fTPCParam->GetTitle(),eventnumber);
-  
-  //  GetDigitsArray()->GetTree()->Write(treeName);  
-}
-*/
 //__________________________________________________________________
 void AliTPC::SetDefaults(){
 

@@ -40,7 +40,7 @@ Int_t ITSFindClusters(Int_t n);
 Int_t ITSFindTracks(const Char_t *inname2, Int_t n);
 Int_t ITSPropagateBack();
 
-const char* TPCtrkNameS= "dupa.root";
+const char* TPCtrkNameS= "TPC.TracksSorted.root";
 
 class AliRunLoader;
 class AliTPCLoader;
@@ -94,7 +94,6 @@ Int_t AliBarrelReconstruction(Int_t n=1)
      }
 //   cout<<"Stopping tracking on TPC\n";
 // ********** Sort and label TPC tracks *********** //
-   rl->TreeE()->Print();
    if (TPCSortTracks(TPCtrkNameS,n)) {
       cerr<<"Failed to sort TPC tracks !\n";
       return 1;
@@ -104,7 +103,6 @@ Int_t AliBarrelReconstruction(Int_t n=1)
 
    
 // ********** Find ITS clusters *********** //
-   rl->TreeE()->Print();
    if (ITSFindClusters(n)) 
     {
       cerr<<"Failed to get ITS clusters !\n";
@@ -258,17 +256,12 @@ Int_t TPCSortTracks(const Char_t * outname,  Int_t eventn){
    gBenchmark->Start(name);
    
  
-   cout<<"************************************\n";   
-   cout<<" Loading tmp\n";
    AliRunLoader* rl2 = AliRunLoader::Open("galice.root","tmp");
-//   AliRunLoader* rl2 = (AliRunLoader*)rl->Clone();
-//   rl2->SetEventFolderName("tmp");
    
    AliLoader* tpcl2 = (AliTPCLoader*)rl2->GetLoader("TPCLoader");
    cout<<"tpcl2->SetTracksFileName("<<outname<<");\n";
    tpcl2->SetTracksFileName(TString(outname));
    tpcl2->LoadTracks("recreate");
-   //tpcl2->MakeTree("T");
    
    // loop over events 
    for (Int_t event=0;event<eventn; event++)
@@ -277,9 +270,6 @@ Int_t TPCSortTracks(const Char_t * outname,  Int_t eventn){
      rl->GetEvent(event);
      rl2->GetEvent(event);
 
-     cout<<"1: address = "<<tpcl<<"  EFN: "<<tpcl->GetEventFolder()->GetName()<<endl;
-     cout<<"2: address = "<<tpcl2<<"  EFN: "<<tpcl2->GetEventFolder()->GetName()<<endl;
-     
      TObjArray tarray(10000);
      AliTPCtrack *iotrack=0;
      Int_t i;
@@ -342,12 +332,6 @@ Int_t TPCSortTracks(const Char_t * outname,  Int_t eventn){
      tpcl2->WriteTracks("OVERWRITE");
    }
   
-   cout<<"rl2->GetEventFolder()->GetName() "<<rl2->GetEventFolder()->GetName()<<endl;
-
-   rl->TreeE()->Print();
-   cout<<"1:TE address = "<<rl->TreeE()<<endl;
-   cout<<"2:TE address = "<<rl2->TreeE()<<endl;
-   
 
    delete rl2;
 

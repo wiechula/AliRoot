@@ -133,7 +133,6 @@ public:
    void SetHitType(Int_t type){fHitType =type;} //set type of hit container
    void SetDigitsSwitch(Int_t sw){fDigitsSwitch = sw;}
    void SetDefSwitch(Int_t def){fDefaults = def;}
-   virtual void  Merge(TTree * intree, Int_t *mask, Int_t nin, Int_t outid);
    Float_t GetNoise();  //get Current noise  
    void    GenerNoise(Int_t tablasize);  // make noise table
    Bool_t  IsSectorActive(Int_t sec);    // check if the sector is active
