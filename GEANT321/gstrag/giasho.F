@@ -2,6 +2,12 @@
 * $Id$
 *
 * $Log$
+* Revision 1.2  2002/05/13 12:40:58  hristov
+* Dummy subroutines to avoid files with no code in
+*
+* Revision 1.1.1.1  1999/05/18 15:55:20  fca
+* AliRoot sources
+*
 * Revision 1.1.1.1  1995/10/24 10:21:37  cernlib
 * Geant
 *
@@ -142,5 +148,8 @@ C-----------------------------------------------------------------------
    80 CONTINUE
       NLEFT = 2*NSMED - 100
       CALL MZPUSH(IXCONS,JASHO,0,NLEFT,'I')
+      END
+#else
+      SUBROUTINE GIASHO_DUMMY
       END
 #endif
