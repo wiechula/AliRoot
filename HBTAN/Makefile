@@ -20,12 +20,11 @@ SRCS          = AliHBTAnalysis.cxx AliHBTFunction.cxx \
                 AliHBTQResolutionFctns.cxx AliHBTReaderPPprod.cxx\
 		AliHBTReaderITSv1.cxx AliHBTReaderITSv2.cxx\
 		AliHBTReaderKineTree.cxx AliHBTReaderInternal.cxx\
-		AliHBTTwoTrackEffFctn.cxx \
-		AliHBTLLWeights.cxx AliHBTLLWeightFctn.cxx
+		AliHBTTwoTrackEffFctn.cxx
 
 # Fortran sources
 
-FSRCS	       = fsiini.F fsiw.F led_bldata.F ltran12.F
+FSRCS	       = 
 
 # C++ Headers
 

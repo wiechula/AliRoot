@@ -76,7 +76,6 @@ ClassImp(AliEMCALSDigitizer)
 {
   // ctor
   InitParameters() ; 
-  fDefaultInit = kTRUE ; 
 }
 
 //____________________________________________________________________________ 
@@ -85,18 +84,15 @@ AliEMCALSDigitizer::AliEMCALSDigitizer(const char* headerFile, const char *sDigi
   // ctor
   InitParameters() ; 
   Init();
-  fDefaultInit = kFALSE ; 
 }
 
 //____________________________________________________________________________ 
 AliEMCALSDigitizer::~AliEMCALSDigitizer()
 {
   // dtor
-  // fDefaultInit = kTRUE if SDigitizer created by default ctor (to get just the parameters)
   
-  if (!fDefaultInit) {
-    AliEMCALGetter * gime = AliEMCALGetter::GetInstance() ; 
-    
+  AliEMCALGetter * gime = AliEMCALGetter::GetInstance() ; 
+  if (gime) {
     // remove the task from the folder list
     gime->RemoveTask("S",GetName()) ;
     

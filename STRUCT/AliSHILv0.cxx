@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.17  2001/11/17 01:29:21  morsch
-Obsolete and wrong volume YXO5 removed.
-
 Revision 1.16  2001/11/16 08:57:42  morsch
 Volume YP32 obsolete.
 
@@ -348,6 +345,7 @@ enum {kC=1705, kAl=1708, kFe=1709, kCu=1710, kW=1711, kPb=1712,
 
   Float_t r2  = par1[37];
   Float_t rBox= par1[31]-0.1;
+  Float_t rc1 = par1[7];
 
   gMC->Gsvolu("YGO1", "PCON", idtmed[kNiCuW], par1, 39);
   Int_t i;
@@ -376,10 +374,6 @@ enum {kC=1705, kAl=1708, kFe=1709, kCu=1710, kW=1711, kPb=1712,
 //
 // Bellow 1
 //
-
-//
-// Bellow 1
-//
   tpar[0]=rB1;
   tpar[1]=rB1+hB1;
   tpar[2]=eB1/2.;
@@ -401,10 +395,10 @@ enum {kC=1705, kAl=1708, kFe=1709, kCu=1710, kW=1711, kPb=1712,
 
   tpar[0]=0;
   tpar[1]=rB1+hB1;
-  tpar[2]=-lB1/2.;
+  tpar[2]=lB1/2.;
   gMC->Gsvolu("YBU1", "TUBE", idtmed[kVacuum+40], tpar, 3);
 
-  dz=-lB1/2.+dl3;
+  dz=-tpar[2]+dl3;
   gMC->Gspos("YB13", 1, "YBU1", 0., 0., dz, 0, "ONLY"); 
   dz+=dl3;
   dz+=dl1;  
@@ -422,20 +416,26 @@ enum {kC=1705, kAl=1708, kFe=1709, kCu=1710, kW=1711, kPb=1712,
 
   tpar[0]=0;
   tpar[1]=rB1+hB1+0.5;
-  tpar[2]=12.*lB1/2.;
+  tpar[2]=10.*lB1/2.;
   gMC->Gsvolu("YBM1", "TUBE", idtmed[kVacuum+40], tpar, 3);
-  gMC->Gsdvn("YB1S", "YBM1", 12 , 3);
-
   Float_t bsize = tpar[2];
   tpar[0]=rB1+hB1;
-  tpar[2]=-lB1/2.;
   gMC->Gsvolu("YBI1", "TUBE", idtmed[kInsulation+40], tpar, 3);
+  gMC->Gspos("YBI1", 2, "YBM1", 0., 0., 0., 0, "ONLY"); 
 
-  gMC->Gspos("YBI1", 1, "YB1S", 0., 0., 0., 0, "ONLY"); 
-  gMC->Gspos("YBU1", 1, "YB1S", 0., 0., 0., 0, "ONLY"); 
+  dz=-bsize+lB1/2.;
 
-  dz=-dl+(zvac1-zstart)+dr11/2.+bsize;
+  for (i=0; i<10; i++) {
+    gMC->Gspos("YBU1", i+1 , "YBM1", 0., 0., dz, 0, "ONLY"); 
+    dz+=lB1;
+  }
+
+  dz=-dl+(zvac1-zstart)+dr11+bsize;
   gMC->Gspos("YBM1", 1, "YMO1", 0., 0., dz, 0, "ONLY"); 
+
+  dz=dl-dr13-(zvac4-zvac3)-bsize;
+  gMC->Gspos("YBM1", 2, "YMO1", 0., 0., dz, 0, "ONLY"); 
+
 
 //
 // Flange
@@ -459,7 +459,7 @@ enum {kC=1705, kAl=1708, kFe=1709, kCu=1710, kW=1711, kPb=1712,
   gMC->Gspos("YF11", 1, "YFM1", 0., 0., 0., 0, "ONLY"); 
   gMC->Gspos("YF12", 1, "YFM1", 0., 0., 0., 0, "ONLY"); 
 
-  dz=-dl+(zvac1-zstart)+dr11/2.+2.*bsize+dF1/2.+3.;
+  dz=-dl+(zvac2-zstart);
   gMC->Gspos("YFM1", 2, "YMO1", 0., 0., dz, 0, "ONLY"); 
 
 //
@@ -468,7 +468,7 @@ enum {kC=1705, kAl=1708, kFe=1709, kCu=1710, kW=1711, kPb=1712,
 // Steel 
   tpar[0]=rB1-dTubeS;
   tpar[1]=rB1+0.6;
-  tpar[2]=1.5;
+  tpar[2]=2.*(dB1+dr12-10.*lB1)/4.;
   gMC->Gsvolu("YPF1", "TUBE", idtmed[kSteel+40], tpar, 3);
 // Insulation
   tpar[0]=rB1;
@@ -476,11 +476,10 @@ enum {kC=1705, kAl=1708, kFe=1709, kCu=1710, kW=1711, kPb=1712,
   gMC->Gsvolu("YPS1", "TUBE", idtmed[kInsulation+40], tpar, 3);
   gMC->Gspos("YPS1", 1, "YPF1", 0., 0., 0., 0, "ONLY"); 
 
-  dz=dz-1.5-dF1/2.;
+  dz=-dl+(zvac2-zstart)-dF1/2.-tpar[2];
   gMC->Gspos("YPF1", 1, "YMO1", 0., 0., dz, 0, "ONLY"); 
-  dz=dz+3.0+dF1;
+  dz=-dl+(zvac2-zstart)+dF1/2.+tpar[2];
   gMC->Gspos("YPF1", 2, "YMO1", 0., 0., dz, 0, "ONLY"); 
-//
 
 // Pipe+Heating     1.5 mm 
 // Heating Jacket   5.0 mm
@@ -490,7 +489,7 @@ enum {kC=1705, kAl=1708, kFe=1709, kCu=1710, kW=1711, kPb=1712,
 // pipe and heating jackets outside bellows
 //
 // left side
-  cpar0[0]=(zvac1+dr11/2.-zstart)/2;
+  cpar0[0]=(zvac1+dr11-zstart)/2;
   cpar0[1]=rVacu-0.05  +(zstart-zOpen)*TMath::Tan(thetaOpen1);
   cpar0[2]=rVacu+0.7   +(zstart-zOpen)*TMath::Tan(thetaOpen1);
   cpar0[3]=cpar0[1]+2.*cpar0[0]*TMath::Tan(thetaOpen1);
@@ -532,7 +531,6 @@ enum {kC=1705, kAl=1708, kFe=1709, kCu=1710, kW=1711, kPb=1712,
 
   dz=dl-cpar0[0];
   gMC->Gspos("YV12", 1, "YMO1", 0., 0., dz, 0, "ONLY"); 
-
 //
 // Second Section
 // Between first and second bellow section

@@ -63,10 +63,9 @@ class AliPHOSGetter : public TObject {
   virtual ~AliPHOSGetter() ; 
   
   void CloseFile() ;  
-  const TFolder * Folder(const TString what) const ;
   void ListBranches(Int_t event=0) const ;
   void NewBranch(TString name, Int_t event = 0) ; 
-  Bool_t NewFile(TString name) ;
+  Bool_t AliPHOSGetter::NewFile(TString name) ;
   const Bool_t HasFailed() const { return fFailed ; }
   Bool_t PostPrimaries(void ) const ;  
   Bool_t PostHits(void ) const ;  
@@ -112,14 +111,11 @@ class AliPHOSGetter : public TObject {
 
   // Primaries
   TClonesArray *  Primaries(void) const { return (TClonesArray*)(ReturnO("Primaries")) ; }
- 
   // Hits
-  TTree *               TreeH(TString filename="") ; 
   const TClonesArray *  Hits(void) { return static_cast<const TClonesArray*>(ReturnO("Hits")) ; }
-  const AliPHOSHit *    Hit(Int_t index)  { return static_cast<const AliPHOSHit*>(Hits()->At(index) );}
+  const AliPHOSHit * Hit(Int_t index)  { return static_cast<const AliPHOSHit*>(Hits()->At(index) );}
   
   // SDigits
-  TTree *         TreeS(TString filename="") ; 
   TClonesArray *  SDigits(const char * name = 0, const char * file=0) { 
     return static_cast<TClonesArray*>(ReturnO("SDigits", name, file)) ; 
   }
@@ -130,7 +126,6 @@ class AliPHOSGetter : public TObject {
   }
   
   // Digits
-  TTree *         TreeD(TString filename="") ; 
   TClonesArray *  Digits(const char * name = 0)const  { 
     return static_cast<TClonesArray*>(ReturnO("Digits", name)) ; 
   }
@@ -180,8 +175,7 @@ class AliPHOSGetter : public TObject {
   }
   
   // Primaries
-  TTree *                     TreeK(TString filename="") ; 
-  const TParticle *           Primary(Int_t index) ;
+  const TParticle *           Primary(Int_t index) const ;
   const Int_t                 NPrimaries()const { return fNPrimaries; }
   const TParticle *           Secondary(TParticle * p, Int_t index=1) const ;
   
@@ -244,7 +238,6 @@ private:
   Bool_t         fFailed ;            //! set if file not opend or galice not found
   Int_t          fDebug ;             // Debug level
 
-  AliRun *       fAlice ;             //! needed to read TreeK if in an other file than fHeaderFile
   Int_t          fNPrimaries ;        //! # of primaries
   
   TObjArray *    fPrimaries ;         //! list of lists of primaries-for the case of mixing
@@ -257,7 +250,7 @@ private:
   TFolder *      fRecoFolder ;        //!Folder that contains the reconstructed objects (RecPoints, TrackSegments, RecParticles) 
   TFolder *      fQAFolder ;          //!Folder that contains the QA objects  
   TFolder *      fTasksFolder ;       //!Folder that contains the Tasks (sdigitizer, digitizer, reconstructioner)
-   
+ 
   static AliPHOSGetter * fgObjGetter; // pointer to the unique instance of the singleton 
 
   ClassDef(AliPHOSGetter,1)  // Algorithm class that provides methods to retrieve objects from a list knowing the index 

@@ -20,7 +20,7 @@ public:
   AliV0vertex();
   AliV0vertex(const AliITStrackV2 &neg, const AliITStrackV2 &pos);
 
-  Double_t ChangeMassHypothesis(Int_t code=kK0Short); 
+  void ChangeMassHypothesis(Int_t code=kLambda0); 
 
   Int_t GetPdgCode() const {return fPdgCode;}
   Double_t GetEffMass() const {return fEffMass;}

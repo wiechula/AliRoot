@@ -619,6 +619,7 @@ gtrak/gpgkin.F \
 gtrak/gpjxyz.F \
 gtrak/granor.F \
 gtrak/grkuta.F \
+gtrak/grndmq.F \
 gtrak/gsking.F \
 gtrak/gskpho.F \
 gtrak/gsstak.F \
@@ -952,11 +953,7 @@ gcinit.F \
 SRCS=comad/gcadd.cxx 
  
 ifeq ($(PLATFORM),linux)
-   GCC_MAJOR    := $(shell $(CXX) -v 2>&1 | \
-                     grep version | cut -d' ' -f3  | cut -d'.' -f1)
-   ifneq ($(GCC_MAJOR),3)
-      PACKFFLAGS      := $(filter-out -O%,$(FFLAGS))
-   endif
+   PACKFFLAGS      := $(filter-out -O%,$(FFLAGS))  
 endif
 
 

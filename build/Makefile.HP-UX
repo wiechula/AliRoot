@@ -5,19 +5,19 @@ PLATFORM:= hpux
 # The compilers
 CXX           = aCC
 F77	      = f77
-CC	      = cc
+CC	      = aCC
 
 # Global optimisation
 OPT           = -O
 
-CXXOPTS       = $(OPT) -Wc,-ansi_for_scope,on +Z -z +W70,495,740,749,823,829 -Dextname
-COPT          = $(OPT) +Z -Ae
+CXXOPTS       = $(OPT) -Aa  +Z -z +W70,495,740,749,823,829 -Dextname
+COPT          = $(OPT)
 FOPT          = $(OPT) +ppu +Z
 
 
 
 CXXFLAGS      = $(CXXOPTS)
-CFLAGS	      = $(COPT)
+CFLAGS	      = #-Wall -fPIC -pipe
 
 # rootcint flags
 CINTFLAGS     = #$(CXXFLAGS)
@@ -38,17 +38,25 @@ LDFLAGS       = $(OPT) -z -Wl,+s -Wl,-E
 SHLD	      = $(LD)
 SOFLAGS       = -b /usr/lib/libm.sl 
 
+LIBS          = $(ROOTLIBS)
+GLIBS         = $(ROOTLIBS) -L/usr/lib/X11R6 -lX11 
+
 SOEXT 	      = sl
 
 # additional ROOT libraries
-ROOTLIBS  += -lcrypt 
+ROOTLIBS  += -lEGPythia6 -lcrypt 
 
 # rmkdepend flags for building dependencies of FORTRAN files
 DEPENDFFLAGS = $(FFLAGS)
 
-GLIBS         = -L/usr/lib/X11R6 -lX11 
 
-# System libraries
+LIBS          = $(ROOTLIBS)
+GLIBS         = $(ROOTLIBS) -L/usr/lib/X11R6 -lX11 
+
+#System libraries
+#SYSLIBS = -ldl -lbsd
+
+#EXEFLAGS+= -lg2c
 
 
 

@@ -1,38 +1,29 @@
-
-############################### THerwig6 Makefile ##############################
+############################### CASTOR Makefile ###############################
 
 # Include machine specific definitions
 
 include $(ALICE_ROOT)/conf/GeneralDef
 include $(ALICE_ROOT)/conf/MachineDef.$(ALICE_TARGET)
 
-PACKAGE = THerwig6
-
-# FORTRAN sources
-
-FSRCS	     = 
+PACKAGE = CASTOR
 
 # C++ sources
 
-SRCS          = THerwig6.cxx 
+SRCS          = AliCASTOR.cxx
 
 # C++ Headers
 
-HDRS          = $(SRCS:.cxx=.h) THerwig6LinkDef.h
+HDRS          = $(SRCS:.cxx=.h) CASTORLinkDef.h
 
 # Library dictionary
 
-DICT          = THerwig6Cint.cxx
+DICT          = CASTORCint.cxx
 DICTH         = $(DICT:.cxx=.h)
 DICTO         = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(DICT))
 
-# Objects
-
-OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(FOBJS) $(DICTO)
-
 # FORTRAN Objectrs
 
-FOBJS         = $(patsubst %.F,tgt_$(ALICE_TARGET)/%.o,$(FSRCS))
+FOBJS         = $(FSRCS:.f=.o)
 
 # C Objects
 
@@ -54,18 +45,16 @@ FFLAGS      = $(FOPT)
  
 # Target
 
-SLIBRARY	= $(LIBDIR)/libTHerwig6.$(SL)
-ALIBRARY	= $(LIBDIR)/libTHerwig6.a
+SLIBRARY	= $(LIBDIR)/libCASTOR.$(SL)
+ALIBRARY	= $(LIBDIR)/libCASTOR.a
 
 default:	$(SLIBRARY)
 
-$(LIBDIR)/libTHerwig6.$(SL):		$(OBJS)
+$(LIBDIR)/libCASTOR.$(SL):		$(OBJS)
 
 $(DICT):				$(HDRS)
 
-depend:			$(SRCS) $(FSRCS)
-
-HEADERS		= THerwig6.h
+depend:					$(SRCS)
 
 TOCLEAN		= $(OBJS) *Cint.cxx *Cint.h
 
@@ -78,18 +67,6 @@ include $(ALICE_ROOT)/conf/GeneralMacros
 ############################ Dependencies #####################################
 
 -include tgt_$(ALICE_TARGET)/Make-depend 
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

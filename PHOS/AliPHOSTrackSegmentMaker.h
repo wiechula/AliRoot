@@ -17,7 +17,7 @@
 class TFile ; 
 
 // --- Standard library ---
-#include <iostream.h>
+#include <iostream>
 
 // --- AliRoot header files ---
 

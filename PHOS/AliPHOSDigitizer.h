@@ -67,8 +67,6 @@ public:
 
   //General
   const Int_t   GetDigitsInRun()  const { return fDigitsInRun ;}  
-  const TString GetHitsFileName() const { return fHitsFileName ; }
-  const TString GetSDigitsFileName() const { return fSDigitsFileName ; }
 
   void    MixWith(const char* HeaderFile) ; // Add another one file to mix
   void    Print(Option_t* option)const ;
@@ -96,9 +94,6 @@ private:
 
 private:
 
-  TString fHitsFileName ;           // file name that contains the original hits
-  TString fSDigitsFileName ;        // file name that contains the original SDigits
-  Bool_t  fDefaultInit;             //! Says if the task was created by defaut ctor (only parameters are initialized)
   Int_t   fEmcCrystals ;            // Number of EMC crystalls in the given geometry
 
   Float_t fPinNoise ;               // Electronics noise in EMC

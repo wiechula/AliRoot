@@ -261,9 +261,6 @@ AliTRDdigitizer *InitTRDdigitizer() {
 
   sdTRD->SetParameter(TRDparam);
   sdTRD->InitDetector();
-  if (!sdTRD->MakeBranch()) {
-    cerr<<"Problems with TRD digitizer initialization."<<endl;
-  }
   return sdTRD;
 }
 ////////////////////////////////////////////////////////////////////////

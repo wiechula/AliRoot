@@ -18,16 +18,6 @@ else
 @PACKAGE@CXXFLAGS:=$(PACKCXXFLAGS)
 endif
 
-ifndef PACKDCXXFLAGS
-ifeq ($(PLATFORM),linuxicc)
-@PACKAGE@DCXXFLAGS:=$(filter-out -O%,$(CXXFLAGS)) -O0
-else
-@PACKAGE@DCXXFLAGS:=$(filter-out -O%,$(CXXFLAGS))
-endif
-else
-@PACKAGE@DCXXFLAGS:=$(PACKCXXFLAGS)
-endif
-
 
 ifdef DHDR
 WITHDICT=YES
@@ -146,19 +136,13 @@ $(@PACKAGE@LIB):$(@PACKAGE@O) $(@PACKAGE@DO) @MODULE@/module.mk
 ifndef ALIQUIET
 	  @echo "***** Linking library $@ *****"
 endif
-	  $(MUTE)TMPDIR=/tmp/@MODULE@$$$$.`date +%M%S` ; \
-	  export TMPDIR; mkdir $$TMPDIR ; cd $$TMPDIR ; \
-	  find $(CURDIR)/@MODULE@/tgt_$(ALICE_TARGET) -name '*.o' -exec ln -s {} . \; ;\
-      rm -f $(CURDIR)/$@ ;\
-	  $(SHLD) $(SOFLAGS) $(@PACKAGE@ELIBSDIR) $(@PACKAGE@ELIBS) -o $(CURDIR)/$@ $(notdir $(@PACKAGE@O) $(@PACKAGE@DO)) $(SHLIB) ;\
-      cd $(CURDIR) ; rm -rf $$TMPDIR
-	  $(MUTE)chmod a-w $@
-
+	  $(MUTE)$(SHLD) $(SOFLAGS) $(@PACKAGE@ELIBSDIR) $(@PACKAGE@ELIBS)  -o $@ $(@PACKAGE@O) $(@PACKAGE@DO) $(SHLIB)
+ 
 $(@PACKAGE@BIN):$(@PACKAGE@O) $(@PACKAGE@DO) @MODULE@/module.mk
 ifndef ALIQUIET
 	  @echo "***** Making executable $@ *****"
 endif
-	  $(MUTE)$(LD) $(LDFLAGS) $(@PACKAGE@O) $(@PACKAGE@DO) $(BINLIBDIRS) $(@PACKAGE@ELIBS) $(LIBS) $(EXEFLAGS) -o $@ 
+	  $(MUTE)$(LD) $(LDFLAGS) $(@PACKAGE@O) $(@PACKAGE@DO) $(BINLIBDIRS) $(LIBS) $(@PACKAGE@ELIBS) $(EXEFLAGS) -o $@ 
 
 $(@PACKAGE@DS): $(@PACKAGE@CINTHDRS) $(@PACKAGE@DH) @MODULE@/module.mk
 ifndef ALIQUIET
@@ -171,7 +155,7 @@ $(@PACKAGE@DO): $(@PACKAGE@DS)
 ifndef ALIQUIET
 		@echo "***** Compiling $< *****";
 endif
-		$(MUTE)$(CXX) -c $(@PACKAGE@INC)  -I$(ALICE_ROOT) $< -o $@ $(@PACKAGE@DCXXFLAGS)
+		$(MUTE)$(CXX) -c $(@PACKAGE@INC)  -I$(ALICE_ROOT) $< -o $@ $(@PACKAGE@CXXFLAGS)
 
 #Different targets for the module
 
@@ -180,13 +164,6 @@ all-@PACKAGE@: $(@PACKAGE@LIB)
 depend-@PACKAGE@: $(@PACKAGE@DEP)
 
 # determination of object files
-$(MODDIRO)/%.o: $(MODDIRO)/%.cxx $(MODDIRO)/%.d 
-ifndef ALIQUIET
-	@echo "***** Compiling $< *****";
-endif
-	@(if [ ! -d '$(dir $@)' ]; then echo "***** Making directory $(dir $@) *****"; mkdir -p $(dir $@); fi;)
-	$(MUTE)$(CXX) $(@PACKAGE@DEFINE) -c $(@PACKAGE@INC)   $< -o $@ $(@PACKAGE@CXXFLAGS)
-
 $(MODDIRO)/%.o: $(MODDIR)/%.cxx $(MODDIRO)/%.d 
 ifndef ALIQUIET
 	@echo "***** Compiling $< *****";

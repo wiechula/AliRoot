@@ -37,7 +37,6 @@
 #pragma link C++ class  AliGenPMDlib+;
 #pragma link C++ class  AliGenSTRANGElib+;
 #pragma link C++ class  AliGenHijingEventHeader+;
-#pragma link C++ class  AliGenHerwig+;
 #pragma link C++ class  AliGenPythiaEventHeader+;
 #pragma link C++ class  AliGenHijing+;
 #pragma link C++ class  AliDecayer+;
@@ -56,8 +55,6 @@
 #pragma link C++ class  AliGeVSimParticle+;
 #pragma link C++ class  AliGenBeamGas+;
 #pragma link C++ class  AliGenAfterBurnerFlow+;
-#pragma link C++ class  AliPartonicEnergyLoss+;
-#pragma link C++ class  AliStructFuncType+;
 #endif
 
 

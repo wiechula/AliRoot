@@ -31,9 +31,11 @@ void AliITSSD2D(TString inFile, TString outFile){
     file2 = new TFile(outFile,"UPDATE");
     writeAR(file,file2);
   }
+  delete dITS;
   delete manager;
   if(file){
-    file->Write();
+    file->Close();
+    delete file;
   }
   if(file2){
     file2->Close();

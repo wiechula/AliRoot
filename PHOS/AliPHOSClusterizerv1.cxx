@@ -90,7 +90,6 @@ ClassImp(AliPHOSClusterizerv1)
   // default ctor (to be used mainly by Streamer)
   
   InitParameters() ; 
-  fDefaultInit = kTRUE ; 
 }
 
 //____________________________________________________________________________
@@ -106,7 +105,6 @@ AliPHOSClusterizerv1::AliPHOSClusterizerv1(const char* headerFile,const char* na
   else
     fFrom = from ; 
   Init() ;
-  fDefaultInit = kFALSE ; 
 
 }
 
@@ -114,27 +112,23 @@ AliPHOSClusterizerv1::AliPHOSClusterizerv1(const char* headerFile,const char* na
   AliPHOSClusterizerv1::~AliPHOSClusterizerv1()
 {
   // dtor
-  // fDefaultInit = kTRUE if Clusterizer created by default ctor (to get just the parameters)
 
  
-  if (!fDefaultInit) {
-    AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
-    
-  // remove the task from the folder list
-    gime->RemoveTask("C",GetName()) ;
-    
-    // remove the data from the folder list
-    TString name(GetName()) ; 
-    name.Remove(name.Index(":")) ; 
-    gime->RemoveObjects("D", name) ;  //  Digits
-    gime->RemoveObjects("RE", name) ; // EMCARecPoints
-    gime->RemoveObjects("RC", name) ; // CPVRecPoints
-    
-    // Delete gAlice
-    gime->CloseFile() ; 
-    
-    fSplitFile = 0 ; 
-  }
+ AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+
+ // remove the task from the folder list
+ gime->RemoveTask("C",GetName()) ;
+
+ // remove the data from the folder list
+ TString name(GetName()) ; 
+ name.Remove(name.Index(":")) ; 
+ gime->RemoveObjects("D", name) ;  //  Digits
+ gime->RemoveObjects("RE", name) ; // EMCARecPoints
+ gime->RemoveObjects("RC", name) ; // CPVRecPoints
+
+ // Delete gAlice
+ gime->CloseFile() ; 
+
 }
 
 //____________________________________________________________________________

@@ -7,12 +7,9 @@
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
-
-#pragma link C++ class  AliCRT+;
-#pragma link C++ class  AliCRTConstants+;
-#pragma link C++ class  AliCRTv0+;
-#pragma link C++ class  AliCRTdigit+;
-#pragma link C++ class  AliCRThit+;
-
+ 
+#pragma link C++ class  AliCASTOR+;
+#pragma link C++ class  AliCASTORv1+;
+#pragma link C++ class  AliCASTORhit+;
 
 #endif

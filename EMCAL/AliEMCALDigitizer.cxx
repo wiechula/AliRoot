@@ -70,8 +70,6 @@
 
 #include "AliRun.h"
 #include "AliHeader.h"
-#include "AliStream.h"
-#include "AliRunDigitizer.h"
 #include "AliEMCALDigit.h"
 #include "AliEMCALHit.h"
 #include "AliEMCALTick.h"
@@ -80,6 +78,7 @@
 #include "AliEMCALSDigitizer.h"
 #include "AliEMCALGeometry.h"
 #include "AliEMCALGetter.h"
+#include "AliRunDigitizer.h"
 ClassImp(AliEMCALDigitizer)
 
 
@@ -89,10 +88,6 @@ ClassImp(AliEMCALDigitizer)
   // ctor
 
   InitParameters() ; 
-  fDefaultInit = kTRUE ; 
- 
-  fHitsFileName    = "" ;
-  fSDigitsFileName = "" ; 
 
 }
 
@@ -105,51 +100,38 @@ AliEMCALDigitizer::AliEMCALDigitizer(const char *headerFile,const char *name)
   fSplitFile= 0 ; 
   InitParameters() ; 
   Init() ;
-  fDefaultInit = kFALSE ; 
-  fSDigitsFileName = headerFile ; 
-  AliEMCALGetter * gime = AliEMCALGetter::GetInstance() ; 
-  gime->Event(0, "S") ; 
-  fHitsFileName = gime->SDigitizer()->GetTitle() ; 
+
 }
 
 //____________________________________________________________________________ 
 AliEMCALDigitizer::AliEMCALDigitizer(AliRunDigitizer * ard):AliDigitizer(ard)
 {
   // ctor
-  SetName("Default");    
+  SetName("");     //Will call init in the digitizing
   SetTitle("aliroot") ;  
-  fDefaultInit = kFALSE ; 
-  
-  fSDigitsFileName = fManager->GetInputFileName(0, 0) ;
-  AliEMCALGetter * gime = AliEMCALGetter::GetInstance(fSDigitsFileName, GetName()) ; 
-  gime->Event(0,"S") ; 
-  fHitsFileName = gime->SDigitizer()->GetTitle() ; 
 }
 
 //____________________________________________________________________________ 
   AliEMCALDigitizer::~AliEMCALDigitizer()
 {
   // dtor
-  // fDefaultInit = kTRUE if Digitizer created by default ctor (to get just the parameters)
-  
-  if (!fDefaultInit) {
-    AliEMCALGetter * gime = AliEMCALGetter::GetInstance() ; 
-    
-    // remove the task from the folder list
-    gime->RemoveTask("S",GetName()) ;
-    gime->RemoveTask("D",GetName()) ;
-    
-    // remove the Digits from the folder list
-    gime->RemoveObjects("D", GetName()) ;
-    
-    // remove the SDigits from the folder list
-    gime->RemoveSDigits() ;
-    
-    // Delete gAlice
-    gime->CloseFile() ; 
-    
-    fSplitFile = 0 ; 
-  }
+ 
+  AliEMCALGetter * gime = AliEMCALGetter::GetInstance() ; 
+
+  // remove the task from the folder list
+  gime->RemoveTask("S",GetName()) ;
+  gime->RemoveTask("D",GetName()) ;
+
+  // remove the Digits from the folder list
+  gime->RemoveObjects("D", GetName()) ;
+
+  // remove the SDigits from the folder list
+  gime->RemoveSDigits() ;
+
+  // Delete gAlice
+  gime->CloseFile() ; 
+
+  fSplitFile = 0 ; 
 }
 
 //____________________________________________________________________________ 
@@ -173,6 +155,16 @@ void AliEMCALDigitizer::InitParameters()
 
   fTimeThreshold = 0.001*10000000 ; //Means 1 MeV in terms of SDigits amplitude
  
+
+
+  if(fManager)
+    SetTitle("aliroot") ;
+  else if (strcmp(GetTitle(),"")==0) 
+    SetTitle("galice.root") ;
+  
+  if( strcmp(GetName(), "") == 0 )
+    SetName("Default") ;
+  
 }
 
 //____________________________________________________________________________ 
@@ -252,7 +244,7 @@ void AliEMCALDigitizer::Digitize(const Int_t event) {
   TClonesArray * sdigits = 0 ;
   Int_t input = 0 ;
   TObjArray * sdigArray = new TObjArray(2) ;
-  while ( (folder = (TFolder*)next()) ) {
+  while ( (folder = (TFolder*)next()) ) 
     if ( (sdigits = (TClonesArray*)folder->FindObject(GetName()) ) ) {
       TString fileName(folder->GetName()) ;
       fileName.ReplaceAll("_","/") ;
@@ -261,7 +253,7 @@ void AliEMCALDigitizer::Digitize(const Int_t event) {
       sdigArray->AddAt(sdigits, input) ;
       input++ ;
     }
-  }
+
 
   //Find the first tower with signal
   Int_t nextSig = 200000 ; 
@@ -557,42 +549,31 @@ if( strcmp(GetName(), "") == 0 )
  
 //__________________________________________________________________
 void AliEMCALDigitizer::Print(Option_t* option)const {
- 
   if( strcmp(GetName(), "") != 0) {
     
     cout << "------------------- "<< GetName() << " -------------" << endl ;
-    const Int_t nStreams = GetNInputStreams() ; 
-    if (nStreams) {
-      Int_t index = 0 ;  
-      for (index = 0 ; index < nStreams ; index++)  
-	cout << "Adding SDigits " << GetName() << " from " <<  fManager->GetInputFileName(index, 0) << endl ; 
-      
-      cout << endl ;
-      cout << "Writing digits to " <<   fManager->GetInputFileName(0, 0) << endl ;   
-    } else { 
-//       AliEMCALGetter * gime = AliEMCALGetter::GetInstance() ;  
-//       gime->Folder("sdigits")  ;
-//       cout << "Digitizing sDigits from file(s): " <<endl ;
-//       TCollection * folderslist = gime->Folder("sdigits")->GetListOfFolders() ; 
-//       TIter next(folderslist) ; 
-//       TFolder * folder = 0 ; 
-      
-//       while ( (folder = (TFolder*)next()) ) {
-// 	if ( folder->FindObject(GetName())  ) 
-      cout << "Adding SDigits " << GetName() << " from " << GetSDigitsFileName() << endl ; 
-//      }
+    cout << "Digitizing sDigits from file(s): " <<endl ;
+    
+  TCollection * folderslist = ((TFolder*)gROOT->FindObjectAny("Folders/RunMC/Event/Data/EMCAL/SDigits"))->GetListOfFolders() ; 
+    TIter next(folderslist) ; 
+    TFolder * folder = 0 ;
+    while ( (folder = (TFolder*)next()) ) 
+      if ( folder->FindObject(GetName())  ) 
+	{
+	cout << "Adding SDigits " << GetName() << " from " << folder->GetName() << endl ; 
       cout << endl ;
       cout << "Writing digits to " << GetTitle() << endl ;
-    }       
-    cout << endl ;
-    cout << "With following parameters: " << endl ;
-    cout << "     Electronics noise in EMC (fPinNoise) = " << fPinNoise << endl ;
-    cout << "  Threshold  in EMC  (fTowerDigitThreshold) = " << fTowerDigitThreshold  << endl;
-    cout << "  Threshold  in PreShower  (fPreShowerDigitThreshold) = " << fPreShowerDigitThreshold  << endl ; ;
-    cout << "---------------------------------------------------" << endl ;
-  }
-  else
-    cout << "AliEMCALDigitizer not initialized " << endl ;
+      
+      cout << endl ;
+      cout << "With following parameters: " << endl ;
+      cout << "     Electronics noise in EMC (fPinNoise) = " << fPinNoise << endl ;
+      cout << "  Threshold  in EMC  (fTowerDigitThreshold) = " << fTowerDigitThreshold  << endl;
+      cout << "  Threshold  in PreShower  (fPreShowerDigitThreshold) = " << fPreShowerDigitThreshold  << endl ; ;
+      cout << "---------------------------------------------------" << endl ;
+    }
+    else
+      cout << "AliEMCALDigitizer not initialized " << endl ;
+    }
 }
 
 //__________________________________________________________________
@@ -710,8 +691,6 @@ void AliEMCALDigitizer::SetSplitFile(const TString splitFileName)
     cerr << "ERROR: AliEMCALDigitizer::SetSplitFile -> Not yet available in case of merging activated " << endl ;  
     return ; 
   }
-
-  SetTitle(splitFileName) ; 
 
   TDirectory * cwd = gDirectory ;
   if ( !(gAlice->GetTreeDFileName() == splitFileName) ) {

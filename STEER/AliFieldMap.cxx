@@ -15,9 +15,6 @@
 
 /*
 $Log$
-Revision 1.3  2002/02/26 16:13:07  morsch
-Correction in streamer.
-
 Revision 1.2  2002/02/22 14:00:20  morsch
 Protection against replication of fieldmap data in gAlice.
 
@@ -237,7 +234,7 @@ AliFieldMap & AliFieldMap::operator =(const AliFieldMap &magf)
 void AliFieldMap::Streamer(TBuffer &R__b)
 {
    // Stream an object of class AliFieldMap.
-    TVector* save = 0;
+    TVector* save;
     
     if (R__b.IsReading()) {
 	AliFieldMap::Class()->ReadBuffer(R__b, this);

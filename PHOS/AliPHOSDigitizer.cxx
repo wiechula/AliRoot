@@ -71,7 +71,6 @@
 
 #include "AliRun.h"
 #include "AliHeader.h"
-#include "AliStream.h"
 #include "AliRunDigitizer.h"
 #include "AliPHOSDigit.h"
 #include "AliPHOS.h"
@@ -90,70 +89,51 @@ ClassImp(AliPHOSDigitizer)
   // ctor
 
   InitParameters() ; 
-  fDefaultInit = kTRUE ;
- 
-  fHitsFileName    = "" ;
-  fSDigitsFileName = "" ; 
- }
+}
 
 //____________________________________________________________________________ 
 AliPHOSDigitizer::AliPHOSDigitizer(const char *headerFile,const char * name)
 {
   // ctor
-
-  SetTitle(headerFile) ;
   SetName(name) ;
+  SetTitle(headerFile) ;
   fManager = 0 ;                     // We work in the standalong mode
   fSplitFile= 0 ; 
   InitParameters() ; 
   Init() ;
-  fDefaultInit = kFALSE ; 
-  fSDigitsFileName = headerFile ; 
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
-  gime->Event(0, "S") ; 
-  fHitsFileName = gime->SDigitizer()->GetTitle() ; 
+  
 }
 
 //____________________________________________________________________________ 
 AliPHOSDigitizer::AliPHOSDigitizer(AliRunDigitizer * ard):AliDigitizer(ard)
 {
   // ctor
+  SetName("");     //Will call init in the digitizing
   SetTitle("aliroot") ;
-  SetName("Default") ;
-  InitParameters() ; 
-  fDefaultInit = kTRUE ; 
-  
-  fSDigitsFileName = fManager->GetInputFileName(0, 0) ;
-  AliPHOSGetter * gime = AliPHOSGetter::GetInstance(fSDigitsFileName, GetName()) ; 
-  gime->Event(0,"S") ; 
-  fHitsFileName = gime->SDigitizer()->GetTitle() ; 
-  
 }
 
 //____________________________________________________________________________ 
   AliPHOSDigitizer::~AliPHOSDigitizer()
 {
   // dtor
-  // fDefaultInit = kTRUE if Digitizer created by default ctor (to get just the parameters)
-  
-  if (!fDefaultInit) {
-    AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+
  
-   // remove the task from the folder list
-   gime->RemoveTask("S",GetName()) ;
-   gime->RemoveTask("D",GetName()) ;
-   
-   // remove the Digits from the folder list
-   gime->RemoveObjects("D", GetName()) ;
-   
-   // remove the SDigits from the folder list
-   gime->RemoveSDigits() ;
-   
-   // Delete gAlice
-   gime->CloseFile() ; 
-   
-   fSplitFile = 0 ; 
- }
+ AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+
+ // remove the task from the folder list
+ gime->RemoveTask("S",GetName()) ;
+ gime->RemoveTask("D",GetName()) ;
+
+ // remove the Digits from the folder list
+ gime->RemoveObjects("D", GetName()) ;
+
+ // remove the SDigits from the folder list
+ gime->RemoveSDigits() ;
+
+ // Delete gAlice
+ gime->CloseFile() ; 
+
+ fSplitFile = 0 ; 
 }
 
 //____________________________________________________________________________
@@ -173,6 +153,7 @@ void AliPHOSDigitizer::Digitize(const Int_t event)
   digits->Clear() ;
 
   const AliPHOSGeometry *geom = gime->PHOSGeometry() ; 
+
   //Making digits with noise, first EMC
   Int_t nEMC = geom->GetNModules()*geom->GetNPhi()*geom->GetNZ();
   
@@ -199,7 +180,7 @@ void AliPHOSDigitizer::Digitize(const Int_t event)
   TClonesArray * sdigits = 0 ;
   Int_t input = 0 ;
   TObjArray * sdigArray = new TObjArray(2) ;
-  while ( (folder = (TFolder*)next()) ) { 
+  while ( (folder = (TFolder*)next()) ) 
     if ( (sdigits = (TClonesArray*)folder->FindObject(GetName()) ) ) {
       TString fileName(folder->GetName()) ;
       fileName.ReplaceAll("_","/") ;
@@ -208,7 +189,6 @@ void AliPHOSDigitizer::Digitize(const Int_t event)
       sdigArray->AddAt(sdigits, input) ;
       input++ ;
     }
-  }
 
   //Find the first crystall with signal
   Int_t nextSig = 200000 ; 
@@ -400,6 +380,7 @@ void AliPHOSDigitizer::Exec(Option_t *option)
 
   if(strcmp(GetName(), "") == 0 )   
     Init() ;
+  
   if (strstr(option,"print")) {
     Print("");
     return ; 
@@ -459,17 +440,15 @@ void AliPHOSDigitizer::Exec(Option_t *option)
   for(ievent = 0; ievent < nevents; ievent++){
   
     if(fManager){
-
       Int_t input ;
       for(input = 0 ; input < fManager->GetNinputs(); input ++){
   	TTree * treeS = fManager->GetInputTreeS(input) ;
 	if(!treeS){
-	  cerr << "AliPHOSDigitizer::Exec -> No Input " << endl ;
+	  cerr << "AliPHOSDigitizer -> No Input " << endl ;
 	  return ;
 	}
 	gime->ReadTreeS(treeS,input) ;
       }
-
     }
     else
       gime->Event(ievent,"S") ;
@@ -526,7 +505,6 @@ Bool_t AliPHOSDigitizer::Init()
   } 
   
   const AliPHOSGeometry * geom = gime->PHOSGeometry() ;
-
   fEmcCrystals = geom->GetNModules() *  geom->GetNCristalsInModule() ;
   
   // Post Digits to the white board
@@ -563,6 +541,13 @@ void AliPHOSDigitizer::InitParameters()
 
   fTimeThreshold = 0.001*10000000 ; //Means 1 MeV in terms of SDigits amplitude
     
+  if(fManager)
+    SetTitle("aliroot") ;
+  else if (strcmp(GetTitle(),"")==0) 
+   SetTitle("galice.root") ;
+
+  if( strcmp(GetName(), "") == 0 )
+    SetName("Default") ;
 }
 
 //__________________________________________________________________
@@ -621,16 +606,10 @@ void AliPHOSDigitizer::SetSplitFile(const TString splitFileName)
   // Diverts the Digits in a file separate from the hits file
   
   // I guess it is not going to work if we do merging
-//   if (fManager) {
-//     cerr << "ERROR: AliPHOSDigitizer::SetSplitFile -> Not yet available in case of merging activated " << endl ;  
-//     return ; 
-//   }
-
-  cout << "AliPHOSDigitizer::SetSplitFile " << gDirectory->GetName() << endl ;  
-  cout << "AliPHOSDigitizer::SetSplitFile " << gAlice->GetTreeDFileName() << endl ;  
-  cout << "AliPHOSDigitizer::SetSplitFile " <<  splitFileName.Data() << endl ;
-  
-  SetTitle(splitFileName) ; 
+  if (fManager) {
+    cerr << "ERROR: AliPHOSDigitizer::SetSplitFile -> Not yet available in case of merging activated " << endl ;  
+    return ; 
+  }
 
   TDirectory * cwd = gDirectory ;
   if ( !(gAlice->GetTreeDFileName() == splitFileName) ) {
@@ -674,30 +653,19 @@ void AliPHOSDigitizer::Print(Option_t* option)const {
   if( strcmp(GetName(), "") != 0 ){
     
     cout << "------------------- "<< GetName() << " -------------" << endl ;
-
-    const Int_t nStreams = GetNInputStreams() ; 
-    if (nStreams) {
-      Int_t index = 0 ;  
-      for (index = 0 ; index < nStreams ; index++)  
-	cout << "Adding SDigits " << GetName() << " from " <<  fManager->GetInputFileName(index, 0) << endl ; 
-      
-      cout << endl ;
-      cout << "Writing digits to " <<   fManager->GetInputFileName(0, 0) << endl ;   
-    } else { 
-//       AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ;  
-//       gime->Folder("sdigits")  ;
-//       cout << "Digitizing sDigits from file(s): " <<endl ;
-//       TCollection * folderslist = gime->Folder("sdigits")->GetListOfFolders() ; 
-//       TIter next(folderslist) ; 
-//       TFolder * folder = 0 ; 
-      
-//       while ( (folder = (TFolder*)next()) ) {
-// 	if ( folder->FindObject(GetName())  ) 
-      cout << "Adding SDigits " << GetName() << " from " << GetSDigitsFileName() << endl ; 
-//      }
-      cout << endl ;
-      cout << "Writing digits to " << GetTitle() << endl ;
-    }    
+    cout << "Digitizing sDigits from file(s): " <<endl ;
+    
+     TCollection * folderslist = ((TFolder*)gROOT->FindObjectAny("Folders/RunMC/Event/Data/PHOS/SDigits"))->GetListOfFolders() ; 
+    TIter next(folderslist) ; 
+    TFolder * folder = 0 ; 
+    
+    while ( (folder = (TFolder*)next()) ) {
+      if ( folder->FindObject(GetName())  ) 
+	cout << "Adding SDigits " << GetName() << " from " << folder->GetName() << endl ; 
+    }
+    cout << endl ;
+    cout << "Writing digits to " << GetTitle() << endl ;
+    
     cout << endl ;
     cout << "With following parameters: " << endl ;
     cout << "     Electronics noise in EMC (fPinNoise) = " << fPinNoise << endl ;

@@ -24,7 +24,7 @@ class TArrayI;
 
 R__EXTERN AliMC *gMC;
 
-enum AliMCGeomType { kGeant3, kGeant4 , kFluka}; 
+enum AliMCGeomType { kGeant3, kGeant4 }; 
 
 class AliMC : public TNamed, public AliRndm
 {

@@ -79,8 +79,7 @@ ClassImp(AliPHOSSDigitizer)
 //____________________________________________________________________________ 
   AliPHOSSDigitizer::AliPHOSSDigitizer():TTask("","") {
   // ctor
-  InitParameters() ;
-  fDefaultInit = kTRUE ; 
+  InitParameters() ; 
 }
 
 //____________________________________________________________________________ 
@@ -89,19 +88,14 @@ AliPHOSSDigitizer::AliPHOSSDigitizer(const char * headerFile, const char * sDigi
   // ctor
   InitParameters() ; 
   Init();
-  fDefaultInit = kFALSE ; 
 }
 
 //____________________________________________________________________________ 
 AliPHOSSDigitizer::~AliPHOSSDigitizer()
 {
-  // dtor
-  // fDefaultInit = kTRUE if SDigitizer created by default ctor (to get just the parameters)
 
-  
-  if (!fDefaultInit) {
-    AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
-    
+  AliPHOSGetter * gime = AliPHOSGetter::GetInstance() ; 
+  if (gime) {
     // remove the task from the folder list
     gime->RemoveTask("S",GetName()) ;
     

@@ -1,4 +1,3 @@
-FSRCS= PartEloss/integralgauss.f  PartEloss/read.f PartEloss/readca3.f
 SRCS          = AliGenHIJINGpara.cxx AliGenBox.cxx AliGenFixed.cxx \
 		AliGenCocktail.cxx AliGenFLUKAsource.cxx \
 		AliGenLib.cxx \
@@ -18,9 +17,7 @@ SRCS          = AliGenHIJINGpara.cxx AliGenBox.cxx AliGenFixed.cxx \
                 AliGenReaderEcalHijing.cxx AliGenReaderEcalJets.cxx\
 		AliGenHIJINGparaBa.cxx AliGeVSimParticle.cxx AliGenGeVSim.cxx\
 		AliGenThetaSlice.cxx AliGenSTRANGElib.cxx AliGenBeamGas.cxx\
-		AliGenAfterBurnerFlow.cxx \
-		AliPartonicEnergyLoss.cxx AliGenHerwig.cxx \
-		AliStructFuncType.cxx
+		AliGenAfterBurnerFlow.cxx
 
 # Headerfiles for this particular package (Path respect to own directory)
 HDRS= $(SRCS:.cxx=.h) 

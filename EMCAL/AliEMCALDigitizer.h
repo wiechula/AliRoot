@@ -39,8 +39,6 @@ public:
   void    Digitize(const Int_t);            // Make Digits from SDigits stored in fSDigits
   void    Exec(Option_t *option);                // Supervising method
 
-  const TString GetHitsFileName() const { return fHitsFileName ; }
-  const TString GetSDigitsFileName() const { return fSDigitsFileName ; }
   const Float_t GetTowerThreshold() const { return fTowerDigitThreshold;}
   const Float_t GetPedestal()     const { return fPedestal; }
   const Float_t GetPinNoise()     const { return fPinNoise;}
@@ -82,10 +80,6 @@ private:
 
 private:
   
-  TString fHitsFileName ;           // file name that contains the original hits
-  TString fSDigitsFileName ;        // file name that contains the original SDigits
-  Bool_t fDefaultInit;      //! Says if the task was created by defaut ctor (only parameters are initialized)
-  // !!! the following is not necessary, it is in the folder !!!!!!!
   AliEMCALSDigitizer * fSDigitizer ; // ! SDigitizer to extract some sdigitizing parameters
   Int_t   fNinputs ;                // Number of input files
   Bool_t  fInitialized ;            // 

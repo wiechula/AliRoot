@@ -18,18 +18,10 @@ enum PprRad_t
     kGluonRadiation, kNoGluonRadiation
 };
 
-enum PprMag_t
-{
-    k2kG, k4kG, k5kG
-};
-
-
 // This part for configuration    
 static PprRun_t run = test50;
 static PprGeo_t geo = kHoles;
 static PprRad_t rad = kGluonRadiation;
-static PprMag_t mag = k4kG;
-
 // Comment line 
 static TString  comment;
 
@@ -114,16 +106,7 @@ void Config()
     gener->SetVertexSmear(kPerEvent); 
     gener->SetTrackingFlag(1);
     gener->Init();
-    
-    if (mag == k2kG) {
-	comment = comment.Append(" | L3 field 0.2 T");
-    } else if (mag == k4kG) {
-	comment = comment.Append(" | L3 field 0.4 T");
-    } else if (mag == k5kG) {
-	comment = comment.Append(" | L3 field 0.5 T");
-    }
-    
-    
+
     if (rad == kGluonRadiation)
     {
 	comment = comment.Append(" | Gluon Radiation On");
@@ -144,7 +127,7 @@ void Config()
     
     
 // Field (L3 0.4 T)
-    AliMagFMaps* field = new AliMagFMaps("Maps","Maps", 2, 1., 10., mag);
+    AliMagFMaps* field = new AliMagFMaps("Maps","Maps", 2, 1., 10., 1);
     rootfile->cd();
     gAlice->SetField(field);    
     
@@ -167,9 +150,7 @@ void Config()
     Int_t   iTPC    = 1;
     Int_t   iTRD    = 1;
     Int_t   iZDC    = 1;
-    Int_t   iEMCAL  = 1;
-    Int_t   iVZERO  = 1;
-    Int_t   iCRT    = 0;
+    Int_t   iEMCAL  = 0;
 
     //=================== Alice BODY parameters =============================
     AliBODY *BODY = new AliBODY("BODY", "Alice envelop");
@@ -221,7 +202,7 @@ void Config()
     {
         //=================== SHIL parameters ============================
 
-        AliSHIL *SHIL = new AliSHILv2("SHIL", "Shielding Version 2");
+        AliSHIL *SHIL = new AliSHILv0("SHIL", "Shielding");
     }
 
 
@@ -232,7 +213,7 @@ void Config()
         AliPIPE *PIPE = new AliPIPEv0("PIPE", "Beam Pipe");
     }
  
-    if(iITS) {
+  if(iITS) {
 
 //=================== ITS parameters ============================
     //
@@ -374,11 +355,12 @@ void Config()
     if (iFMD)
     {
         //=================== FMD parameters ============================
-	AliFMD *FMD = new AliFMDv1("FMD", "normal FMD");
+
+        AliFMD *FMD = new AliFMDv1("FMD", "normal FMD");
         FMD->SetRingsSi1(256);
-        FMD->SetRingsSi2(128);
+        FMD->SetRingsSi2(64);
         FMD->SetSectorsSi1(20);
-        FMD->SetSectorsSi2(40);      
+        FMD->SetSectorsSi2(24);
    }
 
     if (iMUON)
@@ -411,25 +393,11 @@ void Config()
         AliSTART *START = new AliSTARTv1("START", "START Detector");
     }
 
-    if (iEMCAL)
+    if (iEMCAL && !iRICH)
     {
         //=================== EMCAL parameters ============================
         AliEMCAL *EMCAL = new AliEMCALv1("EMCAL", "EMCALArch1a");
     }
-
-     if (iCRT)
-    {
-        //=================== CRT parameters ============================
-        AliCRT *CRT = new AliCRTv0("CRT", "normal ACORDE");
-    }
-
-     if (iVZERO)
-    {
-        //=================== CRT parameters ============================
-        AliVZERO *VZERO = new AliVZEROv2("VZERO", "normal VZERO");
-    }
- 
-             
 }
 
 Float_t EtaToTheta(Float_t arg){
