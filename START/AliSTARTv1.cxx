@@ -134,20 +134,6 @@ void AliSTARTv1::CreateGeometry()
 	z=pinstart[2]-pdivider[2];
 	gMC->Gspos("DIVI",is,"INST",x,y,z,0,"ONLY");
       }
-     /*  
-//second ring: 20 units of Scintillator+PMT+divider
-      Double_t dang2 = 2*TMath::Pi()/26;
-      Double_t dang3 = 2*TMath::Pi()/20;
-       for (is=14; is<=33;is++)  
-     {  
-     x=9.3*TMath::Sin(dang2+(is-13)*dang3);
-     y=9.3*TMath::Cos(dang2+(is-13)*dang3);
-      z=-pstart[2]+ppmt[2];
-      gMC->Gspos("PMT ",is,"STRT",x,y,z,0,"ONLY");
-      z=z+ppmt[2]+pdiv2[2];
-      gMC->Gspos("DIVI",is,"STRT",x,y,z,0,"ONLY");
-      }
-     */
 // PMT
       
     // Entry window (glass)
@@ -324,7 +310,7 @@ void AliSTARTv1::DrawDetector()
   gMC->SetClipBox("*",0,1000,-1000,1000,-1000,1000);
   gMC->DefaultRange();
   gMC->Gdraw("alic",40,30,0,12,9.5,.7,0.7);
-  gMC->Gdhead(1111,"T-Zero detector");
+  gMC->Gdhead(1111,"T0 detector");
   gMC->Gdopt("hide","off");
 }
 
@@ -385,19 +371,12 @@ void AliSTARTv1::StepManager()
     if(gMC->IsTrackInside()) 	{
       Float_t de=gMC->Edep(); 
       edep=edep+de;
-      //       printf ("E deposition %f\n",edep);
-      //    for (i=0; i<=6; i++){
-      //    printf(" HITS on START inside %f\n",hits[i]); } 
     }
     if(gMC->IsTrackExiting())	{
       Float_t de=gMC->Edep(); 
       edep=edep+de;
       hits[3]=edep*1e3;
-      Int_t i;
-      for (i=0; i<=6; i++){
-	printf(" HITS on START Exit %f\n",hits[i]); } 
-      //      for (i=0; i<=1; i++) { printf("START vol %d\n",vol[i]);}
-     
+    
       new(lhits[fNhits++]) AliSTARThit(fIshunt,gAlice->CurrentTrack(),vol,hits);      
     }
   }

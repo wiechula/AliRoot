@@ -14,6 +14,9 @@
  **************************************************************************/
 /*
 $Log$
+Revision 1.2  2000/07/13 16:41:29  fca
+New START corrected for coding conventions
+
 Revision 1.1  2000/03/24 17:46:58  alla
 Vertex reconstruction
 
@@ -69,32 +72,21 @@ void AliSTARTvertex::Reconstruct(Int_t evNumber=1)
   bd = td->GetBranch("START");
   bd->SetAddress(&digits);
   bd->GetEvent(0);
-  printf(" Digits: "); digits->MyDump();    
   sprintf(nameTR,"TreeR%d",evNumber);
   TTree *tr = new TTree(nameTR,"START");
   bRec = tr->Branch("START","AliSTARTvertex",&vertex,buffersize,split);
-
-  //  td->Print(); td->Show(0); td->GetBranch("START")->Dump();
-        digits->MyDump();
-       printf("digits-> %d \n",digits->GetTime());
-  
   if(digits->GetTime()!=999999)
     {
       timediff=digits->GetTime();     //time in number of channels
       timePs=(timediff-128)*10.;       // time in Ps channel_width =10ps
       printf(" timediff %d in PS %f\n",timediff,timePs);
       Float_t c = 299792458/1.e9;  //speed of light cm/ps
-      //Float_t c = 0.3;  //speed of light mm/ps
       Float_t Zposit=timePs*c;// for 0 vertex
       //    Float_t Zposit=timePs*c/2.;// for spread vertex
-      //      printf(" Z position %f\n",Zposit);
-      //      vertex->GetVertex();
       vertex->Set(Zposit);
       tr->Fill();
       tr->Write();
-      //hTimediff->Fill(timePs);
-      //hVertex->Fill(Zposit);
-      }
+     }
 
 }
 
