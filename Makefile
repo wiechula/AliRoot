@@ -17,12 +17,12 @@ PRETTY =  $(AWK) '{print $$0 substr($(DOTS),1,79-length($$0))}'
 
 ##### Module libraries #####
 
-ALIROOT_DIRS		= STEER TGeant3 TRD PHOS TPC ZDC MUON PMD FMD TOF ITS \
+ALIROOT_DIRS  = STEER AliGeant3 TRD PHOS TPC ZDC MUON PMD FMD TOF ITS \
 			  CASTOR RICH START STRUCT EVGEN RALICE ALIFAST \
 			  THijing CONTAINERS MEVSIM TMEVSIM THbtp HBTP EMCAL HBTAN
 
 ##### TARGETS #####
- 
+
 default:      lib bin alilibs aliroot
 
 lib bin:
@@ -43,30 +43,40 @@ alilibs:  lib
 	   ${MAKE} -C $$i ; \
 	done
 
-aliroot geant321 minicern pdf pythia6 hijing: FORCE
+#aliroot geant321 minicern pdf pythia6 hijing: FORCE
+aliroot pdf pythia6 hijing: FORCE
 	@DIR=`echo $@ | $(AWK) '{print toupper($$0)}'` ; \
 	echo "Making dependencies in $$DIR" | $(PRETTY); \
 	${MAKE} -C $$DIR depend;\
 	echo "Making in $$DIR" | $(PRETTY); \
 	${MAKE} -C $$DIR
 
-TGeant4 AliGeant4 AliFluka : FORCE
+geant3: FORCE
+	@DIR=$@; \
+	echo "Making in $$DIR" | $(PRETTY); \
+	${MAKE} -C $$DIR
+
+#TGeant4 AliGeant4 AliFluka : FORCE
+AliGeant4 AliFluka : FORCE
 	@DIR=$@; \
 	echo "Making dependencies in $$DIR" | $(PRETTY); \
 	${MAKE} -C $$DIR depend;\
 	echo "Making in $$DIR" | $(PRETTY); \
 	${MAKE} -C $$DIR
 
-cernlibs: geant321 pythia6 minicern pdf hijing
+#cernlibs: geant321 pythia6 minicern pdf hijing
+cernlibs: geant3 pythia6 pdf hijing
 
-geant4: TGeant4 AliGeant4
+#geant4: TGeant4 AliGeant4
+geant4: AliGeant4
 
 Flugg: FORCE
 	@DIR=$@; \
 	echo "Making in $$DIR" | $(PRETTY); \
 	${MAKE} -C $$DIR/source
 
-fluka:  Flugg TGeant4 AliGeant4 AliFluka
+#fluka:  Flugg TGeant4 AliGeant4 AliFluka
+fluka:  Flugg AliGeant4 AliFluka
 
 all:	cernlibs default
 
@@ -81,7 +91,8 @@ FORCE:
 STRUCT_DIRS	= html conf macros data share include Euclid picts \
                   doc etc Makefile .rootrc
 
-LIBRARY_DIRS	= MINICERN GEANT321 PYTHIA6 PDF HIJING
+#LIBRARY_DIRS	= MINICERN GEANT321 PYTHIA6 PDF HIJING
+LIBRARY_DIRS	= PYTHIA6 PDF HIJING
 
 dist: AliRoot$(VERSION).tar.gz
 
@@ -150,7 +161,8 @@ clean:  FORCE
                     ${MAKE} -C $$i macroclean ; \
                 done
                 ifdef G4INSTALL
-	 	  @for i in TGeant4 AliGeant4; do \
+	 	#  @for i in TGeant4 AliGeant4; do \
+	 	  @for i in AliGeant4; do \
                     ${MAKE} -C $$i macroclean ; \
                   done
                 endif  
@@ -164,7 +176,8 @@ libclean:  FORCE
 allclean: libclean clean
 
 # IRST coding rule check
-CHECK_DIRS = $(ALIROOT_DIRS) ALIROOT TGeant4 AliGeant4
+#CHECK_DIRS = $(ALIROOT_DIRS) ALIROOT TGeant4 AliGeant4
+CHECK_DIRS = $(ALIROOT_DIRS) ALIROOT AliGeant4
 check:     
 		@for i in $(CHECK_DIRS) ; do \
                     echo "Checking $$i" ; \

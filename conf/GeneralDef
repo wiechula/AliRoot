@@ -13,6 +13,7 @@ REV_ENG=$(IRST_INSTALLDIR)/scripts/revEng.sh
 # GeneralMacros
 CHECKS = none
 
+
 $(ALICE_ROOT)/include/%.h : %.h
 	@[ -d $(dir $@) ] || mkdir $(dir $@)
 	@cp -p $? $(ALICE_ROOT)/include
@@ -62,6 +63,8 @@ tgt_$(ALICE_TARGET)/%.o : %.F
 # Needed binary directories
 LIBDIR = $(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)
 BINDIR = $(ALICE_ROOT)/bin/tgt_$(ALICE_TARGET)
+#PH ???
+G3INSTALL = $(ALICE_ROOT)/geant3
 
 
 # Current Version
@@ -95,7 +98,7 @@ ROOTLIBS      += -lMC
 ALILIBS	= -L$(LIBDIR) -L$(G3INSTALL)/lib/tgt_Linux \
 		  -lMUON -lTPC -lPMD -lTRD -lFMD -lTOF \
 		  -lPHOS -lCASTOR -lRICH -lEMCAL -lZDC -lSTRUCT \
-	          -lEVGEN -lSTEER -lCONTAINERS
+	      -lSTART -lEVGEN -lSTEER -lCONTAINERS
 
 # CERN Libraries 
 

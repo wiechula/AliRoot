@@ -74,7 +74,7 @@ $(BINDIR)/aliroot:	$(OBJS)
 #LIBS = $(ALILIBS) $(G3LIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia6 -lpythia6 -lpdf \
 #					-lTHijing -lhijing -lTMevSim -lmevsim 
 LIBS = $(ALILIBS) $(CLIBS) $(GLIBS) -lEG -lEGPythia6 -lpythia6 -lpdf \
-					-lTHijing -lhijing -lTMevSim -lmevsim 
+					-lTHijing -lhijing -lTMevSim -lmevsim -lTHbtp -lHBTP 
 
 TOCLEAN		= $(PROGRAM) $(OBJS) $(COBJS) $(FOBJS)
 
