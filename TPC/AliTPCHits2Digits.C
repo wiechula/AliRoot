@@ -32,7 +32,7 @@ Int_t AliTPCHits2Digits(Int_t nevent=1)
   if ((TPC == 0x0) || (tpcl == 0x0))
    {
     cerr<<"AliTPCHits2Digits.C : Can not find TPC or TPCLoader\n";
-    delete rl;
+//    delete rl;
     return 3;
    }
   tpcl->LoadHits("READ");

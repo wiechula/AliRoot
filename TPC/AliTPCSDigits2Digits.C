@@ -17,7 +17,6 @@ Int_t AliTPCSDigits2Digits(Int_t nevent=1)
 
   AliRunLoader *rl = AliRunLoader::Open(inFile_new,"Event","update");
 
-
   if (!rl) {
     cerr<<"Can't open "<<inFile_new<<" !\n";
     return 1;
@@ -45,7 +44,7 @@ Int_t AliTPCSDigits2Digits(Int_t nevent=1)
   if ((TPC == 0x0) || (tpcl == 0x0))
    {
     cerr<<"AliTPCHits2Digits.C : Can not find TPC or TPCLoader\n";
-    delete rl;
+//    delete rl;
     return 3;
    }
 
