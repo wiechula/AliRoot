@@ -9,7 +9,7 @@ PACKAGE = STEER
 
 # C++ sources
 
-SRCS          = AliDetector.cxx  AliHeader.cxx    AliMagF.cxx GParticle.cxx \
+SRCS          = AliDetector.cxx  AliHeader.cxx    AliMagF.cxx \
                 AliDigit.cxx     AliHit.cxx       AliPoints.cxx \
                 AliDisplay.cxx   AliMC.cxx        AliRun.cxx AliGenerator.cxx \
 		AliLego.cxx AliModule.cxx
@@ -17,7 +17,7 @@ SRCS          = AliDetector.cxx  AliHeader.cxx    AliMagF.cxx GParticle.cxx \
 
 # C++ Headers
 
-HDRS          = $(SRCS:.cxx=.h) STEERLinkDef.h
+HDRS          = $(SRCS:.cxx=.h) AliPDG.h STEERLinkDef.h
 
 # Library dictionary
 
@@ -52,7 +52,7 @@ FFLAGS      = $(FOPT)
 SLIBRARY	= $(ALICE_ROOT)/lib/libSTEER.$(SL)
 ALIBRARY	= $(ALICE_ROOT)/lib/libSTEER.a
 
-default:	headers $(SLIBRARY)
+default:	$(SLIBRARY)
 
 $(ALICE_ROOT)/lib/libSTEER.$(SL):		$(OBJS)
 

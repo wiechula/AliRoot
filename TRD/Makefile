@@ -50,13 +50,11 @@ FFLAGS      = $(FOPT)
 SLIBRARY	= $(ALICE_ROOT)/lib/libTRD.$(SL)
 ALIBRARY	= $(ALICE_ROOT)/lib/libTRD.a
 
-default:	headers $(SLIBRARY)
+default:	$(SLIBRARY)
 
 $(ALICE_ROOT)/lib/libTRD.$(SL):	$(OBJS)
 
 TRDCint.cxx:			$(HDRS)
-
-HEADERS			=	$(filter-out LinkDef,$(HDRS))
 
 depend:				$(SRCS)
 

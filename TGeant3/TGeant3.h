@@ -421,7 +421,11 @@ private:
   Gckin3_t *fGckin3; 
   Gctrak_t *fGctrak; 
 
+  enum {kMaxParticles = 100};
 
+  Int_t fNPDGCodes;
+
+  Int_t fPDGCode[kMaxParticles];
 
 public: 
   TGeant3(); 
@@ -441,12 +445,17 @@ public:
   void  GeomIter();
   Int_t CurrentMaterial(Float_t &a, Float_t &z, Float_t &dens, Float_t &radl, Float_t &absl) const;
   Int_t NextVolUp(Text_t *name, Int_t &copy);
-  Int_t CurrentVol(Text_t *name, Int_t &copy) const;
-  Int_t CurrentVolOff(Int_t off, Text_t *name, Int_t &copy) const;
+  Int_t CurrentVolID(Int_t &copy) const;
+  Int_t CurrentVolOffID(Int_t off, Int_t &copy) const;
+  const char* CurrentVolName() const;
+  const char *CurrentVolOffName(Int_t off) const;
   Int_t VolId(Text_t *name) const;
+  Int_t IdFromPDG(Int_t pdg) const;
+  Int_t PDGFromId(Int_t pdg) const;
+  void  DefineParticles();
   const char* VolName(Int_t id) const;
-  void  TrackPosition(Float_t *xyz) const;
-  void  TrackMomentum(Float_t *xyz) const;  
+  void  TrackPosition(TLorentzVector &xyz) const;
+  void  TrackMomentum(TLorentzVector &xyz) const;  
   Int_t NofVolumes() const;
   Float_t TrackTime() const;  
   Float_t TrackCharge() const;
@@ -454,13 +463,13 @@ public:
   Float_t TrackStep() const;
   Float_t TrackLength() const;
   Int_t   TrackPid() const;
-  Bool_t TrackInside() const;
-  Bool_t TrackEntering() const;
-  Bool_t TrackExiting() const;
-  Bool_t TrackOut() const;
-  Bool_t TrackDisappear() const;
-  Bool_t TrackStop() const;
-  Bool_t TrackAlive() const;
+  Bool_t IsTrackInside() const;
+  Bool_t IsTrackEntering() const;
+  Bool_t IsTrackExiting() const;
+  Bool_t IsTrackOut() const;
+  Bool_t IsTrackDisappeared() const;
+  Bool_t IsTrackStop() const;
+  Bool_t IsTrackAlive() const;
   Int_t   NSecondaries() const;
   Int_t   CurrentEvent() const;
   void    ProdProcess(char*) const;
@@ -472,7 +481,7 @@ public:
   void  SetMaxStep(Float_t maxstep);
   void  SetMaxNStep(Int_t maxnstp);
   Int_t GetMaxNStep() const;
-  void GetParticle(const Int_t ipart, char *name, Float_t &mass) const;
+  void GetParticle(const Int_t pdg, char *name, Float_t &mass) const;
   virtual Int_t GetMedium() const;
   virtual Float_t Edep() const;
   virtual Float_t Etot() const;
@@ -578,6 +587,7 @@ public:
    virtual  void  Gsxyz(); 
    virtual  void  Gtrack(); 
    virtual  void  Gtreve(); 
+   virtual  void  Gtreve_root(); 
    virtual  void  Grndm(Float_t *rvec, const Int_t len) const; 
    virtual  void  Grndmq(Int_t &is1, Int_t &is2, const Int_t iseq, const Text_t *chopt); 
  

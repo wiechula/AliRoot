@@ -27,13 +27,11 @@
 #include <TRandom.h>
 #include <TBRIK.h> 
 #include <TNode.h> 
-#include <AliMC.h> 
 #include <TCint.h> 
 #include <TSystem.h>
 
-#include "GParticle.h"
+#include "TParticle.h"
 #include "AliRun.h"
-#include "AliModule.h"
 #include "AliDisplay.h"
 
 #include "AliCallf77.h" 
@@ -52,21 +50,17 @@ static AliHeader *header;
 # define rxstrak rxstrak_
 # define rxkeep  rxkeep_ 
 # define rxouth  rxouth_
-# define sxpart  sxpart_
 #else
 
 # define rxgtrak RXGTRAK 
 # define rxstrak RXSTRAK 
 # define rxkeep  RXKEEP  
 # define rxouth  RXOUTH
-# define sxpart  SXPART
 #endif
 
 static TArrayF sEventEnergy;
 static TArrayF sSummEnergy;
 static TArrayF sSum2Energy;
-
-extern "C" void type_of_call sxpart();
 
 ClassImp(AliRun)
 
@@ -96,9 +90,9 @@ AliRun::AliRun()
   fImedia    = 0;
   fTrRmax    = 1.e10;
   fTrZmax    = 1.e10;
-  fIdtmed    = 0;
   fInitDone  = kFALSE;
   fLego      = 0;
+  fPDGDB     = 0;        //Particle factory object!
 }
 
 //_____________________________________________________________________________
@@ -144,46 +138,21 @@ AliRun::AliRun(const char *name, const char *title)
   fEvent     = 0;
   //
   // Create the particle stack
-  fParticles = new TClonesArray("GParticle",100);
+  fParticles = new TClonesArray("TParticle",100);
   
   fDisplay = 0;
   //
   // Create default mag field
   SetField();
   //
-  fMC      = AliMC::GetMC();
-  //
-  //---------------Load detector names
-  
-  fNdets=21;
-  strcpy(fDnames[0],"BODY");
-  strcpy(fDnames[1],"NULL");
-  strcpy(fDnames[2],"ITS");
-  strcpy(fDnames[3],"MAG");
-  strcpy(fDnames[4],"TPC");
-  strcpy(fDnames[5],"TOF");
-  strcpy(fDnames[6],"PMD");
-  strcpy(fDnames[7],"PHOS");
-  strcpy(fDnames[8],"ZDC");
-  strcpy(fDnames[9],"FMD");
-  strcpy(fDnames[10],"RICH");
-  strcpy(fDnames[11],"MUON");
-  strcpy(fDnames[12],"FRAME");
-  strcpy(fDnames[13],"TRD");
-  strcpy(fDnames[14],"NULL");
-  strcpy(fDnames[15],"CASTOR");
-  strcpy(fDnames[16],"ABSO");
-  strcpy(fDnames[17],"SHIL");
-  strcpy(fDnames[18],"DIPO");
-  strcpy(fDnames[19],"HALL");
-  strcpy(fDnames[20],"PIPE");
-  
+  fMC      = gMC;
   //
   // Prepare the tracking medium lists
   fImedia = new TArrayI(1000);
   for(i=0;i<1000;i++) (*fImedia)[i]=-99;
-  fIdtmed = new Int_t[fNdets*100];
-  for(i=0;i<fNdets*100;i++) fIdtmed[i]=0;
+  //
+  // Make particles
+  fPDGDB     = TDatabasePDG::Instance();        //Particle factory object!
 }
 
 //_____________________________________________________________________________
@@ -192,7 +161,6 @@ AliRun::~AliRun()
   //
   // Defaullt AliRun destructor
   //
-  delete [] fIdtmed;
   delete fImedia;
   delete fField;
   delete fMC;
@@ -298,16 +266,16 @@ void AliRun::CleanParents()
 {
   //
   // Clean Particles stack.
-  // Set parent/child relations
+  // Set parent/daughter relations
   //
   TClonesArray &particles = *(gAlice->Particles());
-  GParticle *part;
+  TParticle *part;
   int i;
   for(i=0; i<fNtrack; i++) {
-    part = (GParticle *)particles.UncheckedAt(i);
-    if(!part->TestBit(Children_Bit)) {
-      part->SetFirstChild(-1);
-      part->SetLastChild(-1);
+    part = (TParticle *)particles.UncheckedAt(i);
+    if(!part->TestBit(Daughters_Bit)) {
+      part->SetFirstDaughter(-1);
+      part->SetLastDaughter(-1);
     }
   }
 }
@@ -329,7 +297,7 @@ void AliRun::DumpPart (Int_t i)
   // Dumps particle i in the stack
   //
   TClonesArray &particles = *fParticles;
-  ((GParticle*) particles[i])->Dump();
+  ((TParticle*) particles[i])->Print();
 }
 
 //_____________________________________________________________________________
@@ -343,7 +311,7 @@ void AliRun::DumpPStack ()
 	 "\n\n=======================================================================\n");
   for (Int_t i=0;i<fNtrack;i++) 
     {
-      printf("-> %d ",i); ((GParticle*) particles[i])->Dump();
+      printf("-> %d ",i); ((TParticle*) particles[i])->Print();
       printf("--------------------------------------------------------------\n");
     }
   printf(
@@ -364,7 +332,8 @@ void AliRun::SetField(Int_t type, Int_t version, Float_t scale,
   //
   // --- Sanity check on mag field flags
   if(type<0 || type > 2) {
-    printf(" Invalid magnetic field flag: %5d; Helix tracking chosen instead\n"
+    Warning("SetField",
+	    "Invalid magnetic field flag: %5d; Helix tracking chosen instead\n"
 	   ,type);
     type=2;
   }
@@ -375,7 +344,7 @@ void AliRun::SetField(Int_t type, Int_t version, Float_t scale,
     fField = new AliMagFCM("Map2-3",filename,type,version,scale,maxField);
     fField->ReadField();
   } else {
-    printf("Invalid map %d\n",version);
+    Warning("SetField","Invalid map %d\n",version);
   }
 }
 
@@ -516,11 +485,11 @@ void AliRun::FlagTrack(Int_t track)
   // Flags a track and all its family tree to be kept
   //
   int curr;
-  GParticle *particle;
+  TParticle *particle;
 
   curr=track;
   while(1) {
-    particle=(GParticle*)fParticles->UncheckedAt(curr);
+    particle=(TParticle*)fParticles->UncheckedAt(curr);
     
     // If the particle is flagged the three from here upward is saved already
     if(particle->TestBit(Keep_Bit)) return;
@@ -529,7 +498,7 @@ void AliRun::FlagTrack(Int_t track)
     particle->SetBit(Keep_Bit);
     
     // Move to father if any
-    if((curr=particle->GetParent())==-1) return;
+    if((curr=particle->GetFirstMother())==-1) return;
   }
 }
  
@@ -539,8 +508,6 @@ void AliRun::EnergySummary()
   //
   // Print summary of deposited energy
   //
-
-  AliMC* pMC = AliMC::GetMC();
 
   Int_t ndep=0;
   Float_t edtot=0;
@@ -574,7 +541,7 @@ void AliRun::EnergySummary()
       for(i=0;i<(3<left?3:left);i++) {
 	j=kn*3+i;
         id=Int_t (sEventEnergy[j]+0.1);
-	printf(" %s %10.3f +- %10.3f%%;",pMC->VolName(id),sSummEnergy[j],sSum2Energy[j]);
+	printf(" %s %10.3f +- %10.3f%%;",gMC->VolName(id),sSummEnergy[j],sSum2Energy[j]);
       }
       printf("\n");
     }
@@ -587,7 +554,7 @@ void AliRun::EnergySummary()
       for(i=0;i<(5<left?5:left);i++) {
 	j=kn*5+i;
         id=Int_t (sEventEnergy[j]+0.1);
-	printf(" %s %10.3f%%;",pMC->VolName(id),100*sSummEnergy[j]/edtot);
+	printf(" %s %10.3f%%;",gMC->VolName(id),100*sSummEnergy[j]/edtot);
       }
       printf("\n");
     }
@@ -625,12 +592,10 @@ Int_t AliRun::GetModuleID(const char *name)
   //
   // Return galice internal detector identifier from name
   //
-  Int_t i;
-  for(i=0;i<fNdets;i++) if(!strcmp(fDnames[i],name)) {
-    return i;
-  }
-  printf(" * GetDetectorID * Detector %s not found: returning -1\n",name);
-  return -1;
+  Int_t i=-1;
+  TObject *mod=fModules->FindObject(name);
+  if(mod) i=fModules->IndexOf(mod);
+  return i;
 }
  
 //_____________________________________________________________________________
@@ -658,14 +623,13 @@ Int_t AliRun::GetEvent(Int_t event)
   sprintf(treeName,"TreeK%d",event);
   fTreeK = (TTree*)gDirectory->Get(treeName);
   if (fTreeK) fTreeK->SetBranchAddress("Particles", &fParticles);
-  else        printf("ERROR: cannot find Kine Tree for event:%d\n",event);
+  else    Error("GetEvent","cannot find Kine Tree for event:%d\n",event);
   
   // Get Hits Tree header from file
   sprintf(treeName,"TreeH%d",event);
   fTreeH = (TTree*)gDirectory->Get(treeName);
   if (!fTreeH) {
-    printf("ERROR: cannot find Hits Tree for event:%d\n",event);
-    return 0;
+    Error("GetEvent","cannot find Hits Tree for event:%d\n",event);
   }
   
   // Get Digits Tree header from file
@@ -736,26 +700,28 @@ void AliRun::GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
   //
   // Return next track from stack of particles
   //
+  const TVector3 *pol;
   fCurrent=-1;
-  GParticle *track;
+  TParticle *track;
   for(Int_t i=fNtrack-1; i>=0; i--) {
-    track=(GParticle*) fParticles->UncheckedAt(i);
+    track=(TParticle*) fParticles->UncheckedAt(i);
     if(!track->TestBit(Done_Bit)) {
       //
       // The track has not yet been processed
       fCurrent=i;
-      ipart=track->GetKF();
-      pmom[0]=track->GetPx();
-      pmom[1]=track->GetPy(); 
-      pmom[2]=track->GetPz();
-      e     =track->GetEnergy();
-      vpos[0]=track->GetVx();
-      vpos[1]=track->GetVy();
-      vpos[2]=track->GetVz();
-      polar[0]=track->GetPolx();
-      polar[1]=track->GetPoly();
-      polar[2]=track->GetPolz();
-      tof=track->GetTime();
+      ipart=track->GetPdgCode();
+      pmom[0]=track->Px();
+      pmom[1]=track->Py(); 
+      pmom[2]=track->Pz();
+      e     =track->Energy();
+      vpos[0]=track->Vx();
+      vpos[1]=track->Vy();
+      vpos[2]=track->Vz();
+      pol = track->GetPolarisation();
+      polar[0]=pol->X();
+      polar[1]=pol->Y();
+      polar[2]=pol->Z();
+      tof=track->T();
       track->SetBit(Done_Bit);
       break;
     }
@@ -767,8 +733,8 @@ void AliRun::GetNextTrack(Int_t &mtrack, Int_t &ipart, Float_t *pmom,
   if (fCurrent >= nprimaries) return;
   if (fCurrent < nprimaries-1) {
     fTimer.Stop();
-    track=(GParticle*) fParticles->UncheckedAt(fCurrent+1);
-    track->SetProcessTime(fTimer.CpuTime());
+    track=(TParticle*) fParticles->UncheckedAt(fCurrent+1);
+    //    track->SetProcessTime(fTimer.CpuTime());
   }
   fTimer.Start();
 }
@@ -780,13 +746,13 @@ Int_t AliRun::GetPrimary(Int_t track)
   // return number of primary that has generated track
   //
   int current, parent;
-  GParticle *part;
+  TParticle *part;
   //
   parent=track;
   while (1) {
     current=parent;
-    part = (GParticle *)fParticles->UncheckedAt(current);
-    parent=part->GetParent();
+    part = (TParticle *)fParticles->UncheckedAt(current);
+    parent=part->GetFirstMother();
     if(parent<0) return current;
   }
 }
@@ -801,12 +767,11 @@ void AliRun::Init(const char *setup)
   gROOT->LoadMacro(setup);
   gInterpreter->ProcessLine("Config();");
 
-  AliMC* pMC = AliMC::GetMC();
-
-  pMC->Gpart();  //Create standard Geant particles
-  sxpart();        //Define additional particles
+  gMC->DefineParticles();  //Create standard MC particles
 
   TObject *objfirst, *objlast;
+
+  fNdets = fModules->GetLast()+1;
 
   //
   //=================Create Materials, geometry, histograms, etc
@@ -835,18 +800,18 @@ void AliRun::Init(const char *setup)
    MediaTable(); //Build the special IMEDIA table
    
    //Close the geometry structure
-   pMC->Ggclos();
+   gMC->Ggclos();
    
    //Initialise geometry deposition table
-   sEventEnergy.Set(pMC->NofVolumes()+1);
-   sSummEnergy.Set(pMC->NofVolumes()+1);
-   sSum2Energy.Set(pMC->NofVolumes()+1);
+   sEventEnergy.Set(gMC->NofVolumes()+1);
+   sSummEnergy.Set(gMC->NofVolumes()+1);
+   sSum2Energy.Set(gMC->NofVolumes()+1);
    
    //Create the color table
-   pMC->SetColors();
+   gMC->SetColors();
    
    //Compute cross-sections
-   pMC->Gphysi();
+   gMC->Gphysi();
    
    //Write Geometry object to current file.
    fGeometry->Write();
@@ -861,7 +826,8 @@ void AliRun::MediaTable()
   // Built media table to get from the media number to
   // the detector id
   //
-  Int_t kz, ibeg, nz, idt, lz, i, k, ind;
+  Int_t kz, nz, idt, lz, i, k, ind;
+  //  Int_t ibeg;
   TObjArray &dets = *gAlice->Detectors();
   AliModule *det;
   //
@@ -869,10 +835,10 @@ void AliRun::MediaTable()
   for (kz=0;kz<fNdets;kz++) {
     // If detector is defined
     if((det=(AliModule*) dets[kz])) {
-      ibeg=100*kz-1;
-      for(nz=ibeg==-1?1:0;nz<100;nz++) {
+        TArrayI &idtmed = *(det->GetIdtmed()); 
+        for(nz=0;nz<100;nz++) {
 	// Find max and min material number
-	if((idt=fIdtmed[ibeg+nz])) {
+	if((idt=idtmed[nz])) {
 	  det->LoMedium() = det->LoMedium() < idt ? det->LoMedium() : idt;
 	  det->HiMedium() = det->HiMedium() > idt ? det->HiMedium() : idt;
 	}
@@ -882,7 +848,8 @@ void AliRun::MediaTable()
 	det->HiMedium() = 0;
       } else {
 	if(det->HiMedium() > fImedia->GetSize()) {
-	  Error("MediaTable","Increase fImedia");
+	  Error("MediaTable","Increase fImedia from %d to %d",
+		fImedia->GetSize(),det->HiMedium());
 	  return;
 	}
 	// Tag all materials in rage as belonging to detector kz
@@ -925,7 +892,6 @@ void AliRun::SetTransPar(char* filename)
   // Read filename to set the transport parameters
   //
 
-  AliMC* pMC = AliMC::GetMC();
 
   const Int_t ncuts=10;
   const Int_t nflags=11;
@@ -935,6 +901,7 @@ void AliRun::SetTransPar(char* filename)
 			       "BREM","COMP","DCAY","DRAY","HADR","LOSS",
 			       "MULS","PAIR","PHOT","RAYL"};
   char line[256];
+  char detName[7];
   char* filtmp;
   Float_t cut[ncuts];
   Int_t flag[nflags];
@@ -946,7 +913,7 @@ void AliRun::SetTransPar(char* filename)
   lun=fopen(filtmp,"r");
   delete [] filtmp;
   if(!lun) {
-    printf(" * AliRun::SetTransPar * file %s does not exist!\n",filename);
+    Warning("SetTransPar","File %s does not exist!\n",filename);
     return;
   }
   //
@@ -975,39 +942,50 @@ void AliRun::SetTransPar(char* filename)
     if(!iret) continue;
     if(line[0]=='*') continue;
     // Read the numbers
-    iret=sscanf(line,"%d %f %f %f %f %f %f %f %f %f %f %d %d %d %d %d %d %d %d %d %d %d",
-		&itmed,&cut[0],&cut[1],&cut[2],&cut[3],&cut[4],&cut[5],&cut[6],&cut[7],&cut[8],&cut[9],
-		&flag[0],&flag[1],&flag[2],&flag[3],&flag[4],&flag[5],&flag[6],&flag[7],&flag[8],
-		&flag[9],&flag[10]);
+    iret=sscanf(line,"%s %d %f %f %f %f %f %f %f %f %f %f %d %d %d %d %d %d %d %d %d %d %d",
+		detName,&itmed,&cut[0],&cut[1],&cut[2],&cut[3],&cut[4],&cut[5],&cut[6],&cut[7],&cut[8],
+		&cut[9],&flag[0],&flag[1],&flag[2],&flag[3],&flag[4],&flag[5],&flag[6],&flag[7],
+		&flag[8],&flag[9],&flag[10]);
     if(!iret) continue;
     if(iret<0) {
       //reading error
-      printf(" *   Error reading file %s\n",filename);
+      Warning("SetTransPar","Error reading file %s\n",filename);
       continue;
     }
-    // Check that the tracking medium code is valid
-    if(0<itmed && itmed < 100*fNdets) {
-      ktmed=fIdtmed[itmed-1];
-      if(!ktmed) {
-	printf(" *     Invalid tracking medium code %d *\n",itmed);
+    // Check that the module exist
+    AliModule *mod = GetModule(detName);
+    if(mod) {
+      // Get the array of media numbers
+      TArrayI &idtmed = *mod->GetIdtmed();
+      // Check that the tracking medium code is valid
+      if(0<=itmed && itmed < 100) {
+	ktmed=idtmed[itmed];
+	if(!ktmed) {
+	  Warning("SetTransPar","Invalid tracking medium code %d for %s\n",itmed,mod->GetName());
+	  continue;
+	}
+	// Set energy thresholds
+	for(kz=0;kz<ncuts;kz++) {
+	  if(cut[kz]>=0) {
+	    printf(" *  %-6s set to %10.3E for tracking medium code %4d for %s\n",
+		   pars[kz],cut[kz],itmed,mod->GetName());
+	    gMC->Gstpar(ktmed,pars[kz],cut[kz]);
+	  }
+	}
+	// Set transport mechanisms
+	for(kz=0;kz<nflags;kz++) {
+	  if(flag[kz]>=0) {
+	    printf(" *  %-6s set to %10d for tracking medium code %4d for %s\n",
+		   pars[ncuts+kz],flag[kz],itmed,mod->GetName());
+	    gMC->Gstpar(ktmed,pars[ncuts+kz],Float_t(flag[kz]));
+	  }
+	}
+      } else {
+	Warning("SetTransPar","Invalid medium code %d *\n",itmed);
 	continue;
       }
-      // Set energy thresholds
-      for(kz=0;kz<ncuts;kz++) {
-	if(cut[kz]>=0) {
-	  printf(" *  %-6s set to %10.3E for tracking medium code %4d  *\n",pars[kz],cut[kz],itmed);
-	  pMC->Gstpar(ktmed,pars[kz],cut[kz]);
-	}
-      }
-      // Set transport mechanisms
-      for(kz=0;kz<nflags;kz++) {
-	if(flag[kz]>=0) {
-	  printf(" *  %-6s set to %10d for tracking medium code %4d  *\n",pars[ncuts+kz],flag[kz],itmed);
-	  pMC->Gstpar(ktmed,pars[ncuts+kz],Float_t(flag[kz]));
-	}
-      }
     } else {
-      printf(" *     Invalid tracking medium code %d *\n",itmed);
+      Warning("SetTransPar","Module %s not present\n",detName);
       continue;
     }
   }
@@ -1072,7 +1050,7 @@ void AliRun::PurifyKine()
   //
   TClonesArray &particles = *fParticles;
   int nkeep=fHgwmk+1, parent, i;
-  GParticle *part, *partnew, *father;
+  TParticle *part, *partnew, *father;
   AliHit *OneHit;
   int *map = new int[particles.GetEntries()];
 
@@ -1084,7 +1062,7 @@ void AliRun::PurifyKine()
     if(i<=fHgwmk) map[i]=i ; else map[i] = -99 ;}
   // Second pass, build map between old and new numbering
   for(i=fHgwmk+1; i<fNtrack; i++) {
-    part = (GParticle *)particles.UncheckedAt(i);
+    part = (TParticle *)particles.UncheckedAt(i);
     if(part->TestBit(Keep_Bit)) {
       
       // This particle has to be kept
@@ -1092,35 +1070,35 @@ void AliRun::PurifyKine()
       if(i!=nkeep) {
 	
 	// Old and new are different, have to copy
-	partnew = (GParticle *)particles.UncheckedAt(nkeep);
+	partnew = (TParticle *)particles.UncheckedAt(nkeep);
 	*partnew = *part;
       } else partnew = part;
       
       // as the parent is always *before*, it must be already
       // in place. This is what we are checking anyway!
-      if((parent=partnew->GetParent())>fHgwmk) {
+      if((parent=partnew->GetFirstMother())>fHgwmk) {
 	if(map[parent]==-99) printf("map[%d] = -99!\n",parent);
-	partnew->SetParent(map[parent]);
+	partnew->SetFirstMother(map[parent]);
       }
       nkeep++;
     }
   }
   fNtrack=nkeep;
   
-  // Fix children information
+  // Fix daughters information
   for (i=fHgwmk+1; i<fNtrack; i++) {
-    part = (GParticle *)particles.UncheckedAt(i);
-    parent = part->GetParent();
-    father = (GParticle *)particles.UncheckedAt(parent);
-    if(father->TestBit(Children_Bit)) {
+    part = (TParticle *)particles.UncheckedAt(i);
+    parent = part->GetFirstMother();
+    father = (TParticle *)particles.UncheckedAt(parent);
+    if(father->TestBit(Daughters_Bit)) {
       
-      if(i<father->GetFirstChild()) father->SetFirstChild(i);
-      if(i>father->GetLastChild())  father->SetLastChild(i);
+      if(i<father->GetFirstDaughter()) father->SetFirstDaughter(i);
+      if(i>father->GetLastDaughter())  father->SetLastDaughter(i);
     } else {
-      // Iitialise children info for first pass
-      father->SetFirstChild(i);
-      father->SetLastChild(i);
-      father->SetBit(Children_Bit);
+      // Iitialise daughters info for first pass
+      father->SetFirstDaughter(i);
+      father->SetLastDaughter(i);
+      father->SetBit(Daughters_Bit);
     }
   }
   
@@ -1160,6 +1138,7 @@ void AliRun::Reset(Int_t run, Int_t idevent)
   if(fTreeK) fTreeK->Reset();
   if(fTreeH) fTreeH->Reset();
   if(fTreeD) fTreeD->Reset();
+  if(fTreeR) fTreeR->Reset();
 }
 
 //_____________________________________________________________________________
@@ -1216,8 +1195,6 @@ void AliRun::Run(Int_t nevent, const char *setup)
   // check if initialisation has been done
   if (!fInitDone) Init(setup);
   
-  AliMC* pMC = AliMC::GetMC();
-
   // Create the Root Tree with one branch per detector
   if(!fEvent) {
     gAlice->MakeTree("KHDER");
@@ -1227,9 +1204,9 @@ void AliRun::Run(Int_t nevent, const char *setup)
   for (i=0; i<todo; i++) {
   // Process one run (one run = one event)
      gAlice->Reset(fRun, fEvent);
-     pMC->Gtrigi();
-     pMC->Gtrigc();
-     pMC->Gtrig();
+     gMC->Gtrigi();
+     gMC->Gtrigc();
+     gMC->Gtrig();
      gAlice->FinishEvent();
      fEvent++;
   }
@@ -1305,7 +1282,7 @@ void AliRun::SetCurrentTrack(Int_t track)
 }
  
 //_____________________________________________________________________________
-void AliRun::SetTrack(Int_t done, Int_t parent, Int_t ipart, Float_t *pmom,
+void AliRun::SetTrack(Int_t done, Int_t parent, Int_t pdg, Float_t *pmom,
 		      Float_t *vpos, Float_t *polar, Float_t tof,
 		      const char *mecha, Int_t &ntr, Float_t weight)
 { 
@@ -1315,7 +1292,7 @@ void AliRun::SetTrack(Int_t done, Int_t parent, Int_t ipart, Float_t *pmom,
   // done     0 if the track has to be transported
   //          1 if not
   // parent   identifier of the parent track. -1 for a primary
-  // ipart    particle code
+  // pdg    particle code
   // pmom     momentum GeV/c
   // vpos     position 
   // polar    polarisation 
@@ -1324,32 +1301,40 @@ void AliRun::SetTrack(Int_t done, Int_t parent, Int_t ipart, Float_t *pmom,
   // ntr      on output the number of the track stored
   //
   TClonesArray &particles = *fParticles;
-  GParticle *particle;
+  TParticle *particle;
   Float_t mass;
-  char pname[21];
-  const Int_t firstchild=-1;
-  const Int_t lastchild=-1;
+  const Int_t firstdaughter=-1;
+  const Int_t lastdaughter=-1;
   const Int_t KS=0;
-  const Float_t tlife=0;
+  //  const Float_t tlife=0;
   
-  AliMC::GetMC()->GetParticle(ipart,pname,mass);
+  //
+  // Here we get the static mass
+  // For MC is ok, but a more sophisticated method could be necessary
+  // if the calculated mass is required
+  // also, this method is potentially dangerous if the mass
+  // used in the MC is not the same of the PDG database
+  //
+  mass = TDatabasePDG::Instance()->GetParticle(pdg)->Mass();
   Float_t e=TMath::Sqrt(mass*mass+pmom[0]*pmom[0]+
 			pmom[1]*pmom[1]+pmom[2]*pmom[2]);
   
   //printf("Loading particle %s mass %f ene %f No %d ip %d pos %f %f %f mom %f %f %f KS %d m %s\n",
-  //pname,mass,e,fNtrack,ipart,vpos[0],vpos[1],vpos[2],pmom[0],pmom[1],pmom[2],KS,mecha);
+  //pname,mass,e,fNtrack,pdg,vpos[0],vpos[1],vpos[2],pmom[0],pmom[1],pmom[2],KS,mecha);
   
-  particle=new(particles[fNtrack]) GParticle(KS,ipart,parent,firstchild,
-					     lastchild,pmom[0],pmom[1],pmom[2],
-					     e,mass,vpos[0],vpos[1],vpos[2],
-					     polar[0],polar[1],polar[2],tof,
-					     tlife,mecha,weight);
+  particle=new(particles[fNtrack]) TParticle(pdg,KS,parent,-1,firstdaughter,
+					     lastdaughter,pmom[0],pmom[1],pmom[2],
+					     e,vpos[0],vpos[1],vpos[2],tof);
+  //					     polar[0],polar[1],polar[2],tof,
+  //					     mecha,weight);
+  ((TParticle*)particles[fNtrack])->SetPolarisation(TVector3(polar[0],polar[1],polar[2]));
+  ((TParticle*)particles[fNtrack])->SetWeight(weight);
   if(!done) particle->SetBit(Done_Bit);
   
   if(parent>=0) {
-    particle=(GParticle*) fParticles->UncheckedAt(parent);
-    particle->SetLastChild(fNtrack);
-    if(particle->GetFirstChild()<0) particle->SetFirstChild(fNtrack);
+    particle=(TParticle*) fParticles->UncheckedAt(parent);
+    particle->SetLastDaughter(fNtrack);
+    if(particle->GetFirstDaughter()<0) particle->SetFirstDaughter(fNtrack);
   } else { 
     //
     // This is a primary track. Set high water mark for this event
@@ -1369,7 +1354,7 @@ void AliRun::KeepTrack(const Int_t track)
   // flags a track to be kept
   //
   TClonesArray &particles = *fParticles;
-  ((GParticle*)particles[track])->SetBit(Keep_Bit);
+  ((TParticle*)particles[track])->SetBit(Keep_Bit);
 }
  
 //_____________________________________________________________________________
@@ -1379,8 +1364,6 @@ void AliRun::StepManager(Int_t id) const
   // Called at every step during transport
   //
 
-  AliMC* pMC = AliMC::GetMC();
-
   Int_t copy;
   //
   // --- If lego option, do it and leave 
@@ -1389,7 +1372,7 @@ void AliRun::StepManager(Int_t id) const
     return;
   }
   //Update energy deposition tables
-  sEventEnergy[pMC->CurrentVol(0,copy)]+=pMC->Edep();
+  sEventEnergy[gMC->CurrentVolID(copy)]+=gMC->Edep();
   
   //Call the appropriate stepping routine;
   AliModule *det = (AliModule*)fModules->At(id);
@@ -1397,7 +1380,7 @@ void AliRun::StepManager(Int_t id) const
 }
 
 //_____________________________________________________________________________
-void AliRun::ReadEuclid(const char* filnam, Int_t id_det, const char* topvol)
+void AliRun::ReadEuclid(const char* filnam, const AliModule *det, const char* topvol)
 {
   //                                                                     
   //       read in the geometry of the detector in euclid file format    
@@ -1417,8 +1400,6 @@ void AliRun::ReadEuclid(const char* filnam, Int_t id_det, const char* topvol)
   //     top volume is searched as only volume not positioned into another 
   //
 
-  AliMC* pMC = AliMC::GetMC();
-
   Int_t i, nvol, iret, itmed, irot, numed, npar, ndiv, iaxe;
   Int_t ndvmx, nr, flag;
   char key[5], card[77], natmed[21];
@@ -1429,15 +1410,6 @@ void AliRun::ReadEuclid(const char* filnam, Int_t id_det, const char* topvol)
   Float_t xo, yo, zo;
   Int_t idrot[5000],istop[7000];
   FILE *lun;
-  AliModule *det;
-  //
-  TObjArray &dets = *fModules;
-  if(!dets[id_det]) {
-    printf(" *** GREUTMED *** Detector %d not defined\n",id_det);
-    return;
-  } else {
-    det = (AliModule*) dets[id_det];
-  }
   //
   // *** The input filnam name will be with extension '.euc'
   filtmp=gSystem->ExpandPathName(filnam);
@@ -1447,7 +1419,8 @@ void AliRun::ReadEuclid(const char* filnam, Int_t id_det, const char* topvol)
     printf(" *** GREUCL *** Could not open file %s\n",filnam);
     return;
   }
-  //* --- definition of rotation matrix 0 ---
+  //* --- definition of rotation matrix 0 ---  
+  TArrayI &idtmed = *(det->GetIdtmed());
   idrot[0]=0;
   nvol=0;
  L10:
@@ -1466,7 +1439,7 @@ void AliRun::ReadEuclid(const char* filnam, Int_t id_det, const char* topvol)
     while(i<20) natmed[i++]=' ';
     natmed[i]='\0';
     //
-    pMC->Gckmat(fIdtmed[itmed+id_det*100-1],natmed);
+    gMC->Gckmat(idtmed[itmed],natmed);
     //*
   } else if (!strcmp(key,"ROTM")) {
     sscanf(&card[4],"%d %f %f %f %f %f %f",&irot,&teta1,&phi1,&teta2,&phi2,&teta3,&phi3);
@@ -1478,26 +1451,26 @@ void AliRun::ReadEuclid(const char* filnam, Int_t id_det, const char* topvol)
       for(i=0;i<npar;i++) fscanf(lun,"%f",&par[i]);
       fscanf(lun,"%*c");
     }
-    pMC->Gsvolu( name, shape, fIdtmed[numed+id_det*100-1], par, npar);
+    gMC->Gsvolu( name, shape, idtmed[numed], par, npar);
     //*     save the defined volumes
     strcpy(volst[++nvol],name);
     istop[nvol]=1;
     //*
   } else if (!strcmp(key,"DIVN")) {
     sscanf(&card[5],"'%[^']' '%[^']' %d %d", name, mother, &ndiv, &iaxe);
-    pMC->Gsdvn  ( name, mother, ndiv, iaxe );
+    gMC->Gsdvn  ( name, mother, ndiv, iaxe );
     //*
   } else if (!strcmp(key,"DVN2")) {
     sscanf(&card[5],"'%[^']' '%[^']' %d %d %f %d",name, mother, &ndiv, &iaxe, &orig, &numed);
-    pMC->Gsdvn2( name, mother, ndiv, iaxe, orig,fIdtmed[numed+id_det*100-1]);
+    gMC->Gsdvn2( name, mother, ndiv, iaxe, orig,idtmed[numed]);
     //*
   } else if (!strcmp(key,"DIVT")) {
     sscanf(&card[5],"'%[^']' '%[^']' %f %d %d %d", name, mother, &step, &iaxe, &numed, &ndvmx);
-    pMC->Gsdvt ( name, mother, step, iaxe, fIdtmed[numed+id_det*100-1], ndvmx);
+    gMC->Gsdvt ( name, mother, step, iaxe, idtmed[numed], ndvmx);
     //*
   } else if (!strcmp(key,"DVT2")) {
     sscanf(&card[5],"'%[^']' '%[^']' %f %d %f %d %d", name, mother, &step, &iaxe, &orig, &numed, &ndvmx);
-    pMC->Gsdvt2 ( name, mother, step, iaxe, orig, fIdtmed[numed+id_det*100-1], ndvmx );
+    gMC->Gsdvt2 ( name, mother, step, iaxe, orig, idtmed[numed], ndvmx );
     //*
   } else if (!strcmp(key,"POSI")) {
     sscanf(&card[5],"'%[^']' %d '%[^']' %f %f %f %d '%[^']'", name, &nr, mother, &xo, &yo, &zo, &irot, konly);
@@ -1506,7 +1479,7 @@ void AliRun::ReadEuclid(const char* filnam, Int_t id_det, const char* topvol)
       if (!strcmp(volst[i],name)) istop[i]=0;
     }
     //*
-    pMC->Gspos  ( name, nr, mother, xo, yo, zo, idrot[irot], konly );
+    gMC->Gspos  ( name, nr, mother, xo, yo, zo, idrot[irot], konly );
     //*
   } else if (!strcmp(key,"POSP")) {
     sscanf(&card[5],"'%[^']' %d '%[^']' %f %f %f %d '%[^']' %d", name, &nr, mother, &xo, &yo, &zo, &irot, konly, &npar);
@@ -1519,7 +1492,7 @@ void AliRun::ReadEuclid(const char* filnam, Int_t id_det, const char* topvol)
       if (!strcmp(volst[i],name)) istop[i]=0;
     }
     //*
-    pMC->Gsposp ( name, nr, mother, xo,yo,zo, idrot[irot], konly, par, npar);
+    gMC->Gsposp ( name, nr, mother, xo,yo,zo, idrot[irot], konly, par, npar);
   }
   //*
   if (strcmp(key,"END")) goto L10;
@@ -1550,7 +1523,7 @@ void AliRun::ReadEuclid(const char* filnam, Int_t id_det, const char* topvol)
 }
 
 //_____________________________________________________________________________
-void AliRun::ReadEuclidMedia(const char* filnam, Int_t id_det)
+void AliRun::ReadEuclidMedia(const char* filnam, const AliModule *det)
 {
   //                                                                     
   //       read in the materials and tracking media for the detector     
@@ -1571,15 +1544,7 @@ void AliRun::ReadEuclidMedia(const char* filnam, Int_t id_det)
   Int_t imate;
   Int_t nwbuf, isvol, ifield, nmat;
   Float_t a, z, dens, radl, absl, fieldm, tmaxfd, stemax, deemax, epsil, stmin;
-  AliModule* det;
-//
-  TObjArray &dets = *fModules;
-  if(!dets[id_det]) {
-    printf(" *** GREUTMED *** Detector %d not defined\n",id_det);
-    return;
-  } else {
-    det = (AliModule*) dets[id_det];
-  }
+  //
   end=strlen(filnam);
   for(i=0;i<end;i++) if(filnam[i]=='.') {
     end=i;
@@ -1592,13 +1557,14 @@ void AliRun::ReadEuclidMedia(const char* filnam, Int_t id_det)
   lun=fopen(filtmp,"r");
   delete [] filtmp;
   if(!lun) {
-    printf(" *** GREUTMED *** Could not open file %s\n",filnam);
+    Warning("ReadEuclidMedia","Could not open file %s\n",filnam);
     return;
   }
   //
   // Retrieve Mag Field parameters
   Int_t ISXFLD=gAlice->Field()->Integ();
   Float_t SXMGMX=gAlice->Field()->Max();
+  //  TArrayI &idtmed = *(det->GetIdtmed());
   //
  L10:
   for(i=0;i<130;i++) card[i]=0;
@@ -1631,9 +1597,9 @@ void AliRun::ReadEuclidMedia(const char* filnam, Int_t id_det)
     while(i<20) natmed[i++]=' ';
     natmed[i]='\0';
     //
-    det->AliMedium(itmed+id_det*100,natmed,nmat,isvol,ISXFLD,SXMGMX,tmaxfd,
+    det->AliMedium(itmed,natmed,nmat,isvol,ISXFLD,SXMGMX,tmaxfd,
 		   stemax,deemax,epsil,stmin,ubuf,nwbuf);
-    (*fImedia)[fIdtmed[itmed+id_det*100-1]-1]=id_det;
+    //    (*fImedia)[idtmed[itmed]-1]=id_det;
     //*
   }
   //*
@@ -1641,12 +1607,12 @@ void AliRun::ReadEuclidMedia(const char* filnam, Int_t id_det)
   fclose (lun);
   //*
   //*     commented out only for the not cernlib version
-  printf(" *** GREUTMED *** file: %s is now read in\n",filnam);
+  Warning("ReadEuclidMedia","file: %s is now read in\n",filnam);
   //*
   return;
   //*
  L20:
-  printf(" *** GREUTMED *** reading error or premature end of file\n");
+  Warning("ReadEuclidMedia","reading error or premature end of file\n");
 } 
  
 //_____________________________________________________________________________
@@ -1672,6 +1638,7 @@ void AliRun::Streamer(TBuffer &R__b)
     R__b >> fTrRmax;
     R__b >> fTrZmax;
     R__b >> fGenerator;
+    R__b >> fPDGDB;        //Particle factory object!
   } else {
     R__b.WriteVersion(AliRun::IsA());
     TNamed::Streamer(R__b);
@@ -1687,6 +1654,7 @@ void AliRun::Streamer(TBuffer &R__b)
     R__b << fTrRmax;
     R__b << fTrZmax;
     R__b << fGenerator;
+    R__b << fPDGDB;        //Particle factory object!
   }
 } 
 
@@ -1714,7 +1682,9 @@ extern "C" void type_of_call  rxgtrak (Int_t &mtrack, Int_t &ipart, Float_t *pmo
   //      tof     Particle time of flight in seconds
   //
   Float_t polar[3];
-  gAlice->GetNextTrack(mtrack, ipart, pmom, e, vpos, polar, tof);
+  Int_t pdg;
+  gAlice->GetNextTrack(mtrack, pdg, pmom, e, vpos, polar, tof);
+  ipart = gMC->IdFromPDG(pdg);
   mtrack++;
 }
 
@@ -1753,7 +1723,8 @@ rxstrak (Int_t &keep, Int_t &parent, Int_t &ipart, Float_t *pmom,
   Float_t polar[3]={0.,0.,0.};
   for(int i=0; i<10 && i<cmlen; i++) mecha[i]=cmech[i];
   mecha[10]=0;
-  gAlice->SetTrack(keep, parent-1, ipart, pmom, vpos, polar, tof, mecha, ntr);
+  Int_t pdg=gMC->PDGFromId(ipart);
+  gAlice->SetTrack(keep, parent-1, pdg, pmom, vpos, polar, tof, mecha, ntr);
   ntr++;
 }
 
@@ -1769,7 +1740,7 @@ extern "C" void type_of_call  rxkeep(const Int_t &n)
       exit(1);
     }
   
-  ((GParticle*)(gAlice->Particles()->UncheckedAt(n-1)))->SetBit(Keep_Bit);
+  ((TParticle*)(gAlice->Particles()->UncheckedAt(n-1)))->SetBit(Keep_Bit);
 }
 
 //_____________________________________________________________________________

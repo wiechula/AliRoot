@@ -2,6 +2,8 @@
 #include "AliGenMUONlib.h"
 #include "AliMC.h"
 #include "AliRun.h"
+#include "AliPDG.h"
+
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TTree.h>
@@ -112,10 +114,12 @@ void AliGenFLUKAsource::FlukaInit()
 void AliGenFLUKAsource::Generate()
 {
 
-  AliMC* pMC = AliMC::GetMC();
-
-  const Int_t ifluge[28]={14, 15, 3, 2, 4, 4, 1, 13, 25, 5, 6, 10, 8, 9,
-                         11, 12,18, 26, 16, 21, 19, 20, 7, 16,16,0,0,0};
+  const Int_t ifluge[28]={kProton, kProtonBar, kElectron, kPositron,
+			  kNuE, kNuEBar, kGamma, kNeutron, kNeutronBar,
+			  kMuonPlus, kMuonMinus, kK0Long , kPiPlus, kPiMinus,
+			  kKPlus, kKMinus, kLambda0, kLambda0Bar, kK0Short,
+			  kSigmaMinus, kSigmaPlus, kSigma0, kPi0, kK0, kK0Bar,
+			  0,kNuMu,kNuMuBar};
   Float_t polar[3]= {0,0,0};
   //
   Float_t origin[3];
@@ -140,7 +144,7 @@ void AliGenFLUKAsource::Generate()
   // loop over number of particles
   Int_t nb=0;
   for (i=0; i<fNpart;i++) {
-    Int_t ev=pMC->CurrentEvent();
+    Int_t ev=gMC->CurrentEvent();
     Int_t entry=fNpart*(ev-1)+i; 
     nb = (Int_t)h2->GetEvent(entry); 
     if (irwn > nentries) {
@@ -185,7 +189,7 @@ void AliGenFLUKAsource::Generate()
        part=13;
     } else {
        part=ifluge[int(Ip)-1];
-       pMC->Gfpart(part, name, itrtyp,  
+       gMC->Gfpart(part, name, itrtyp,  
 		   amass, charge, tlife); 
        prwn=sqrt(Ekin*Ekin + 2.*amass);
     }
@@ -201,13 +205,13 @@ void AliGenFLUKAsource::Generate()
     wgt = (part == 13) ? Wgt*fAddWeight : Wgt;
     iwgt=Int_t(wgt);
     fwgt=wgt-Float_t(iwgt);
-    pMC->Rndm(random,2);
+    gMC->Rndm(random,2);
     if (random[0] < fwgt) iwgt++;
     if (part==1 && iwgt>100) iwgt=100;
     Int_t nstack=0;
     for (j=0; j<iwgt; j++) {
 	gAlice->SetTrack(1,-1,part,p,origin,polar,0,"Primary",nt);
-	pMC->Rndm(random,2);
+	gMC->Rndm(random,2);
 	phi=2*random[1]*TMath::Pi();
 	Float_t pn1=p[0]*TMath::Sin(phi) - p[1]*TMath::Cos(phi);
 	Float_t pn2=p[0]*TMath::Cos(phi) + p[1]*TMath::Sin(phi);

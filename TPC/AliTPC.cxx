@@ -22,7 +22,7 @@
 #include <TNode.h>
 #include <TTUBS.h>
 #include <TObjectTable.h>
-#include "GParticle.h"
+#include "TParticle.h"
 #include "AliTPC.h"
 #include "AliRun.h"
 #include <iostream.h>
@@ -546,8 +546,6 @@ void AliTPC::CreateMaterials()
   // Origin: Marek Kowalski  IFJ, Krakow, Marek.Kowalski@ifj.edu.pl
   //-----------------------------------------------------------------
   
-  AliMC* pMC = AliMC::GetMC();
-
   Int_t ISXFLD=gAlice->Field()->Integ();
   Float_t SXMGMX=gAlice->Field()->Max();
   
@@ -603,7 +601,7 @@ void AliTPC::CreateMaterials()
   // --  Get A,Z etc. for CO2 
   
   char namate[21];
-  pMC->Gfmate((*fIdmate)[7], namate, a, z, d, radl, absl, buf, nbuf);
+  gMC->Gfmate((*fIdmate)[7], namate, a, z, d, radl, absl, buf, nbuf);
   ag[1] = a;
   zg[1] = z;
   dg = dne * .9 + dc * .1;
@@ -623,16 +621,16 @@ void AliTPC::CreateMaterials()
   AliMaterial(9, "Silicon", asi, zsi, desi, radsi, 999.);
   AliMaterial(99, "Air$", 14.61, 7.3, .001205, 30420., 67500.);
   
-  AliMedium(400, "Al wall$",  0, 0, ISXFLD, SXMGMX, 10., .1, .1, .1,   .1);
-  AliMedium(402, "Gas mix1$", 3, 0, ISXFLD, SXMGMX, 10., .01,.1, .001, .01);
-  AliMedium(403, "Gas mix2$", 3, 0, ISXFLD, SXMGMX, 10., .01,.1, .001, .01);
-  AliMedium(404, "Gas mix3$", 4, 1, ISXFLD, SXMGMX, 10., .01,.1, .001, .01);
-  AliMedium(405, "G10 pln$",  5, 0, ISXFLD, SXMGMX, 10., .1, .1, .1,   .1 );
-  AliMedium(406, "Mylar  $",  6, 0, ISXFLD, SXMGMX, 10., .01,.1, .001, .01);
-  AliMedium(407, "CO2    $",  7, 0, ISXFLD, SXMGMX, 10., .01,.1, .01,  .01);
-  AliMedium(408, "Carbon $",  8, 0, ISXFLD, SXMGMX, 10., .1, .1, .1,   .1 );
-  AliMedium(409, "Silicon$",  9, 0, ISXFLD, SXMGMX, 10., .1, .1, .1,   .1 );
-  AliMedium(499, "Air gap$", 99, 0, ISXFLD, SXMGMX, 10., .1, .1, .1,   .1 );
+  AliMedium(0, "Al wall$",  0, 0, ISXFLD, SXMGMX, 10., .1, .1, .1,   .1);
+  AliMedium(2, "Gas mix1$", 3, 0, ISXFLD, SXMGMX, 10., .01,.1, .001, .01);
+  AliMedium(3, "Gas mix2$", 3, 0, ISXFLD, SXMGMX, 10., .01,.1, .001, .01);
+  AliMedium(4, "Gas mix3$", 4, 1, ISXFLD, SXMGMX, 10., .01,.1, .001, .01);
+  AliMedium(5, "G10 pln$",  5, 0, ISXFLD, SXMGMX, 10., .1, .1, .1,   .1 );
+  AliMedium(6, "Mylar  $",  6, 0, ISXFLD, SXMGMX, 10., .01,.1, .001, .01);
+  AliMedium(7, "CO2    $",  7, 0, ISXFLD, SXMGMX, 10., .01,.1, .01,  .01);
+  AliMedium(8, "Carbon $",  8, 0, ISXFLD, SXMGMX, 10., .1, .1, .1,   .1 );
+  AliMedium(9, "Silicon$",  9, 0, ISXFLD, SXMGMX, 10., .1, .1, .1,   .1 );
+  AliMedium(99, "Air gap$", 99, 0, ISXFLD, SXMGMX, 10., .1, .1, .1,   .1 );
 }
 
 //_____________________________________________________________________________
@@ -885,7 +883,7 @@ void AliTPC::Hits2Clusters()
   AliTPCParam * fTPCParam = &(fDigParam->GetParam());
   Float_t sigma_rphi,sigma_z,cl_rphi,cl_z;
   //
-  GParticle *particle; // pointer to a given particle
+  TParticle *particle; // pointer to a given particle
   AliTPChit *tpcHit; // pointer to a sigle TPC hit
   TClonesArray *Particles; //pointer to the particle list
   Int_t sector,nhits;
@@ -938,9 +936,9 @@ void AliTPC::Hits2Clusters()
 	sector=tpcHit->fSector; // sector number
 	if(sector != isec) continue; //terminate iteration
 	ipart=tpcHit->fTrack;
-	particle=(GParticle*)Particles->UncheckedAt(ipart);
-	pl=particle->GetPz();
-	pt=particle->GetPT();
+	particle=(TParticle*)Particles->UncheckedAt(ipart);
+	pl=particle->Pz();
+	pt=particle->Pt();
 	if(pt < 1.e-9) pt=1.e-9;
 	tanth=pl/pt;
 	tanth = TMath::Abs(tanth);

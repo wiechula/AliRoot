@@ -60,11 +60,9 @@ void AliDIPOv1::CreateGeometry()
   */
   //End_Html
 
-  AliMC* pMC = AliMC::GetMC();
-  
   Float_t par[5];
   
-  Int_t *idtmed = gAlice->Idtmed();
+  Int_t *idtmed = fIdtmed->GetArray()-1799;
   
   //abs_d   = 90.;  // DEFINES DRIFT LENGTH 
   //z_nose  = 102.;
@@ -115,7 +113,7 @@ void AliDIPOv1::CreateGeometry()
   par[0] = 0.;
   par[1] = 280.;
   par[2] = 250.;
-  pMC->Gsvolu("DDIP", "TUBE", idtmed[1801], par, 3);
+  gMC->Gsvolu("DDIP", "TUBE", idtmed[1801], par, 3);
   
   //       COIL 
   par[0] = 250.;
@@ -124,15 +122,15 @@ void AliDIPOv1::CreateGeometry()
   par[3] = 204.;
   par[4] = 244.;
   
-  pMC->Gsvolu("DIPC", "CONE", idtmed[1810], par, 5);
-  pMC->Gspos("DIPC", 1, "DDIP", 0., 0., 0., 0, "ONLY");
+  gMC->Gsvolu("DIPC", "CONE", idtmed[1810], par, 5);
+  gMC->Gspos("DIPC", 1, "DDIP", 0., 0., 0., 0, "ONLY");
   par[0] = 250.;
   par[1] = 115.;
   par[2] = 125.;
   par[3] = 194.;
   par[4] = 204.;
-  pMC->Gsvolu("DIIC", "CONE", idtmed[1807], par, 5);
-  pMC->Gspos("DIIC", 1, "DDIP", 0., 0., 0., 0, "ONLY");
+  gMC->Gsvolu("DIIC", "CONE", idtmed[1807], par, 5);
+  gMC->Gspos("DIIC", 1, "DDIP", 0., 0., 0., 0, "ONLY");
   
   //       YOKE 
   par[0] = 250.;
@@ -141,9 +139,9 @@ void AliDIPOv1::CreateGeometry()
   par[3] = 244.;
   par[4] = 274.;
   
-  pMC->Gsvolu("DIPY", "CONE", idtmed[1834], par, 5);
-  pMC->Gspos("DIPY", 1, "DDIP", 0., 0., 0., 0, "ONLY");
-  pMC->Gspos("DDIP", 1, "ALIC", 0., 0., 725.+250, 0, "ONLY");
+  gMC->Gsvolu("DIPY", "CONE", idtmed[1834], par, 5);
+  gMC->Gspos("DIPY", 1, "DDIP", 0., 0., 0., 0, "ONLY");
+  gMC->Gspos("DDIP", 1, "ALIC", 0., 0., 725.+250, 0, "ONLY");
 }
 
 //_____________________________________________________________________________
@@ -153,29 +151,27 @@ void AliDIPOv1::DrawModule()
   // Draw a shaded view of the muon absorber
   //
 
-  AliMC* pMC = AliMC::GetMC();
-  
   // Set everything unseen
-  pMC->Gsatt("*", "seen", -1);
+  gMC->Gsatt("*", "seen", -1);
   // 
   // Set ALIC mother transparent
-  pMC->Gsatt("ALIC","SEEN",0);
+  gMC->Gsatt("ALIC","SEEN",0);
   //
   // Set the volumes visible
-  pMC->Gsatt("DDIP","seen",1);
-  pMC->Gsatt("DIPC","seen",1);
-  pMC->Gsatt("DIIC","seen",1);
-  pMC->Gsatt("DIPY","seen",1);
+  gMC->Gsatt("DDIP","seen",1);
+  gMC->Gsatt("DIPC","seen",1);
+  gMC->Gsatt("DIIC","seen",1);
+  gMC->Gsatt("DIPY","seen",1);
   //
-  pMC->Gdopt("hide", "on");
-  pMC->Gdopt("shad", "on");
-  pMC->Gsatt("*", "fill", 7);
-  pMC->SetClipBox(".");
-  pMC->SetClipBox(".");
-  pMC->DefaultRange();
-  pMC->Gdraw("alic", 30, 30, 0, 17, 13.5, .019, .019);
-  pMC->Gdhead(1111, "Magnetic Dipole Version 1");
-  pMC->Gdman(16, 4, "MAN");
+  gMC->Gdopt("hide", "on");
+  gMC->Gdopt("shad", "on");
+  gMC->Gsatt("*", "fill", 7);
+  gMC->SetClipBox(".");
+  gMC->SetClipBox(".");
+  gMC->DefaultRange();
+  gMC->Gdraw("alic", 30, 30, 0, 17, 13.5, .019, .019);
+  gMC->Gdhead(1111, "Magnetic Dipole Version 1");
+  gMC->Gdman(16, 4, "MAN");
 }
 
 //_____________________________________________________________________________
@@ -197,11 +193,11 @@ void AliDIPOv1::CreateMaterials()
   
   
   // --- Define the various materials for GEANT --- 
-  AliMaterial(1809, "ALUMINIUM$", 26.98, 13., 2.7, 8.9, 37.2);
-  AliMaterial(1815, "AIR$      ", 14.61, 7.3, .001205, 30423.24, 67500);
-  AliMaterial(1810, "IRON$     ", 55.85, 26., 7.87, 0, 17.1);
-  AliMaterial(1816, "VACUUM$ ", 1e-16, 1e-16, 1e-16, 1e16, 1e16);
-  AliMixture(1824, "STAINLESS STEEL$", asteel, zsteel, 7.88, 4, wsteel);
+  AliMaterial(9, "ALUMINIUM$", 26.98, 13., 2.7, 8.9, 37.2);
+  AliMaterial(15, "AIR$      ", 14.61, 7.3, .001205, 30423.24, 67500);
+  AliMaterial(10, "IRON$     ", 55.85, 26., 7.87, 0, 17.1);
+  AliMaterial(16, "VACUUM$ ", 1e-16, 1e-16, 1e-16, 1e16, 1e16);
+  AliMixture(24, "STAINLESS STEEL$", asteel, zsteel, 7.88, 4, wsteel);
   
   // **************** 
   //     Defines tracking media parameters. 
@@ -216,32 +212,32 @@ void AliDIPOv1::CreateMaterials()
   
   //    Air 
 
-  AliMedium(1801, "AIR_DI_US         ", 1815, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(1802, "AIR_DI_US         ", 1815, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(1803, "AIR_L3_US         ", 1815, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(1, "AIR_DI_US         ", 15, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(2, "AIR_DI_US         ", 15, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(3, "AIR_L3_US         ", 15, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
   
   //    Aluminum 
   
-  AliMedium(1808, "ALU_DI_US         ", 1809, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(1811, "ALU_DI_SH         ", 1809, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(8, "ALU_DI_US         ", 9, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(11, "ALU_DI_SH         ", 9, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
   
   //    Iron 
   
-  AliMedium(1831, "FE_NF_US          ", 1810, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(1832, "FE_DI_US          ", 1810, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(1833, "FE_L3_US          ", 1810, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(1834, "FE_NF_SH          ", 1810, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(1835, "FE_DI_SH          ", 1810, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(1836, "FE_L3_SH          ", 1810, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(31, "FE_NF_US          ", 10, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(32, "FE_DI_US          ", 10, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(33, "FE_L3_US          ", 10, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(34, "FE_NF_SH          ", 10, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(35, "FE_DI_SH          ", 10, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(36, "FE_L3_SH          ", 10, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
   
   //    Vacuum 
   
-  AliMedium(1837, "VA_NF_US          ", 1816, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(1838, "VA_DI_US          ", 1816, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
-  AliMedium(1839, "VA_L3_US          ", 1816, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(37, "VA_NF_US          ", 16, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(38, "VA_DI_US          ", 16, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(39, "VA_L3_US          ", 16, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
   
   //    Steel 
   
-  AliMedium(1875, "ST_L3_US          ", 1824, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
+  AliMedium(75, "ST_L3_US          ", 24, 0, ISXFLD, SXMGMX, tmaxfd, stemax, deemax, epsil, stmin);
 }
 

@@ -44,7 +44,6 @@ void AliFRAMEv0::CreateGeometry()
 */
 //End_Html
 
-  AliMC* pMC=AliMC::GetMC();
   char *filetmp;
   const char *framename = "$(ALICE_ROOT)/Euclid/frame0399.euc";
   char topvol[5];
@@ -58,9 +57,9 @@ void AliFRAMEv0::CreateGeometry()
   if(file) {
     fclose(file);
     printf(" Reading FRAME \n");
-    gAlice->ReadEuclid(framename,12,topvol);
+    gAlice->ReadEuclid(framename,this,topvol);
   } else {
-    printf(" THE GEOM FILE %s DOES NOT EXIST !\n",framename);
+    Warning("CreateGeometry","The Euclid file %s does not exist!\n",framename);
     exit(1);
   }
 //
@@ -69,9 +68,9 @@ void AliFRAMEv0::CreateGeometry()
 // 
 //  AliMatrix(idrotm[2001],90.,0.,90.,90.,180.,0.);
   
-  pMC->Gspos("B010",1,"ALIC",0,0,0,0,"ONLY");
+  gMC->Gspos("B010",1,"ALIC",0,0,0,0,"ONLY");
 
-  pMC->Gsatt("B010", "SEEN", 0);
+  gMC->Gsatt("B010", "SEEN", 0);
 }
 
  
@@ -86,9 +85,9 @@ void AliFRAMEv0::CreateMaterials()
   delete [] filetmp;
   if(file) {
     fclose(file);
-    gAlice->ReadEuclidMedia(name,12);
+    gAlice->ReadEuclidMedia(name,this);
   } else {
-    printf(" THE MEDIA FILE %s DOES NOT EXIST !\n",name);
+    Warning("CreateMaterials","The material file %s does not exist!\n",name);
     exit(1);
   }
 }
