@@ -66,7 +66,7 @@ AliPHOS::AliPHOS(const char* name, const char* title): AliDetector(name, title)
 AliPHOS::~AliPHOS() 
 {  
   // remove the alice folder and alice QA task that PHOS creates instead of AliRun
-  
+   if (fTreeQA) delete fTreeQA ; 
 }
 
 //____________________________________________________________________________

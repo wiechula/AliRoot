@@ -162,14 +162,11 @@ AliPHOSv1::AliPHOSv1(const char *name, const char *title):
 AliPHOSv1::~AliPHOSv1()
 {
   // dtor
-
-  if ( fHits) {
+ if ( fHits) {
     fHits->Delete() ; 
     delete fHits ;
     fHits = 0 ; 
   }
-  if (fTreeQA) 
-    delete fTreeQA ; 
 }
 
 //____________________________________________________________________________
