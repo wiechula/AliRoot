@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.66.2.3  2002/06/25 05:58:41  barbera
+Updated classes and macros to make the ITS data structures compatible with the new IO (from M. Masera)
+
 Revision 1.66.2.2  2002/06/06 14:23:56  hristov
 Merged with v3-08-02
 
@@ -935,10 +938,10 @@ void AliITS::FillModules(Int_t evnt,Int_t bgrev,Int_t nmodules,
     //      none.
     // Return:
     //      none.
-    static TTree *trH1;                 //Tree with background hits
-    static TClonesArray *fHits2;        //List of hits for one track only
+    static TTree *trH1 = 0x0;                 //Tree with background hits
+    static TClonesArray *fHits2 = 0x0;        //List of hits for one track only
     static Bool_t first=kTRUE;
-    static TFile *file;
+    static TFile *file = 0x0;
     const char *addBgr = strstr(option,"Add");
 
     if (addBgr ) {
@@ -951,8 +954,7 @@ void AliITS::FillModules(Int_t evnt,Int_t bgrev,Int_t nmodules,
 	file->ls();
 	// Get Hits Tree header from file
 	if(fHits2) fHits2->Clear();
-	if(trH1) delete trH1;
-	trH1=0;
+	if(trH1) trH1=0;
     /*
 	char treeName[20];
 	sprintf(treeName,"TreeH%d",bgrev);
@@ -1738,7 +1740,7 @@ void AliITS::AddRecPoint(const AliITSRecPoint &r){
 }
 //______________________________________________________________________
 void AliITS::HitsToFastRecPoints(Int_t evNumber,Int_t bgrev,Int_t size,
-				 Option_t *opt0,Option_t *opt1,Text_t *flnm){
+                                  Option_t *opt0,Option_t *opt1,Text_t *flnm){
     // keep galice.root for signal and name differently the file for 
     // background when add! otherwise the track info for signal will be lost !
     // the condition below will disappear when the geom class will be
@@ -1774,29 +1776,34 @@ void AliITS::HitsToFastRecPoints(Int_t evNumber,Int_t bgrev,Int_t size,
 
     //m.b. : this change is nothing but a nice way to make sure
     //the CPU goes up !
-    for(module=0;module<geom->GetIndexMax();module++){
-	id       = geom->GetModuleType(module);
+    
+    cout<<"HitsToFastRecPoints: N mod = "<<geom->GetIndexMax()<<endl;
+    
+    for(module=0;module<geom->GetIndexMax();module++)
+     {
+        id       = geom->GetModuleType(module);
         if (!all && !det[id]) continue;
-	iDetType = DetType(id);
-	sim      = (AliITSsimulation*)iDetType->GetSimulationModel();
-	if (!sim) {
-	    Error("HitsToFastPoints",
-		  "The simulation class was not instanciated!");
-	    exit(1);
-	} // end if !sim
-	mod      = (AliITSmodule *)fITSmodules->At(module);
-	sim->CreateFastRecPoints(mod,module,gRandom);
-    //	gAlice->TreeR()->Fill(); 
-    TBranch *br=fLoader->TreeR()->GetBranch("ITSRecPointsF");
-    br->Fill();
-	ResetRecPoints();
+        iDetType = DetType(id);
+        sim      = (AliITSsimulation*)iDetType->GetSimulationModel();
+        if (!sim) 
+         {
+           Error("HitsToFastPoints","The simulation class was not instanciated!");
+           exit(1);
+         } // end if !sim
+        mod      = (AliITSmodule *)fITSmodules->At(module);
+        sim->CreateFastRecPoints(mod,module,gRandom);
+        cout<<module<<"\r";fflush(0);
+        //gAlice->TreeR()->Fill(); 
+        TBranch *br=fLoader->TreeR()->GetBranch("ITSRecPointsF");
+        br->Fill();
+        ResetRecPoints();
     } // end for module
 
     ClearModules();
-
+    
     fLoader->WriteRecPoints("OVERWRITE");
     // reset tree
-    fLoader->TreeR()->Reset();
+//    fLoader->TreeR()->Reset();
 }
 //______________________________________________________________________
 void AliITS::Digits2Reco(){

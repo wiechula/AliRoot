@@ -195,6 +195,8 @@ Int_t AliLoader::LoadHits(Option_t* opt)
      }
     //else force option was used
    }
+
+  SetHitsFileOption(opt);
   
   Int_t retval;
   retval = OpenHitsFile(opt);
@@ -236,7 +238,8 @@ Int_t AliLoader::LoadSDigits(Option_t* opt)
      }
     //else force option was used
    }
-
+  SetSDigitsFileOption(opt);
+  
   Int_t retval;
   if (fSDigitsFile  == 0x0)
    {
@@ -281,6 +284,8 @@ Int_t AliLoader::LoadDigits(Option_t* opt)
      }
     //else force option was used
    }
+
+  SetDigitsFileOption(opt);
   
   Int_t retval;
   retval = OpenDigitsFile(opt);
@@ -325,6 +330,8 @@ Int_t AliLoader::LoadRecPoints(Option_t* opt)
     //else force option was used
    }
 
+  SetRecPointsFileOption(opt);
+
   Int_t retval;
   retval = OpenRecPointsFile(opt);
   if (retval) 
@@ -365,6 +372,8 @@ Int_t AliLoader::LoadTracks(Option_t* opt)
      }
     //else force option was used
    }
+
+  SetTracksFileOption(opt);
 
   Int_t retval;
   retval = OpenTracksFile(opt); //
@@ -596,9 +605,9 @@ Int_t AliLoader::SetEvent()
     {
       if (CheckReload(fHitsFile,fHitsFileName))
        {
-         Option_t* opt = fHitsFile->GetOption();
          UnloadHits();
-         OpenHitsFile(opt);
+         cout<<"AliLoader::SetEvent: Reloading new file for hits. file opt is "<<fHitsFileOption<<endl;
+         OpenHitsFile(fHitsFileOption);
        }
       fHitsDir = ChangeDir(fHitsFile,evno);
       if (fHitsDir == 0x0)
@@ -612,9 +621,9 @@ Int_t AliLoader::SetEvent()
     {
       if (CheckReload(fSDigitsFile,fSDigitsFileName))
        {
-         Option_t* opt = fSDigitsFile->GetOption();
          UnloadSDigits();
-         OpenSDigitsFile(opt);
+         cout<<"AliLoader::SetEvent: Reloading new file for sdigits. file opt is "<<fSDigitsFileOption<<endl;
+         OpenSDigitsFile(fSDigitsFileOption);
        }
 
       fSDigitsDir = ChangeDir(fSDigitsFile,evno);
@@ -629,9 +638,8 @@ Int_t AliLoader::SetEvent()
     {
       if (CheckReload(fDigitsFile,fDigitsFileName))
        {
-         Option_t* opt = fDigitsFile->GetOption();
          UnloadDigits();
-         OpenDigitsFile(opt);
+         OpenDigitsFile(fDigitsFileOption);
        }
     
       fDigitsDir = ChangeDir(fDigitsFile,evno);
@@ -646,9 +654,8 @@ Int_t AliLoader::SetEvent()
     {
       if (CheckReload(fRecPointsFile,fRecPointsFileName))
        {
-         Option_t* opt = fRecPointsFile->GetOption();
          UnloadRecPoints();
-         OpenRecPointsFile(opt);
+         OpenRecPointsFile(fRecPointsFileOption);
        }
     
       fRecPointsDir = ChangeDir(fRecPointsFile,evno);
@@ -663,10 +670,10 @@ Int_t AliLoader::SetEvent()
     {
       if (CheckReload(fTracksFile,fTracksFileName))
        {
-         Option_t* opt = fTracksFile->GetOption();
          UnloadTracks();
-         OpenTracksFile(opt);
+         OpenTracksFile(fTracksFileOption);
        }
+
       fTracksDir = ChangeDir(fTracksFile,evno);
       if (fTracksDir == 0x0)
         {
@@ -700,7 +707,7 @@ Int_t AliLoader::GetEvent()
    if(fSDigitsFile) PostSDigits();
    if(fDigitsFile) PostDigits();
    if(fRecPointsFile) PostRecPoints();
-   if(fTracksFile)  PostTracks();
+   if(fTracksFile) PostTracks();
  
    return 0;
  
@@ -728,6 +735,7 @@ Int_t AliLoader::WriteHits(Option_t* opt)
   if (fHitsDir == 0x0)
    { 
      //if not open, try to open
+     SetHitsFileOption("UPDATE");
      if (OpenHitsFile("UPDATE"))
       {  
         //oops, can not open the file, give an error message and return error code
@@ -785,6 +793,7 @@ Int_t AliLoader::WriteSDigits(Option_t* opt)
   if (fSDigitsDir == 0x0)
    { 
      //if not open, try to open
+     SetSDigitsFileOption("UPDATE");
      if (OpenSDigitsFile("UPDATE"))
       {  
         //oops, can not open the file, give an error message and return error code
@@ -830,7 +839,15 @@ Int_t AliLoader::WriteSDigits(Option_t* opt)
 Int_t AliLoader::WriteDigits(Option_t* opt)
  {
   //try to get digits from folder  
-  TTree *digits = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(fDigitsContainerName));
+  TObject * obj = GetDetectorDataFolder()->FindObject(fDigitsContainerName);
+  if(obj == 0x0)
+   {//did not get, nothing to write
+     Warning("WriteDigits","Digits object named %s not found in folder %s.\nNothing to write. Returning",
+              fDigitsContainerName.Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
+     return 0;
+   }
+
+  TTree *digits = dynamic_cast<TTree*>(obj);
   if(digits == 0x0)
    {//did not get, nothing to write
      Warning("WriteDigits","Digits object named %s not found in folder %s.\nNothing to write. Returning",
@@ -842,6 +859,7 @@ Int_t AliLoader::WriteDigits(Option_t* opt)
   if (fDigitsDir == 0x0)
    { 
      //if not open, try to open
+     SetDigitsFileOption("UPDATE");
      if (OpenDigitsFile("UPDATE"))
       {  
         //oops, can not open the file, give an error message and return error code
@@ -897,6 +915,7 @@ Int_t AliLoader::WriteRecPoints(Option_t* opt)
   if (fRecPointsDir == 0x0)
    { 
      //if not open, try to open
+     SetRecPointsFileOption("UPDATE");
      if (OpenRecPointsFile("UPDATE"))
       {  
         //oops, can not open the file, give an error message and return error code
@@ -941,7 +960,15 @@ Int_t AliLoader::WriteRecPoints(Option_t* opt)
 /*****************************************************************************/ 
 Int_t AliLoader::WriteTracks(Option_t* opt)
  {
-  TTree *tracks = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(fTracksContainerName));
+  TObject * obj = GetDetectorDataFolder()->FindObject(fTracksContainerName);
+  if(obj == 0x0)
+   {//did not get, nothing to write
+     Warning("WriteTracks","Tracks object named %s not found in folder %s.\nNothing to write. Returning",
+              fTracksContainerName.Data(), GetDataFolder()->FindFullPathName(GetDetectorDataFolder()->GetName()));
+     return 0;
+   }
+  
+  TTree *tracks = dynamic_cast<TTree*>(obj);
   if(tracks == 0x0)
    {//did not get, nothing to write
      Warning("WriteTracks","Tracks object named %s not found in folder %s.\nNothing to write. Returning",
@@ -953,6 +980,7 @@ Int_t AliLoader::WriteTracks(Option_t* opt)
   if (fTracksDir == 0x0)
    { 
      //if not open, try to open
+     SetTracksFileOption("UPDATE");
      if (OpenTracksFile("UPDATE"))
       {  
         //oops, can not open the file, give an error message and return error code
@@ -1486,6 +1514,8 @@ void AliLoader::MakeTracksContainer()
 Int_t AliLoader::PostSDigits()
 {
 //Posts the SDigits container to proper folder
+//  Warning("PostSDigits","Called");
+
   if (fSDigitsDir == 0x0)
    {
      Error("PostSDigits","SDigits Directory is NULL. LoadSDigits before.");
@@ -1521,6 +1551,8 @@ Int_t AliLoader::PostSDigits()
 Int_t AliLoader::PostHits()
 {
 //takes the hits container from file and puts it in the folder
+  
+//  Warning("PostHits","Called");
   
   if (fHitsDir == 0x0)
    {
@@ -1592,7 +1624,7 @@ Int_t AliLoader::PostRecPoints()
 Int_t AliLoader::PostTracks()
 {
 //retrives tracks container from file and posts it to proper folder
-//  cout<<"####PostTracks####\n";
+  cout<<"####PostTracks####\n";
   if (fTracksDir == 0x0)
    {
      Error("PostTracks","File with tracks in not opened");
@@ -1907,37 +1939,47 @@ void AliLoader::CleanTracker()
 TTree* AliLoader::TreeH()
 {
   //Get a hits container from the detector data folder
-  TTree* tree = (TTree*)GetDetectorDataFolder()->FindObject(GetHitsContainerName());
-  return tree;
+  TObject* obj = GetDetectorDataFolder()->FindObject(GetHitsContainerName());
+  if (obj)
+   return dynamic_cast<TTree*>(obj);
+  else return 0x0;
 }
 /*****************************************************************************/ 
 TTree* AliLoader::TreeS()
 {
   //Get a hits container from the detector data folder
-  TTree* tree = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(GetSDigitsContainerName()));
-  return tree;
+  TObject* obj = GetDetectorDataFolder()->FindObject(GetSDigitsContainerName());
+  if (obj)
+   return dynamic_cast<TTree*>(obj);
+  else return 0x0;
 }
 /*****************************************************************************/ 
 TTree* AliLoader::TreeD()
 {
   //Get a hits container from the detector data folder
-  TTree* tree = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(GetDigitsContainerName()));
-  return tree;
+  TObject* obj = GetDetectorDataFolder()->FindObject(GetDigitsContainerName());
+  if (obj)
+   return dynamic_cast<TTree*>(obj);
+  else return 0x0;
 }
 /*****************************************************************************/ 
 TTree* AliLoader::TreeR()
 {
   //Get a hits container from the detector data folder
-  TTree* tree = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(GetRecPointsContainerName()));
-  return tree;
+  TObject* obj = GetDetectorDataFolder()->FindObject(GetRecPointsContainerName());
+  if (obj)
+   return dynamic_cast<TTree*>(obj);
+  else return 0x0;
 }
 /*****************************************************************************/ 
 
 TTree* AliLoader::TreeT()
 {
   //Get a hits container from the detector data folder
-  TTree* tree = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(GetTracksContainerName()));
-  return tree;
+  TObject* obj = GetDetectorDataFolder()->FindObject(GetTracksContainerName());
+  if (obj)
+   return dynamic_cast<TTree*>(obj);
+  else return 0x0;
 }
 /*****************************************************************************/ 
 
@@ -2057,7 +2099,6 @@ const TString AliLoader::SetFileOffset(const TString& fname)
   return out;
 
 }
-
 /*****************************************************************************/ 
 
 void AliLoader::SetDigitsFileNameSuffix(const TString& suffix)
@@ -2072,7 +2113,7 @@ void AliLoader::SetDigitsFileNameSuffix(const TString& suffix)
   fDigitsFileName = fDigitsFileName.ReplaceAll(dotroot,suffixdotroot);
   cout<<"                 after: "<<fDigitsFileName<<endl;
 }
-
+/*****************************************************************************/ 
 
 Bool_t AliLoader::CheckReload(const TFile* file, const TString& basefilename)
 {
@@ -2082,3 +2123,76 @@ Bool_t AliLoader::CheckReload(const TFile* file, const TString& basefilename)
  if (tmp.CompareTo(file->GetName())) return kTRUE;  //file must be reloaded
  return  kFALSE;
 }
+/*****************************************************************************/ 
+
+void AliLoader::SetHitsFileOption(Option_t* newopt)
+{
+//Hits File Option in open
+  if (fHitsFileOption.CompareTo(newopt) == 0) return;
+  
+  fHitsFileOption = newopt;
+  if (fHitsFile)
+   {
+     UnloadHits();
+     LoadHits(fHitsFileOption);
+   }
+}
+/*****************************************************************************/ 
+
+void AliLoader::SetSDigitsFileOption(Option_t* newopt)
+{
+//SDigits File Option in open
+  if (fSDigitsFileOption.CompareTo(newopt) == 0) return;
+  
+  fSDigitsFileOption = newopt;
+  if (fSDigitsFile)
+   {
+     UnloadSDigits();
+     LoadSDigits(fSDigitsFileOption);
+   }
+}
+/*****************************************************************************/ 
+
+void AliLoader::SetDigitsFileOption(Option_t* newopt)
+{
+//Digits File Option in open
+  if (fDigitsFileOption.CompareTo(newopt) == 0) return;
+  
+  fDigitsFileOption = newopt;
+  if (fDigitsFile)
+   {
+     UnloadDigits();
+     LoadDigits(fDigitsFileOption);
+   }
+
+}
+/*****************************************************************************/ 
+
+void AliLoader::SetRecPointsFileOption(Option_t* newopt)
+{
+//RecPoints File Option in open
+  if (fRecPointsFileOption.CompareTo(newopt) == 0) return;
+  
+  fRecPointsFileOption = newopt;
+  if (fRecPointsFile)
+   {
+     UnloadRecPoints();
+     LoadRecPoints(fRecPointsFileOption);
+   }
+}
+/*****************************************************************************/ 
+
+void AliLoader::SetTracksFileOption(Option_t* newopt)
+{
+//Tracks File Option in open
+  if (fTracksFileOption.CompareTo(newopt) == 0) return;
+  
+  fTracksFileOption = newopt;
+  if (fTracksFile)
+   {
+     UnloadTracks();
+     LoadTracks(fTracksFileOption);
+   }
+}
+/*****************************************************************************/ 
+

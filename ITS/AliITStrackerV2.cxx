@@ -30,6 +30,10 @@
 #include "AliITSclusterV2.h"
 #include "AliITStrackerV2.h"
 
+#include "AliRunLoader.h"
+#include "AliLoader.h"
+#include "AliITSLoader.h"
+
 //#define DEBUG
 
 #ifdef DEBUG
@@ -39,8 +43,8 @@ Int_t LAB=70201;
 AliITStrackerV2::AliITSlayer AliITStrackerV2::fLayers[kMaxLayer]; // ITS layers
 
 AliITStrackerV2::
-AliITStrackerV2(const AliITSgeom *geom, Int_t eventn) throw (const Char_t *) :
-AliTracker() {
+AliITStrackerV2(const AliITSgeom *geom, const char* evfoldname, Int_t eventn) throw (const Char_t *) :
+AliTracker(), fEvFolderName(evfoldname)  {
   //--------------------------------------------------------------------
   //This is the AliITStracker constructor
   //It also reads clusters from a root file
@@ -51,7 +55,8 @@ AliTracker() {
 
   Float_t x,y,z;
   Int_t i;
-  for (i=1; i<kMaxLayer+1; i++) {
+  for (i=1; i<kMaxLayer+1; i++) 
+   {
     Int_t nlad=g->GetNladders(i);
     Int_t ndet=g->GetNdetectors(i);
 
@@ -80,30 +85,39 @@ AliTracker() {
         phi+=0.5*TMath::Pi(); 
         AliITSdetector &det=fLayers[i-1].GetDetector((j-1)*ndet + k-1); 
 
-if (phi<0) phi += 2*TMath::Pi();
+        if (phi<0) phi += 2*TMath::Pi();
 
         new(&det) AliITSdetector(r,phi); 
       } 
     }  
-
   }
 
   try {
      //Read clusters
      //MI change 
-     char   cname[100]; 
-     sprintf(cname,"TreeC_ITS_%d",eventn);
-     TTree *cTree=(TTree*)gDirectory->Get(cname);
 
-     if (!cTree) throw 
-        ("AliITStrackerV2::AliITStrackerV2 can't get cTree !\n");
+  AliRunLoader* rl = AliRunLoader::GetRunLoader(fEvFolderName);
+  if (rl == 0x0)
+   {
+     Error("AliTPCtracker","Can not get RL from specified folder %s",fEvFolderName.Data());
+     return;
+   }
+  rl->GetEvent(fEventN);
+  
+  AliITSLoader* itsl = (AliITSLoader*)rl->GetLoader("ITSLoader");
+  if (itsl->TreeC() == 0x0) itsl->LoadRawClusters();
 
-     TBranch *branch=cTree->GetBranch("Clusters");
-     if (!branch) throw 
-        ("AliITStrackerV2::AliITStrackerV2 can't get Clusters branch !\n");
+  TTree *cTree=itsl->TreeC();
 
-     TClonesArray dummy("AliITSclusterV2",10000), *clusters=&dummy;
-     branch->SetAddress(&clusters);
+  if (!cTree) throw 
+       ("AliITStrackerV2::AliITStrackerV2 can't get cTree !\n");
+
+  TBranch *branch=cTree->GetBranch("Clusters");
+  if (!branch) throw 
+      ("AliITStrackerV2::AliITStrackerV2 can't get Clusters branch !\n");
+
+  TClonesArray dummy("AliITSclusterV2",10000), *clusters=&dummy;
+  branch->SetAddress(&clusters);
 
      Int_t nentr=(Int_t)cTree->GetEntries();
      for (i=0; i<nentr; i++) {
@@ -124,7 +138,7 @@ cout<<lay-1<<' '<<lad-1<<' '<<det-1<<' '<<c->GetY()<<' '<<c->GetZ()<<endl;
        }
        clusters->Delete();
      }
-     delete cTree; //Thanks to Mariana Bondila
+    itsl->UnloadRecPoints();
   }
   catch (const Char_t *msg) {
     cerr<<msg<<endl;
@@ -141,33 +155,35 @@ cout<<lay-1<<' '<<lad-1<<' '<<det-1<<' '<<c->GetY()<<' '<<c->GetZ()<<endl;
 static Int_t lbl;
 //#endif
 
-Int_t AliITStrackerV2::Clusters2Tracks(const TFile *inp, TFile *out) {
+Int_t AliITStrackerV2::Clusters2Tracks() 
+ {
   //--------------------------------------------------------------------
   //This functions reconstructs ITS tracks
   //--------------------------------------------------------------------
-  TFile *in=(TFile*)inp;
-  TDirectory *savedir=gDirectory; 
 
-  if (!in->IsOpen()) {
-     cerr<<"AliITStrackerV2::Clusters2Tracks(): ";
-     cerr<<"file with TPC tracks is not open !\n";
+  AliRunLoader* rl = AliRunLoader::GetRunLoader(fEvFolderName);
+  if (rl == 0x0)
+   {
+     Error("AliTPCtracker","Can not get RL from specified folder %s",fEvFolderName.Data());
      return 1;
-  }
-
-  if (!out->IsOpen()) {
-     cerr<<"AliITStrackerV2::Clusters2Tracks(): ";
-     cerr<<"file for ITS tracks is not open !\n";
-     return 2;
-  }
-
-  in->cd();
- 
-  char   tname[100];
+   }
+  rl->GetEvent(fEventN);
+  
+  AliITSLoader* itsl = (AliITSLoader*)rl->GetLoader("ITSLoader");
+  AliLoader* tpcl = rl->GetLoader("TPCLoader");
+  if ( !tpcl || !itsl)
+   {
+    Error("Clusters2Tracks","Can not get loaders");
+    return 2;
+   } 
+   
   Int_t nentr=0; TObjArray itsTracks(15000);
 
   {/* Read TPC tracks */ 
-    sprintf(tname,"TreeT_TPC_%d",fEventN);
-    TTree *tpcTree=(TTree*)in->Get(tname);
+    
+    if (tpcl->TreeT() == 0x0) tpcl->LoadTracks();
+    
+    TTree *tpcTree = tpcl->TreeT();
     if (!tpcTree) {
        cerr<<"AliITStrackerV2::Clusters2Tracks(): "
              "can't get a tree with TPC tracks !\n";
@@ -198,16 +214,16 @@ Int_t AliITStrackerV2::Clusters2Tracks(const TFile *inp, TFile *out) {
 
        itsTracks.AddLast(t);
     }
-    delete tpcTree; //Thanks to Mariana Bondila
     delete itrack;
   }
   itsTracks.Sort();
 
-  out->cd();
 
-  sprintf(tname,"TreeT_ITS_%d",fEventN);
-  TTree itsTree(tname,"Tree with ITS tracks");
+  if (itsl->TreeT() == 0x0) itsl->MakeTree("T");
+  
+  TTree& itsTree = *itsl->TreeT();
   AliITStrackV2 *otrack=&fBestTrack;
+  
   itsTree.Branch("tracks","AliITStrackV2",&otrack,32000,0);
 
   for (fPass=0; fPass<2; fPass++) {
@@ -261,21 +277,26 @@ cout<<fBestTrack.GetNumberOfClusters()<<" number of clusters\n\n";
      }
   }
 
-  itsTree.Write();
+  itsl->WriteTracks("OVERWRITE");
 
   itsTracks.Delete();
-  savedir->cd();
+
   cerr<<"Number of TPC tracks: "<<nentr<<endl;
   cerr<<"Number of prolonged tracks: "<<itsTree.GetEntries()<<endl;
 
   return 0;
 }
 
-Int_t AliITStrackerV2::PropagateBack(const TFile *inp, TFile *out) {
+Int_t AliITStrackerV2::PropagateBack() {
   //--------------------------------------------------------------------
   //This functions propagates reconstructed ITS tracks back
   //--------------------------------------------------------------------
-  TFile *in=(TFile*)inp;
+  cout<<"This method is not converted to NewIO yet\n";
+  return 1;
+
+  TFile *in=0x0;
+  TFile *out=0x0;
+  
   TDirectory *savedir=gDirectory; 
 
   if (!in->IsOpen()) {
@@ -431,8 +452,6 @@ for (Int_t k=0; k<nc; k++) {
   cerr<<"Number of back propagated ITS tracks: "<<ntrk<<endl;
 
   delete itrack;
-
-  delete itsTree; //Thanks to Mariana Bondila
 
   return 0;
 }

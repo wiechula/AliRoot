@@ -109,7 +109,7 @@ AliRunLoader::~AliRunLoader()
   RemoveEventFolder();
   //fEventFolder is deleted by the way of removing - TopAliceFolder owns it
 
-  delete fGAFile; 
+  delete fGAFile;
   delete fKineFile;
   delete fTrackRefsFile;
 }
@@ -250,10 +250,12 @@ Int_t AliRunLoader::SetEvent()
      tmp = SetFileOffset(fKineFileName);
      if (tmp.CompareTo(fKineFile->GetName()) != 0)
       { 
-        cout<<"Reloading Kine: ev number "<<fCurrentEvent
-            <<"old filename: "<<fKineFile->GetName()
-            <<"new filename: "<<tmp<<endl;
         Option_t* opt = fKineFile->GetOption();
+        cout<<" Reloading Kine: ev number "<<fCurrentEvent
+            <<" old filename: "<<fKineFile->GetName()
+            <<" option: "<<opt
+            <<" new filename: "<<tmp<<endl;
+        
         UnloadKinematics();
         OpenKineFile(opt);
       }
@@ -261,7 +263,7 @@ Int_t AliRunLoader::SetEvent()
      fKineDir = AliLoader::ChangeDir(fKineFile,fCurrentEvent);
      if (fKineDir == 0x0)
       {
-        Error("SetEvent","Can not change to root directory in file %s",fKineFileName.Data());
+        Error("SetEvent","Can not change to root directory in file %s",fKineFile->GetName());
         return 1;
       }
    }
@@ -280,7 +282,7 @@ Int_t AliRunLoader::SetEvent()
      fTrackRefsDir = AliLoader::ChangeDir(fTrackRefsFile,fCurrentEvent);
      if (fTrackRefsDir == 0x0)
       {
-        Error("SetEvent","Can not change to root directory in file %s",fTrackRefsFileName.Data());
+        Error("SetEvent","Can not change to root directory in file %s",fTrackRefsFile->GetName());
         return 2;
       }
    }
@@ -310,25 +312,7 @@ AliRunLoader* AliRunLoader::Open
  cout<<"\n\n\n"<<endl;
  
  AliRunLoader* result = 0x0;
- TFile * gAliceFile = 0x0;
- 
- gAliceFile = (TFile*)gROOT->GetListOfFiles()->FindObject(filename);
- if (gAliceFile==0)
-    gAliceFile = TFile::Open(filename,option);//open a file
- else
-  {
-    cerr<<"Warning <AliRunLoader::Open>: File "<<filename<<"already open"<<endl;
-    TString opt(gAliceFile->GetOption());
-    if (opt.CompareTo(option,TString::kIgnoreCase))
-     {
-      cerr<<"Warning <AliRunLoader::Open>: File "<<filename
-           <<" already has different open option("
-           <<gAliceFile->GetOption()<<") than desired ("<<option<<"). REOPENING!"<<endl;
-      delete gAliceFile;
-      gAliceFile = TFile::Open(filename,option);//open a file
-     }
-  }
-
+ TFile * gAliceFile = TFile::Open(filename,option);//open a file
  if (!gAliceFile) 
   {//null pointer returned
     cerr<<"ERROR <AliRunLoader::Open>"
@@ -780,6 +764,9 @@ Int_t AliRunLoader::WriteHeader(Option_t* opt)
   tree->SetDirectory(fGAFile);
   tree->Write(0,TObject::kOverwrite);
   fGAFile->Write(0,TObject::kOverwrite);
+
+  cout<<"WRITTEN\n\n";
+  
   return 0;
 }
 /**************************************************************************/

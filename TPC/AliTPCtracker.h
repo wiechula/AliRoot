@@ -37,7 +37,7 @@ public:
 
    AliCluster *GetCluster(Int_t index) const;
    Int_t Clusters2Tracks();
-   Int_t PropagateBack(const TFile *in, TFile *out);
+   Int_t PropagateBack();
 
    virtual void  CookLabel(AliKalmanTrack *t,Float_t wrong) const; 
 

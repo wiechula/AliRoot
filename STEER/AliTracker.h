@@ -20,7 +20,7 @@ public:
   AliTracker() { fX=fY=fZ=0.; }
   virtual ~AliTracker(){}
   virtual Int_t Clusters2Tracks()=0;
-  virtual Int_t PropagateBack(const TFile *in, TFile *out)=0;
+  virtual Int_t PropagateBack()=0;
   static void SetVertex(Double_t *xyz) { fX=xyz[0]; fY=xyz[1]; fZ=xyz[2]; }
 
 //protected:

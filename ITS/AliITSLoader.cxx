@@ -123,6 +123,8 @@ void AliITSLoader::MakeRawClustersContainer() {
   //Make the container for raw clusters
 
   //this virtual method creates the tree for hits in the file
+  if (TreeC())  return;
+ 
   cout<<"AliITSLoader::MakeRawClustersContainer: Making raw clusters container\n";
   TTree* treeC = new TTree(fRawClustersContainerName,"RawClusters Container"); //make a tree
   if (treeC == 0x0) {

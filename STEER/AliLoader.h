@@ -74,11 +74,17 @@ class AliLoader: public TNamed
     
   //void SetTopFolder(TString& str){}; //Sets root top folder for the run
     
-    void           SetHitsFileName(TString& fname){fHitsFileName = fname;}
-    void           SetSDigitsFileName(TString& fname){fSDigitsFileName = fname;}
-    void           SetDigitsFileName(TString& fname){fDigitsFileName = fname;}
-    void           SetRecPointsFileName(TString& fname){fRecPointsFileName = fname;}
-    void           SetTracksFileName(TString& fname){fTracksFileName = fname;}
+    void           SetHitsFileName(const TString& fname){fHitsFileName = fname;}
+    void           SetSDigitsFileName(const TString& fname){fSDigitsFileName = fname;}
+    void           SetDigitsFileName(const TString& fname){fDigitsFileName = fname;}
+    void           SetRecPointsFileName(const TString& fname){fRecPointsFileName = fname;}
+    void           SetTracksFileName(const TString& fname){fTracksFileName = fname;}
+
+    const TString& GetHitsFileName(){return fHitsFileName;}
+    const TString& GetSDigitsFileName(){return fSDigitsFileName;}
+    const TString& GetDigitsFileName(){return fDigitsFileName;}
+    const TString& GetRecPointsFileName(){return fRecPointsFileName;}
+    const TString& GetTracksFileName(){return fTracksFileName;}
   
     Int_t          SetEventFolder(TFolder* eventfolder);//sets the event folder
     Int_t          Register();//triggers creation of subfolders for a given detector
@@ -139,6 +145,12 @@ class AliLoader: public TNamed
     virtual void  CleanDigitizer();
     virtual void  CleanReconstructioner();
     virtual void  CleanTracker();
+
+    void          SetHitsFileOption(Option_t* newopt);//Hits File Option in open
+    void          SetSDigitsFileOption(Option_t* newopt);//
+    void          SetDigitsFileOption(Option_t* newopt);//
+    void          SetRecPointsFileOption(Option_t* newopt);//
+    void          SetTracksFileOption(Option_t* newopt);//
     
     virtual void  SetCompressionLevel(Int_t cl);
     void          SetDirName(TString& name);
@@ -193,7 +205,7 @@ class AliLoader: public TNamed
     /*********        D A T A          ************/
     /**********************************************/
    
-    TString      fDetectorName;
+    TString       fDetectorName;
     
     TString       fHitsFileName;  //name of file with hits
     TString       fSDigitsFileName;//name of file with SDigits 
@@ -212,7 +224,14 @@ class AliLoader: public TNamed
     TDirectory*   fDigitsDir; //!pointer to Dir with current event in Digits File
     TDirectory*   fRecPointsDir; //!pointer to Dir with current event in Recontructed Points File
     TDirectory*   fTracksDir; //!pointer to Dir with current event in Tracks File
-    
+
+//these variables were introduced because if TFile is created with "recreated" stored option is "CREATE"
+//and we need to remeber this (Max events per file functionality)
+    TString       fHitsFileOption;//Hits File Option in open
+    TString       fSDigitsFileOption;//
+    TString       fDigitsFileOption;//
+    TString       fRecPointsFileOption;//
+    TString       fTracksFileOption;//
     
 
     TFolder*      fModuleFolder;      //!Folder that contains the modules 

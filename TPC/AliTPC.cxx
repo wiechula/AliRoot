@@ -1411,7 +1411,6 @@ void AliTPC::SDigits2Digits2(Int_t eventnumber)
 
   //conect tree with sSDigits
   fLoader->LoadSDigits("READ");
-  fLoader->LoadDigits("UPDATE");
   
   TTree *t = fLoader->TreeS();
   
@@ -1771,13 +1770,17 @@ void AliTPC::Hits2SDigits2(Int_t eventnumber)
  //----------------------------------------------------
  // Loop over all sectors for a single event
  //----------------------------------------------------
-  AliRunLoader* rl = (AliRunLoader*)fLoader->GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName);
+//  AliRunLoader* rl = (AliRunLoader*)fLoader->GetEventFolder()->FindObject(AliRunLoader::fgkRunLoaderName);
+
+  AliRunLoader* rl = fLoader->GetRunLoader();
+
   rl->GetEvent(eventnumber);
   if (fLoader->TreeH() == 0x0)
    {
      if(fLoader->LoadHits())
       {
         Error("Hits2Digits","Can not load hits.");
+        return;
       }
    }
   SetTreeAddress();
@@ -1819,6 +1822,14 @@ void AliTPC::Hits2SDigits2(Int_t eventnumber)
    }
 
  fLoader->WriteSDigits("OVERWRITE");
+
+//this line prevents the crash in the similar one
+//on the beginning of this method
+//destructor attempts to reset the tree, which is deleted by the loader
+//need to be redesign
+ if(GetDigitsArray()) delete GetDigitsArray();
+ SetDigitsArray(0x0);
+ 
 }
 
 

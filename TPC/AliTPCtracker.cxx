@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.16.2.2  2002/06/06 14:21:19  hristov
+Merged with v3-08-02
+
 Revision 1.16.2.1  2002/05/31 09:38:00  hristov
 First set of changes done by Piotr
 
@@ -652,7 +655,8 @@ Int_t AliTPCtracker::ReadSeeds(const TFile *inp) {
 }
 
 //_____________________________________________________________________________
-Int_t AliTPCtracker::Clusters2Tracks() {
+Int_t AliTPCtracker::Clusters2Tracks() 
+{
   //-----------------------------------------------------------------
   // This is a track finder.
   //-----------------------------------------------------------------
@@ -680,16 +684,16 @@ Int_t AliTPCtracker::Clusters2Tracks() {
    }
  
   if ( tpcl->TreeR() == 0x0)
-  
-  retval = tpcl->LoadRecPoints("READ");
-  if (retval)
-    {
-      Error("Clusters2Tracks","Error while loading Reconstructed Points");
-      return 1;
-    }
-
+   { 
+    retval = tpcl->LoadRecPoints("READ");
+    if (retval)
+     {
+       Error("Clusters2Tracks","Error while loading Reconstructed Points");
+       return 1;
+     }
+   }
+   
   if (tpcl->TreeT() == 0x0) tpcl->MakeTree("T");
-  
 
   TTree &tracktree = *(tpcl->TreeT());
   
@@ -769,36 +773,69 @@ Int_t AliTPCtracker::Clusters2Tracks() {
 }
 
 //_____________________________________________________________________________
-Int_t AliTPCtracker::PropagateBack(const TFile *inp, TFile *out) {
+Int_t AliTPCtracker::PropagateBack() 
+ {
   //-----------------------------------------------------------------
   // This function propagates tracks back through the TPC.
   //-----------------------------------------------------------------
+  
+  cout<<"This method is not converted to NewIO yet\n";
+  return 1;
+
   fSeeds=new TObjArray(15000);
+  Int_t retval = 0;
 
-  TFile *in=(TFile*)inp;
-  TDirectory *savedir=gDirectory; 
-
-  if (!in->IsOpen()) {
-     cerr<<"AliTPCtracker::PropagateBack(): ";
-     cerr<<"file with back propagated ITS tracks is not open !\n";
+  AliRunLoader* rl = AliRunLoader::GetRunLoader(fEvFolderName);
+  if (rl == 0x0)
+   {
+     Error("Clusters2Tracks","Can not get RL from specified folder %s",fEvFolderName.Data());
      return 1;
-  }
+   }
+  
+  retval = rl->GetEvent(fEventN);
+  if (retval)
+   {
+     Error("Clusters2Tracks","Error while getting event %d",fEventN);
+     return 1;
+   }
+  
+  AliLoader* tpcl = rl->GetLoader("TPCLoader");
+  if (tpcl == 0x0)
+   {
+     Error("Clusters2Tracks","Can not get TPC Laoder from Run Loader");
+     return 1;
+   }
 
-  if (!out->IsOpen()) {
-     cerr<<"AliTPCtracker::PropagateBack(): ";
-     cerr<<"file for back propagated TPC tracks is not open !\n";
-     return 2;
-  }
+  AliLoader* itsl = rl->GetLoader("ITSLoader");
+  if (tpcl == 0x0)
+   {
+     Error("Clusters2Tracks","Can not get ITS Laoder from Run Loader");
+     return 1;
+   }
+  
+  if (itsl->TreeT() == 0x0) itsl->LoadTracks();
 
-  in->cd();
-  TTree *bckTree=(TTree*)in->Get("TreeT_ITSb_0");
+  TTree *bckTree=itsl->TreeT();
   if (!bckTree) {
      cerr<<"AliTPCtracker::PropagateBack() ";
      cerr<<"can't get a tree with back propagated ITS tracks !\n";
      return 3;
   }
+  
   AliTPCtrack *bckTrack=new AliTPCtrack; 
   bckTree->SetBranchAddress("tracks",&bckTrack);
+
+
+  TFile* in = 0x0;
+  TFile* out = 0x0;
+  cout<<"And NOW there will be a segmentation violation!!!!\n";
+  bckTree=(TTree*)in->Get("TreeT_ITSb_0");
+  if (!bckTree) {
+     cerr<<"AliTPCtracker::PropagateBack() ";
+     cerr<<"can't get a tree with back propagated ITS tracks !\n";
+     return 3;
+  }
+
 
   TTree *tpcTree=(TTree*)in->Get("TreeT_TPC_0");
   if (!tpcTree) {
@@ -891,7 +928,7 @@ Int_t AliTPCtracker::PropagateBack(const TFile *inp, TFile *out) {
   UnloadOuterSectors();
 
   backTree.Write();
-  savedir->cd();
+
   cerr<<"Number of seeds: "<<nseed<<endl;
   cerr<<"Number of back propagated ITS tracks: "<<bckN<<endl;
   cerr<<"Number of back propagated TPC tracks: "<<found<<endl;

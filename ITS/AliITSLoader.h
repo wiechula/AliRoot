@@ -23,7 +23,7 @@ class AliITSLoader: public AliLoader
     Int_t          LoadRawClusters(Option_t* opt="");
     virtual void   MakeTree(Option_t* opt);
     virtual void   SetCompressionLevel(Int_t cl);
-    void           SetRawClustersFileName(TString& fname){fRawClustersFileName = fname;}
+    void           SetRawClustersFileName(const TString& fname){fRawClustersFileName = fname;}
     virtual Int_t  SetEvent();
     TTree*         TreeC(); // returns a pointer to the tree of  RawClusters
     void           UnloadRawClusters(){CleanRawClusters(); CloseRawClustersFile();}

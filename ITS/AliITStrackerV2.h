@@ -11,6 +11,7 @@
 #include "AliTracker.h"
 #include "AliITSrecoV2.h"
 #include "AliITStrackV2.h"
+#include "AliConfig.h"
 
 class AliITSclusterV2;
 class AliITSgeom;
@@ -21,10 +22,11 @@ class TFile;
 class AliITStrackerV2 : public AliTracker {
 public:
   AliITStrackerV2():AliTracker(){}
-  AliITStrackerV2(const AliITSgeom *geom,Int_t event=0) throw (const Char_t *);
+  AliITStrackerV2(const AliITSgeom *geom, const char* evfoldname = AliConfig::fgkDefaultEventFolderName, 
+                  Int_t event=0) throw (const Char_t *);
   AliCluster *GetCluster(Int_t index) const;
-  Int_t Clusters2Tracks(const TFile *in, TFile *out);
-  Int_t PropagateBack(const TFile *in, TFile *out);
+  Int_t Clusters2Tracks();
+  Int_t PropagateBack();
   void SetupFirstPass(Int_t *flags, Double_t *cuts=0);
   void SetupSecondPass(Int_t *flags, Double_t *cuts=0);
   Bool_t RefitAt(Double_t x, AliITStrackV2 *t, Int_t *index);
@@ -94,6 +96,7 @@ private:
   AliITStrackV2 fTrackToFollow;          // followed track
   Int_t fPass;                           // current pass through the data 
   Int_t fConstraint[2];                  // constraint flags
+  TString fEvFolderName;  //event folder name
 };
 
 

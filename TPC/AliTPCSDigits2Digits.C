@@ -70,7 +70,9 @@ Int_t AliTPCSDigits2Digits(Int_t nevent=1)
 
   for(Int_t eventn =0;eventn<nevent;eventn++){
     printf("Processing event %d\n",eventn);
+    cout<<"rl->GetEvent(eventn);\n";
     rl->GetEvent(eventn);
+    cout<<"TPC->SDigits2Digits2(eventn);\n";
     TPC->SDigits2Digits2(eventn);
   } 
 
