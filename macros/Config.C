@@ -10,7 +10,19 @@ void Config()
     // Set Random Number seed
     // gRandom->SetSeed(12345);
 
-    new     AliGeant3("C++ Interface to Geant3");
+    
+    // libraries required by geant321
+    // gSystem->Load("libMC");  
+    gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libminicern");
+    gSystem->Load("$(ROOTSYS)/lib/libPhysics");
+    gSystem->Load("$(ROOTSYS)/lib/libEG"); 
+    gSystem->Load("$(ROOTSYS)/lib/libEGPythia6");
+    //gSystem->Load("$(ROOTSYS)/lib/libPythia6");  
+    gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libpythia6");  
+    gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libgeant321");    
+    gSystem->Load("$(ALICE_ROOT)/lib/tgt_$(ALICE_TARGET)/libITS");  
+
+    new  TGeant3("C++ Interface to Geant3");
 
     if (!gSystem->Getenv("CONFIG_FILE"))
     {
@@ -23,7 +35,7 @@ void Config()
 
     //
     // Set External decayer
-    AliDecayer *decayer = new AliDecayerPythia();
+    TVirtualMCDecayer *decayer = new AliDecayerPythia();
 
     decayer->SetForceDecay(kAll);
     decayer->Init();
