@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.18.6.1  2002/05/31 21:42:02  mariana
+Fix memory leak
+
 Revision 1.18  2001/08/24 21:06:37  nilsen
 Added more documentation, fixed up some coding violations, and some
 forward declorations.
@@ -703,9 +706,17 @@ void AliITSgeom::GetModuleId(Int_t index,Int_t &lay,Int_t &lad,Int_t &det){
     // Int_t lad    The ladder number. Starting from 1.
     // Int_t det    The detector number. Starting from 1.
     Int_t id[3];
-
-    GetGeomMatrix(index)->GetIndex(id);
-    lay = id[0]; lad = id[1]; det = id[2];
+    AliITSgeomMatrix *g = GetGeomMatrix(index);
+    if (g == 0x0)
+     {
+      Error("GetModuleId","Can not get GeoMatrix for index = %d",index);
+      lay = -1; lad = -1; det = -1;
+     }
+    else
+     {
+      g->GetIndex(id);
+      lay = id[0]; lad = id[1]; det = id[2];
+     }
     return;
 
     // The old way kept for posterity.

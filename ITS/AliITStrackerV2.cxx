@@ -119,10 +119,13 @@ AliTracker(), fEvFolderName(evfoldname)  {
   TClonesArray dummy("AliITSclusterV2",10000), *clusters=&dummy;
   branch->SetAddress(&clusters);
 
-     Int_t nentr=(Int_t)cTree->GetEntries();
-     for (i=0; i<nentr; i++) {
+  Int_t nentr=(Int_t)cTree->GetEntries();
+  cout<<"AliITStrackerV2::AliITStrackerV2: nentr = "<<nentr<<endl;
+  for (i=0; i<nentr; i++) 
+   {
        if (!cTree->GetEvent(i)) continue;
        Int_t lay,lad,det; g->GetModuleId(i,lay,lad,det);
+       if ( (lay < 0 ) || ( lad < 0) || (det <0) ) continue;
        Int_t ncl=clusters->GetEntriesFast();
        while (ncl--) {
          AliITSclusterV2 *c=(AliITSclusterV2*)clusters->UncheckedAt(ncl);
