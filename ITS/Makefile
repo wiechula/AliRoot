@@ -77,7 +77,7 @@ OBJS          = $(patsubst %.cxx,tgt_$(ALICE_TARGET)/%.o,$(SRCS)) $(DICTO)
 
 # C++ compilation flags
 
-CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(G3INSTALL)/geant3mc -I$(ALICE_ROOT)/include/ -I$(ALICE_ROOT)/TPC -I$(ALICE_ROOT)/CONTAINERS
+CXXFLAGS      = $(CXXOPTS) -I$(ROOTSYS)/include -I. -I$(G3INSTALL)/geant321/TGeant3 -I$(ALICE_ROOT)/include/ -I$(ALICE_ROOT)/TPC -I$(ALICE_ROOT)/CONTAINERS
 
 # FORTRAN compilation flags
 
