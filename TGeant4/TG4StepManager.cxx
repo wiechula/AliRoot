@@ -4,7 +4,7 @@
 // See the class description in the header file.
 
 #include "TG4StepManager.h"
-#include "TG4GeometryServices.h"
+#include "TG4GeometryManager.h"
 #include "TG4PhysicsManager.h"
 #include "TG4VSensitiveDetector.h"
 #include "TG4Globals.h"
@@ -12,13 +12,11 @@
 
 #include <G4SteppingManager.hh>
 #include <G4UserLimits.hh>
+#include <G4ParticleTable.hh>
 #include <G4UImanager.hh>
 #include <G4AffineTransform.hh>
 #include <G4TransportationManager.hh>
 #include <G4Navigator.hh>
-#include <G4VProcess.hh>
-#include <G4ProcessManager.hh>
-#include <G4ProcessVector.hh>
 
 #include <Randomize.hh>
 #include <TLorentzVector.h>
@@ -137,6 +135,36 @@ G4VPhysicalVolume* TG4StepManager::GetCurrentOffPhysicalVolume(G4int off) const
   return mother;  
 }     
 
+G4int TG4StepManager::GetVolumeID(G4VPhysicalVolume* physVolume) const 
+{
+// Returns the sensitive detector ID of the specified
+// physical volume.
+// ---
+ 
+  // sensitive detector ID
+  G4VSensitiveDetector* sd
+    = physVolume->GetLogicalVolume()->GetSensitiveDetector();
+  if (sd) {
+    TG4VSensitiveDetector* tsd = dynamic_cast<TG4VSensitiveDetector*>(sd);
+    if (tsd)
+      return tsd->GetID();
+    else {
+      TG4Globals::Exception(
+        "TG4StepManager::GetVolumeID: Unknown sensitive detector type");
+      return 0;
+    }   	
+  }  
+  else {
+    G4String text = "TG4StepManager::GetVolumeID: \n";
+    text = text + "    Volume " + physVolume->GetName();
+    text = text + " has not a sensitive detector.";
+    //TG4Globals::Exception(text);
+    TG4Globals::Warning(text);
+    return 0;
+  }      	
+} 
+
+
 // public methods
 
 void TG4StepManager::StopTrack()
@@ -177,6 +205,19 @@ void TG4StepManager::StopEvent()
   G4UImanager::GetUIpointer()->ApplyCommand("/alStacking/clearStack");
 }
 
+void TG4StepManager::Rndm(Float_t* array, const Int_t size) const
+{   
+// Random numbers array of the specified size.
+// ---
+
+  G4double* const kpDoubleArray = new G4double[size];
+  RandFlat::shootArray(size, kpDoubleArray);
+  for (G4int i=0; i<size; i++) { 
+    array[i] = kpDoubleArray[i]; 
+  } 
+  delete [] kpDoubleArray;
+}
+ 
 void TG4StepManager::SetMaxStep(Float_t step)
 {
 // Maximum step allowed in the current logical volume.
@@ -265,8 +306,7 @@ Int_t TG4StepManager::CurrentVolID(Int_t& copyNo) const
   copyNo = physVolume->GetCopyNo() + 1;
 
   // sensitive detector ID
-  TG4GeometryServices* geometryServices = TG4GeometryServices::Instance();
-  return geometryServices->GetVolumeID(physVolume->GetLogicalVolume());
+  return GetVolumeID(physVolume);
 } 
 
 Int_t TG4StepManager::CurrentVolOffID(Int_t off, Int_t&  copyNo) const
@@ -283,8 +323,7 @@ Int_t TG4StepManager::CurrentVolOffID(Int_t off, Int_t&  copyNo) const
     copyNo = mother->GetCopyNo() + 1;
 
     // sensitive detector ID
-    TG4GeometryServices* geometryServices = TG4GeometryServices::Instance();
-    return geometryServices->GetVolumeID(mother->GetLogicalVolume());
+    return GetVolumeID(mother);
   }
   else {
     copyNo = 0;
@@ -329,9 +368,9 @@ Int_t TG4StepManager::CurrentMaterial(Float_t &a, Float_t &z, Float_t &dens,
 
   if (material) {
     G4int nofElements = material->GetNumberOfElements();
-    TG4GeometryServices* geometryServices = TG4GeometryServices::Instance();
-    a = geometryServices->GetEffA(material);
-    z = geometryServices->GetEffZ(material);
+    TG4GeometryManager* pGeometryManager = TG4GeometryManager::Instance();
+    a = pGeometryManager->GetEffA(material);
+    z = pGeometryManager->GetEffZ(material);
       
     // density 
     dens = material->GetDensity();
@@ -534,8 +573,8 @@ Int_t TG4StepManager::GetMedium() const
     = GetCurrentPhysicalVolume()->GetLogicalVolume()->GetMaterial();
 
   // medium index  
-  TG4GeometryServices* geometryServices = TG4GeometryServices::Instance();
-  return geometryServices->GetMediumId(curMaterial);
+  TG4GeometryManager* pGeometryManager = TG4GeometryManager::Instance();
+  return pGeometryManager->GetMediumId(curMaterial);
 }
 
 void TG4StepManager::TrackMomentum(TLorentzVector& momentum) const
@@ -965,103 +1004,24 @@ void TG4StepManager::GetSecondary(Int_t index, Int_t& particleId,
   }
 }
 
-AliMCProcess TG4StepManager::ProdProcess(Int_t isec) const
+const char* TG4StepManager::ProdProcess() const
 {
-// The process that has produced the secondary particles specified 
-// with isec index in the current step.
+// Returns the name of the process that defined current step
+// (and may produce the secondary particles).
 // ---
+  
+  if (fStepStatus == kVertex) return "NONE";
 
   G4int nofSecondaries = NSecondaries();
-  if (fStepStatus == kVertex || !nofSecondaries) return kPNoProcess;
-
+  if (nofSecondaries == 0) return "NONE";
+  
 #ifdef TGEANT4_DEBUG
   CheckStep("ProdProcess");
 #endif
 
-  G4TrackVector* secondaryTracks = fSteppingManager->GetSecondary();
- 
-  // should never happen
-  if (!secondaryTracks) {
-    TG4Globals::Exception(
-      "TG4StepManager::ProdProcess(): secondary tracks vector is empty.");
+  const G4VProcess* curProcess 
+    = fStep->GetPostStepPoint()->GetProcessDefinedStep(); 
 
-    return kPNoProcess;  
-  }    
-
-  if (isec < nofSecondaries) {
-
-    // the index of the first secondary of this step
-    G4int startIndex 
-      = secondaryTracks->entries() - nofSecondaries;
-           // the secondaryTracks vector contains secondaries 
-           // produced by the track at previous steps, too
-
-    // the secondary track with specified isec index
-    G4Track* track = (*secondaryTracks)[startIndex + isec]; 
-   
-    const G4VProcess* kpProcess = track->GetCreatorProcess(); 
-  
-    TG4PhysicsManager* pPhysicsManager = TG4PhysicsManager::Instance();
-    AliMCProcess mcProcess = pPhysicsManager->GetMCProcess(kpProcess);
-  
-    // distinguish kPDeltaRay from kPEnergyLoss  
-    if (mcProcess == kPEnergyLoss) mcProcess = kPDeltaRay;
-  
-    return mcProcess;
-  }
-  else {
-    TG4Globals::Exception(
-      "TG4StepManager::GetSecondary(): wrong secondary track index.");
-
-    return kPNoProcess;  
-  }
-}
-
-
-Int_t TG4StepManager::StepProcesses(TArrayI &proc) const
-{
-// Fills the array of processes that were active in the current step
-// and returns the number of them.
-// TBD: Distinguish between kPDeltaRay and kPEnergyLoss
-// ---
-
- if (fStepStatus == kVertex) {
-   G4cout << "kVertex" << G4endl;
-   G4int nofProcesses = 1;
-   proc.Set(nofProcesses);
-   proc[0] = kPNull;
-   return nofProcesses;
- }  
-   
-#ifdef TGEANT4_DEBUG
-  CheckSteppingManager();
-  CheckStep("StepProcesses");
-#endif
-
-  // along step processes
-  G4ProcessManager* processManager
-    = fStep->GetTrack()->GetDefinition()->GetProcessManager();
-  G4ProcessVector* alongStepProcessVector 
-    = processManager->GetAlongStepProcessVector();
-  G4int nofProcesses = alongStepProcessVector->entries();
-  
-  // process defined step
-  const G4VProcess* kpLastProcess 
-    = fStep->GetPostStepPoint()->GetProcessDefinedStep();
-
-  // fill the array of processes 
-  proc.Set(nofProcesses);
-  TG4PhysicsManager* physicsManager = TG4PhysicsManager::Instance();
-  G4int i;  
-  for (i=0; i<nofProcesses-1; i++) {
-    G4VProcess* g4Process = (*alongStepProcessVector)[i];    
-    // do not fill transportation along step process
-    if (g4Process->GetProcessName() != "Transportation") {
-      physicsManager->GetMCProcess(g4Process);   
-      proc[i] = physicsManager->GetMCProcess(g4Process);
-    }  
-  }  
-  proc[nofProcesses-1] = physicsManager->GetMCProcess(kpLastProcess);
-    
-  return nofProcesses;  
+  G4String g4Name = curProcess->GetProcessName(); 
+  return g4Name;
 }

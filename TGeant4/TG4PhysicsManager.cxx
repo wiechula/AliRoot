@@ -10,7 +10,7 @@
 #include "TG4G3Defaults.h"
 
 #include <G4ParticleDefinition.hh>
-#include <G4VProcess.hh>
+#include <Randomize.hh>
 
 #include <TDatabasePDG.h>
 
@@ -41,12 +41,31 @@ TG4PhysicsManager::TG4PhysicsManager()
   //for (i=0; i<kNofParticlesWSP; i++) fIsFlagVector->insert(false);
   for (i=0; i<kNofParticlesWSP; i++) fIsFlagVector->push_back(false);
 
-  // define fCutNameVector, fFlagNameVector
-  FillG3CutNameVector();
-  FillG3FlagNameVector();
+  // define fCutNameVector
+  fG3CutNameVector.insert("CUTGAM");
+  fG3CutNameVector.insert("CUTELE");
+  fG3CutNameVector.insert("CUTNEU");
+  fG3CutNameVector.insert("CUTHAD");
+  fG3CutNameVector.insert("CUTMUO");
+  fG3CutNameVector.insert("BCUTE");
+  fG3CutNameVector.insert("BCUTM"); 
+  fG3CutNameVector.insert("DCUTE");
+  fG3CutNameVector.insert("DCUTM");
+  fG3CutNameVector.insert("PPCUTM");
 
-  // fill process name map
-  FillProcessMap();
+  // define fFlagNameVector
+  fG3FlagNameVector.insert("PAIR");
+  fG3FlagNameVector.insert("COMP");
+  fG3FlagNameVector.insert("PHOT");
+  fG3FlagNameVector.insert("PFIS");
+  fG3FlagNameVector.insert("DRAY");
+  fG3FlagNameVector.insert("ANNI");
+  fG3FlagNameVector.insert("BREM");
+  fG3FlagNameVector.insert("HADR");
+  fG3FlagNameVector.insert("MUNU");
+  fG3FlagNameVector.insert("DCAY");
+  fG3FlagNameVector.insert("LOSS");
+  fG3FlagNameVector.insert("MULS");
 }
 
 TG4PhysicsManager::TG4PhysicsManager(const TG4PhysicsManager& right) {
@@ -89,162 +108,6 @@ void TG4PhysicsManager::LockException() const
   TG4Globals::Exception(text);
 }
 
-void TG4PhysicsManager::FillG3CutNameVector()
-{
-// Defines fCutNameVector.
-// ---
-
-  fG3CutNameVector.insert("CUTGAM");
-  fG3CutNameVector.insert("CUTELE");
-  fG3CutNameVector.insert("CUTNEU");
-  fG3CutNameVector.insert("CUTHAD");
-  fG3CutNameVector.insert("CUTMUO");
-  fG3CutNameVector.insert("BCUTE");
-  fG3CutNameVector.insert("BCUTM"); 
-  fG3CutNameVector.insert("DCUTE");
-  fG3CutNameVector.insert("DCUTM");
-  fG3CutNameVector.insert("PPCUTM");
-}
-
-void TG4PhysicsManager::FillG3FlagNameVector() 
-{
-// Defines fFlagNameVector.
-// ---
-
-  fG3FlagNameVector.insert("PAIR");
-  fG3FlagNameVector.insert("COMP");
-  fG3FlagNameVector.insert("PHOT");
-  fG3FlagNameVector.insert("PFIS");
-  fG3FlagNameVector.insert("DRAY");
-  fG3FlagNameVector.insert("ANNI");
-  fG3FlagNameVector.insert("BREM");
-  fG3FlagNameVector.insert("HADR");
-  fG3FlagNameVector.insert("MUNU");
-  fG3FlagNameVector.insert("DCAY");
-  fG3FlagNameVector.insert("LOSS");
-  fG3FlagNameVector.insert("MULS");
-}
-
-void TG4PhysicsManager::FillProcessMap()
-{
-// Fills fProcessMap.
-// The default G4 process names are used in the map.
-// ---
-
-  // multiple scattering
-  fProcessMap.Add("msc",  kPMultipleScattering);
-  fProcessMap.Add("Imsc", kPMultipleScattering);
-    
-  // continuous energy loss
-  // !! including delta rays
-  fProcessMap.Add("eIoni",  kPEnergyLoss);
-  fProcessMap.Add("IeIoni", kPEnergyLoss);
-  fProcessMap.Add("LowEnergyIoni", kPEnergyLoss);
-  fProcessMap.Add("hIoni",  kPEnergyLoss);
-  fProcessMap.Add("IhIoni", kPEnergyLoss);
-  fProcessMap.Add("hLowEIoni", kPEnergyLoss);
-  fProcessMap.Add("MuIoni", kPEnergyLoss);
-  fProcessMap.Add("IMuIonisation", kPEnergyLoss);
-  fProcessMap.Add("ionIoni",  kPEnergyLoss);
-  fProcessMap.Add("ionLowEIoni",  kPEnergyLoss);
-  fProcessMap.Add("PAIonisation",  kPEnergyLoss);
-  
-  // bending in mag. field
-  // kPMagneticFieldL
-
-  // particle decay
-  fProcessMap.Add("Decay", kPDecay);
-  
-  // photon pair production or
-  // muon direct pair production
-  fProcessMap.Add("conv", kPPair);
-  fProcessMap.Add("LowEnConversion", kPPair);
-  fProcessMap.Add("MuPairProd", kPPair);
-  fProcessMap.Add("IMuPairProduction", kPPair);
-
-  // Compton scattering
-  fProcessMap.Add("compt", kPCompton);
-  fProcessMap.Add("LowEnCompton", kPCompton);
-  fProcessMap.Add("polarCompt", kPCompton);
-
-  // photoelectric effect
-  fProcessMap.Add("phot", kPPhotoelectric);
-  fProcessMap.Add("LowEnPhotoElec", kPPhotoelectric);
-
-  // bremsstrahlung
-  fProcessMap.Add("eBrem", kPBrem);
-  fProcessMap.Add("IeBrem", kPBrem);
-  fProcessMap.Add("MuBrem", kPBrem);
-  fProcessMap.Add("IMuBremsstrahlung", kPBrem);
-  fProcessMap.Add("LowEnBrem", kPBrem);
-
-  // delta-ray production
-  // kPDeltaRay
-  // has to be distinguished from kPEnergyLoss on flight
-  
-  // positron annihilation
-  fProcessMap.Add("annihil", kPAnnihilation);
-  fProcessMap.Add("Iannihil", kPAnnihilation);
-
-  // hadronic interaction
-  // kPHadronic
-
-  // nuclear evaporation
-  // kPEvaporation
-  
-  // nuclear fission
-  // kPNuclearFission
-
-  // nuclear absorption
-  fProcessMap.Add("PionMinusAbsorptionAtRest", kPNuclearAbsorption);
-  fProcessMap.Add("PiMinusAbsorptionAtRest", kPNuclearAbsorption);
-  fProcessMap.Add("KaonMinusAbsorption", kPNuclearAbsorption);         
-  fProcessMap.Add("KaonMinusAbsorptionAtRest", kPNuclearAbsorption);         
-  
-  // antiproton annihilation
-  fProcessMap.Add("AntiProtonAnnihilationAtRest", kPPbarAnnihilation);
-  // fProcessMap.Add("AntiNeutronAnnihilationAtRest", not defined);
-
-  // neutron capture    
-  fProcessMap.Add("NeutronCaptureAtRest", kPNCapture);
-  // fProcessMap.Add("LCapture", hadron capture not defined);
-
-  // hadronic elastic incoherent scattering
-  fProcessMap.Add("LElastic", kPHElastic);
-
-  // hadronic inelastic scattering
-  fProcessMap.Add("inelastic", kPHInhelastic);
-
-  // muon nuclear interaction
-  fProcessMap.Add("MuNucl", kPMuonNuclear);
-
-  // exceeded time of flight cut
-  // kPTOFlimit
-  
-  // nuclear photofission
-  // kPPhotoFission
-
-  // Rayleigh scattering
-  fProcessMap.Add("Rayleigh Scattering", kPRayleigh);
-
-  // no mechanism is active, usually at the entrance of a new volume
-  fProcessMap.Add("Transportation", kPNull);
-
-  // particle has fallen below energy threshold and tracking stops
-  // kPStop
-  
-  // Cerenkov photon absorption
-  fProcessMap.Add("Absorption", kPLightAbsorption);
-
-  // Cerenkov photon reflection/refraction
-  // kPLightScattering, kPLightReflection, kPLightRefraction
-  // has to be inquired from the G4OpBoundary process
-
-  // synchrotron radiation
-  fProcessMap.Add("SynchrotronRadiation", kPSynchrotron);
-}  
-
-
 G4int TG4PhysicsManager::GetPDGEncoding(G4ParticleDefinition* particle)
 {
 // Returns the PDG code of particle;
@@ -285,24 +148,9 @@ G4int TG4PhysicsManager::GetPDGEncoding(G4ParticleDefinition* particle)
   return pdgEncoding;  
 }  
      
-AliMCProcess TG4PhysicsManager::GetMCProcess(const G4VProcess* process)
-{
-// Returns the AliMCProcess code of the specified G4 process.
-// ---
- 
-  if (!process) return kPNoProcess;
-
-  G4String name = process->GetProcessName();
-  G4int code = fProcessMap.GetSecond(name);
-  
-  if (code == 0) return kPNoProcess;
-  
-  return (AliMCProcess)code; 
-}
-
 G4int TG4PhysicsManager::GetPDGEncoding(G4String particleName)
 {
-// Returns the PDG code of particle specified by name.
+// Returns the PDG code of particle sepcified by name.
 // ---
 
   G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();

@@ -172,6 +172,13 @@ void TGeant4::Gstpar(Int_t itmed, const char *param, Float_t parval) {
   fGeometryManager->Gstpar(itmed, param, parval); 
 }    
 
+void TGeant4::Gsckov(Int_t itmed, Int_t npckov, Float_t *ppckov,
+	             Float_t *absco, Float_t *effic, Float_t *rindex) {
+//
+
+  fGeometryManager->Gsckov(itmed, npckov, ppckov, absco, effic, rindex);
+}		     		      
+
 Int_t TGeant4::Gsvolu(const char *name, const char *shape, Int_t nmed,  
                          Float_t *upar, Int_t np)  {
 //
@@ -221,12 +228,6 @@ void TGeant4::Gsposp(const char *name, Int_t nr, const char *mother,
   fGeometryManager->Gsposp(name, nr, mother, x, y, z, irot, konly, upar, np); 
 } 
 
-void TGeant4::SetCerenkov(Int_t itmed, Int_t npckov, Float_t *ppckov,
-                  Float_t *absco, Float_t *effic, Float_t *rindex) {
-//
-  fGeometryManager->SetCerenkov(itmed, npckov, ppckov, absco, effic, rindex);
-}  
-    
 void TGeant4::WriteEuclid(const char* fileName, const char* topVol, 
                           Int_t number, Int_t nlevel) {
 //
@@ -247,13 +248,6 @@ Int_t TGeant4::NofVolumes() const {
 //
   return fGeometryManager->NofVolumes(); 
 } 
-
-Int_t TGeant4::VolId2Mate(Int_t id) const {
-//
-  return fGeometryManager->VolId2Mate(id); 
-} 
-
-
 
 // methods for physics management
 // ------------------------------------------------
@@ -308,6 +302,11 @@ void TGeant4::DefineParticles() {
 // methods for step management
 // ------------------------------------------------
 // inlined (in TGeant4.icc)
+
+void TGeant4::Rndm(Float_t* array, const Int_t size) const { 
+// 
+  fStepManager->Rndm(array, size); 
+} 
 
 // methods for visualization
 // ------------------------------------------------

@@ -8,6 +8,7 @@
 #define TG4_STEPPING_ACTION_H
 
 #include <G4UserSteppingAction.hh>
+#include <globals.hh>
 
 class G4Step;
 

@@ -6,12 +6,14 @@
 #include "TG4RunManager.h"
 #include "TG4RunMessenger.h"
 #include "TG4VRunConfiguration.h"
+#include "TGeant4.h"
 #include "TG4Globals.h"
 #include "TG4GeometryManager.h"
 #include "TG4PhysicsManager.h"
 //#include "TG4StepManager.h"
 
 #include <G4RunManager.hh>
+#include <G4StateManager.hh>
 #include <G4UIsession.hh>
 #include <G4UImanager.hh>
 #include <G4UIterminal.hh>
@@ -22,6 +24,7 @@
 #ifdef G4UI_USE_GAG
 #include <G4UIGAG.hh>
 #endif
+#include <globals.hh>
 
 #include <TRint.h>
 #include <TROOT.h> 

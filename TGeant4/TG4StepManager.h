@@ -10,16 +10,13 @@
 #ifndef TG4_STEP_MANAGER_H
 #define TG4_STEP_MANAGER_H
 
-#include <Rtypes.h>
-#include "AliMCProcess.h"
-
 #include "TG4StepStatus.h"
 
 #include <G4Step.hh>
 #include <G4ThreeVector.hh>
 #include <globals.hh>
 
-#include <TArrayI.h>
+#include <Rtypes.h>
 
 class G4Track;
 class G4SteppingManager;
@@ -39,8 +36,9 @@ class TG4StepManager
     static TG4StepManager* Instance();
         
     // methods
-    void StopTrack();
-    void StopEvent();
+    void StopTrack(); //new
+    void StopEvent(); //new
+    void Rndm(Float_t* array, const Int_t size) const;
     
     // set methods
     void SetStep(G4Step* step, TG4StepStatus status);    // G4 specific
@@ -63,11 +61,11 @@ class TG4StepManager
     const char* CurrentVolOffName(Int_t off) const;
     Int_t CurrentMaterial(Float_t &a, Float_t &z, Float_t &dens, 
                     Float_t &radl, Float_t &absl) const;
-    void Gmtod(Float_t* xm, Float_t* xd, Int_t iflag);
-    void Gdtom(Float_t* xd, Float_t* xm, Int_t iflag);
+    void Gmtod(Float_t* xm, Float_t* xd, Int_t iflag);  //new
+    void Gdtom(Float_t* xd, Float_t* xm, Int_t iflag); //new
     Float_t MaxStep() const;
     Int_t GetMaxNStep() const;  //??                       
-    Int_t GetMedium() const;
+    Int_t GetMedium() const;  //??
 
         // tracking particle 
         // dynamic properties
@@ -99,8 +97,7 @@ class TG4StepManager
     Int_t NSecondaries() const;
     void GetSecondary(Int_t isec, Int_t& particleId,
                       TLorentzVector& position, TLorentzVector& momentum);      
-    AliMCProcess ProdProcess(Int_t isec) const; 
-    Int_t StepProcesses(TArrayI &proc) const;
+    const char* ProdProcess() const; 
 
   protected:
     TG4StepManager(const TG4StepManager& right);
@@ -116,6 +113,7 @@ class TG4StepManager
     void SetTLorentzVector(G4ThreeVector xyz, G4double t, 
                            TLorentzVector& lv) const;    
     G4VPhysicalVolume* GetCurrentOffPhysicalVolume(G4int off) const;
+    G4int GetVolumeID(G4VPhysicalVolume* volume) const;
 
     // static data members
     static TG4StepManager*  fgInstance;   //this instance

@@ -14,18 +14,15 @@
 #include "TG3Flag.h"
 #include "TG3ParticleWSP.h"
 
-#include <Rtypes.h>
-#include "AliMCProcess.h"
-
 #include <globals.hh>
 
+#include <Rtypes.h>
 
 class TG4CutVector;
 class TG4FlagVector;
 class TG4PhysicsList;
 
 class G4ParticleDefinition;
-class G4VProcess;
 
 class TG4PhysicsManager
 {
@@ -58,7 +55,6 @@ class TG4PhysicsManager
     void Lock();     
     void SetProcessActivation();  
     G4int GetPDGEncodingFast(G4ParticleDefinition* particle);
-    AliMCProcess GetMCProcess(const G4VProcess* process);
     G4bool CheckCutWithCutVector(
              G4String name, G4double value, TG3Cut& cut);   
     G4bool CheckFlagWithFlagVector(
@@ -93,9 +89,6 @@ class TG4PhysicsManager
   private:
     // methods
     void LockException() const;
-    void FillG3CutNameVector();
-    void FillG3FlagNameVector();
-    void FillProcessMap();
     G4int GetPDGEncoding(G4ParticleDefinition* particle);
     G4int GetPDGEncoding(G4String particleName);
 
@@ -126,8 +119,6 @@ class TG4PhysicsManager
                                         //and TDatabasePDG names 
     TG4IntMap        fParticlePDGMap;   //the mapping between G4 particle names
                                         //and TDatabasePDG codes
-    TG4IntMap        fProcessMap;       //the mapping between G4 process names
-                                        //and AliMCProcess codes
 };
 
 // inline methods
