@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.17.4.2  2002/06/06 14:18:33  hristov
+Merged with v3-08-02
+
 Revision 1.17.4.1  2002/05/31 09:37:59  hristov
 First set of changes done by Piotr
 
@@ -933,10 +936,13 @@ void AliDisplay::ShowNextEvent(Int_t delta)
 
   if (delta) {
 //     gAlice->Clear();
-     Int_t currentEvent = gAlice->GetHeader()->GetEvent();
+     //Int_t currentEvent = gAlice->GetHeader()->GetEvent();//event number is not filled correctly
+     Int_t currentEvent = gAlice->GetRunLoader()->GetEventNumber();
      Int_t newEvent     = currentEvent + delta;
-     Int_t tmp = gAlice->GetEvent(newEvent);
-     if (tmp <= 0) return; 
+     gAlice->GetEvent(newEvent);
+     cout<<"AliDisplay::ShowNextEvent: delta = "<<delta
+         <<"  currentEvent = "<<currentEvent
+         <<"  newEvent = "<<newEvent<<endl;
    }
   LoadPoints();
   fPad->cd(); 
