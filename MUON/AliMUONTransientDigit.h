@@ -7,11 +7,10 @@
 /* $Id$ */
 
 #include "AliMUONDigit.h"
-class TObjArray;
-
+#include "TObjArray.h"
 
 class AliMUONTransientDigit : public AliMUONDigit {
- public:
+ protected:
     Int_t          fChamber;       // chamber number of pad
     TObjArray     *fTrackList;     // List of tracks contributing
  public:
@@ -19,9 +18,12 @@ class AliMUONTransientDigit : public AliMUONDigit {
     AliMUONTransientDigit(const AliMUONTransientDigit& digit);
     AliMUONTransientDigit(Int_t rpad, Int_t *digits);
     virtual ~AliMUONTransientDigit();
-    Int_t Chamber() {return fChamber;}
-	    
-    TObjArray  *TrackList()   {return fTrackList;}
+    Int_t Chamber() const {return fChamber;}
+    Int_t GetNTracks() const {return fTrackList->GetEntriesFast();}
+    Int_t GetTrack(Int_t i) const;
+    Int_t GetCharge(Int_t i) const;
+    void AddToTrackList(Int_t track, Int_t charge);
+    void UpdateTrackList(Int_t track, Int_t charge);
     AliMUONTransientDigit & operator =(const AliMUONTransientDigit & rhs);
     
     ClassDef(AliMUONTransientDigit,1)  // Transient digit for MUON

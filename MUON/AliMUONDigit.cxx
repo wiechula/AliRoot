@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.5  2001/10/31 16:40:07  jchudoba
+change preprocessor constant to C++ constant
+
 Revision 1.4  2001/10/18 14:44:09  jchudoba
 Define constant MAXTRACKS for maximum number of tracks associated with 1 digit
 
@@ -59,7 +62,7 @@ AliMUONDigit::AliMUONDigit(Int_t *tracks, Int_t *charges, Int_t *digits)
     fPhysics     = digits[4];
     fHit         = digits[5];
 
-    for(Int_t i=0; i<MAXTRACKS; i++) {
+    for(Int_t i=0; i<kMAXTRACKS; i++) {
 	fTcharges[i]  = charges[i];
 	fTracks[i]    = tracks[i];
     }

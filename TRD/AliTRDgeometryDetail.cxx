@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.2  2001/11/08 13:13:08  cblume
+Change to MANY for UCFI/M/O and UAFI/M/O
+
 Revision 1.1  2001/11/06 17:19:41  cblume
 Add detailed geometry and simple simulator
 

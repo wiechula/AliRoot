@@ -110,6 +110,7 @@ void Config()
     Int_t   iTPC = 1;
     Int_t   iTRD = 1;
     Int_t   iZDC = 1;
+    Int_t   iEMCAL = 0;
 
     //=================== Alice BODY parameters =============================
     AliBODY *BODY = new AliBODY("BODY", "Alice envelop");
@@ -157,7 +158,7 @@ void Config()
     {
         //=================== SHIL parameters ============================
 
-        AliSHIL *SHIL = new AliSHILv0("SHIL", "Shielding");
+        AliSHIL *SHIL = new AliSHILvF("SHIL", "Shielding");
     }
 
 
@@ -315,7 +316,7 @@ void Config()
         //=================== FMD parameters ============================
 
         AliFMD *FMD = new AliFMDv1("FMD", "normal FMD");
-        FMD->SetRingsSi1(128);
+        FMD->SetRingsSi1(256);
         FMD->SetRingsSi2(64);
         FMD->SetSectorsSi1(20);
         FMD->SetSectorsSi2(24);
@@ -346,6 +347,12 @@ void Config()
         PMD->SetGEO(0.0, 0.2, 4.);
         PMD->SetPadSize(0.8, 1.0, 1.0, 1.5);
 
+    }
+
+    if (iEMCAL && !iRICH)
+    {
+        //=================== EMCAL parameters ============================
+        AliEMCAL *EMCAL = new AliEMCALv1("EMCAL", "EMCALArch1a");
     }
 
     if (iSTART)

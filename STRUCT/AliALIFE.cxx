@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.3  2001/10/31 15:56:54  morsch
+Correction in OnionCone.
+
+Revision 1.2  2000/10/10 06:40:25  hristov
+Bug fixes
+
 Revision 1.1  2000/07/26 15:10:57  morsch
 Helper class to write geometry in ALIFE format in parallel with Geant geometry definition.
 
@@ -363,9 +369,11 @@ void AliALIFE::OnionCone (Float_t* r1, Float_t* r2, Int_t nr,
 	    fprintf(fFile2,"EMFCUT=%s\n", "$UNSHIELDED");
 	    fprintf(fFile2,"WW-FACTOR=%s\n", "$UNSHIELDED");
 	}
-	if (hasInner) {
-	    fprintf(fFile2,"+%5s-%5s+%5s-%5s\n", 
+	if (hasInner || isCylinder) {
+	    if (!isCylinder) fprintf(fFile2,"+%5s-%5s+%5s-%5s\n", 
 		    nameCou, nameCin, nameZou, nameZin);
+	    if (isCylinder)  fprintf(fFile2,"+%5s+%5s-%5s\n",
+		    nameCou, nameZou, nameZin); 
 	} else {
 	    fprintf(fFile2,"+%5s\n", nameCou);
 	    hasInner=kTRUE;

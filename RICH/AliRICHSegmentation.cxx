@@ -15,6 +15,9 @@
 
 /*
   $Log$
+  Revision 1.3  2001/11/08 18:01:55  dibari
+  Reinit them
+
 */
 
 #include "AliRICHSegmentation.h"

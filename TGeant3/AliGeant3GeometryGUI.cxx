@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.3  2001/10/24 12:04:24  morsch
+Expand divisions only on request.
+
+Revision 1.2  2001/07/09 11:45:15  morsch
+Reduced functionality: mediate between GUI and Geometry Conversion.
+
 Revision 1.1  2000/07/13 16:19:10  fca
 Mainly coding conventions + some small bug fixes
 
@@ -77,14 +83,18 @@ AliG3Medium    *gCurrentMedium   = new AliG3Medium();
 
 ClassImp(AliGeant3GeometryGUI)
 
-    AliGeant3GeometryGUI::AliGeant3GeometryGUI()
+    AliGeant3GeometryGUI::AliGeant3GeometryGUI(const char* opt)
 {
+    char tmp[20];
+    strcpy(tmp, opt);
+
 // Constructor
     fPanel     = new AliGuiGeomMain(gClient->GetRoot(), 500, 500);
 //  Store local copy of zebra bank entries
     AliG3toRoot* geometry = new AliG3toRoot();
-//    geometry->SetExpandDivisions();
+    if (strcmp(tmp, "expand") == 0) geometry->SetExpandDivisions();
     geometry->G3toRoot();
+    geometry->ConvertToRootShapes();
     
     AliG3Volume* top = (AliG3Volume*) 
 	(geometry->GetTopFolder()->FindObject("ALIC"));

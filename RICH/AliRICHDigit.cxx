@@ -15,6 +15,12 @@
 
 /*
   $Log$
+  Revision 1.2  2001/11/02 15:37:25  hristov
+  Digitizer class created. Code cleaning and bug fixes (J.Chudoba)
+
+  Revision 1.1  2000/06/12 15:20:36  jbarbosa
+  Cleaned up version.
+
 */
 
 
@@ -30,6 +36,8 @@ AliRICHDigit::AliRICHDigit(Int_t *digits)
     fPadX        = digits[0];
     fPadY        = digits[1];
     fSignal      = digits[2];
+    fPhysics     = digits[3];
+    fHit         = digits[4];
     
 }
 //_____________________________________________________________________________
@@ -41,7 +49,10 @@ AliRICHDigit::AliRICHDigit(Int_t *tracks, Int_t *charges, Int_t *digits)
     fPadX        = digits[0];
     fPadY        = digits[1];
     fSignal      = digits[2];
-    for(Int_t i=0; i<100; i++) {
+    fPhysics     = digits[3];
+    fHit         = digits[4];
+
+    for(Int_t i=0; i<kMAXTRACKSPERRICHDIGIT; i++) {
 	fTcharges[i]  = charges[i];
 	fTracks[i]    = tracks[i];
     }

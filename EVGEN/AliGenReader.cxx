@@ -15,6 +15,10 @@
 
 /*
 $Log$
+Revision 1.1  2001/11/09 09:09:59  morsch
+Base class with responsibility to read events and particles from a file. To be used
+with AliGenExtFile.
+
 */
 #include "AliGenReader.h"
 ClassImp(AliGenReader)

@@ -8,7 +8,7 @@
 
 class AliRunDigitizer;
 class AliMUONPadHit;
-class AliHitMap;
+class AliMUONHitMapA1;
 
 class AliMUONDigitizer : public AliDigitizer {
  public:
@@ -18,7 +18,7 @@ class AliMUONDigitizer : public AliDigitizer {
     virtual ~AliMUONDigitizer();
 
     // Compare pad hits
-    virtual Bool_t Exists(const AliMUONPadHit * sdigit);
+    virtual Bool_t Exists(const AliMUONPadHit * sdigit) const;
     // Update a pad hit
     virtual  void Update(AliMUONPadHit *sdigit);
     // Create a new hit
@@ -30,7 +30,7 @@ class AliMUONDigitizer : public AliDigitizer {
     // Do the main work
     virtual void Exec(Option_t* option=0);
     
-    Int_t GetDebug() {return fDebug;}             // get debug level
+    Int_t GetDebug() const {return fDebug;}       // get debug level
     void SetDebug(Int_t level){fDebug = level;}   // set debug level    
     enum {kBgTag = -1};
     
@@ -40,17 +40,17 @@ class AliMUONDigitizer : public AliDigitizer {
  private:
     TClonesArray *fHits;            //! List of hits for one track only
     TClonesArray *fPadHits;         //! List of clusters for one track only
-    AliHitMap **fHitMap;            //! pointer to array of pointers to hitmaps
+    AliMUONHitMapA1 **fHitMap;      //! pointer to array of pointers to hitmaps
     Int_t fNch;                     //! chamber nr (loop variable)
     Int_t fTrack;                   //! track nr (loop variable)
     TObjArray *fTDList;             //! list of AliMUONTransientDigits
-    TObjArray *fTrList;             //! list of tracks
-    TClonesArray *fAddress;         //! pointer to TClonesArray of TVectors with trackinfo
     Int_t fCounter;                 //! nr. of AliMUONTransientDigit
-    Int_t fCountadr;                //! counter for trinfo
+    Bool_t fSignal;                 //! kTRUE if signal file is processed
+    Int_t fMask;                    //! mask dependent on input file
     Int_t fDigits[6];               //! array with digits
     Int_t fDebug;                   //! debug level
-    ClassDef(AliMUONDigitizer,1)
+
+    ClassDef(AliMUONDigitizer,1)  // MUON merging/digitization
 };    
 #endif
 

@@ -7,7 +7,7 @@
 
 #include <TObject.h>
 
-#define MAXTRACKS 10
+static const Int_t kMAXTRACKS=10;
 
 class AliMUONDigit : public TObject {
 
@@ -17,14 +17,14 @@ class AliMUONDigit : public TObject {
     AliMUONDigit(Int_t *tracks, Int_t *charges, Int_t *digits);
     virtual ~AliMUONDigit();
     
-    virtual Int_t    PadX()               {return fPadX;}
-    virtual Int_t    PadY()               {return fPadY;}
-    virtual Int_t    Signal()             {return fSignal;}
-    virtual Int_t    Physics()            {return fPhysics;}
-    virtual Int_t    Hit()                {return fHit;}    
-    virtual Int_t    Cathode()            {return fCathode;}
-    virtual Int_t    Track(Int_t i)       {return fTracks[i];}
-    virtual Int_t    TrackCharge(Int_t i) {return fTcharges[i];}    
+    virtual Int_t    PadX() const         {return fPadX;}
+    virtual Int_t    PadY() const         {return fPadY;}
+    virtual Int_t    Signal() const       {return fSignal;}
+    virtual Int_t    Physics() const      {return fPhysics;}
+    virtual Int_t    Hit() const          {return fHit;}    
+    virtual Int_t    Cathode() const      {return fCathode;}
+    virtual Int_t    Track(Int_t i) const {return fTracks[i];}
+    virtual Int_t    TrackCharge(Int_t i) const {return fTcharges[i];}    
     virtual void     AddSignal(Int_t q)   {fSignal += q;}
     virtual void     AddPhysicsSignal(Int_t q)   {fPhysics += q;}	    
  private:
@@ -33,8 +33,8 @@ class AliMUONDigit : public TObject {
     Int_t     fCathode;       // Cathode number
     
     Int_t     fSignal;        // Signal amplitude
-    Int_t     fTcharges[MAXTRACKS];  // charge per track making this digit (up to 10)
-    Int_t     fTracks[MAXTRACKS];    // primary tracks making this digit (up to 10)
+    Int_t     fTcharges[kMAXTRACKS];  // charge per track making this digit (up to 10)
+    Int_t     fTracks[kMAXTRACKS];    // primary tracks making this digit (up to 10)
     Int_t     fPhysics;       // physics contribution to signal 
     Int_t     fHit;           // hit number - temporary solution
 

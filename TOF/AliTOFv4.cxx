@@ -15,6 +15,12 @@
 
 /*
 $Log$
+Revision 1.14  2001/11/08 15:41:19  vicinanz
+Added check for ppad[1] range
+
+Revision 1.13  2001/09/27 10:39:21  vicinanz
+SDigitizer and Merger added
+
 Revision 1.12  2001/09/20 15:54:22  vicinanz
 Updated Strip Structure (Double Stack)
 
@@ -1042,7 +1048,8 @@ void AliTOFv4::StepManager()
  
     gMC->Gmtod(xm,xpad,1);
     gMC->Gmtod(pm,ppad,2);
-
+    if(ppad[1]>1.) ppad[1]=1.;
+    if(ppad[1]<-1.) ppad[1]=-1.;
     incidenceAngle = TMath::ACos(ppad[1])*kRaddeg;
 
     z = pos[2];

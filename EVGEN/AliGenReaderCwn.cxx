@@ -16,6 +16,9 @@
 
 /*
 $Log$
+Revision 1.2  2001/11/12 14:31:00  morsch
+Memory leaks fixed. (M. Bondila)
+
 Revision 1.1  2001/11/09 09:10:46  morsch
 Realisation of AliGenReader that reads the old cwn event format.
 

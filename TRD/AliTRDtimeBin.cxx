@@ -15,6 +15,9 @@
 
 /*
 $Log$
+Revision 1.5  2001/11/06 17:19:41  cblume
+Add detailed geometry and simple simulator
+
 Revision 1.4  2001/10/21 18:30:02  hristov
 Several pointers were set to zero in the default constructors to avoid memory management problems
 
@@ -42,7 +45,7 @@ ClassImp(AliTRDtimeBin)
   AliTRDtimeBin::AliTRDtimeBin() {
   //default constructor
     fN=0;
-    for (Int_t i=0; i<kMAX_CLUSTER_PER_TIME_BIN; i++) 
+    for (UInt_t i=0; i<kMAX_CLUSTER_PER_TIME_BIN; i++) 
       fClusters[i]=0;
   }
 //______________________________________________________
