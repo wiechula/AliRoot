@@ -428,7 +428,7 @@ Int_t AliLoader::LoadSDigitizer(Option_t* opt)
 }
 /*****************************************************************************/ 
 
-Int_t AliLoader::LoadDigitizer(Option_t* opt="")
+Int_t AliLoader::LoadDigitizer(Option_t* opt)
 {
   if (Digitizer())
    {
@@ -475,7 +475,7 @@ Int_t AliLoader::LoadDigitizer(Option_t* opt="")
 }
 /*****************************************************************************/ 
 
-Int_t AliLoader::LoadReconstructioner(Option_t* opt="")
+Int_t AliLoader::LoadReconstructioner(Option_t* opt)
 {
    if (Reconstructioner())
    {
@@ -522,7 +522,7 @@ Int_t AliLoader::LoadReconstructioner(Option_t* opt="")
 }
 /*****************************************************************************/ 
 
-Int_t AliLoader::LoadTracker(Option_t* opt="")
+Int_t AliLoader::LoadTracker(Option_t* opt)
 {
    if (Tracker())
    {
@@ -727,7 +727,7 @@ Int_t AliLoader::WriteHits(Option_t* opt)
   return 0;
 }
 /******************************************************************/
-Int_t AliLoader::WriteSDigits(Option_t* opt="")
+Int_t AliLoader::WriteSDigits(Option_t* opt)
  {
 
   //try to get sdigits from folder  
@@ -785,7 +785,7 @@ Int_t AliLoader::WriteSDigits(Option_t* opt="")
    return 0;
  }
 /*****************************************************************************/ 
-Int_t AliLoader::WriteDigits(Option_t* opt="")
+Int_t AliLoader::WriteDigits(Option_t* opt)
  {
   //try to get digits from folder  
   TTree *digits = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(*fDigitsContainerName));
@@ -842,7 +842,7 @@ Int_t AliLoader::WriteDigits(Option_t* opt="")
    return 0;
  }
 /*****************************************************************************/ 
-Int_t AliLoader::WriteRecPoints(Option_t* opt="")
+Int_t AliLoader::WriteRecPoints(Option_t* opt)
  {
   TTree *recpoints = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(*fRecPointsContainerName));
   if(recpoints == 0x0)
@@ -898,7 +898,7 @@ Int_t AliLoader::WriteRecPoints(Option_t* opt="")
    return 0;
  }
 /*****************************************************************************/ 
-Int_t AliLoader::WriteTracks(Option_t* opt="")
+Int_t AliLoader::WriteTracks(Option_t* opt)
  {
   TTree *tracks = dynamic_cast<TTree*>(GetDetectorDataFolder()->FindObject(*fTracksContainerName));
   if(tracks == 0x0)
