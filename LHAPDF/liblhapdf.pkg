@@ -1,3 +1,5 @@
+#-*- Mode: Makefile -*-
+
 SRCS:=AliStructFuncType.cxx
 
 HDRS= $(SRCS:.cxx=.h) 
@@ -52,11 +54,11 @@ lhapdf5.2.2/commons.f
 EXPORT:=AliStructFuncType.h
 
 
-#ifeq (,$(findstring macosx,$(ALICE_TARGET)))
+ifeq (win32gcc,$(ALICE_TARGET))
 
-# FSRCS += lhapdf5.2.2/lhaglue.f
+FSRCS += lhapdf5.2.2/lhaglue.f
 
-#else
+else
 
 
 #TCSRCS=ctmp/lhapdf5.2.2/lhaglue.c
@@ -76,4 +78,4 @@ EXPORT:=AliStructFuncType.h
 #	$(F77) -E $(lhapdfINC) $(lhapdfFFLAGS) $< | f2c -E | sed -e 's/\___/__/g' > $@
 #endif
 
-#endif
+endif
