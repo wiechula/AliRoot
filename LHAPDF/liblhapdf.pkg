@@ -6,7 +6,7 @@ HDRS:= AliStructFuncType.h
 
 DHDR:=lhapdfLinkDef.h
 
-EINCLUDE:= LHAPDF/lhapdf5.5.1 LHAPDF/lhapdf5.5.1/include
+EINCLUDE:= LHAPDF/lhapdf5.5.1 LHAPDF/lhapdf5.5.1/include LHAPDF/lhapdf5.5.1/src
 
 FSRCS:= \
 lhapdf5.5.1/src/alphas.f \
@@ -18,7 +18,7 @@ lhapdf5.5.1/src/eps08.f \
 lhapdf5.5.1/src/EVLCTEQ.f \
 lhapdf5.5.1/src/evolution.f \
 lhapdf5.5.1/src/inputPDF.f \
-lhapdf5.5.1/src/LHpdflib.f \
+lhapdf5.5.1/src/LHpdflib.F \
 lhapdf5.5.1/src/parameter.f \
 lhapdf5.5.1/src/QCDNUM.f \
 lhapdf5.5.1/src/QCDparams.f \
