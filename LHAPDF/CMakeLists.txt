@@ -43,7 +43,8 @@ add_library(${MODULE} SHARED ${SRCS} G__${MODULE}.cxx ${FSRCS} ${CSRCS})
 
 # Additional compilation flags
 set_target_properties(${MODULE} PROPERTIES
-  COMPILE_FLAGS "-O -g -ffree-form -DDEFAULTPREFIXPATH=\\\"NONE\\\" -DDEFAULTLHAPATH=\\\"${CMAKE_SOURCE_DIR}/LHAPDF/PDFsets\\\""
+  COMPILE_FLAGS "-O -g -DDEFAULTPREFIXPATH=\\\"NONE\\\" -DDEFAULTLHAPATH=\\\"${CMAKE_SOURCE_DIR}/LHAPDF/PDFsets\\\""
+  Fortran_FORMAT FREE
   )
 
 # System dependent: Modify the way the library is build
