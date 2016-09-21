@@ -219,7 +219,9 @@ fNCPUTrackers(0),
 fNSlicesPerCPUTracker(0),
 fGlobalTracking(0),
 fUseGlobalTracking(0),
-fNSlaveThreads(0)
+fNSlaveThreads(0),
+fStuckProtection(0),
+fGPUStuck(0)
 {}
 
 AliHLTTPCCAGPUTrackerBase::~AliHLTTPCCAGPUTrackerBase()
@@ -302,6 +304,10 @@ int AliHLTTPCCAGPUTrackerBase::SetGPUTrackerOption(char* OptionName, int OptionV
 	else if (strcmp(OptionName, "GlobalTracking") == 0)
 	{
 		fGlobalTracking = OptionValue;
+	}
+	else if (strcmp(OptionName, "StuckProtection") == 0)
+	{
+		fStuckProtection = OptionValue;
 	}
 	else
 	{
@@ -888,7 +894,7 @@ int AliHLTTPCCAGPUTrackerBase::Reconstruct_Base_SliceInit(AliHLTTPCCAClusterData
 
 	if (fSlaveTrackers[firstSlice + iSlice].Data().MemorySize() > HLTCA_GPU_SLICE_DATA_MEMORY RANDOM_ERROR)
 	{
-		HLTError("Insufficiant Slice Data Memory: Slice %d, Needed %d, Available %d", firstSlice + iSlice, fSlaveTrackers[firstSlice + iSlice].Data().MemorySize(), HLTCA_GPU_SLICE_DATA_MEMORY);
+		HLTError("Insufficiant Slice Data Memory: Slice %d, Needed %d, Available %d", firstSlice + iSlice, (int) fSlaveTrackers[firstSlice + iSlice].Data().MemorySize(), HLTCA_GPU_SLICE_DATA_MEMORY);
 		ResetHelperThreads(1);
 		return(1);
 	}
