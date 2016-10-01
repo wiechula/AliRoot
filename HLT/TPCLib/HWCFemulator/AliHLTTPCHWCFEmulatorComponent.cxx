@@ -67,6 +67,7 @@ AliHLTTPCHWCFEmulatorComponent::AliHLTTPCHWCFEmulatorComponent()
   fTagDeconvolutedClusters(0),
   fProcessingRCU2Data(0),
   fNoiseSuppression(0),
+  fIORatioCorrection(1.),
   fDebug(0),
   fCFSupport(),
   fCFEmulator(),
@@ -97,6 +98,7 @@ AliHLTTPCHWCFEmulatorComponent::AliHLTTPCHWCFEmulatorComponent(const AliHLTTPCHW
   fChargeFluctuation(0),
   fTagDeconvolutedClusters(0),
   fProcessingRCU2Data(0),
+  fIORatioCorrection(1.),
   fDebug(0),
   fCFSupport(),
   fCFEmulator(),
@@ -156,9 +158,8 @@ int AliHLTTPCHWCFEmulatorComponent::GetOutputDataTypes(AliHLTComponentDataTypeLi
 void AliHLTTPCHWCFEmulatorComponent::GetOutputDataSize( unsigned long& constBase, double& inputMultiplier )
 {
   // see header file for class documentation
-  // XXX TODO: Find more realistic values.  
-  constBase = 0;
-  inputMultiplier = (6 * 0.7);
+  constBase = 1024*1024; // 1 MB
+  inputMultiplier = (fDoMC? 0.2 :1.0)*1.5*fIORatioCorrection; // realistic IORatio for MC/Data * 50% margin * extra margin
 }
 
 
@@ -230,6 +231,7 @@ void AliHLTTPCHWCFEmulatorComponent::SetDefaultConfiguration()
   fChargeFluctuation = 0;
   fTagDeconvolutedClusters = 0;
   fProcessingRCU2Data = 0;
+  fIORatioCorrection = 1.;
   fDebug = 0;
   fBenchmark.Reset();
   fBenchmark.SetTimer(0,"total");
@@ -663,6 +665,11 @@ int AliHLTTPCHWCFEmulatorComponent::DoEvent( const AliHLTComponentEventData& evt
   if( outBlock ) delete[] outBlock;
   if( allocOutMC ) delete[] allocOutMC;      
   
+  if( iResult==-ENOSPC ){    
+    fIORatioCorrection = 2.;
+    HLTInfo("Estimation of Output/Input ratio increased by factor 2");
+  }
+
   if( iResult>=0 ){
     //
     // forward unpacked clusters if they are present
@@ -680,7 +687,7 @@ int AliHLTTPCHWCFEmulatorComponent::DoEvent( const AliHLTComponentEventData& evt
   }
 
   fBenchmark.Stop(0);  
-  HLTInfo(fBenchmark.GetStatistics());
+  if(iResult>=0 ) HLTInfo(fBenchmark.GetStatistics());
   fCFSupport.ReleaseEventMemory();
   return iResult;
 }
