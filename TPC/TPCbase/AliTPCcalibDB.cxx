@@ -136,7 +136,7 @@ AliTPCcalibDB* AliTPCcalibDB::fgInstance = 0;
 Bool_t AliTPCcalibDB::fgTerminated = kFALSE;
 TObjArray    AliTPCcalibDB::fgExBArray;    ///< array of ExB corrections
 
-const char* AliTPCcalibDB::fgkGasSensorNames[AliTPCcalibDB::kNGasSensor] = {"TPC_GC_NEON", "TPC_GC_ARGON", "TPC_GC_CO2", "TPC_GC_N2", "TPC_An_L1Sr141_H2O"};
+const char* AliTPCcalibDB::fgkGasSensorNames[AliTPCcalibDB::kNGasSensor] = {"TPC_GC_NEON", "TPC_GC_ARGON", "TPC_GC_CO2", "TPC_GC_N2", "TPC_An_L1Sr141_H2O", "TPC_An_L1Sr141_O2"};
 
 //_ singleton implementation __________________________________________________
 AliTPCcalibDB* AliTPCcalibDB::Instance()
@@ -196,6 +196,7 @@ AliTPCcalibDB::AliTPCcalibDB():
   fGrRunState(0x0),
   fTemperature(0),
   fMapping(0),
+  fRunEventSpecie(AliRecoParam::kDefault),
   fParam(0),
   fClusterParam(0),
   fRecoParamList(0),
@@ -261,6 +262,7 @@ AliTPCcalibDB::AliTPCcalibDB(const AliTPCcalibDB& ):
   fGrRunState(0x0),
   fTemperature(0),
   fMapping(0),
+  fRunEventSpecie(AliRecoParam::kDefault),
   fParam(0),
   fClusterParam(0),
   fRecoParamList(0),
@@ -326,9 +328,26 @@ AliTPCCalPad* AliTPCcalibDB::GetDistortionMap(Int_t i) const {
   return (fDistortionMap) ? (AliTPCCalPad*)fDistortionMap->At(i):0;
 }
 
+//_____________________________________________________________________________
 AliTPCRecoParam* AliTPCcalibDB::GetRecoParam(Int_t i) const {
   return (fRecoParamList) ? (AliTPCRecoParam*)fRecoParamList->At(i):0;
 }
+
+//_____________________________________________________________________________
+AliTPCRecoParam* AliTPCcalibDB::GetRecoParamFromGRP() const 
+{
+  // return recoparam for specie matching to current GRP
+  if (!fRecoParamList) return 0;
+  for (int i=fRecoParamList->GetEntriesFast();i--;) {
+    AliTPCRecoParam* par = (AliTPCRecoParam*)fRecoParamList->UncheckedAt(i);
+    if (!par || !(par->GetEventSpecie()&fRunEventSpecie)) continue;
+    return par;
+  }
+  AliWarningF("Did not find recoparam for EventSpecie %s suggested by GRP",AliRecoParam::GetEventSpecieName(fRunEventSpecie));
+  return 0;
+}
+
+
 
 //_____________________________________________________________________________
 AliCDBEntry* AliTPCcalibDB::GetCDBEntry(const char* cdbPath)
@@ -403,10 +422,9 @@ void AliTPCcalibDB::Update(){
       AliInfo("TPC not present in the run");
       return;
     }
+    fRunEventSpecie = AliRecoParam::SuggestRunEventSpecie(grpData->GetRunType(),grpData->GetBeamType(),grpData->GetLHCState());
+    AliInfoF("Run-specific EventSpecie set to %s",AliRecoParam::GetEventSpecieName(fRunEventSpecie));
   }
-
- 
-
 
   entry          = GetCDBEntry("TPC/Calib/PadGainFactor");
   if (entry){
@@ -918,7 +936,7 @@ Int_t AliTPCcalibDB::InitDeadMap()
   // ============================================================
 
   //=============================================================
-  // Setup active chnnel map
+  // Setup active channel map
   //
 
   if (!fActiveChannelMap) fActiveChannelMap=new AliTPCCalPad("ActiveChannelMap","ActiveChannelMap");
@@ -996,7 +1014,14 @@ void AliTPCcalibDB::InitAltroData()
   // Calculate the maximum time using the 'AcqStart' cal pad object from
   // TPC/Calib/AltroConfig
   // if this object is not available, the value will return the max time bin
-  // stored in the AliTPCParam object from TPC/Calib/Parameters
+  // stored in the AliTPCParam object from TPC/Calib/Parameter
+  //
+  // The samples in the ALTRO are numbered from 0 to 1023.
+  // There is space for 15 "pre-trigger samples" which we don't make use of
+  // For AcpStart = 0 the first time bin is 15 (no pre-trigger samples).
+  // For AcqStop = 1008 the last sample is 1023
+  // Therefore 15 is added to AcqStop
+
 
   fMaxTimeBinAllPads=-1;
 
@@ -1014,7 +1039,7 @@ void AliTPCcalibDB::InitAltroData()
         if (val>maxBin) maxBin=val;
       }
     }
-    fMaxTimeBinAllPads = TMath::Nint(maxBin);
+    fMaxTimeBinAllPads = TMath::Nint(maxBin)+15;
   }
 
   if (fMaxTimeBinAllPads<0) {
@@ -1741,10 +1766,12 @@ Int_t AliTPCcalibDB::GetMaskedChannelsFromCorrectionMaps(TBits maskedPads[72])
   }
   const int run = GetRun();
   // pick the recoparam matching to field (as low or high flux)
+  AliTPCRecoParam* param = GetRecoParamFromGRP();
+  /*  
   AliRecoParam::EventSpecie_t spec = fld->GetBeamType()==AliMagF::kBeamTypeAA ? AliRecoParam::kHighMult : AliRecoParam::kLowMult;
-  AliTPCRecoParam* param = 0;
   int parID=0;
   while( (param=GetRecoParam(parID++)) ) { if (param->GetEventSpecie()&spec) break;}
+  */
   if (!param) AliFatal("Failed to extract recoparam");
   //
   if (!param->GetUseCorrectionMap()) {
@@ -1793,7 +1820,7 @@ Int_t AliTPCcalibDB::GetMaskedChannelsFromCorrectionMaps(TBits maskedPads[72])
   time_t mapsT[nMaps];
   for (int i=0;i<nMaps;i++) {
     mapsT[i] = ((AliTPCChebCorr*)arrMaps->At(i))->GetTimeStampCenter();
-    if (mapsT[i]<tGRPmin || mapsT[i]>tCentGRP) mapsT[i] = tCentGRP;
+    if (mapsT[i]<tGRPmin || mapsT[i]>tGRPmax) mapsT[i] = tCentGRP;
   }
   //
   delete arrMaps; // we don't need anymore these maps, Transform will load according to time stamp

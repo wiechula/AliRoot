@@ -62,6 +62,7 @@ set(SRCS
     AliGenPythiaEventHeader.cxx
     AliGenToyEventHeader.cxx
     AliHeader.cxx
+    AliHLTBaseVGRPAccess.cxx
     AliHMPIDPIDParams.cxx
     AliHMPIDPIDResponse.cxx
     AliInputEventHandler.cxx
@@ -139,11 +140,16 @@ set(SRCS
     AliVVZERO.cxx
     AliVVZEROfriend.cxx
     AliVZDC.cxx
+    AliMergeable.cxx
     TTreeStream.cxx
    )
 
 # Headers from sources
 string(REPLACE ".cxx" ".h" HDRS "${SRCS}")
+
+set(HDRS ${HDRS} 
+    AliSharedPtr.h
+    )
 
 # Generate the dictionary
 # It will create G_ARG1.cxx and G_ARG1.h / ARG1 = function first argument

@@ -95,7 +95,7 @@ class AliTPCChebCorr : public TNamed
   void     EvalDeriv(int sector, int row, int dimD, float tz[2], float* d2ddim) const;
   Bool_t   IsRowMasked(int sector72,int row)                         const;
   Int_t    GetNMaskedRows(int sector72, TBits* masked=0)             const;
-  void     Init();
+  virtual  void     Init();
   Int_t    GetDimOut() const;
   static   float GetMaxY2X()                    {return fgkY2XHSpan;}
   static const float* GetPadRowX()              {return fgkPadRowX;}
@@ -103,6 +103,10 @@ class AliTPCChebCorr : public TNamed
   TH1F*    GetTracksRate()                       const {return fTracksRate;}
   void     SetTracksRate(TH1F* hrate)            {fTracksRate = hrate;}
   Double_t GetLuminosityCOG(TGraph* lumi, time_t tmin=-1, time_t tmax=-1) const;
+  Float_t  GetLumiInfo()                         const {return fLumiInfo;}
+  void     SetLumiInfo(float v=0.f)                    {fLumiInfo = v;}
+  Bool_t   IsLumiInfoCOG()                        const {return fLumiInfo>1e-10;}
+  Bool_t   IsLumiInfoScale()                      const {return fLumiInfo<-1e-10;}
   //
   Int_t    GetRun()                              const;
   void     SetRun(int run)                             {fRun = run;}
@@ -124,6 +128,7 @@ class AliTPCChebCorr : public TNamed
   Int_t    fNStacks;                // total number of stacks
   Float_t  fZMaxAbs;                // zmax abs
   //
+  Float_t  fLumiInfo;               // <0 : -1*scaling param to apply, >0: precalculated lumi COG, ==0: ignore
   time_t   fTimeStampStart;         // time stamp for start of validity
   time_t   fTimeStampEnd;           // time stamp for end of validity
   //
@@ -146,7 +151,7 @@ class AliTPCChebCorr : public TNamed
   AliTPCChebCorr(const AliTPCChebCorr& src);            // dummy
   AliTPCChebCorr& operator=(const AliTPCChebCorr& rhs); // dummy
   //
-  ClassDef(AliTPCChebCorr,8)
+  ClassDef(AliTPCChebCorr,9)
 };
 
 //_________________________________________________________________

@@ -15,62 +15,67 @@
 
 #include <iostream>
 #include <TBits.h>
+#include <TRandom.h>
+
 #include "AliITSMFTSimuClusterShaper.h"
 
 ClassImp(AliITSMFTSimuClusterShaper)
 
 //______________________________________________________________________
 AliITSMFTSimuClusterShaper::AliITSMFTSimuClusterShaper() :
-fNrows(0),
-fNcols(0),
-fNpixOn(0)
-{  
-}
+fCShape(0)
+{}
+
 
 //______________________________________________________________________
-AliITSMFTSimuClusterShaper::AliITSMFTSimuClusterShaper(const Int_t &cs) :
-fNrows(0),
-fNcols(0),
-fNpixOn(cs)
-{
-  while(fNrows*fNcols < fNpixOn) {
-    fNrows += 1;
-    fNcols += 1;
+AliITSMFTSimuClusterShaper::AliITSMFTSimuClusterShaper(const UInt_t &cs) {
+  fNpixOn = cs;
+  UInt_t nRows = 0;
+  UInt_t nCols = 0;
+  while (nRows*nCols < cs) {
+    nRows += 1;
+    nCols += 1;
   }
+  fCShape = new AliITSMFTClusterShape(nRows, nCols, fNpixOn);
 }
 
-//______________________________________________________________________
-AliITSMFTSimuClusterShaper::~AliITSMFTSimuClusterShaper()
-{
-    // destructor
-}
 
 //______________________________________________________________________
-void AliITSMFTSimuClusterShaper::FillClusterRandomly(Int_t *clusterConf)
-{
-  Int_t matrixSize = fNrows*fNcols;
+AliITSMFTSimuClusterShaper::~AliITSMFTSimuClusterShaper() {
+  delete fCShape;
+}
+
+
+//______________________________________________________________________
+void AliITSMFTSimuClusterShaper::FillClusterRandomly() {
+  Int_t matrixSize = fCShape->GetNRows()*fCShape->GetNCols();
 
   // generate UNIQUE random numbers
-  Int_t i = 0;
+  UInt_t i = 0;
   TBits *bits = new TBits(fNpixOn);
   while (i < fNpixOn) {
-    Int_t j = gRandom->Integer(matrixSize); // [0, matrixSize-1]
-    if (bits->TestBitNumber(j)) continue; 
+    UInt_t j = gRandom->Integer(matrixSize); // [0, matrixSize-1]
+    if (bits->TestBitNumber(j)) continue;
     bits->SetBitNumber(j);
     i++;
   }
 
   Int_t bit = 0;
   for (i = 0; i < fNpixOn; ++i) {
-    Int_t j = bits->FirstSetBit(bit);
-    clusterConf[i] = j;
+    UInt_t j = bits->FirstSetBit(bit);
+    fCShape->SetShapeValue(i, j);
     bit = j+1;
   }
+  delete bits;
 }
 
 
-//______________________________________________________________________ 
-void AliITSMFTSimuClusterShaper::AddNoisePixel() 
-{
-  
+//______________________________________________________________________
+void AliITSMFTSimuClusterShaper::AddNoisePixel() {
+  Int_t matrixSize = fCShape->GetNRows()*fCShape->GetNCols();
+  UInt_t j = gRandom->Integer(matrixSize); // [0, matrixSize-1]
+  while (fCShape->HasElement(j)) {
+    j = gRandom->Integer(matrixSize);
+  }
+  //fCShape->SetShapeValue(i, j);
 }

@@ -45,9 +45,9 @@ ClassImp(AliMFTHeatExchanger);
 AliMFTHeatExchanger::AliMFTHeatExchanger() : TNamed() {
   fRWater = 0.1/2.;
   fDRPipe = 0.005;
-  //fHeatExchangerThickness = 1.618; // to get a 13.4 mm thickness for the rohacell... don't implement this value yet! overlapping issue!
-  fHeatExchangerThickness = 1.4; // initial value
-  fCarbonThickness = (0.0290)/2.;  // total thickness of the carbon plate
+  //fHeatExchangerThickness = 1.398; // to get a 13.4 mm thickness for the rohacell... but the water pipes are not inside it, then its density must be increased
+  fHeatExchangerThickness = 1.4 + 2*AliMFTGeometry::kRohacell; // kRohacell is used to link the rohacell thickness and the ladder positionning
+  fCarbonThickness = (0.0290)/2.;  // half thickness of the carbon plate
   InitParameters();
 }
 
@@ -89,6 +89,53 @@ TGeoVolumeAssembly* AliMFTHeatExchanger::Create(Int_t half, Int_t disk) {
   return fHalfDisk;
   
 }
+
+
+
+void AliMFTHeatExchanger::CreateManyfold(Int_t disk){
+
+  TGeoCombiTrans  *transformation1 = 0;
+  TGeoCombiTrans  *transformation2 = 0;
+  TGeoRotation    *rotation       = 0;
+  TGeoCombiTrans  *transformation = 0;
+
+  // **************************************** Manyfolds right and left, fm  ****************************************
+  
+  Double_t deltay = 0.2;  // shift respect to the median plan of the MFT
+  Double_t mfX = 2.2;     // width
+  Double_t mfY = 6.8;     // height
+  Double_t mfZ = 1.7;     // thickness
+  Double_t fShift=0;
+  if(disk==3 || disk==4)fShift=0.015; // to avoid overlap with the 2 curved water pipes on the 2 upstream chambers
+
+  TGeoMedium *kMedPeek    = gGeoManager->GetMedium("MFT_PEEK$");
+  
+  TGeoBBox *boxmanyfold = new TGeoBBox("boxmanyfold", mfX/2, mfY/2, mfZ/2);
+  TGeoBBox *remove = new TGeoBBox("remove", 0.45/2 + AliMFTGeometry::kEpsilon, mfY/2 + AliMFTGeometry::kEpsilon, 0.6/2 + AliMFTGeometry::kEpsilon);
+  TGeoTranslation *tL= new TGeoTranslation ("tL", mfX/2-0.45/2, 0., -mfZ/2+0.6/2);
+  TGeoSubtraction *boxManyFold = new TGeoSubtraction(boxmanyfold, remove, NULL, tL);
+  TGeoCompositeShape *BoxManyFold = new TGeoCompositeShape("BoxManyFold", boxManyFold);
+
+  TGeoTranslation *tR= new TGeoTranslation ("tR", -mfX/2+0.45/2, 0., -mfZ/2+0.6/2);
+  TGeoSubtraction *boxManyFold1 = new TGeoSubtraction(BoxManyFold, remove, NULL, tR);
+  TGeoCompositeShape *BoxManyFold1 = new TGeoCompositeShape("BoxManyFold1", boxManyFold1);
+
+  TGeoVolume *MF01 = new TGeoVolume(Form("MF%d1",disk), BoxManyFold1, kMedPeek);
+
+  rotation = new TGeoRotation ("rotation", 90., 90., 90.);
+  transformation1 = new TGeoCombiTrans(fSupportXDimensions[disk][0]/2+mfZ/2+fShift, mfY/2+deltay, fZPlan[disk], rotation);
+
+  fHalfDisk->AddNode(MF01, 1, transformation1);
+    
+  TGeoVolume *MF02 = new TGeoVolume(Form("MF%d2",disk), BoxManyFold1, kMedPeek);
+  transformation2 = new TGeoCombiTrans(fSupportXDimensions[disk][0]/2+mfZ/2+fShift, -mfY/2-deltay, fZPlan[disk], rotation);
+
+  fHalfDisk->AddNode(MF02, 1, transformation2);
+    
+  // ********************************************************************************************************
+}
+
+
 
 //====================================================================================================================================================
 
@@ -351,42 +398,8 @@ void AliMFTHeatExchanger::CreateHalfDisk0(Int_t half) {
     fHalfDisk->AddNode(rohacellPlate, 1, transformation);
 //  }
  
+    CreateManyfold(disk);
 
-
-    // **************************************** Manyfolds right and left, fm  ****************************************
-    /*
-    Double_t deltay = 0.2;     // ecart par rapport au plan median du MFT
-    Double_t mfX = 2.2; // largeur
-    Double_t mfY = 6.8; // hauteur
-    Double_t mfZ = 1.7; // epaisseur
-
-    TGeoMedium *kMedPeek    = gGeoManager->GetMedium("MFT_PEEK$");
-
-
-    TGeoBBox *boxmanyfold = new TGeoBBox("boxmanyfold", mfX/2, mfY/2, mfZ/2);
-    TGeoBBox *remove = new TGeoBBox("remove", 0.45/2 + AliMFTGeometry::kEpsilon, mfY/2 + AliMFTGeometry::kEpsilon, 0.6/2 + AliMFTGeometry::kEpsilon);
-    TGeoTranslation *tL= new TGeoTranslation ("tL", mfX/2-0.45/2, 0., -mfZ/2+0.6/2);
-    TGeoSubtraction *boxManyFold = new TGeoSubtraction(boxmanyfold, remove, NULL, tL);
-    TGeoCompositeShape *BoxManyFold = new TGeoCompositeShape("BoxManyFold", boxManyFold);
-
-    TGeoTranslation *tR= new TGeoTranslation ("tR", -mfX/2+0.45/2, 0., -mfZ/2+0.6/2);
-    TGeoSubtraction *boxManyFold1 = new TGeoSubtraction(BoxManyFold, remove, NULL, tR);
-    TGeoCompositeShape *BoxManyFold1 = new TGeoCompositeShape("BoxManyFold1", boxManyFold1);
-
-    TGeoVolume *MF1 = new TGeoVolume("MF1", BoxManyFold1, kMedPeek);
-
-    rotation = new TGeoRotation ("rotation", 90., 90., 90.);
-    transformation1 = new TGeoCombiTrans(fSupportXDimensions[disk][0]/2+mfZ/2, mfY/2+deltay, fZPlan[disk], rotation);
-
-    fHalfDisk->AddNode(MF1, 1, transformation1);
-    
-    TGeoVolume *MF2 = new TGeoVolume("MF2", BoxManyFold1, kMedPeek);
-    transformation2 = new TGeoCombiTrans(fSupportXDimensions[disk][0]/2+mfZ/2, -mfY/2-deltay, fZPlan[disk], rotation);
-
-    fHalfDisk->AddNode(MF2, 1, transformation2);
-    */
-    // ********************************************************************************************************
- 
 }
 
 //====================================================================================================================================================
@@ -651,7 +664,7 @@ void AliMFTHeatExchanger::CreateHalfDisk1(Int_t half) {
     fHalfDisk->AddNode(rohacellPlate, 2, transformation);
 //  }
   
-
+    CreateManyfold(disk);
 
 }
 
@@ -915,7 +928,9 @@ void AliMFTHeatExchanger::CreateHalfDisk2(Int_t half) {
     transformation = new TGeoCombiTrans(0., 0., 0., rotation);
     fHalfDisk->AddNode(rohacellPlate, 2, transformation);
 //  }
-  
+
+    CreateManyfold(disk);
+	
 }
 
 //====================================================================================================================================================
@@ -963,6 +978,7 @@ void AliMFTHeatExchanger::CreateHalfDisk3(Int_t half)  {
   
   // ------------------- First and second pipe -------------------
   
+
   for (Int_t itube= 0; itube < 2; itube ++){
     
     
@@ -1013,6 +1029,7 @@ void AliMFTHeatExchanger::CreateHalfDisk3(Int_t half)  {
                                         radius3mid[0]*TMath::Cos(beta3rad[0]) , 0., 0., rotation);
     cooling->AddNode (waterTorus2, 6, transformation);
   }
+  
   
   // ------------------- Third pipe -------------------
   
@@ -1124,6 +1141,8 @@ void AliMFTHeatExchanger::CreateHalfDisk3(Int_t half)  {
   
   // ------------------- First and second pipe -------------------
   
+ 
+
   for (Int_t itube= 0; itube < 2; itube ++){
     
     // -------- Tube shape --------
@@ -1173,6 +1192,7 @@ void AliMFTHeatExchanger::CreateHalfDisk3(Int_t half)  {
     transformation = new TGeoCombiTrans(fXPosition3[itube] + fradius3[0]*(1-(TMath::Cos(beta3rad[0])))+fLpartial3[0]*TMath::Sin(beta3rad[0]) - radius3mid[0]*TMath::Cos(beta3rad[0]) , 0., 0., rotation);
     cooling->AddNode (pipeTorus2, 6, transformation);
   }
+  
   
   // ------------------- Third pipe -------------------
   
@@ -1343,7 +1363,8 @@ void AliMFTHeatExchanger::CreateHalfDisk3(Int_t half)  {
     transformation = new TGeoCombiTrans(0., 0., 0., rotation);
     fHalfDisk->AddNode(rohacellPlate, 2, transformation);
 //  }
-	
+
+    CreateManyfold(disk);
   
 }
 
@@ -1814,6 +1835,8 @@ void AliMFTHeatExchanger::CreateHalfDisk4(Int_t half) {
     transformation = new TGeoCombiTrans(0., 0., 0., rotation);
     fHalfDisk->AddNode(rohacellPlate, 2, transformation);
 //  }
+
+    CreateManyfold(disk);
 	
 }
 
@@ -1832,7 +1855,7 @@ void AliMFTHeatExchanger::InitParameters() {
   }
   
   fRohacellThickness = fHeatExchangerThickness/2. - 2.*fCarbonThickness - 2*(fRWater + fDRPipe);//thickness of Rohacell plate over 2
-  printf("Rohacell thickness %f \n",fRohacellThickness);
+  //printf("Rohacell thickness en mm %f \n",2*fRohacellThickness*10);
   
   fHalfDiskGap = 0.2;
   
@@ -1869,15 +1892,15 @@ void AliMFTHeatExchanger::InitParameters() {
     fSupportYDimensions[i]= new double[fnPart[i]];
   }
   
-  fSupportXDimensions[0][0]=21.;  fSupportXDimensions[0][1]=14.8;   fSupportXDimensions[0][2]=4.4;
-  fSupportXDimensions[1][0]=21.;  fSupportXDimensions[1][1]=14.8;   fSupportXDimensions[1][2]=4.4;
-  fSupportXDimensions[2][0]=22.6; fSupportXDimensions[2][1]=16.1;   fSupportXDimensions[2][2]=9.3;
-  fSupportXDimensions[3][0]=28.4; fSupportXDimensions[3][1]=22.9;   fSupportXDimensions[3][2]=18.5 ;fSupportXDimensions[3][3]=8.3; fSupportXDimensions[3][4]=4.9;
-  fSupportXDimensions[4][0]=28.4; fSupportXDimensions[4][1]=25.204; fSupportXDimensions[4][2]=21.9 ;fSupportXDimensions[4][3]=15.1;
+  fSupportXDimensions[0][0]=23.;  fSupportXDimensions[0][1]=14.;   fSupportXDimensions[0][2]=5.1;
+  fSupportXDimensions[1][0]=23.;  fSupportXDimensions[1][1]=14.;   fSupportXDimensions[1][2]=5.1;
+  fSupportXDimensions[2][0]=23.;  fSupportXDimensions[2][1]=14.;   fSupportXDimensions[2][2]=5.1;
+  fSupportXDimensions[3][0]=28.4; fSupportXDimensions[3][1]=21.9;   fSupportXDimensions[3][2]=18.5 ;fSupportXDimensions[3][3]=8.3; fSupportXDimensions[3][4]=4.9;
+  fSupportXDimensions[4][0]=28.4; fSupportXDimensions[4][1]=24.204; fSupportXDimensions[4][2]=21.9 ;fSupportXDimensions[4][3]=15.1;
   
-  fSupportYDimensions[0][0]=6.2;  fSupportYDimensions[0][1]=3.5;   fSupportYDimensions[0][2]=1.4;
-  fSupportYDimensions[1][0]=6.2;  fSupportYDimensions[1][1]=3.5;   fSupportYDimensions[1][2]=1.4;
-  fSupportYDimensions[2][0]=6.61; fSupportYDimensions[2][1]=3.01;  fSupportYDimensions[2][2]=1.83;
+  fSupportYDimensions[0][0]=6.7;  fSupportYDimensions[0][1]=2.6;   fSupportYDimensions[0][2]=2.0;
+  fSupportYDimensions[1][0]=6.7;  fSupportYDimensions[1][1]=2.6;   fSupportYDimensions[1][2]=2.0;
+  fSupportYDimensions[2][0]=6.7;  fSupportYDimensions[2][1]=2.6;   fSupportYDimensions[2][2]=2.0;
   fSupportYDimensions[3][0]=6.61; fSupportYDimensions[3][1]=3.01;  fSupportYDimensions[3][2]=3.01 ;fSupportYDimensions[3][3]=1.8; fSupportYDimensions[3][4]=1.15;
   fSupportYDimensions[4][0]=6.61; fSupportYDimensions[4][1]=3.01;  fSupportYDimensions[4][2]=3.01 ;fSupportYDimensions[4][3]=2.42;
   
@@ -1887,14 +1910,14 @@ void AliMFTHeatExchanger::InitParameters() {
   
   fXPosition0[0] = 1.7;
   fXPosition0[1] = 4.61;
-  fXPosition0[2] = 7.72;
+  fXPosition0[2] = 6.41;
   
   fangle0 = 44.6;
   fradius0 = 2.5;
   fLpartial0 = 1.;
   
   //Parameters for disk 3
-  
+
   fLWater3[0] = 8.032;
   fLWater3[1] = 8.032;
   fLWater3[2] = 8.2;
@@ -1902,7 +1925,7 @@ void AliMFTHeatExchanger::InitParameters() {
   fXPosition3[0] = 1.7;
   fXPosition3[1] = 4.61;
   fXPosition3[2] = 5.5;
-  fXPosition3[3] = 6.81;
+  fXPosition3[3] = 5.81;
   
   fangle3[0] = 41.3;
   fangle3[1] = 41.3;
@@ -1925,7 +1948,7 @@ void AliMFTHeatExchanger::InitParameters() {
   fangle3fourth[1] = 50.;
   fangle3fourth[2] = 60.;
   fangle3fourth[3] =  8 + fangle3fourth[0] - fangle3fourth[1] + fangle3fourth[2];
-  
+ 
   // Parameters for disk 4
   
   fLwater4[0] = 5.911;
@@ -1936,7 +1959,7 @@ void AliMFTHeatExchanger::InitParameters() {
   fXposition4[1] = 3.492;
   fXposition4[2] = 4.61;
   fXposition4[3] = 5.5;
-  fXposition4[4] = 6.5;
+  fXposition4[4] = 5.8;
   
   fangle4[0] = 35.5;
   fangle4[1] = 30.;

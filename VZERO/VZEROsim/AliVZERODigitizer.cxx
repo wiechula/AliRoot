@@ -229,7 +229,6 @@ void AliVZERODigitizer::Digitize(Option_t* /*option*/)
 {   
   // Creates digits from hits
   fNdigits = 0;  
-
   if (fVZERO && !fDigInput) {
     AliLoader *loader = fVZERO->GetLoader();
     if (!loader) {
@@ -251,15 +250,15 @@ void AliVZERODigitizer::Digitize(Option_t* /*option*/)
     }
   }
   else if (fDigInput) {
-      ReadSDigits();
-      DigitizeSDigits();
-      AliRunLoader *currentLoader = AliRunLoader::GetRunLoader(fDigInput->GetOutputFolderName());
-      AliLoader *loader = currentLoader->GetLoader("VZEROLoader");
-      if (!loader) { 
-	AliError("Cannot get VZERO Loader via RunDigitizer!");
-	return;
-      }
-      WriteDigits(loader);
+    ReadSDigits();
+    DigitizeSDigits();
+    AliRunLoader *currentLoader = AliRunLoader::GetRunLoader(fDigInput->GetOutputFolderName());
+    AliLoader *loader = currentLoader->GetLoader("VZEROLoader");
+    if (!loader) { 
+      AliError("Cannot get VZERO Loader via RunDigitizer!");
+      return;
+    }
+    WriteDigits(loader);
   }
   else {
     AliFatal("Invalid digitization task! Exiting!");
@@ -289,13 +288,16 @@ void AliVZERODigitizer::AddSDigit(Int_t pmnumber, Int_t nbins, Float_t *charges,
 	 
 }
 //____________________________________________________________________________
-void AliVZERODigitizer::ResetDigits()
+void AliVZERODigitizer::ResetDigits(Option_t* opt)
 {
 
 // Clears Digits
 
   fNdigits = 0;
-  if (fDigits) fDigits->Clear();
+  if (fDigits) fDigits->Clear(opt);
+  // CM
+  delete fDigits;
+  fDigits = NULL;
 }
 
 //____________________________________________________________________________
@@ -542,7 +544,7 @@ void AliVZERODigitizer::WriteDigits(AliLoader *loader)
   treeD->Fill();
   loader->WriteDigits("OVERWRITE");  
   loader->UnloadDigits();     
-  ResetDigits();
+  ResetDigits("C");
 }
 
 void AliVZERODigitizer::WriteSDigits(AliLoader *loader)
@@ -568,7 +570,7 @@ void AliVZERODigitizer::WriteSDigits(AliLoader *loader)
   treeS->Fill();
   loader->WriteSDigits("OVERWRITE");  
   loader->UnloadSDigits();     
-  ResetDigits();
+  ResetDigits("C");
 }
 
 void AliVZERODigitizer::ReadSDigits()
@@ -603,7 +605,6 @@ void AliVZERODigitizer::ReadSDigits()
       AliError("Failed to get sdigit branch");
       return;
     }
-
     // Set the branch address
     TClonesArray *sdigitsArray = NULL;
     sdigitsBranch->SetAddress(&sdigitsArray);
@@ -638,7 +639,9 @@ void AliVZERODigitizer::ReadSDigits()
 	  }
 	}
       }
+      sdigitsArray->Clear("C"); // CM
     }
+    delete sdigitsArray; // CM
     loader->UnloadSDigits();
   }
 }

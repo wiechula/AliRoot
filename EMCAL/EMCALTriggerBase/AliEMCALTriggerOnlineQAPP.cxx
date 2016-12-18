@@ -306,9 +306,11 @@ void AliEMCALTriggerOnlineQAPP::ProcessFastor(const AliEMCALTriggerFastOR* fasto
   UInt_t L1amp = fastor->GetL1Amp();
 
   if (L0amp > fMinL0FastORAmp) {
-    fHistFastORL0->Fill(fastor->GetAbsId());
-    if (L0amp > fFastorL0Th) fHistFastORL0LargeAmp->Fill(fastor->GetAbsId());
-    fHistFastORL0Amp->Fill(fastor->GetGlobalCol(), fastor->GetGlobalRow(), L0amp);
+    if (fastor->GetL0Time() > fL0MinTime && fastor->GetL0Time() < fL0MaxTime) {
+      fHistFastORL0->Fill(fastor->GetAbsId());
+      if (L0amp > fFastorL0Th) fHistFastORL0LargeAmp->Fill(fastor->GetAbsId());
+      fHistFastORL0Amp->Fill(fastor->GetGlobalCol(), fastor->GetGlobalRow(), L0amp);
+    }
     fHistFastORL0Time->Fill(fastor->GetAbsId(), fastor->GetL0Time());
   }
 
@@ -318,6 +320,7 @@ void AliEMCALTriggerOnlineQAPP::ProcessFastor(const AliEMCALTriggerFastOR* fasto
     fHistFastORL1Amp->Fill(fastor->GetGlobalCol(), fastor->GetGlobalRow(), L1amp);
   }
 
+  /*
   if (!fGeom) return;
   // After this only instructions that require geometry
   Int_t iSM  = -1;
@@ -325,6 +328,7 @@ void AliEMCALTriggerOnlineQAPP::ProcessFastor(const AliEMCALTriggerFastOR* fasto
   Int_t iPhi = -1;
   fGeom->GetPositionInSMFromAbsFastORIndex(fastor->GetAbsId(), iSM, iEta, iPhi);
   Bool_t isDCal = fGeom->IsDCALSM(iSM);
+  */
 }
 
 /**

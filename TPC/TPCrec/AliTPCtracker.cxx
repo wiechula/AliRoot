@@ -475,7 +475,9 @@ AliTPCtracker::AliTPCtracker(const AliTPCParam *par):
   //
   // crosstalk array and matrix initialization
   Int_t nROCs   = 72;
-  Int_t nTimeBinsAll  = AliTPCcalibDB::Instance()->GetMaxTimeBinAllPads() ;
+  // GetMaxTimeBinAllPads() returns the number of the maximum time bin e.g. 0-1023,
+  // so the size must be 1024
+  Int_t nTimeBinsAll  = AliTPCcalibDB::Instance()->GetMaxTimeBinAllPads() + 1;
   Int_t nWireSegments = 11;
   fCrossTalkSignalArray = new TObjArray(nROCs*4);  //  
   fCrossTalkSignalArray->SetOwner(kTRUE);
@@ -1275,9 +1277,13 @@ Bool_t   AliTPCtracker::GetProlongation(Double_t x1, Double_t x2, Double_t x[5],
   
   Double_t dx=x2-x1;
   Double_t c1=x[4]*x1 - x[2];
-  if (TMath::Abs(c1) >= 0.999) return kFALSE;
+  if (TMath::Abs(c1) >= 0.999) {
+    return kFALSE;
+  }
   Double_t c2=x[4]*x2 - x[2];
-  if (TMath::Abs(c2) >= 0.999) return kFALSE;
+  if (TMath::Abs(c2) >= 0.999) {
+    return kFALSE;
+  }
   Double_t r1=TMath::Sqrt((1.-c1)*(1.+c1)),r2=TMath::Sqrt((1.-c2)*(1.+c2));  
   y = x[0];
   z = x[1];
@@ -1613,7 +1619,7 @@ void  AliTPCtracker::CalculateXtalkCorrection(){
 	    Double_t norm= 2.*TMath::Exp(-1.0/(2.*rmsTime2))+2.*TMath::Exp(-4.0/(2.*rmsTime2))+1.;
 	    Double_t qTotXtalk = 0.;   
 	    Double_t qTotXtalkMissing = 0.;   
-	    for (Int_t itb=timeBinXtalk-2, idelta=-2; itb<=timeBinXtalk+2; itb++,idelta++) {        
+	    for (Int_t itb=timeBinXtalk-2, idelta=-2; itb<=timeBinXtalk+2; itb++,idelta++) {
 	      if (itb<0 || itb>=nCols) continue;
 	      Double_t missingCharge=0;
 	      Double_t trf= TMath::Exp(-idelta*idelta/(2.*rmsTime2));
@@ -2021,7 +2027,8 @@ void AliTPCtracker::Transform(AliTPCclusterMI * cluster){
   //  if (!transform->GetCurrentRecoParam()) transform->SetCurrentRecoParam((AliTPCRecoParam*)AliTPCReconstructor::GetRecoParam());
   Double_t x[3]={static_cast<Double_t>(cluster->GetRow()),static_cast<Double_t>(cluster->GetPad()),static_cast<Double_t>(cluster->GetTimeBin())};
   Int_t idROC = cluster->GetDetector();
-  transform->Transform(x,&idROC,0,1);
+  //  transform->Transform(x,&idROC,0,1);
+  transform->Transform(x,&idROC,0,cluster->GetLabel(0));
   const float* clCorr = transform->GetLastMapCorrection();
   const float* clCorrRef = transform->GetLastMapCorrectionRef();
   //
@@ -2092,6 +2099,8 @@ void  AliTPCtracker::ApplyXtalkCorrection(){
   // cluster loop
   TStopwatch sw;
   sw.Start();
+
+
   for (Int_t isector=0; isector<36; isector++){  //loop tracking sectors
     for (Int_t iside=0; iside<2; iside++){       // loop over sides A/C
       AliTPCtrackerSector &sector= (isector<18)?fInnerSec[isector%18]:fOuterSec[isector%18];
@@ -2106,13 +2115,15 @@ void  AliTPCtracker::ApplyXtalkCorrection(){
 	}else{
 	  xSector=isector+18;  // isector -18 +36   
 	  if (iside>0) xSector+=18;
-	}	
+	}
 	TMatrixD &crossTalkMatrix= *((TMatrixD*)fCrossTalkSignalArray->At(xSector));
+    const Int_t nCols=crossTalkMatrix.GetNcols();
 	Int_t wireSegmentID     = fkParam->GetWireSegment(xSector,row);
 	for (Int_t i=0;i<ncl;i++) {
 	  AliTPCclusterMI *cluster= (iside>0)?(tpcrow.GetCluster2(i)):(tpcrow.GetCluster1(i));
 	  Int_t iTimeBin=TMath::Nint(cluster->GetTimeBin());
-	  Double_t xTalk= crossTalkMatrix[wireSegmentID][iTimeBin];
+      if (iTimeBin >= nCols) continue;
+      Double_t xTalk= crossTalkMatrix[wireSegmentID][iTimeBin];
 	  cluster->SetMax(cluster->GetMax()+xTalk);
 	  const Double_t kDummy=4;
 	  Double_t sumxTalk=xTalk*kDummy; // should be calculated via time response function
@@ -4233,8 +4244,8 @@ void AliTPCtracker::MakeSeeds3(TObjArray * arr, Int_t sec, Int_t i1, Int_t i2,  
 	//
 	//
 	// do we have cluster at the middle ?
-	Double_t ym,zm;
-	GetProlongation(x1,xm,x,ym,zm);
+	Double_t ym=0,zm=0;
+	if (!GetProlongation(x1,xm,x,ym,zm)) continue;
 	UInt_t dummy; 
 	AliTPCclusterMI * cm=0;
 	if (TMath::Abs(ym)-ymaxm<0){	  
@@ -4250,7 +4261,7 @@ void AliTPCtracker::MakeSeeds3(TObjArray * arr, Int_t sec, Int_t i1, Int_t i2,  
 	  Double_t xr2  =  x0*cs+yr1*sn*dsec;
 	  Double_t xr[5]={kcl->GetY(),kcl->GetZ(), xr2, dip, c0};
 	  //
-	  GetProlongation(xx2,xm,xr,ym,zm);
+	  if (!GetProlongation(xx2,xm,xr,ym,zm)) continue;
 	  if (TMath::Abs(ym)-ymaxm<0){
 	    cm = kr2m.FindNearest2(ym,zm,kRoadY+fClExtraRoadY,kRoadZ+fClExtraRoadZ,dummy);
 	    if ((!cm) || (cm->IsUsed(10))) {	  
@@ -4555,11 +4566,11 @@ void AliTPCtracker::MakeSeeds3Dist(TObjArray * arr, Int_t sec, Int_t i1, Int_t i
 	//
 	//
 	// do we have cluster at the middle ?
-	Double_t xm = GetXrow(imiddle), ym, zm; // radius of middle pad-row
-	GetProlongation(x1,xm,x,ym,zm);
+	Double_t xm = GetXrow(imiddle), ym=0, zm=0; // radius of middle pad-row
+	if (!GetProlongation(x1,xm,x,ym,zm)) continue;
 	// account for distortion
 	double dxDist = GetDistortionX(xm,ym,zm,sec,imiddle);
-	if (TMath::Abs(dxDist)>0.05) GetProlongation(x1,xm+dxDist,x,ym,zm); //RS:? can we use straight line here?
+	if (TMath::Abs(dxDist)>0.05 && !GetProlongation(x1,xm+dxDist,x,ym,zm)) continue; //RS:? can we use straight line here?
 	UInt_t dummy; 
 	AliTPCclusterMI * cm=0;
 	double ymEdgeDist = ym;
@@ -4575,9 +4586,9 @@ void AliTPCtracker::MakeSeeds3Dist(TObjArray * arr, Int_t sec, Int_t i1, Int_t i
 	  Double_t xr2  =  x0*cs+yr1*sn*dsec;
 	  Double_t xr[5]={kcl->GetY(),kcl->GetZ(), xr2, dip, c0};
 	  //
-	  GetProlongation(kcl->GetX(),xm,xr,ym,zm);
+	  if (!GetProlongation(kcl->GetX(),xm,xr,ym,zm)) continue;
 	  double dxDist = GetDistortionX(xm,ym,zm,sec2,imiddle);
-	  if (TMath::Abs(dxDist)>0.05) GetProlongation(x1,xm+dxDist,x,ym,zm); //RS:? can we use straight line here?
+	  if (TMath::Abs(dxDist)>0.05 && !GetProlongation(x1,xm+dxDist,x,ym,zm)) continue; //RS:? can we use straight line here?
 	  //
 	  ymEdgeDist = ym;
 	  if (fAccountDistortions) ymEdgeDist -= GetYSectEdgeDist(sec2,imiddle,ym,zm); // ym shifted by edge distortion
@@ -7436,11 +7447,24 @@ void  AliTPCtracker::FindKinks(TObjArray * array, AliESDEvent *esd)
   //
   RemoveUsed2(array,0.5,0.4,30);
   UnsignClusters();
+  // RS: the cluster pointers are not permanently attached to the seed during the tracking, need to attach temporarily   
+  AliTPCclusterMI* seedClusters[kMaxRow] = {0};                                                                          
+  //
   for (Int_t i=0;i<nentries;i++){
     AliTPCseed * track0 = (AliTPCseed*)array->At(i);
     if (!track0) continue;
+    //RS: if needed, attach temporary cluster array    
+    const AliTPCclusterMI** seedClustersSave = track0->GetClusters();
+    if (!seedClustersSave) { //RS: temporary attach clusters
+      for (int ir=kMaxRow;ir--;) {
+	int idx = track0->GetClusterIndex2(ir);
+	seedClusters[ir] = idx<0 ? 0 : GetClusterMI(idx);
+      }
+      track0->SetClustersArrayTMP(seedClusters);
+    }
     track0->CookdEdx(0.02,0.6);
     track0->CookPID();
+    if (!seedClustersSave) track0->SetClustersArrayTMP(0);
   }
   //
   // RS use stack allocation instead of the heap
@@ -8099,8 +8123,11 @@ Int_t AliTPCtracker::Clusters2Tracks() {
   // 
   nseed=fSeeds->GetEntriesFast();
   found = 0;
+  // RS: the cluster pointers are not permanently attached to the seed during the tracking, need to attach temporarily
+  AliTPCclusterMI* seedClusters[kMaxRow];
+  //
   for (Int_t i=0; i<nseed; i++) {
-    AliTPCseed *pt=(AliTPCseed*)fSeeds->UncheckedAt(i), &t=*pt;    
+    AliTPCseed *pt=(AliTPCseed*)fSeeds->UncheckedAt(i), &t = *pt;
     if (!pt) continue;    
     Int_t nc=t.GetNumberOfClusters();
     if (nc<15) {
@@ -8108,69 +8135,31 @@ Int_t AliTPCtracker::Clusters2Tracks() {
       continue;
     }
     t.SetUniqueID(i);
-    t.CookdEdx(0.02,0.6);
+    
     //    CheckKinkPoint(&t,0.05);
-    //if ((pt->IsActive() || (pt->fRemoval==10) )&& nc>50 &&pt->GetNumberOfClusters()>0.4*pt->fNFoundable){
     if ((pt->IsActive() || (pt->GetRemoval()==10) )){
       found++;
-      if (fDebug>0){
-	cerr<<found<<'\r';      
-      }
+      if (fDebug>0) cerr<<found<<'\r';
       pt->SetLab2(i);
     }
-    else
-      MarkSeedFree( fSeeds->RemoveAt(i) );
-    //AliTPCseed * seed1 = ReSeed(pt,0.05,0.5,1);
-    //if (seed1){
-    //  FollowProlongation(*seed1,0);
-    //  Int_t n = seed1->GetNumberOfClusters();
-    //  printf("fP4\t%f\t%f\n",seed1->GetC(),pt->GetC());
-    //  printf("fN\t%d\t%d\n", seed1->GetNumberOfClusters(),pt->GetNumberOfClusters());
+    else {MarkSeedFree( fSeeds->RemoveAt(i) );}
     //
-    //}
-    //AliTPCseed * seed2 = ReSeed(pt,0.95,0.5,0.05);
-    
+    // temporarilly attach clusters and cook dedx
+    const AliTPCclusterMI** seedClustersSave = t.GetClusters();
+    if (!seedClustersSave) { //RS: temporary attach clusters
+      for (int ir=kMaxRow;ir--;) {
+	int idx = t.GetClusterIndex2(ir);
+	seedClusters[ir] = idx<0 ? 0 : GetClusterMI(idx);
+      }
+      t.SetClustersArrayTMP(seedClusters);
+    }
+    t.CookdEdx(0.02,0.6);
+    if (!seedClustersSave) t.SetClustersArrayTMP(0);
+    //
   }
 
   SortTracks(fSeeds, 1);
-  
-  /*    
-  fIteration = 1;
-  PrepareForBackProlongation(fSeeds,5.);
-  PropagateBack(fSeeds);
-  printf("Time for back propagation: \t");timer.Print();timer.Start();
-  
-  fIteration = 2;
-  
-  PrepareForProlongation(fSeeds,5.);
-  PropagateForard2(fSeeds);
    
-  printf("Time for FORWARD propagation: \t");timer.Print();timer.Start();
-  // RemoveUsed(fSeeds,0.7,0.7,6);
-  //RemoveOverlap(fSeeds,0.9,7,kTRUE);
-   
-  nseed=fSeeds->GetEntriesFast();
-  found = 0;
-  for (Int_t i=0; i<nseed; i++) {
-    AliTPCseed *pt=(AliTPCseed*)fSeeds->UncheckedAt(i), &t=*pt;    
-    if (!pt) continue;    
-    Int_t nc=t.GetNumberOfClusters();
-    if (nc<15) {
-      MarkSeedFree( fSeeds->RemoveAt(i) );
-      continue;
-    }
-    t.CookdEdx(0.02,0.6);
-    //    CookLabel(pt,0.1); //For comparison only
-    //if ((pt->IsActive() || (pt->fRemoval==10) )&& nc>50 &&pt->GetNumberOfClusters()>0.4*pt->fNFoundable){
-    if ((pt->IsActive() || (pt->fRemoval==10) )){
-      cerr<<found++<<'\r';      
-    }
-    else
-      MarkSeedFree( fSeeds->RemoveAt(i) );
-    pt->fLab2 = i;
-  }
-  */
- 
   //  fNTracks = found;
   if (fDebug>0){
     Info("Clusters2Tracks","Time for overlap removal, track writing and dedx cooking: \t"); timer.Print();timer.Start();
@@ -9804,8 +9793,63 @@ void AliTPCtracker::AddSystCovariance(AliTPCseed* t)
   float fluctCorr = AliTPCReconstructor::GetRecoParam()->GetDistFluctCorrelation(); // distortion fluctuations correlation 
 
   double corY[6]={0},corZ[3]={0},jacobC = kB2C*GetBz()/2;
-  float xArr[kMaxRow][3], xRef = t->GetX();
+  float xArr[kMaxRow][3];
+  double xRef = t->GetX(), xRef2 = xRef*xRef, xRef3 = xRef2*xRef, xRef4 = xRef2*xRef2;
   float gammaY[kMaxRow],gammaZ[kMaxRow]; // sysErr^2 / totErr^4
+  //
+  // build LSM Cov matrix
+  Bool_t fieldOn = TMath::Abs(jacobC)>1e-9;
+  double detYI=0,detZI=0, covLSM[15];
+  memset(covLSM,0,15*sizeof(double));
+  double &SY00 = covLSM[0], &SY10 = covLSM[3], &SY11 = covLSM[5], &SY20 = covLSM[10], &SY21 = covLSM[12], &SY22 = covLSM[14];
+  double &SZ00 = covLSM[2], &SZ10 = covLSM[7], &SZ11 = covLSM[9];
+  //
+  Bool_t lsmOK = kFALSE;
+  const double *lsCovY = t->GetLSCovY(), *lsCovZ = t->GetLSCovZ();  
+  while(lsCovY[0]) { // if 1st element is 0, then no accumulation was done - recovered seed
+    double y0 = lsCovY[0], 
+      y1 = lsCovY[1] - xRef*y0, 
+      y2 = lsCovY[2] - 2*xRef*lsCovY[1] + xRef2*y0,
+      y3 = lsCovY[3] - 3*xRef*lsCovY[2] + 3*xRef2*lsCovY[1] - xRef3*y0,
+      y4 = lsCovY[4] - 4*xRef*lsCovY[3] + 6*xRef2*lsCovY[2] - 4*xRef3*lsCovY[1] + xRef4*y0;
+    double z0 = lsCovZ[0], 
+      z1 = lsCovZ[1] - xRef*z0, 
+      z2 = lsCovZ[2] - 2*xRef*lsCovZ[1] + xRef2*z0;
+    double y1p2 = y1*y1, y2p2 = y2*y2, y3p2 = y3*y3;
+    detZI = (z0*z2-z1*z1);
+    if (TMath::Abs(detZI)<1e-12) break;
+    detZI = 1./detZI;
+    SZ00 = z2*detZI; 
+    SZ10 =-z1*detZI;  
+    SZ11 = z0*detZI;
+    //
+    if (fieldOn) {
+      double jacobCI = 1./jacobC;
+      detYI = (y2*(y2p2 - 2*y1*y3) + y0*y3p2 + y4*(y1p2 - y0*y2));
+      if (TMath::Abs(detYI)<1e-12) break;
+      detYI = 1./detYI;
+      SY00 = (y3p2-y2*y4)*detYI;
+      SY10 = (y1*y4-y2*y3)*detYI;         SY11 = (y2p2-y0*y4)*detYI;
+      SY20 = (y2p2-y1*y3)*detYI*jacobCI;  SY21 = (y0*y3-y1*y2)*detYI*jacobCI; SY22 = (y1p2-y0*y2)*detYI*jacobCI*jacobCI;
+    }
+    else {
+      detYI = (y0*y2-y1*y1);
+      if (TMath::Abs(detYI)<1e-12) break;
+      detYI = 1./detYI;
+      SY00 = y2*detYI; 
+      SY10 =-y1*detYI;  SY11 = y0*detYI;    
+    }
+    lsmOK = kTRUE;
+    break;
+  }
+  //
+  /*
+  if (!lsmOK) { // this is allowed since recovered seeds (no TPCout) don't accumulate LSM info
+    AliWarningF("Building LSM cov.matrix failed, will use Kalman cov.matrix, pT=%.3f",t->Pt());
+    t->Print();
+  }
+  */
+  //
   int nclFit = 0;
   for (int ip=kMaxRow;ip--;) {
     int index = t->GetClusterIndex2(ip);
@@ -9825,7 +9869,7 @@ void AliTPCtracker::AddSystCovariance(AliTPCseed* t)
     for (int col=0;col<=row;col++) { // matrix is symmetric
       for (int ip=0;ip<nclFit;ip++) {
 	for (int jp=0;jp<nclFit;jp++) {
-	  double corr = (ip==jp ? 1.0:fluctCorr) * amplCorr;
+	  double corr = (ip==jp ? 1.0:fluctCorr) * amplCorr; // actually for ip==jp should be 0, but the effect is negligable
 	  double xprod = xArr[ip][row]*xArr[jp][col]*corr;
 	  corY[cnt] += xprod*gammaY[ip]*gammaY[jp];
 	  if (row<2) corZ[cnt] += xprod*gammaZ[ip]*gammaZ[jp];
@@ -9840,15 +9884,16 @@ void AliTPCtracker::AddSystCovariance(AliTPCseed* t)
   corY[4] *= jacobC;
   corY[5] *= jacobC*jacobC;
   //
+  double *covP = (double*)t->GetCovariance();
+  if (!lsmOK) memcpy(covLSM,covP,15*sizeof(double));
   //
-  double *covP = (double*)t->GetCovariance(),
-    &C00=covP[0],
-    &C10=covP[1] ,&C11=covP[2],
-    &C20=covP[3] ,&C21=covP[4] ,&C22=covP[5],
-    &C30=covP[6] ,&C31=covP[7] ,&C32=covP[8] ,&C33=covP[9],
-    &C40=covP[10],&C41=covP[11],&C42=covP[12],&C43=covP[13],&C44=covP[14];
+  double &C00=covLSM[0],
+    &C10=covLSM[1] ,&C11=covLSM[2],
+    &C20=covLSM[3] ,&C21=covLSM[4] ,&C22=covLSM[5],
+    &C30=covLSM[6] ,&C31=covLSM[7] ,&C32=covLSM[8] ,&C33=covLSM[9],
+    &C40=covLSM[10],&C41=covLSM[11],&C42=covLSM[12],&C43=covLSM[13],&C44=covLSM[14];
   double &g00=corY[0],&g11=corZ[0],&g20=corY[1],&g22=corY[2],&g31=corZ[1],&g33=corZ[2],&g40=corY[3],&g42=corY[4],&g44=corY[5];
-
+  
   double
     cg00=C00*g00 + C20*g20 + C40*g40, cg01=C10*g11 + C30*g31, cg02=C00*g20 + C20*g22 + C40*g42, cg03=C10*g31 + C30*g33, cg04=C00*g40 + C20*g42 + C40*g44,
     cg10=C10*g00 + C21*g20 + C41*g40, cg11=C11*g11 + C31*g31, cg12=C10*g20 + C21*g22 + C41*g42, cg13=C11*g31 + C31*g33, cg14=C10*g40 + C21*g42 + C41*g44,
@@ -9873,17 +9918,27 @@ void AliTPCtracker::AddSystCovariance(AliTPCseed* t)
     a43 = C30*cg40 + C31*cg41 + C32*cg42 + C33*cg43 + C43*cg44, 
     a44 = C40*cg40 + C41*cg41 + C42*cg42 + C43*cg43 + C44*cg44;
   //
-  // make sure diagonal elements are positive
-  if (a00<0) a00 = 0;
-  if (a11<0) a11 = 0;
-  if (a22<0) a22 = 0;
-  if (a33<0) a33 = 0;
-  if (a44<0) a44 = 0;
-  //    
+  if (lsmOK) memcpy(covLSM,covP,15*sizeof(double)); // here we need original cov matrix from Kalman fit
   C00 += a00;
   C10 += a10;  C11 += a11;
   C20 += a20;  C21 += a21;  C22 += a22;
   C30 += a30;  C31 += a31;  C32 += a32;  C33 += a33;
   C40 += a40;  C41 += a41;  C42 += a42;  C43 += a43;  C44 += a44;
-  
+  //
+  // make sure the matrix was not screwed up, since some diagonal aII might be negative
+  const double kFC = 0.01;
+  if (C00 < kFC*covP[0] || C11 < kFC*covP[2] || C22 < kFC*covP[5] || C33 < kFC*covP[9] || C44 < kFC*covP[14]) {
+    AliWarningF("Corrupted covariance, will not modify matrix. pT=%.3f",t->Pt());
+    return;
+  }
+  //    
+  /*
+  // check for nan
+  for (int i=0;i<15;i++) {
+    if (TMath::IsNaN(covLSM[i])) {
+      printf("NAN at %d\n",i);
+    }
+  }
+  */
+  memcpy(covP,covLSM,15*sizeof(double));
 }

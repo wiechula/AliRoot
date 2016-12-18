@@ -402,6 +402,7 @@ AliAODHeader* AliAnalysisTaskESDfilter::ConvertHeader(const AliESDEvent& esd)
     header->SetOrbitNumber(esd.GetOrbitNumber());
     header->SetPeriodNumber(esd.GetPeriodNumber());
     header->SetEventType(esd.GetEventType());
+    header->SetTimeStamp(esd.GetTimeStamp());
     
     header->SetEventNumberESDFile(esd.GetHeader()->GetEventNumberInFile());
     if(const_cast<AliESDEvent&>(esd).GetCentrality()){
@@ -1563,7 +1564,7 @@ void AliAnalysisTaskESDfilter::ConvertCaloTrigger(TString calo, const AliESDEven
     while (esdTrigger.Next()) {
       esdTrigger.GetPosition(tmod,tabsId);
       esdTrigger.GetAmplitude(a);
-      aodTrigger.Add(tmod,tabsId,a,0.,(Int_t*)NULL,0,0,0);
+      aodTrigger.Add(tmod,tabsId,a,0.,(Int_t*)NULL,0,esdTrigger.GetL1TimeSum(),0);
     }
     return;
   }

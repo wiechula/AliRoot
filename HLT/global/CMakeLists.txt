@@ -30,6 +30,8 @@ include_directories(${ROOT_INCLUDE_DIR}
                     ${AliRoot_SOURCE_DIR}/HLT/BASE/util
                     ${AliRoot_SOURCE_DIR}/HLT/ITS
                     ${AliRoot_SOURCE_DIR}/HLT/TPCLib
+                    ${AliRoot_SOURCE_DIR}/HLT/TRD
+                    ${AliRoot_SOURCE_DIR}/HLT/TRD/tracking
                     ${AliRoot_SOURCE_DIR}/HLT/CALO
                     ${AliRoot_SOURCE_DIR}/ITS/ITSbase
                     ${AliRoot_SOURCE_DIR}/STEER/CDB
@@ -125,14 +127,14 @@ generate_dictionary("${MODULE}" "${MODULE}LinkDef.h" "${HDRS}" "${incdirs}")
 
 # Generate the ROOT map
 # Dependecies
-set(LIBDEPS STEERBase STEER ESD CDB ANALYSIS ANALYSISalice HLTbase AliHLTUtil AliHLTITS AliHLTTPC TPCrec TPCbase ITSbase ITSrec TPCcalib AliHLTCalo)
+set(LIBDEPS STEERBase STEER ESD CDB ANALYSIS ANALYSISalice HLTbase AliHLTUtil AliHLTITS AliHLTTPC TPCrec TPCbase ITSbase ITSrec TPCcalib AliHLTTRD AliHLTCalo)
 if(ZEROMQ_FOUND)
   set(LIBDEPS ${LIBDEPS} ${ZEROMQ_LIBRARIES})
 endif(ZEROMQ_FOUND)
 generate_rootmap("${MODULE}" "${LIBDEPS}" "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}LinkDef.h")
 
 # Add a library to the project using the specified source files
-add_library(${MODULE} SHARED ${SRCS} G__${MODULE}.cxx)
+add_library_tested(${MODULE} SHARED ${SRCS} G__${MODULE}.cxx)
 target_link_libraries(${MODULE} ${LIBDEPS})
 
 # Additional compilation flags

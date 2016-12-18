@@ -36,32 +36,25 @@ include_directories(${ROOT_INCLUDE_DIR}
 # Sources in alphabetical order
 set(SRCS
     AliHLTTRDAgent.cxx
-    AliHLTTRDCalibFitComponent.cxx
-    AliHLTTRDCalibHistoComponent.cxx
-    AliHLTTRDCalibrationComponent.cxx
     AliHLTTRDCluster.cxx
-    AliHLTTRDClusterHistoComponent.cxx
-    AliHLTTRDClusterizerComponent.cxx
     AliHLTTRDClusterizer.cxx
     AliHLTTRDDefinitions.cxx
-    AliHLTTRDEsdWriterComponent.cxx
-    AliHLTTRDHistoMergerComponent.cxx
     AliHLTTRDMonitorComponent.cxx
-    AliHLTTRDOfflineClusterizerComponent.cxx
-    AliHLTTRDOfflineTrackerV1Component.cxx
     AliHLTTRDPreprocessorComponent.cxx
-    AliHLTTRDTrackerV1Component.cxx
-    AliHLTTRDTrack.cxx
-    AliHLTTRDTrackHistoComponent.cxx
     AliHLTTRDTracklet.cxx
-    AliHLTTRDUtils.cxx
     AliTRDonlineTrackingDataContainer.cxx
+    tracking/AliHLTTRDTrack.cxx
+    tracking/AliHLTTRDTracker.cxx
+    tracking/AliHLTTRDTrackerComponent.cxx
+    tracking/AliHLTTRDTrackletReaderComponent.cxx
+    tracking/AliHLTTRDTrackletWord.cxx
    )
 
 # Headers from sources
 string(REPLACE ".cxx" ".h" HDRS "${SRCS}")
 set(HDRS ${HDRS}
     AliHLTTRDTrackletWordArray.h
+    tracking/AliHLTTRDTrackPoint.h
 )
 
 # Generate the dictionary
@@ -75,7 +68,7 @@ set(LIBDEPS STEERBase STEER ESD CDB RAWDatabase RAWDatarec HLTbase AliHLTUtil TR
 generate_rootmap("${MODULE}" "${LIBDEPS}" "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}LinkDef.h")
 
 # Add a library to the project using the specified source files
-add_library(${MODULE} SHARED ${SRCS} G__${MODULE}.cxx)
+add_library_tested(${MODULE} SHARED ${SRCS} G__${MODULE}.cxx)
 target_link_libraries(${MODULE} ${LIBDEPS})
 
 # Additional compilation flags

@@ -130,6 +130,8 @@ AliTPCDcalibRes::AliTPCDcalibRes(int run,Long64_t tmin,Long64_t tmax,const char*
   ,fUseTOFBC(kFALSE)
   ,fFilterOutliers(kTRUE)
   ,fFatalOnMissingDrift(kTRUE)
+  ,fCreateCorrection(kTRUE)
+  ,fCreateDistortion(kTRUE)
   ,fMaxFitYErr2(1.0)
   ,fMaxFitXErr2(9.)
   ,fMaxFitXYCorr(0.95)
@@ -474,7 +476,7 @@ void AliTPCDcalibRes::FitDrift()
   TObjArray arrH;
   arrH.SetOwner(kTRUE);
   fHVDTimeCorr->FitSlicesY(gs,0,-1,0,"QNR",&arrH);
-  TH1* hEnt = fHVDTimeCorr->ProjectionX("hEnt",1,ntbins);
+  TH1* hEnt = fHVDTimeCorr->ProjectionX("hEnt",1,kNTCorrBins);
   TH1* hmean = (TH1*)arrH[1];
   double tArr[ntbins],dArr[ntbins],deArr[ntbins];
   nAcc = 0;
@@ -503,7 +505,7 @@ void AliTPCDcalibRes::FitDrift()
   }
   else {
     for (int i=0;i<ntbins;i++) {
-      double tQuery = hEnt->GetBinCenter(i);
+      double tQuery = hEnt->GetBinCenter(i+1);
       if (!GetSmooth1D(tQuery,resve,nAcc,tArr,dArr,deArr,fSigmaTVD,kGaussianKernel,usePol2,kTRUE)) {
 	AliWarningF("Failed to smooth at point %d out of %d (T=%d)",i,ntbins,int(tQuery));
 	continue;
@@ -568,9 +570,10 @@ void AliTPCDcalibRes::ProcessFromLocalBinnedTrees()
   //
   //  ProcessDispersions();
   //
-  CreateCorrectionObject();
-  //
+  if (fCreateCorrection) CreateCorrectionObject();
   WriteResTree();
+  if (fCreateDistortion) CreateDistortionObject();
+
   //
   sw.Stop();
   AliInfoF("timing: real: %.3f cpu: %.3f",sw.RealTime(), sw.CpuTime());
@@ -588,7 +591,7 @@ void AliTPCDcalibRes::ReProcessFromResVoxTree(const char* resTreeFile, Bool_t ba
   //  delete fChebCorr; fChebCorr = 0;
   //  delete fChebDist; fChebDist = 0;
   //
-  CreateCorrectionObject();
+  if (fCreateCorrection) CreateCorrectionObject();
   //
   if (backup) { 
     TString inps = resTreeFile;
@@ -600,6 +603,7 @@ void AliTPCDcalibRes::ReProcessFromResVoxTree(const char* resTreeFile, Bool_t ba
     }
   }
   WriteResTree();
+  if (fCreateDistortion) CreateDistortionObject();
   //
   sw.Stop();
   AliInfoF("timing: real: %.3f cpu: %.3f",sw.RealTime(), sw.CpuTime());
@@ -755,6 +759,7 @@ void AliTPCDcalibRes::Init()
     fNBProdSectG[i] = fNBProdSectG[i+1]*fNBins[i+1];
   }
   //
+  if (!fLumiCTPGraph) fLumiCTPGraph = AliLumiTools::GetLumiFromCTP(fRun);
   AliSysInfo::AddStamp("Init",0,0,0,0);
   //
   fInitDone = kTRUE;
@@ -3921,6 +3926,7 @@ void AliTPCDcalibRes::CreateCorrectionObject()
 {
   // create correction object for given time slice
 
+  AliInfo("Creating correcton Chebyshev parameterization");
   AliSysInfo::AddStamp("CreateCorrectionObject",0,0,0,0);
   //  
   // check if there are failures
@@ -3975,8 +3981,9 @@ void AliTPCDcalibRes::CreateCorrectionObject()
   fChebCorr->SetTracksRate(ExtractTrackRate());
   //
   // calculate weighted lumi
-  fLumiCTPGraph = AliLumiTools::GetLumiFromCTP(fRun);
+  if (!fLumiCTPGraph) fLumiCTPGraph = AliLumiTools::GetLumiFromCTP(fRun);
   fLumiCOG = fChebCorr->GetLuminosityCOG(fLumiCTPGraph);
+  fChebCorr->SetLumiInfo(fLumiCOG);
   //
   AliSysInfo::AddStamp("CreateCorrectionObject",1,0,0,0);
 }
@@ -4270,7 +4277,7 @@ Bool_t AliTPCDcalibRes::InvertCorrection(int sect36,const float vecIn[AliTPCDcal
   // apply distortion (inverse of the correction map cheb) to point vecIn, producing vecOut
   //
   // Do Newton-Raphson inversion: original Cheb.correction Corr implements
-  // \vec[r_corr] = \vec[r_meas] + Corr(\vec[r_meas]), where \vec[r_corr] is corrected coordinat
+  // \vec[r_corr] = \vec[r_meas] + Corr(\vec[r_meas]), where \vec[r_corr] is corrected coordinate
   // of ionization point and \vec[r_meas] is its distorted image in the chamber.
   //
   // Hence we need to find an inverse vector f-n F^-1 of \vec[r_corr] of the vector f-n 
@@ -4294,7 +4301,7 @@ Bool_t AliTPCDcalibRes::InvertCorrection(int sect36,const float vecIn[AliTPCDcal
   do {
     //
     // calculate corrected value and gradient of correction
-    GradValSmooth(sect36, vecOut[kResX],vecOut[kResY],vecOut[kResZ], fun, grad); 
+    if (!GradValSmooth(sect36, vecOut[kResX],vecOut[kResY],vecOut[kResZ], fun, grad)) break;
     if (it==0) {
       for (int id=3;id--;) {
 	deltaCorr0 += fun[id]*fun[id];
@@ -4381,6 +4388,7 @@ void trainCorr(int row, float* tzLoc, float* corrLoc)
   AliTPCDcalibRes *calib = AliTPCDcalibRes::GetUsedInstance(), 
     *calibExt = AliTPCDcalibRes::GetUsedInstanceExt();
 
+  for (int i=0;i<AliTPCDcalibRes::kResDim;i++) corrLoc[i] = 0;
   float x = AliTPCDcalibRes::GetTPCRowX(row);
   float dist[AliTPCDcalibRes::kResDim] = {0};
   int xbin = calib->GetNXBins()==AliTPCDcalibRes::kNPadRows ? row : calib->GetXBin(x);
@@ -4433,13 +4441,41 @@ void trainDist(int xslice, float* tzLoc, float distLoc[AliTPCDcalibRes::kResDim]
     return;
   }
   //
+  for (int i=0;i<AliTPCDcalibRes::kResDim;i++) distLoc[i] = 0;
+  distLoc[AliTPCDcalibRes::kResD] = -1; // invalidate
+  //
   float xyzPrim[AliTPCDcalibRes::kResDimG], xyzCl[AliTPCDcalibRes::kResDim];
   xyzPrim[AliTPCDcalibRes::kResX] = fgDistDest->Slice2X(xslice);
   xyzPrim[AliTPCDcalibRes::kResY] = tzLoc[0]*xyzPrim[AliTPCDcalibRes::kResX];
   xyzPrim[AliTPCDcalibRes::kResZ] = tzLoc[1]*xyzPrim[AliTPCDcalibRes::kResX];
   //
-  AliTPCDcalibRes *calib = AliTPCDcalibRes::GetUsedInstance();
+  AliTPCDcalibRes *calib = AliTPCDcalibRes::GetUsedInstance(), 
+    *calibExt = AliTPCDcalibRes::GetUsedInstanceExt();
+  //
+  Bool_t ignore = kFALSE;
+  int xbinCorr = calib->GetXBin(xyzPrim[AliTPCDcalibRes::kResX]);
+  if (calib->GetXBinIgnored(sector,xbinCorr)) { // find 1st valid x-slice in correction param
+    int xValUp,xValDn, xSubst = 1;
+    for (xValDn=xbinCorr;xValDn--;) if (!calib->GetXBinIgnored(sector,xValDn)) break;
+    for (xValUp=xbinCorr+1;xValUp<calib->GetNXBins();xValUp++) if (!calib->GetXBinIgnored(sector,xValUp)) break;    
+    //
+    if (xValDn<0 && xValUp>=calib->GetNXBins()) return; // ignore
+    //
+    float dstDn = xValDn<0 ? 1e6 : TMath::Abs(calib->GetX(xValDn) - xyzPrim[AliTPCDcalibRes::kResX]);
+    float dstUp = xValUp>=calib->GetNXBins() ? 1e6 : TMath::Abs(calib->GetX(xValUp) - xyzPrim[AliTPCDcalibRes::kResX]);
+    // redefine query X to closed valid slice
+    xyzPrim[AliTPCDcalibRes::kResX] = dstDn<dstUp ? calib->GetX(xValDn) : calib->GetX(xValUp);
+    //
+  }
+  //
   calib->InvertCorrection(sector, xyzPrim, xyzCl); // calculate inverse distortion
+
+  if (calibExt) { // if ext is provided, average between the current and ext
+    float xyzClExt[AliTPCDcalibRes::kResDim] = {0};
+    calibExt->InvertCorrection(sector, xyzPrim, xyzClExt); // calculate inverse distortion 
+    for (int i=AliTPCDcalibRes::kResDim;i--;) xyzCl[i] = 0.5*(xyzCl[i]+xyzClExt[i]);
+  }
+
   for (int j=AliTPCDcalibRes::kResDimG;j--;) distLoc[j] = xyzCl[j]-xyzPrim[j];
   distLoc[AliTPCDcalibRes::kResD] = xyzCl[AliTPCDcalibRes::kResD];
   //
@@ -4450,6 +4486,7 @@ void trainDist(int xslice, float* tzLoc, float distLoc[AliTPCDcalibRes::kResDim]
 void AliTPCDcalibRes::CreateDistortionObject()
 {
   // create distortion object for given time slice
+  AliInfo("Creating distortion Chebyshev parameterization");
   AliSysInfo::AddStamp("CreateDistortionObject",0,0,0,0);
   // check if there are failures
   Bool_t create = kTRUE;
@@ -4501,6 +4538,12 @@ void AliTPCDcalibRes::CreateDistortionObject()
   // register tracks rate for lumi weighting
   fChebDist->SetTracksRate(ExtractTrackRate());
   //
+  // store ratio of dndeta to pp@13TeV
+  float rat2pp = AliLumiTools::GetScaleDnDeta2pp13TeV(fRun);
+  fChebDist->SetScaleDnDeta2pp13TeV(rat2pp);
+  if (!fLumiCTPGraph) fLumiCTPGraph = AliLumiTools::GetLumiFromCTP(fRun);
+  fLumiCOG = fChebDist->GetLuminosityCOG(fLumiCTPGraph);
+  fChebDist->SetLumiInfo(fLumiCOG);
   AliSysInfo::AddStamp("CreateDistortionObject",1,0,0,0);
 }
 
@@ -4569,7 +4612,10 @@ void AliTPCDcalibRes::WriteDistCorTestTree(int nx, int nphi2sect,int nzside)
 	  float xd = x + dist[kResX];
 	  float yd = y2x*x+dist[kResY];
 	  float zd = z2x*x+dist[kResZ];
-	  GetSmoothEstimate(is,xd,yd/xd,zd/xd,(0x1<<4)-1,corr); 
+	  
+	  int xSlice = GetXBin(xd);
+	  if (!GetXBinIgnored(is,xSlice)) GetSmoothEstimate(is,xd,yd/xd,zd/xd,(0x1<<4)-1,corr); 
+	  else for (int j=kResDim;j--;) corr[j] = 0;
 	  for (int v=kResDim;v--;) {
 	    dc.dxyz[v] = dist[v];
 	    dc.cxyz[v] = corr[v];

@@ -96,12 +96,26 @@ AliTPCTransform::AliTPCTransform():
   fCorrMapCache0(0),
   fCorrMapCache1(0),
   fCurrentMapScaling(1.0),
+  fCurrentMapFluctStrenght(0.),
   fCorrMapLumiCOG(0.0),
   fLumiGraphRun(0),
   fLumiGraphMap(0),
   fCurrentRun(0),             //! current run
   fCurrentTimeStamp(0),       //! current time stamp
   fTimeDependentUpdated(kFALSE),
+  fCorrMapMode(kTRUE),
+  //
+  fVDCorrectionTime(1.),
+  fVDCorrectionTimeGY(0.),
+  fTime0CorrTime(0.),
+  fDeltaZCorrTime(0.),
+  fDriftCorrPT(1.),
+  fTBinOffset(0),
+  //
+  fLastTimeStampCorrMap(-1),
+  fLastTimeStampVDCorrPT(-1),
+  fLastTimeStampVDCorrVaria(-1),
+  //
   fDebugStreamer(0),
   fTmpReverseTransformInfo(NULL)
 {
@@ -130,6 +144,7 @@ AliTPCTransform::AliTPCTransform(const AliTPCTransform& transform):
   fCurrentRun(transform.fCurrentRun),             //! current run
   fCurrentTimeStamp(transform.fCurrentTimeStamp),       //! current time stamp
   fTimeDependentUpdated(transform.fTimeDependentUpdated),
+  fCorrMapMode(transform.fCorrMapMode),
   fDebugStreamer(0),
   fTmpReverseTransformInfo(NULL)
 {
@@ -150,9 +165,7 @@ AliTPCTransform::~AliTPCTransform() {
   /// Destructor
   delete fLumiGraphRun; // own copy should be attached
   delete fLumiGraphMap; // own copy should be attached
-  delete fCorrMapCacheRef;
-  delete fCorrMapCache0;
-  delete fCorrMapCache1;
+  CleanCorrectionMaps();
 }
 
 void AliTPCTransform::SetPrimVertex(Double_t *vtx){
@@ -200,8 +213,10 @@ void AliTPCTransform::Transform(Double_t *x,Int_t *i,UInt_t /*time*/,
     return ; // make coverity happy
   }
   
+  // RS: to reduce the mess: apply pad-by-pad correction only when ExB is applied, like in MC
   // Apply Time0 correction - Pad by pad fluctuation
-  if (!calib->HasAlignmentOCDB()) x[2]-=time0TPC->GetCalROC(sector)->GetValue(row,pad);
+  //  if (!calib->HasAlignmentOCDB()) x[2]-=time0TPC->GetCalROC(sector)->GetValue(row,pad);
+  if (fCurrentRecoParam->GetUseExBCorrection()) x[2]-=time0TPC->GetCalROC(sector)->GetValue(row,pad);
   //
   // Tranform from pad - time coordinate system to the rotated global (tracking) system
   Local2RotatedGlobal(sector,x);
@@ -315,109 +330,34 @@ void AliTPCTransform::Local2RotatedGlobal(Int_t sector, Double_t *x) const {
   /// TODO: use a map or parametrisation!
   /// 
   /// If called with NULL x pointer, just reset the cache
-  static time_t lastStamp=-1;  //cached values
-  static Double_t lastCorr = 1;
-  // simple caching non thread save
-  static Double_t vdcorrectionTime=1;
-  static Double_t vdcorrectionTimeGY=0;
-  static Double_t time0corrTime=0;
-  static Double_t deltaZcorrTime=0;
-  static time_t    lastStampT=-1;
-  static Int_t lastSide = -1;
-
-  if (!x && fTmpReverseTransformInfo == NULL) {
-    AliInfo("Reseting cache");
-    lastStamp=-1;
-    lastCorr = 1;
-    vdcorrectionTime=1;
-    vdcorrectionTimeGY=0;
-    time0corrTime=0;
-    deltaZcorrTime=0;
-    lastStampT=-1;
-    return;
-  }
 
   if (!fCurrentRecoParam) return;
-  const  Int_t kMax =60;  // cache for 60 seconds
-  //
+
   AliTPCcalibDB*  calib=AliTPCcalibDB::Instance();
   AliTPCParam  * param    = calib->GetParameters();
-  AliTPCCalibVdrift *driftCalib = AliTPCcalibDB::Instance()->GetVdrift(fCurrentRun);
-  Double_t driftCorr = 1.;
-  if (driftCalib){
-    //
-    // caching drift correction - temp. fix
-    // Extremally slow procedure
-    if ( TMath::Abs(Int_t(lastStamp)-Int_t(fCurrentTimeStamp))<kMax){
-      driftCorr = lastCorr;
-    }else{
-      driftCorr = 1.+(driftCalib->GetPTRelative(fCurrentTimeStamp,0)+ driftCalib->GetPTRelative(fCurrentTimeStamp,1))*0.5;
-      lastCorr=driftCorr;
-      lastStamp=fCurrentTimeStamp;
 
-    }
-  }
-  //
-  //
-  
-  Int_t side = (Int_t) sector%36>=18;
-  
-  Bool_t isChange=(lastStampT!=(Int_t)fCurrentTimeStamp)||side!=lastSide||lastStamp<0;
-  if (lastStampT!=(Int_t)fCurrentTimeStamp||side!=lastSide){
-    lastStampT=fCurrentTimeStamp;
-    lastSide=side;
-    if(fCurrentRecoParam->GetUseDriftCorrectionTime()>0) {
-      vdcorrectionTime = (1+AliTPCcalibDB::Instance()->
-			  GetVDriftCorrectionTime(fCurrentTimeStamp,
-						  fCurrentRun,
-						  side,
-						  fCurrentRecoParam->GetUseDriftCorrectionTime()));
-      time0corrTime= AliTPCcalibDB::Instance()->
-	GetTime0CorrectionTime(fCurrentTimeStamp,
-			       fCurrentRun,
-			       side,
-			       fCurrentRecoParam->GetUseDriftCorrectionTime());
-      //
-      deltaZcorrTime= AliTPCcalibDB::Instance()->
-	GetVDriftCorrectionDeltaZ(fCurrentTimeStamp,
-			       fCurrentRun,
-			       side,
-			       0);
-
-    }
-    //
-    if(fCurrentRecoParam->GetUseDriftCorrectionGY()>0) {
-
-      Double_t corrGy= AliTPCcalibDB::Instance()->
-			GetVDriftCorrectionGy(fCurrentTimeStamp,
-					      AliTPCcalibDB::Instance()->GetRun(),
-					      side,
-					      fCurrentRecoParam->GetUseDriftCorrectionGY());
-      vdcorrectionTimeGY = corrGy;
-    }
-  }
-  
-  if (!param){
+  if (!param) {
     AliFatal("Parameters missing");
     return; // make coverity happy
   }
 
+  Bool_t sideC = (sector/18)&0x1;
   if (fTmpReverseTransformInfo) {
     fTmpReverseTransformInfo->fNTBinsL1 = param->GetNTBinsL1();
     fTmpReverseTransformInfo->fZWidth = param->GetZWidth();
     fTmpReverseTransformInfo->fZSigma = param->GetZSigma();
-    fTmpReverseTransformInfo->fDriftCorr = driftCorr;
-    if (side == 0) {
-      fTmpReverseTransformInfo->fTime0corrTimeA = time0corrTime;
-      fTmpReverseTransformInfo->fDeltaZcorrTimeA = deltaZcorrTime;
-      fTmpReverseTransformInfo->fVdcorrectionTimeA = vdcorrectionTime;
-      fTmpReverseTransformInfo->fVdcorrectionTimeGYA = vdcorrectionTimeGY;
+    fTmpReverseTransformInfo->fDriftCorr = fDriftCorrPT;
+    if (sideC == 0) {
+      fTmpReverseTransformInfo->fTime0corrTimeA = fTime0CorrTime;
+      fTmpReverseTransformInfo->fDeltaZcorrTimeA = fDeltaZCorrTime;
+      fTmpReverseTransformInfo->fVdcorrectionTimeA = fVDCorrectionTime;
+      fTmpReverseTransformInfo->fVdcorrectionTimeGYA = fVDCorrectionTimeGY;
       fTmpReverseTransformInfo->fZLengthA = param->GetZLength(sector);
     } else {
-      fTmpReverseTransformInfo->fTime0corrTimeC = time0corrTime;
-      fTmpReverseTransformInfo->fDeltaZcorrTimeC = deltaZcorrTime;
-      fTmpReverseTransformInfo->fVdcorrectionTimeC = vdcorrectionTime;
-      fTmpReverseTransformInfo->fVdcorrectionTimeGYC = vdcorrectionTimeGY;
+      fTmpReverseTransformInfo->fTime0corrTimeC = fTime0CorrTime;
+      fTmpReverseTransformInfo->fDeltaZcorrTimeC = fDeltaZCorrTime;
+      fTmpReverseTransformInfo->fVdcorrectionTimeC = fVDCorrectionTime;
+      fTmpReverseTransformInfo->fVdcorrectionTimeGYC = fVDCorrectionTimeGY;
       fTmpReverseTransformInfo->fZLengthC = param->GetZLength(sector);
     }
     if (!AliTPCRecoParam::GetUseTimeCalibration()) {
@@ -428,85 +368,61 @@ void AliTPCTransform::Local2RotatedGlobal(Int_t sector, Double_t *x) const {
   }
 
   Int_t row=TMath::Nint(x[0]);
-  //  Int_t pad=TMath::Nint(x[1]);
   //
-  const Int_t kNIS=param->GetNInnerSector(), kNOS=param->GetNOuterSector();
-  Double_t sign = 1.;
-  Double_t zwidth    = param->GetZWidth()*driftCorr;
+  const Int_t kNIS=param->GetNInnerSector();
   Float_t xyzPad[3];
-  AliTPCROC::Instance()->GetPositionGlobal(sector, TMath::Nint(x[0]) ,TMath::Nint(x[1]), xyzPad);
-  if (AliTPCRecoParam:: GetUseTimeCalibration()) zwidth*=vdcorrectionTime*(1+xyzPad[1]*vdcorrectionTimeGY);
-  Double_t padWidth  = 0;
-  Double_t padLength = 0;
-  Double_t    maxPad    = 0;
+  Bool_t iroc = sector < 36;
+  Double_t padWidth = param->GetPadPitchWidth(sector);
+  Double_t padLength = param->GetPadPitchLength(sector,row);
+  Double_t maxPad = iroc ? param->GetNPadsLow(row) : param->GetNPadsUp(row);
   //
-  if (sector < kNIS) {
-    maxPad = param->GetNPadsLow(row);
-    sign = (sector < kNIS/2) ? 1 : -1;
-    padLength = param->GetPadPitchLength(sector,row);
-    padWidth = param->GetPadPitchWidth(sector);
-  } else {
-    maxPad = param->GetNPadsUp(row);
-    sign = ((sector-kNIS) < kNOS/2) ? 1 : -1;
-    padLength = param->GetPadPitchLength(sector,row);
-    padWidth  = param->GetPadPitchWidth(sector);
-  }
+  AliTPCROC::Instance()->GetPositionGlobal(sector, row ,TMath::Nint(x[1]), xyzPad);
   //
   // X coordinate
   x[0] = param->GetPadRowRadii(sector,row);  // padrow X position - ideal
   //
   // Y coordinate
-  //
   x[1]=(x[1]-0.5*maxPad)*padWidth;
   // pads are mirrorred on C-side
-  if (sector%36>17){
-    x[1]*=-1;
-  }
-
+  if (sideC) x[1] = -x[1];
   //
-
-  //
-  // Z coordinate
-  //
-  Double_t delay=0;
-  if (AliTPCcalibDB::Instance()->IsTrgL0()){
-    // by defualt we assume L1 trigger is used - make a correction in case of  L0
-    AliCTPTimeParams* ctp = AliTPCcalibDB::Instance()->GetCTPTimeParams();
-    if (ctp){
-      //for TPC standalone runs no ctp info
-      delay = ctp->GetDelayL1L0()*0.000000025;
-      delay/=param->GetTSample();
-      x[2]-=delay;
-    }
-  }
-  if (isChange && fDebugStreamer!=NULL){
-    //
-    //
-    Double_t zwidth=param->GetZWidth();
-    Double_t binsL1=param->GetNTBinsL1();
-    Double_t zsigma=param->GetZSigma();
-    (*fDebugStreamer)<<"transformDump"<<
-      "fCurrentTimeStamp="<<lastStampT<<
-      "zwidth="<<zwidth<<                                      // nominal z drift
-      "delay="<<delay<<                                           // trigger delay
-      "binsL1="<<binsL1<<                                       // L1 delay
-      "zsigma="<<zsigma<<                                     // z sigma
-      "driftCorr="<<driftCorr<<
-      "vdcorrectionTime="<<vdcorrectionTime<<
-      "time0corrTime="<<time0corrTime<<
-      "deltaZcorrTime="<<deltaZcorrTime<<
-      "vdcorrectionTimeGY="<<vdcorrectionTimeGY<<
-      "\n";
-      
-      
-  }
-  x[2]-= param->GetNTBinsL1();
-  x[2]*= zwidth;  // tranform time bin to the distance to the ROC
-  x[2]-= 3.*param->GetZSigma() + time0corrTime;
-  // subtract the time offsets
-  x[2] = sign*( param->GetZLength(sector) - x[2]);
-  x[2]-=deltaZcorrTime;   // subtrack time dependent z shift (calibrated together with the drift velocity and T0)
+  x[2] = TimeBin2Z(x[2],sector,xyzPad[1]);
 }
+
+//______________________________________
+Double_t AliTPCTransform::TimeBin2Z(double t, int sector, double yLab)  const
+{
+  // convert time bin to Z coordinate
+  AliTPCParam* param = AliTPCcalibDB::Instance()->GetParameters();
+  double zwidth = param->GetZWidth()*fDriftCorrPT;
+  if (AliTPCRecoParam::GetUseTimeCalibration()) zwidth *= fVDCorrectionTime*(1+yLab*fVDCorrectionTimeGY);
+  //
+  t -= fTBinOffset;
+  t *= zwidth;  // tranform time bin to the distance to the ROC
+  t -= fTime0CorrTime + 3.*param->GetZSigma();
+  t = param->GetZLength(sector) - t; // drift -> Z
+  if ((sector/18)&0x1) t = -t; // C side
+  t -= fDeltaZCorrTime;   // subtract time dependent z shift (calibrated together with the drift velocity and T0)
+  return t;
+}
+
+//______________________________________
+Double_t AliTPCTransform::Z2TimeBin(double t, int sector, double yLab) const
+{
+  // convert Z coordinate to time bin
+  AliTPCParam* param = AliTPCcalibDB::Instance()->GetParameters();
+  double zwidth = param->GetZWidth()*fDriftCorrPT;
+  if (AliTPCRecoParam::GetUseTimeCalibration()) zwidth *= fVDCorrectionTime*(1+yLab*fVDCorrectionTimeGY);
+  //
+  t += fDeltaZCorrTime; // add time dependent z shift (calibrated together with the drift velocity and T0)
+  if ((sector/18)&0x1) t = -t; // C side
+  t = param->GetZLength(sector) - t; // Z -> drift
+  t += fTime0CorrTime; // ?? + 3.*param->GetZSigma();
+  t /= zwidth; // drift -> timebin
+  t += fTBinOffset;
+  return t;
+}
+
 
 void AliTPCTransform::RotatedGlobal2Global(Int_t sector,Double_t *x) const {
   /// transform possition rotated global to the global
@@ -554,17 +470,22 @@ Bool_t AliTPCTransform::UpdateTimeDependentCache()
 {
   // update cache for time-dependent parameters
   //
-  static time_t lastTimeStamp = -1;
+  const float kMaxLumiScaling = 1000.;
   fTimeDependentUpdated = kFALSE;
   //
-  Bool_t timeChanged = lastTimeStamp!=fCurrentTimeStamp;
   if (!fCurrentRecoParam) {
-    AliWarning("RecoParam is not set, reseting last timestamp");
-    lastTimeStamp = -1;
+    AliWarning("RecoParam is not set, reseting");
+    ResetCache();
     return fTimeDependentUpdated;
   }
+  
+  Bool_t timeChanged = kFALSE; 
   while (fCurrentRecoParam->GetUseCorrectionMap()) {
-    if (!fCorrMapCacheRef) fCorrMapCacheRef = LoadFieldDependendStaticCorrectionMap(kTRUE); // need to load the reference correction map
+    if (TMath::Abs(fLastTimeStampCorrMap-fCurrentTimeStamp)>kMaxTDiffCorrMap || fLastTimeStampCorrMap<0) {
+      timeChanged = kTRUE;
+      fLastTimeStampCorrMap = fCurrentTimeStamp;
+    }
+    if (!fCorrMapCacheRef) fCorrMapCacheRef = LoadFieldDependendStaticCorrectionMap(kTRUE,fCorrMapMode); // need to load the reference correction map
     //
     int mapTimeDepMethod = fCurrentRecoParam->GetCorrMapTimeDepMethod();
     Bool_t needToLoad = timeChanged;
@@ -598,10 +519,10 @@ Bool_t AliTPCTransform::UpdateTimeDependentCache()
     }
     //
     if (needToLoad) { // need to upload correction maps, potentially time dependent
-      TObjArray* mapsArr = LoadCorrectionMaps(kFALSE);
+      TObjArray* mapsArr = LoadCorrectionMaps(kFALSE,fCorrMapMode);
       // are these time-static maps?
       if (!((AliTPCChebCorr*)mapsArr->UncheckedAt(0))->GetTimeDependent()) {
-	fCorrMapCache0 = LoadFieldDependendStaticCorrectionMap(kFALSE,mapsArr); // static maps are field-dependent
+	fCorrMapCache0 = LoadFieldDependendStaticCorrectionMap(kFALSE, fCorrMapMode, mapsArr); // static maps are field-dependent
       }
       else {
 	LoadCorrectionMapsForTimeBin(mapsArr); // load maps matching to time stamp
@@ -612,10 +533,12 @@ Bool_t AliTPCTransform::UpdateTimeDependentCache()
       mapsArr->SetOwner(kTRUE);
       delete mapsArr;
       //
-      if (fCorrMapCache0 && !fCorrMapCache0->IsCorrection()) 
-	AliFatalF("Uploaded map is not correction: %s",fCorrMapCache0->IsA()->GetName());
-      if (fCorrMapCache1 && !fCorrMapCache1->IsCorrection()) 
-	AliFatalF("Uploaded map is not correction: %s",fCorrMapCache1->IsA()->GetName());
+      if (fCorrMapCache0 && fCorrMapCache0->IsCorrection()!=fCorrMapMode) 
+	AliFatalF("Uploaded map is not %s: %s",fCorrMapMode ? "correction":"distortion",
+		  fCorrMapCache0->IsA()->GetName());
+      if (fCorrMapCache1 && fCorrMapCache1->IsCorrection()!=fCorrMapMode) 
+	AliFatalF("Uploaded map is not %s: %s",fCorrMapMode ? "correction":"distortion",
+		  fCorrMapCache1->IsA()->GetName());
       
       // check time stamps
       if (fCorrMapCache0 && fCorrMapCache0->GetTimeStampStart()>fCurrentTimeStamp) {
@@ -637,32 +560,46 @@ Bool_t AliTPCTransform::UpdateTimeDependentCache()
       case AliTPCRecoParam::kCorrMapNoScaling     : break;
       case AliTPCRecoParam::kCorrMapGlobalScalingLumi: 
 	// load lumi graph used for map (run may be different from current one if the map is default one)
-	if (!fLumiGraphMap) {
-	  //if (!fLumiGraphMap || fLumiGraphMap->GetUniqueID()!=fCorrMapCache0->GetRun()) {
-	  //if (fLumiGraphMap) delete fLumiGraphMap;
-	  int runMap = fCorrMapCache0->GetRun();
-	  if (runMap<0) AliErrorF("CorrectionMap Lumi scaling requested but run is not set, current %d will be used",fCurrentRun);
-	  fLumiGraphMap = AliLumiTools::GetLumiGraph(fCurrentRecoParam->GetUseLumiType(),runMap);
-	  // if (!fLumiGraphMap) AliErrorF("Failed to load map lumi graph of type %d, will use constant map",
-	  //				fCurrentRecoParam->GetUseLumiType());
+	if (!(fCorrMapCache0->IsLumiInfoCOG() && fCurrentRecoParam->GetUseMapLumiInfoCOG()) || 
+	    fCurrentRecoParam->GetUseLumiType()!=AliLumiTools::kLumiCTP ) {
+	  if (!fLumiGraphMap) { // default lumi graph is not loaded and COG is not stored
+	    //if (!fLumiGraphMap || fLumiGraphMap->GetUniqueID()!=fCorrMapCache0->GetRun()) {
+	    //if (fLumiGraphMap) delete fLumiGraphMap;
+	    AliInfoF("Lumi COG in the correction map is %s, loading from CDB",
+		     fCorrMapCache0->IsLumiInfoCOG() ? "ignored":"not provided");
+	    int runMap = fCorrMapCache0->GetRun();
+	    if (runMap<0) AliErrorF("CorrectionMap Lumi scaling requested but run is not set, current %d will be used",fCurrentRun);
+	    fLumiGraphMap = AliLumiTools::GetLumiGraph(fCurrentRecoParam->GetUseLumiType(),runMap);
+	    // if (!fLumiGraphMap) AliErrorF("Failed to load map lumi graph of type %d, will use constant map",
+	    //				fCurrentRecoParam->GetUseLumiType());
+	  }
 	}
+	else AliInfoF("Lumi COG=%.4f is provided in the correction map",fCorrMapCache0->GetLumiInfo());
+	//
 	// load lumi graph for this run
 	if (!fLumiGraphRun) {
+	  AliInfo("Loading Lumi graph for current run");
 	  fLumiGraphRun = AliLumiTools::GetLumiGraph(fCurrentRecoParam->GetUseLumiType(),fCurrentRun);
 	  if (!fLumiGraphRun) AliErrorF("Failed to load run lumi graph of type %d, will use reference correction only",
 					fCurrentRecoParam->GetUseLumiType());
 	}
 	if (needToLoad) {  // calculate average luminosity used for current corr. map
-	  fCorrMapLumiCOG = fLumiGraphMap ? fCorrMapCache0->GetLuminosityCOG(fLumiGraphMap) : 0.0; // recalculate lumi for new map
-	  if (!fCorrMapLumiCOG) AliError("Correction map rescaling with luminosity cannot be done, will use constant map");
+	  if (fCorrMapCache0->IsLumiInfoCOG() && fCurrentRecoParam->GetUseMapLumiInfoCOG() && 
+	      fCurrentRecoParam->GetUseLumiType()==AliLumiTools::kLumiCTP) 
+	    fCorrMapLumiCOG = fCorrMapCache0->GetLumiInfo();
+	  else 
+	    fCorrMapLumiCOG = fLumiGraphMap ? fCorrMapCache0->GetLuminosityCOG(fLumiGraphMap) : 0.0; // recalculate lumi for new map
+	  if (!fCorrMapLumiCOG) AliError("No Correction map Lumi COG and rescaling with luminosity cannot be done, will use constant map");
 	}
 	//
 	fCurrentMapScaling = fLumiGraphRun ? 1.0 : 0.0;
 	if (fCorrMapLumiCOG>0) {
 	  double lumi = fLumiGraphRun ? fLumiGraphRun->Eval(fCurrentTimeStamp) : 0.0;
+	  if (lumi<0) lumi = 0;
 	  fCurrentMapScaling = lumi/fCorrMapLumiCOG;
 	  AliInfoF("Luminosity scaling factor %.3f will be used for time %ld (Lumi: current: %.2e COG:%.2e)",
 		   fCurrentMapScaling,fCurrentTimeStamp,lumi,fCorrMapLumiCOG);
+	  if (fCurrentMapScaling>kMaxLumiScaling) AliFatal("Luminosity scaling factor does not make sense");
 	}
 	//
 	break;
@@ -675,7 +612,71 @@ Bool_t AliTPCTransform::UpdateTimeDependentCache()
   //
   // other time dependent stuff if needed
   //
-  lastTimeStamp = fCurrentTimeStamp;
+  AliTPCcalibDB*  calib = AliTPCcalibDB::Instance();
+  AliTPCParam  * param = calib->GetParameters();
+  if (!param) AliFatal("Parameters missing");
+  //
+  // 1) Drift P,T correction
+  if (TMath::Abs(fLastTimeStampVDCorrPT-fCurrentTimeStamp)>kMaxTDiffVDCorrPT) {
+    fLastTimeStampVDCorrPT = fCurrentTimeStamp;
+    AliTPCCalibVdrift *driftCalib = calib->GetVdrift(fCurrentRun);
+    if (driftCalib) fDriftCorrPT = 1.+(driftCalib->GetPTRelative(fCurrentTimeStamp,0) + 
+				    driftCalib->GetPTRelative(fCurrentTimeStamp,1))*0.5;
+  }
+  //
+  // 2) Various VDrift corrections
+  if (TMath::Abs(fLastTimeStampVDCorrVaria-fCurrentTimeStamp)>kMaxTDiffVDCorrVaria || fLastTimeStampVDCorrVaria<0) {
+    fLastTimeStampVDCorrVaria = fCurrentTimeStamp;
+
+    fTBinOffset = param->GetNTBinsL1();
+
+    if (fCurrentRecoParam->GetUseDriftCorrectionTime()>0) {
+      fVDCorrectionTime = (1+calib-> GetVDriftCorrectionTime(fCurrentTimeStamp,fCurrentRun,
+							    0, // sector%36>=18, //RS irrelevant parameter
+							    fCurrentRecoParam->GetUseDriftCorrectionTime()));
+      fTime0CorrTime = calib->GetTime0CorrectionTime(fCurrentTimeStamp,fCurrentRun,
+						    0, // sector%36>=18, //RS irrelevant parameter 
+						    fCurrentRecoParam->GetUseDriftCorrectionTime());
+      //
+      fDeltaZCorrTime = calib->GetVDriftCorrectionDeltaZ(fCurrentTimeStamp,fCurrentRun,
+							0, // sector%36>=18, //RS irrelevant parameter
+							0);
+      //
+      if (fCurrentRecoParam->GetUseDriftCorrectionGY()>0) {
+	fVDCorrectionTimeGY = calib->GetVDriftCorrectionGy(fCurrentTimeStamp,fCurrentRun,
+							  0, // sector%36>=18, //RS irrelevant parameter
+							  fCurrentRecoParam->GetUseDriftCorrectionGY());
+      }
+      //
+      if (calib->IsTrgL0()) {
+	// by defualt we assume L1 trigger is used - make a correction in case of  L0
+	AliCTPTimeParams* ctp = AliTPCcalibDB::Instance()->GetCTPTimeParams();
+	if (ctp) { //for TPC standalone runs no ctp info
+	  fTBinOffset += (ctp->GetDelayL1L0()*0.000000025)/param->GetTSample();
+	}
+      }
+    }
+    //
+    if (fDebugStreamer!=NULL) {
+      Double_t binsL1=param->GetNTBinsL1();
+      Double_t zsigma=param->GetZSigma();
+      Double_t zwidth=param->GetZWidth();
+      (*fDebugStreamer)<<"transformDump"<<
+	"fCurrentTimeStamp="<<fLastTimeStampVDCorrVaria<<
+	"zwidth="<<zwidth<<                                      // nominal z drift
+	"fTBinOffset="<<fTBinOffset<<                              // trigger delay
+	"binsL1="<<binsL1<<                                      // L1 delay
+	"zsigma="<<zsigma<<                                      // z sigma
+	"fDriftCorrPT="<<fDriftCorrPT<<
+	"fVDCorrectionTime="<<fVDCorrectionTime<<
+	"fTime0CorrTime="<<fTime0CorrTime<<
+	"fDeltaZCorrTime="<<fDeltaZCorrTime<<
+	"fVDCorrectionTimeGY="<<fVDCorrectionTimeGY<<
+	"\n";
+    }
+    //
+  }
+  //
   fTimeDependentUpdated = kTRUE;
   return fTimeDependentUpdated;
 }
@@ -686,7 +687,7 @@ void AliTPCTransform::LoadCorrectionMapsForTimeBin(TObjArray* mapsArrProvided)
   // loads time-independent correction map for given time bin
   // 
   TObjArray* mapsArr = mapsArrProvided;
-  if (!mapsArr) mapsArr = LoadCorrectionMaps(kFALSE);
+  if (!mapsArr) mapsArr = LoadCorrectionMaps(kFALSE,fCorrMapMode);
   int entries = mapsArr->GetEntriesFast();
   delete fCorrMapCache0;
   delete fCorrMapCache1;
@@ -732,7 +733,8 @@ void AliTPCTransform::LoadCorrectionMapsForTimeBin(TObjArray* mapsArrProvided)
     //
   }
   //
-  AliInfoF("Loaded %d maps for time stamp %ld",fCorrMapCache1?2:1,fCurrentTimeStamp);
+  AliInfoF("Loaded %d %s map(s) for time stamp %ld", fCorrMapCache1?2:1,
+	   fCorrMapMode ? "correction":"distortion", fCurrentTimeStamp);
   fCorrMapCache0->Print();
   if (fCorrMapCache1) fCorrMapCache1->Print();
   //
@@ -745,14 +747,14 @@ void AliTPCTransform::LoadCorrectionMapsForTimeBin(TObjArray* mapsArrProvided)
 }
 
 //______________________________________________________
-AliTPCChebCorr* AliTPCTransform::LoadFieldDependendStaticCorrectionMap(Bool_t ref, TObjArray* mapsArrProvided)
+AliTPCChebCorr* AliTPCTransform::LoadFieldDependendStaticCorrectionMap(Bool_t ref, Bool_t corrMode, TObjArray* mapsArrProvided)
 {
   // loads time-independent correction map for relevan field polarity. If ref is true, then the
   // reference map is loaded
   // 
   const float kZeroField = 0.1;
   TObjArray* mapsArr = mapsArrProvided;
-  if (!mapsArr) mapsArr = LoadCorrectionMaps(ref);
+  if (!mapsArr) mapsArr = LoadCorrectionMaps(ref,corrMode);
   int entries = mapsArr->GetEntriesFast();
   AliMagF* magF= (AliMagF*)TGeoGlobalMagField::Instance()->GetField(); // think on extracting field once only
   Double_t bzField = magF->SolenoidField(); //field in kGaus
@@ -763,14 +765,14 @@ AliTPCChebCorr* AliTPCTransform::LoadFieldDependendStaticCorrectionMap(Bool_t re
   AliTPCChebCorr* cormap = 0;
   for (int i=0;i<entries;i++) {
     AliTPCChebCorr* map = (AliTPCChebCorr*)mapsArr->At(i); if (!map) continue;
-    if (!map->IsCorrection()) continue;
+    if (map->IsCorrection()!=corrMode) continue;
     Char_t mtp = map->GetFieldType();
     if (mtp==expectType || mtp==AliTPCChebCorr::kFieldAny) cormap = map;
     if (mtp==expectType) break;
   }
   if (!cormap) AliFatalGeneralF("AliTPCTransform","Did not find %s correction map",ref ? "reference":"");
 
-  AliInfoGeneralF("AliTPCTransform","Loaded  %s correction map",ref ? "reference":"");
+  AliInfoGeneralF("AliTPCTransform","Loaded %s %s map",ref ? "reference":"",corrMode ? "correction":"distortion");
   cormap->Print();
   if (cormap->GetFieldType() == AliTPCChebCorr::kFieldAny) {
     AliWarningGeneralF("AliTPCTransform","ATTENTION: no map for field %+.1f was found, placeholder map is used",bzField);
@@ -788,12 +790,16 @@ AliTPCChebCorr* AliTPCTransform::LoadFieldDependendStaticCorrectionMap(Bool_t re
 }
 
 //______________________________________________________
-TObjArray* AliTPCTransform::LoadCorrectionMaps(Bool_t refMap)
+TObjArray* AliTPCTransform::LoadCorrectionMaps(Bool_t refMap, Bool_t corr)
 {
   // TPC fast Chebyshev correction map, loaded on demand, not handler by calibDB
-  const char* kNameRef = "TPC/Calib/CorrectionMapsRef";
-  const char* kNameRun = "TPC/Calib/CorrectionMaps";
-  const char* mapTypeName = refMap ? kNameRef : kNameRun;
+  const char* kNameRefCor = "TPC/Calib/CorrectionMapsRef";
+  const char* kNameRunCor = "TPC/Calib/CorrectionMaps";
+  const char* kNameRefDis = "TPC/Calib/DistortionMapsRef";
+  const char* kNameRunDis = "TPC/Calib/DistortionMaps";
+  const char* mapTypeName = 0;
+  if (corr) mapTypeName = refMap ? kNameRefCor : kNameRunCor; // correction map
+  else      mapTypeName = refMap ? kNameRefDis : kNameRunDis; // distortion map
   //
   AliCDBManager* man = AliCDBManager::Instance();
   AliCDBEntry* entry = man->Get(mapTypeName);
@@ -848,6 +854,7 @@ Float_t AliTPCTransform::GetCorrMapComponent(int roc, int row, const double xyz[
 void AliTPCTransform::EvalCorrectionMap(int roc, int row, const double xyz[3], float *res, Bool_t ref)
 {
   // get correction from the map for a point at given ROC and row (IROC/OROC convention)
+  //  memset(res,0,4*sizeof(float)); return; //RSTMP
   if (!fTimeDependentUpdated && !UpdateTimeDependentCache()) AliFatal("Failed to update time-dependent cache");
 
   AliTPCChebCorr* map = ref ? fCorrMapCacheRef : fCorrMapCache0;
@@ -872,6 +879,7 @@ void AliTPCTransform::EvalCorrectionMap(int roc, int row, const double xyz[3], f
 //______________________________________________________
 Float_t AliTPCTransform::EvalCorrectionMap(int roc, int row, const double xyz[3], int dimOut, Bool_t ref)
 {
+  //  return 0; // RSTMP
   // get correction for dimOut-th dimension from the map for a point at given ROC and row (IROC/OROC convention)
   if (!fTimeDependentUpdated && !UpdateTimeDependentCache()) AliFatal("Failed to update time-dependent cache");
 
@@ -895,22 +903,27 @@ Float_t AliTPCTransform::EvalCorrectionMap(int roc, int row, const double xyz[3]
 }
 
 //______________________________________________________
-void AliTPCTransform::EvalDistortionMap(int roc, const double xyzSector[3], float *res)
+void AliTPCTransform::EvalDistortionMap(int roc, const double xyzSector[3], float *res, Bool_t ref)
 {
   // get distortions from the map for a point at given ROC
+  //  memset(res,0,4*sizeof(float)); return; //RSTMP
+
   if (!fTimeDependentUpdated && !UpdateTimeDependentCache()) AliFatal("Failed to update time-dependent cache");
-  if (!fCorrMapCache0->IsDistortion()) AliFatalF("Uploaded map is not distortion: %s",fCorrMapCache0->IsA()->GetName());
+  AliTPCChebDist* map = (AliTPCChebDist*) (ref ? fCorrMapCacheRef : fCorrMapCache0);
+  if (!map->IsDistortion()) AliFatalF("Uploaded map is not distortion: %s",map->IsA()->GetName());
   float y2x=xyzSector[1]/xyzSector[0], z2x = fCorrMapCache0->GetUseZ2R() ? xyzSector[2]/xyzSector[0] : xyzSector[2];
-  ((AliTPCChebDist*)fCorrMapCache0)->Eval(roc,xyzSector[0],y2x,z2x,res);
+  map->Eval(roc,xyzSector[0],y2x,z2x,res);
   // 
+  if (ref) return;
+  //
   // for time dependent correction need to evaluate 2 maps, assuming linear dependence
   if (fCorrMapCache1) {
     float delta1[4] = {0.0f};
-    ((AliTPCChebDist*)fCorrMapCache1)->Eval(roc,xyzSector[0],y2x,z2x,res);
+    ((AliTPCChebDist*)fCorrMapCache1)->Eval(roc,xyzSector[0],y2x,z2x,delta1);
     UInt_t t0 = fCorrMapCache0->GetTimeStampCenter();
     UInt_t t1 = fCorrMapCache1->GetTimeStampCenter();
       // possible division by 0 is checked at upload of maps
-    double dtScale = (t1-fCurrentTimeStamp)/double(t1-t0);
+    double dtScale = (fCurrentTimeStamp-t0)/double(t1-t0);
     for (int i=4;i--;) res[i] += (delta1[i]-res[i])*dtScale;
   }
   //
@@ -921,11 +934,43 @@ void AliTPCTransform::ApplyDistortionMap(int roc, double xyzLab[3])
 {
   // apply distortion from the map to a point provided in LAB coordinate 
   // at given ROC and row (IROC/OROC convention)
-  double xyzSect[3];
-  float  res[3];
-  Global2RotatedGlobal(roc,xyzLab);
-  EvalDistortionMap(roc, xyzLab, res); // now we are in sector coordinates
-  for (int i=3;i--;) xyzLab[i] += res[i];
+  const float kDistDispThresh = 20e-4; // assume fluctuation dispersion if D[3]>Dref[3]+threshold
+  Global2RotatedGlobal(roc,xyzLab);  // now we are in sector coordinates
+  EvalDistortionMap(roc, xyzLab, fLastCorrRef, kTRUE);
+  EvalDistortionMap(roc, xyzLab, fLastCorr,    kFALSE);
+  //
+  if (fLastCorr[3]<1e-6) { // run specific map had no parameterization for this region, override by default
+    for (int i=3;i--;) fLastCorr[i] = fLastCorrRef[i];
+    fLastCorr[3] = 0.f;
+  }
+  else {
+    fLastCorr[3] = fLastCorr[3]>(fLastCorrRef[3]+kDistDispThresh) ? TMath::Sqrt(fLastCorr[3]*fLastCorr[3] - fLastCorrRef[3]*fLastCorrRef[3]) : 0;
+    if (fLastCorr[3]<fCurrentRecoParam->GetMinDistFluctMCRef()) fLastCorr[3] = fCurrentRecoParam->GetMinDistFluctMCRef();
+    if (fCurrentMapScaling!=1.0f) {
+      for (int i=3;i--;) fLastCorr[i] = (fLastCorr[i]-fLastCorrRef[i])*fCurrentMapScaling + fLastCorrRef[i];
+      fLastCorr[3] *= fCurrentMapScaling;
+    }
+  }
+  if (fLastCorr[3]>1e-6) { // apply SC fluctuation according to stored RMS Y
+    const float zfluctScale = 0.3; // the fluctuations in Z are smaller
+    float fluct = fLastCorr[3]*fCurrentMapFluctStrenght;
+    /*
+    // fluctuation of charge acts leads to different sign of dist.fluct on left/right 
+    // sides of the sector. Potential problem: if average distortion ~0, this way of
+    // imposing fluctuations will lead to small discontinuity...
+    if (fLastCorr[1]<0) fluct = -fluct;
+    */
+    if (fCurrentRecoParam->GetDistFluctUncorrFracMC()>0) {
+      float a,b, flUnc = fCurrentRecoParam->GetDistFluctUncorrFracMC()*fLastCorr[3];
+      gRandom->Rannor(a,b);
+      fLastCorr[1] += flUnc*a;
+      fLastCorr[2] += flUnc*b*zfluctScale;
+      fluct *= 1.-fCurrentRecoParam->GetDistFluctUncorrFracMC();
+    } 
+    fLastCorr[1] += fluct;
+    fLastCorr[2] += fluct*zfluctScale; //??
+  }
+  for (int i=3;i--;) xyzLab[i] += fLastCorr[i];
   RotatedGlobal2Global(roc,xyzLab);
   //
 }
@@ -1143,9 +1188,44 @@ void AliTPCTransform::ResetCache()
   AliInfo("Reseting Transform in view of possible RecoParam modification");
   fCurrentRecoParam = 0;
   fCurrentMapScaling = 1.0;
-  SetCurrentTimeStamp(-1);
-  Local2RotatedGlobal(-1,0); // this will reset the cached values for VDrift
+  fCurrentMapFluctStrenght = 0.;
+  CleanCorrectionMaps();
   //
+  fCurrentTimeStamp = 0;
+  //
+  fLastTimeStampCorrMap = -1;
+  fLastTimeStampVDCorrPT = -1;
+  fLastTimeStampVDCorrVaria = -1;
+  //
+  fVDCorrectionTime = 1.;
+  fVDCorrectionTimeGY = 0.;
+  fTime0CorrTime = 0.;
+  fDeltaZCorrTime =0.;
+  fDriftCorrPT = 1.;
+  fTBinOffset = 0;
+  //
+  fTimeDependentUpdated = kFALSE;
+}
+
+//_________________________________
+void AliTPCTransform::CleanCorrectionMaps()
+{
+  // deletes correction maps from cache
+  delete fCorrMapCacheRef; fCorrMapCacheRef = 0;
+  delete fCorrMapCache0; fCorrMapCache0 = 0;
+  delete fCorrMapCache1; fCorrMapCache1 = 0;
+}
+
+//_________________________________
+void AliTPCTransform::SetCorrectionMapMode(Bool_t v)
+{
+  // set map type to correction or distortion. At change of type clean the cache
+  if (fCorrMapMode!=v) {
+    CleanCorrectionMaps();
+    fCurrentTimeStamp=0;  
+  }
+  fCorrMapMode = v;
+  fTimeDependentUpdated = kFALSE;
 }
 
 AliHLTTPCReverseTransformInfoV1* AliTPCTransform::GetReverseTransformInfo()

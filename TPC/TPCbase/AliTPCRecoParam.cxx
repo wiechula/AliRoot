@@ -116,8 +116,12 @@ AliTPCRecoParam::AliTPCRecoParam():
   fUseCorrectionMap(kFALSE),
   fCorrMapTimeDepMethod(kCorrMapInterpolation),
   fUseLumiType(AliLumiTools::kLumiCTP),
+  fUseMapLumiInfoCOG(kFALSE),
   fSystCovAmplitude(2.0),
   fDistFluctCorrelation(0.99),
+  fDistortionFluctMCAmp(1.0),
+  fMinDistFluctMCRef(0.0),
+  fDistFluctUncorrFracMC(0.0),
   fSystErrClInnerRegZ(0),
   fSystErrClInnerRegZSigInv(0),
   fUseSystematicCorrelation(kTRUE)
@@ -137,8 +141,8 @@ AliTPCRecoParam::AliTPCRecoParam():
   fDistortionFractionAsErrorYZ[0] = -1.; // fraction of used distortion correction is used as an error (if positive)
   fDistortionFractionAsErrorYZ[1] = -1.; // fraction of used distortion correction is used as an error (if positive)
 
-  fDistDispFractionAsErrorYZ[0] = 0.6; // fraction of used distortion correction is used as an error (if positive)
-  fDistDispFractionAsErrorYZ[1] = 0.3; // fraction of used distortion correction is used as an error (if positive)
+  fDistDispFractionAsErrorYZ[0] = -1; // fraction of used distortion correction is used as an error (if positive)
+  fDistDispFractionAsErrorYZ[1] = -1; // fraction of used distortion correction is used as an error (if positive)
   //
   fCutSharedClusters[0]=0.5; // maximal allowed fraction of shared clusters - shorter track
   fCutSharedClusters[1]=0.25; // maximal allowed fraction of shared clusters - longer  track

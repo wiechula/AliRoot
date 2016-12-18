@@ -33,6 +33,7 @@ set(SRCS
   AliEMCALTriggerPatchFinder.cxx
   AliEMCALTriggerAlgorithm.cxx
   AliEMCALTriggerPatchInfo.cxx
+  AliEMCALTriggerPatchADCInfo.cxx
   AliEMCALTriggerBitConfig.cxx
   AliEMCALTriggerQA.cxx
   AliEMCALTriggerOnlineQAPbPb.cxx
@@ -51,7 +52,7 @@ get_directory_property(incdirs INCLUDE_DIRECTORIES)
 generate_dictionary("${MODULE}" "${MODULE}LinkDef.h" "${HDRS}" "${incdirs}")
 
 # Add a shared library
-add_library(${MODULE} SHARED  ${SRCS} ${HDRS} ${MODULE}LinkDef.h G__${MODULE}.cxx)
+add_library_tested(${MODULE} SHARED  ${SRCS} ${HDRS} ${MODULE}LinkDef.h G__${MODULE}.cxx)
 
 # Generate the ROOT map
 # Dependecies

@@ -60,9 +60,9 @@ const Double_t AliMFTGeometry::fHeightReadout = 0.2;
 
 // Allmost everything you wanted to know about the FPC
 const Double_t AliMFTGeometry::kLineWidth= 100.e-4;         // line width, 100 microns
-const Double_t AliMFTGeometry::kVarnishThickness= 20.e-4;   // 20 micron
+const Double_t AliMFTGeometry::kVarnishThickness= 45.e-4;   // 20 micron FPC + 25 microns of glue for encapsulation
 const Double_t AliMFTGeometry::kAluThickness = 25.e-4;      // 25 microns
-const Double_t AliMFTGeometry::kKaptonThickness = 75.e-4;   // 75 microns
+const Double_t AliMFTGeometry::kKaptonThickness = 88.e-4;   // 75 microns FPC + 13 microns of kapton for encapsulation
 const Double_t AliMFTGeometry::kFlexThickness = kKaptonThickness + 2*kAluThickness + 2*kVarnishThickness; // total thickness of a FPC
 const Double_t AliMFTGeometry::kFlexHeight = 1.68;
 const Double_t AliMFTGeometry::kClearance=300.e-4;      // 300 microns clearance without any conducting metal all around the FPC
@@ -81,8 +81,11 @@ const Double_t AliMFTGeometry::kConnectorThickness=0.01;
 const Double_t AliMFTGeometry::kShiftDDGNDline=0.4; // positionning of the line to separate AVDD/DVDD et AGND/DGND on the FPC
 const Double_t AliMFTGeometry::kShiftline=0.025; // positionning of the line along the FPC side
 const Double_t AliMFTGeometry::kEpsilon=0.0001; // to see the removed volumes produced by TGeoSubtraction
+const Double_t AliMFTGeometry::kRohacell=-0.001; // to modify the thickness of the rohacell 
+const Double_t AliMFTGeometry::kShift=-0.0013; // to be checked
 
-const Double_t AliMFTGeometry::kGlueThickness=50.e-4; // 50 microns
+
+const Double_t AliMFTGeometry::kGlueThickness=100.e-4; // 100 microns of SE4445 to be confirmed
 const Double_t AliMFTGeometry::kGlueEdge=300.e-4; // in case the glue is not spreaded on the whole surface of the sensor
 
 

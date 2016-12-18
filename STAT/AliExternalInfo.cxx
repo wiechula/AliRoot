@@ -19,17 +19,20 @@
 #include "TChain.h"
 #include "TMath.h"
 #include "TStatToolkit.h"
-
+#include "TLeaf.h"
+#include "TVirtualIndex.h"
+#include "TPRegexp.h" 
 ClassImp(AliExternalInfo)
 
 const TString AliExternalInfo::fgkDefaultConfig="$ALICE_ROOT/STAT/Macros/AliExternalInfo.cfg";
 
-AliExternalInfo::AliExternalInfo(TString localStorageDirectory, TString configLocation/*, Bool_t copyToLocalStorage*/) :
+AliExternalInfo::AliExternalInfo(TString localStorageDirectory, TString configLocation, Int_t verbose/*, Bool_t copyToLocalStorage*/) :
                                 /*fCopyDataToLocalStorage(copyToLocalStorage),*/
                                 TObject(),
+				fVerbose(verbose),
                                 fConfigLocation(configLocation),
                                 fLocalStorageDirectory(localStorageDirectory),
-                                fLocationTimeOutMap(),
+                                fConfigMap(),
                                 fTree(0x0),
                                 fChain(new TChain()),
                                 fChainMap(),
@@ -39,58 +42,92 @@ AliExternalInfo::AliExternalInfo(TString localStorageDirectory, TString configLo
   if (gSystem->Getenv("AliExternalInfoCache")!=NULL){
     if (localStorageDirectory.Length()<2)   fLocalStorageDirectory=gSystem->Getenv("AliExternalInfoCache");
   }
-  ReadConfig();
+  ReadConfig(configLocation, fVerbose);
 }
 
 AliExternalInfo::~AliExternalInfo() {}
 
 
-/// Reads the configuration file. Lines beginning with an '#' are ignored.
+/// Reads the configuration files. Lines beginning with an '#' are ignored.
+/// 
 /// Use the format which is in the config.cfg by default. Adding ressources like the ones already
 /// there should work without problems.
-void AliExternalInfo::ReadConfig(){
-  TString configFileName=gSystem->ExpandPathName(fConfigLocation.Data());
-  if (gSystem->AccessPathName(configFileName)) {
-    AliError(TString::Format("Could not find config file '%s'", configFileName.Data()));
-    const TString defaultConfigFileName=gSystem->ExpandPathName(fgkDefaultConfig);
-    if (defaultConfigFileName!=configFileName) {
-      AliError("Using default config file instead");
-      configFileName=defaultConfigFileName;
+/// \param configLocation - semicolon separated configuration list
+///                       - applied as in CSS 
+/// \param verbose        - verbosity
+void AliExternalInfo::ReadConfig( TString configLocation, Int_t verbose){
+
+  // Prepend config files on first load
+  if (fConfigLocation.Length()==0){
+    // Check if local config exists
+    if(!gSystem->AccessPathName("AliExternalInfo.cfg")){ // false if file exists
+      configLocation=AliExternalInfo::fgkDefaultConfig+";AliExternalInfo.cfg;"+configLocation;
+    } else{
+      configLocation=AliExternalInfo::fgkDefaultConfig+configLocation;
     }
   }
 
-  std::ifstream configFile(configFileName);
-  if (!configFile.is_open()) {
-    AliError(TString::Format("Could not open config file '%s'", configFileName.Data()));
+  TObjArray *configArray = configLocation.Tokenize(";");
+  fConfigLocation+=configLocation;
+  fConfigLocation+=";";
+
+  Int_t nConfig=configArray->GetEntries();
+  if (nConfig==0){
+    ::Error("AliExternalInfo::ReadConfig","Invalid configuration description %s",configLocation.Data());
     return;
   }
 
-  //
-  std::string line;
-  while (std::getline(configFile, line)){
-    TString temp_line(line.c_str()); // Use TString for easier handling
-
-    if (temp_line.EqualTo("")) continue; // Ignore empty lines
-    // temp_line = temp_line.Strip(TString::EStripType::kBoth, ' '); // Strip trailing and leading spaces
-    temp_line = temp_line.Strip(TString::kBoth, ' '); // Strip trailing and leading spaces
-    if (temp_line.First('#') == 0) continue; // If line starts with a '#' treat is as a comment
-
-    TObjArray arrTokens = (*(temp_line.Tokenize(' ')));
-    const TString key(arrTokens.At(0)->GetName());
-    const TString value(arrTokens.At(1)->GetName());
-
-    fLocationTimeOutMap[key] = value;
+  for (Int_t iConfig=0; iConfig<nConfig; iConfig++){
+    TString cName=configArray->At(iConfig)->GetName();
+    if (cName=="default") cName="$ALICE_ROOT/STAT/Macros/AliExternalInfo.cfg";    
+    if (cName.Length()==0) continue;
+    TString configFileName=gSystem->ExpandPathName(cName.Data());
+    if (verbose>0){
+      ::Info("AliExternalInfo::ReadConfig","Path: %s\t%s",cName.Data(), configFileName.Data());
+    }
+    if (gSystem->AccessPathName(configFileName)!=0) {   // be aware of strange convention for the gSystem->AccessPathName - 0 mean it is OK
+      AliError(TString::Format("Could not find config file '%s'", configFileName.Data()));
+      const TString defaultConfigFileName=gSystem->ExpandPathName(fgkDefaultConfig);
+      if (defaultConfigFileName!=configFileName) {
+	AliError("Using default config file instead");
+	configFileName=defaultConfigFileName;
+      }
+    }
+    
+    std::ifstream configFile(configFileName);
+    if (!configFile.is_open()) {
+      AliError(TString::Format("Could not open config file '%s'", configFileName.Data()));
+      return;
+    }
+    
+    //
+    std::string line;
+    while (std::getline(configFile, line)){
+      TString temp_line(line.c_str()); // Use TString for easier handling
+      
+      if (temp_line.EqualTo("")) continue; // Ignore empty lines
+      // temp_line = temp_line.Strip(TString::EStripType::kBoth, ' '); // Strip trailing and leading spaces
+      temp_line = temp_line.Strip(TString::kBoth, ' '); // Strip trailing and leading spaces
+      if (temp_line.First('#') == 0) continue; // If line starts with a '#' treat is as a comment
+      
+      TObjArray arrTokens = (*(temp_line.Tokenize(' ')));
+      const TString key(arrTokens.At(0)->GetName());
+      const TString value(arrTokens.At(1)->GetName());
+      
+      fConfigMap[key] = value;
+    }
   }
+  delete configArray;
   return;
 }
 
 /// Prints out the config which was read in previously. Useful to check if anything went wrong
 void AliExternalInfo::PrintConfig(){
   // Loop through the map (Would be much easier in c++11)
-  std::cout << "User defined resources are:\n";
+  AliInfo("User defined resources are\n");
   // looping over map with const_iterator
   typedef std::map<TString,TString>::const_iterator it_type;
-  for(it_type iterator = fLocationTimeOutMap.begin(); iterator != fLocationTimeOutMap.end(); ++iterator) {
+  for(it_type iterator = fConfigMap.begin(); iterator != fConfigMap.end(); ++iterator) {
     std::cout << iterator->first << " " << iterator->second << "\n";
   }
   return;
@@ -101,9 +138,11 @@ void AliExternalInfo::PrintConfig(){
 void AliExternalInfo::SetupVariables(TString& internalFilename, TString& internalLocation, Bool_t& resourceIsTree, TString& pathStructure, \
                                      TString& detector, TString& rootFileName, TString& treeName, const TString& type, const TString& period, const TString& pass, TString & indexName){
   // Check if resource is a tree in a root file or not
-  pathStructure = CreatePath(type, period, pass);
+  TString lpass=pass;
+  if (fConfigMap[type + ".nopass"].Contains("true")) lpass="";
+  pathStructure = CreatePath(type, period, lpass);
 
-  // if (fLocationTimeOutMap.count(type + ".treename") > 0) resourceIsTree = kTRUE;
+  // if (fConfigMap.count(type + ".treename") > 0) resourceIsTree = kTRUE;
   // else resourceIsTree = kFALSE;
   if (type.Contains("MonALISA") == kTRUE) resourceIsTree = kFALSE;
   else resourceIsTree = kTRUE;
@@ -116,9 +155,9 @@ void AliExternalInfo::SetupVariables(TString& internalFilename, TString& interna
 //    std::cout << "DETECTOR: " << detector << std::endl;
   }
 
-  rootFileName = fLocationTimeOutMap[type + ".filename"];
-  treeName     = fLocationTimeOutMap[type + ".treename"];
-  indexName= fLocationTimeOutMap[type + ".indexname"];
+  rootFileName = fConfigMap[type + ".filename"];
+  treeName     = fConfigMap[type + ".treename"];
+  indexName= fConfigMap[type + ".indexname"];
   if (indexName.Length()<=0) indexName="run";
   // Create the local path where to store the information of the resource
   internalLocation += pathStructure;
@@ -156,10 +195,10 @@ Bool_t AliExternalInfo::Cache(TString type, TString period, TString pass){
   TString treeName = "";
   TString pathStructure = "";
   TString indexName=""; 
-  TString oldIndexName= fLocationTimeOutMap[type + ".indexname"];  // rename index branch to avoid incositencies (bug in ROOT - the same index branch name requeired) 
+  TString oldIndexName= fConfigMap[type + ".indexname"];  // rename index branch to avoid incositencies (bug in ROOT - the same index branch name requeired) 
 
   // initialization of external variables
-  externalLocation = fLocationTimeOutMap[type + ".location"];
+  externalLocation = fConfigMap[type + ".location"];
 
   // Setting up all the local variables
   SetupVariables(internalFilename, internalLocation, resourceIsTree, pathStructure, detector, rootFileName, treeName, type, period, pass,indexName);
@@ -217,7 +256,7 @@ Bool_t AliExternalInfo::Cache(TString type, TString period, TString pass){
       TTree tree(treeName, treeName);
 
       if ( (tree.ReadFile(mifFilePath+"RunFix", "", '\"')) > 0) {
-        AliInfo("-- Successfully read in tree");
+        if (fVerbose>1) AliInfo("Successfully read in tree");
       }
       else {
         AliError("-- Error while reading tree");
@@ -226,7 +265,7 @@ Bool_t AliExternalInfo::Cache(TString type, TString period, TString pass){
 
       tree.Write();
       tempfile.Close();
-      AliInfo(TString::Format("Write tree to file: %s", internalFilename.Data()));
+      if (fVerbose>0) AliInfo(TString::Format("Write tree to file: %s", internalFilename.Data()));
       return kTRUE;
     }
   }
@@ -240,7 +279,7 @@ Bool_t AliExternalInfo::Cache(TString type, TString period, TString pass){
 /// \param pass E.g. 'pass2' or 'passMC'
 /// Returns the tree with the information from the corresponding resource
 /// \return TTree* with corresponding resource
-TTree* AliExternalInfo::GetTree(TString type, TString period, TString pass){
+TTree* AliExternalInfo::GetTree(TString type, TString period, TString pass, Int_t buildIndex){
   TString internalFilename = ""; // Resulting path to the file
   TString internalLocation = fLocalStorageDirectory; // Gets expanded in this function to the right directory
   TString externalLocation = "";
@@ -250,20 +289,29 @@ TTree* AliExternalInfo::GetTree(TString type, TString period, TString pass){
   TString treeName = "";
   TString pathStructure = "";
   TString indexName=""; 
-  TString metadataMacro=fLocationTimeOutMap[type + ".metadataMacro"];
+  TString metadataMacro=fConfigMap[type + ".metadataMacro"];
 
   TTree* tree = 0x0;
 
   // Setting up all the local variables
   SetupVariables(internalFilename, internalLocation, resourceIsTree, pathStructure, detector, rootFileName, treeName, type, period, pass,indexName);
 
-  std::cout << "internalFilename: " << internalFilename << " rootFileName: " << rootFileName << std::endl;
-
+  //std::cout << "internalFilename: " << internalFilename << " rootFileName: " << rootFileName << std::endl;
+  if (fVerbose>1) AliInfo(TString::Format("Caching start internalFileName\t%s\trootFileName\t%s", internalFilename.Data(), rootFileName.Data()).Data());
   if (gSystem->AccessPathName(internalFilename.Data()) == kTRUE) {
     if (Cache(type, period, pass) == kFALSE) {
-      std::cout << "Caching of ressource was not successful; Nullpointer is returned!\n" << std::endl;
+      AliError(TString::Format("Caching failed internalFileName\t%s\trootFileName\t%s", internalFilename.Data(), rootFileName.Data()).Data());
       return tree;
     }
+  }else{
+    Bool_t downloadNeeded = IsDownloadNeeded(internalFilename, type);
+    if (downloadNeeded){
+      AliInfo(TString::Format("Caching %s", internalFilename.Data()).Data());
+      if (Cache(type, period, pass) == kFALSE) {
+	AliError(TString::Format("Caching failed internalFileName\t%s\trootFileName\t%s", internalFilename.Data(), rootFileName.Data()).Data());
+	return tree;
+      }
+    }    
   }
 
   // Creating and returning the tree from the file
@@ -276,15 +324,15 @@ TTree* AliExternalInfo::GetTree(TString type, TString period, TString pass){
     if (tree) break;
   }
   delete arr;
-
+  TTreeSRedirector::FixLeafNameBug(tree);
   if (tree != 0x0) {
-    AliInfo("-- Successfully read in tree");
-    BuildIndex(tree, type);
+    if (fVerbose>1) AliInfo(TString::Format("Successfully read %s/%s",internalFilename.Data(), tree->GetName()));
+    if (buildIndex==1) BuildIndex(tree, type);
   } else {
     AliError("Error while reading tree");
   }
 
-  const TString cacheSize=fLocationTimeOutMap[type + ".CacheSize"];
+  const TString cacheSize=fConfigMap[type + ".CacheSize"];
   Long64_t cache=cacheSize.Atoll();
   if (fMaxCacheSize>0) {
     if (cache>0) {
@@ -297,8 +345,8 @@ TTree* AliExternalInfo::GetTree(TString type, TString period, TString pass){
   //
 
   if (metadataMacro.Length()>0){  // rename branch  with index if specified in configuration file
-    printf("Processing metadata macro:\n gROOT->ProcessLine(.x %s((TTree*)%p,0);",     metadataMacro.Data(),tree);
-    gROOT->ProcessLine(TString::Format(".x %s((TTree*)%p,0);",metadataMacro.Data(),tree).Data());
+    if (fVerbose>1) printf("Processing metadata macro:\n gROOT->ProcessLine(.x %s((TTree*)%p,%d);",     metadataMacro.Data(),tree, fVerbose);
+    gROOT->ProcessLine(TString::Format(".x %s((TTree*)%p,%d);",metadataMacro.Data(),tree,fVerbose).Data());
   }
 
   return tree;
@@ -315,10 +363,11 @@ TTree* AliExternalInfo::GetTree(TString type, TString period, TString pass){
 TTree*  AliExternalInfo::GetTree(TString type, TString period, TString pass, TString friendList){
   //  
   /*
-    Example usage:
-     treerawTPC = info.GetTree("QA.rawTPC","LHC16f","cpass1_pass1","Logbook;Logbook.detector;QA.TPC;QA.TRD;QA.TOF;QA.ITS;MonALISA.RCT");
-     treerawTPC->Draw("QA.TPC.meanMIP:gainMIP","abs(QA.TPC.meanMIP-50)<2&&gainMIP>1","")
-     treerawTPC->Draw("QA.TPC.run!=run","QA.TPC.run==QA.TRD.run","");  //consistency check
+    Example usage: - loading QA.TPC together with logbook and QA.EVS - visualizing data volume as fuction of interaction rate
+    
+    TTree * treeTPC = info.GetTree("QA.TPC","LHC15o","pass1","QA.rawTPC;QA.ITS;QA.TPC;QA.TRD;QA.TOF;QA.EVS;Logbook;Logbook.detector:TPC:detector==\"TPC\""); 
+    treeTPC->Draw("Logbook.detector_TPC.bytesInjectedPhysics/Logbook.detector_TPC.eventCountPhysics/1000000:QA.EVS.interactionRate","","*")
+
    */
   TTree * tree = GetTree(type, period,pass);  
   if (tree==NULL) tree=  GetTree(type, period,"");
@@ -327,8 +376,8 @@ TTree*  AliExternalInfo::GetTree(TString type, TString period, TString pass, TSt
     ::Error("AliExternalInfo::GetTree","Friend tree %s not valid or empty",type.Data()); 
     return 0;
   }
-  TString indexName= fLocationTimeOutMap[type + ".indexname"];
-  TString oldIndexName= fLocationTimeOutMap[type + ".oldindexname"];
+  TString indexName= fConfigMap[type + ".indexname"];
+  TString oldIndexName= fConfigMap[type + ".oldindexname"];
   if (oldIndexName.Length()>0 && tree->FindBranch(oldIndexName.Data())){
     tree->FindBranch(oldIndexName.Data())->SetName(indexName.Data());
   }
@@ -342,15 +391,38 @@ TTree*  AliExternalInfo::GetTree(TString type, TString period, TString pass, TSt
   TObjArray * arrFriendList= friendList.Tokenize(";");
   for (Int_t ilist=0; ilist<arrFriendList->GetEntriesFast(); ilist++){
     TString fname=arrFriendList->At(ilist)->GetName();
-    TTree *ftree= GetTree(fname.Data(), period,pass);
-    if (ftree==NULL) ftree=  GetTree(fname.Data(), period,"");
-    if (ftree==NULL) ftree=  GetTree(fname.Data(), "","");
+    TString conditionName="";   
+    TString condition="";
+    Int_t nDots = fname.CountChar(':');
+    // in case there are more than one entry for primary index - secondary key has to be specified
+    // following syntax is used in this case <treeID>:conditionName:condition
+    //     e.g Logbook.detector:TPC:detector==\"TPC\"
+    if (nDots!=0 && nDots!=2) continue;
+    if (nDots==2){
+      TObjArray * tokenArray = fname.Tokenize(":");
+      fname=tokenArray->At(0)->GetName();
+      conditionName=tokenArray->At(1)->GetName();
+      condition=tokenArray->At(2)->GetName();
+      delete tokenArray;
+    }
+    //
+    TTree *ftree= GetTree(fname.Data(), period,pass,nDots==0);  // Standard build index if not custom selection
     if (ftree==NULL || ftree->GetEntries()<=0){
       ::Error("AliExternalInfo::GetTree","Friend tree %s not valid or empty",fname.Data()); 
       continue;
+    }    
+    if (nDots==2){
+      tree->SetAlias(conditionName.Data(),"(1+0)");    
+      ftree->SetAlias(conditionName.Data(),condition.Data());
+      ftree->BuildIndex(tree->GetTreeIndex()->GetMajorName(), conditionName.Data());    
+      tree->AddFriend(ftree, (fname+"_"+conditionName).Data());
+    }else{
+      tree->AddFriend(ftree, fname.Data());
     }
-    tree->AddFriend(ftree, fname.Data());
-    ftree->AddFriend(tree, type.Data());
+    //
+    ftree->SetTitle(TString::Format("%s.%s",fname.Data(),ftree->GetTitle()).Data());
+    ftree->SetName(TString::Format("%s.%s",fname.Data(),ftree->GetName()).Data());
+    //ftree->AddFriend(tree, type.Data());
     Int_t fentries = tree->Draw(indexName.Data(),"","goff");
     ::Info("AliExternalInfo::GetTree","AddFriend %s+%s - entries=%d", type.Data(),  fname.Data(),fentries);
   }
@@ -365,6 +437,7 @@ TTree*  AliExternalInfo::GetTree(TString type, TString period, TString pass, TSt
 /// Returns a chain with the information from the corresponding resources.
 /// \return TChain*
 TChain* AliExternalInfo::GetChain(TString type, TString period, TString pass){
+  // FIXME  - here we should also fix Leave name bug
   TChain* chain = 0x0;
   TString internalFilename = ""; // Resulting path to the file
   TString internalLocation = fLocalStorageDirectory; // Gets expanded in this function to the right directory
@@ -404,7 +477,7 @@ TChain* AliExternalInfo::GetChain(TString type, TString period, TString pass){
     }
   }
   
-  const TString cacheSize=fLocationTimeOutMap[type + ".CacheSize"];
+  const TString cacheSize=fConfigMap[type + ".CacheSize"];
   Long64_t cache=cacheSize.Atoll();
   if (fMaxCacheSize>0) {
     if (cache>0) {
@@ -431,9 +504,9 @@ Bool_t AliExternalInfo::BuildIndex(TTree* tree, TString type){
   //
   //
   //
-  TString indexName= fLocationTimeOutMap[type + ".indexname"];
-  TString oldIndexName= fLocationTimeOutMap[type + ".oldindexname"];
-  TString metadataMacro=fLocationTimeOutMap[type + "metadataMacro"];
+  TString indexName= fConfigMap[type + ".indexname"];
+  TString oldIndexName= fConfigMap[type + ".oldindexname"];
+  TString metadataMacro=fConfigMap[type + "metadataMacro"];
   //
   if (oldIndexName.Length()>0){  // rename branch  with index if specified in configuration file
     if (tree->GetBranch(oldIndexName.Data())) {
@@ -551,7 +624,7 @@ const TString AliExternalInfo::CreatePath(TString type, TString period, TString 
 /// \returns true if download of the resource is needed and false if not
 Bool_t AliExternalInfo::IsDownloadNeeded(TString file, TString type){
   Int_t timeOut = 0;
-  timeOut = atoi(fLocationTimeOutMap[type + ".timeout"]);
+  timeOut = atoi(fConfigMap[type + ".timeout"]);
 
   // std::cout << "-- Check, if " << file << " is already there" << std::endl;
   if (gSystem->AccessPathName(file.Data()) == kTRUE) {
@@ -661,7 +734,32 @@ void AliExternalInfo::BuildHashIndex(TTree* tree, const char *chbranchName,  con
   branch->SetAddress(0);     // reset pointers to the branches to 0
 }
 
+void   AliExternalInfo::PrintConfigSelected(const char *expName, const char *expValue){
+  //
+  //
+  PrintMapSelected(fConfigMap, expName,expValue);
+}
 
 
-
-
+void AliExternalInfo::PrintMapSelected(std::map<TString, TString> infoMap, const char *expName, const char *expValue){
+  //
+  // This function to move to some util class
+  // Simple printing of the configuration filtering using Reg. expression
+  //     algorithm consuted with the http://stackoverflow.com/questions/17253690/finding-in-a-std-map-using-regex
+  //     No support in std::map - linear loop also sugested (faster version have to make some assumptions)
+  //
+  // More complex filter with logical operation will be written later  
+  //     expName   - regular expression to selec in tag name
+  //     expValue   - regular expression to selec in tag value
+  //
+  TPRegexp regExpName(expName);
+  TPRegexp regExpValue(expValue);
+  std::map<TString, TString>::iterator it;    
+  for (it=infoMap.begin(); it!=infoMap.end(); ++it){
+    Bool_t isSelected=kTRUE;
+    if (regExpName.GetPattern().Length()>0) isSelected&= regExpName.Match(it->first);
+    if (regExpValue.GetPattern().Length()>0) isSelected&= regExpValue.Match(it->second);
+    if (isSelected) printf("%s\t%s\n", it->first.Data(), it->second.Data());
+  }
+  
+}

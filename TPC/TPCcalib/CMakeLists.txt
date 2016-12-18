@@ -79,7 +79,7 @@ set(LIBDEPS STEERBase CDB ESD STEER ANALYSIS ANALYSISalice STAT RAWDatarec RAWDa
 generate_rootmap("${MODULE}" "${LIBDEPS}" "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}LinkDef.h")
 
 # Add a library to the project using the specified source files
-add_library(${MODULE} SHARED ${SRCS} G__${MODULE}.cxx)
+add_library_tested(${MODULE} SHARED ${SRCS} G__${MODULE}.cxx)
 target_link_libraries(${MODULE} ${LIBDEPS})
 
 # Additional compilation flags
@@ -99,6 +99,10 @@ install(TARGETS ${MODULE}
         LIBRARY DESTINATION lib)
 
 # Calib maps
-install(DIRECTORY maps DESTINATION TPC/${MODULE})
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/maps)
+    install(DIRECTORY maps DESTINATION TPC/${MODULE})
+elseif(FATAL_IF_MISSING)
+    message(FATAL_ERROR "maps is missing")
+endif()
 
 install(FILES ${HDRS} DESTINATION include)

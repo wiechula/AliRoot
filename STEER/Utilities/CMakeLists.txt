@@ -17,17 +17,25 @@
 set(MODULE Utilities)
 add_definitions(-D_MODULE_="${MODULE}")
 # Aditional include folders in alphabetical order except ROOT
-include_directories(${ROOT_INCLUDE_DIR} 
-                   )
+include_directories(${ROOT_INCLUDE_DIR})
 
-# Create an object to be reused in case of static libraries 
+# Create an object to be reused in case of static libraries
 # Otherwise the sources will be compiled twice
 # Add a library to the project using the object
 add_executable(alihadd alihadd.cxx)
 add_executable(alisync alisync.cxx)
+
 target_link_libraries(alihadd RIO Hist Core)
 target_link_libraries(alisync RIO Hist Core Net Tree)
- 
+
 # Installation
 install(TARGETS alihadd RUNTIME DESTINATION bin)
 install(TARGETS alisync RUNTIME DESTINATION bin)
+
+# Tests
+add_executable(test_helpers test_helpers.cxx)
+add_executable(test_alisync01 test_alisync01.cxx)
+
+enable_testing()
+add_test(test_helpers ./test_helpers)
+add_test(test_alisync01 ./test_alisync01)

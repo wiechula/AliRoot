@@ -1175,9 +1175,16 @@ Bool_t AliSimulation::RunSimulation(Int_t nEvents)
       else { // generate according to real lumi
 	TGraph* lumi = AliLumiTools::GetLumiFromCTP();
 	if (!lumi) AliFatal("Failed to get lumi graph");
+	// redefine time stamps according to real luminosity start - end
+	int nbl = lumi->GetN();
+	if (nbl) {
+	  fTimeStart = lumi->GetX()[0];
+	  fTimeEnd   = lumi->GetX()[nbl-1];
+	  deltaT = fTimeEnd - fTimeStart;
+	}
 	int nb = 1+deltaT/60.;
 	TH1F hlumi("hlumi","",nb,fTimeStart,fTimeEnd);
-	for (int ib=1;ib<=nb;ib++) hlumi.SetBinContent(ib,lumi->Eval(hlumi.GetBinCenter(ib)));
+	for (int ib=1;ib<=nb;ib++) hlumi.SetBinContent(ib,TMath::Max(0.,lumi->Eval(hlumi.GetBinCenter(ib))));
 	delete lumi;
 	for (int i=0;i<fNEvents;i++) fOrderedTimeStamps[i] = time_t(hlumi.GetRandom());
 	AliInfoF("Ordered %d TimeStamps will be generated between %ld:%ld according to CTP Lumi profile",
@@ -1350,6 +1357,15 @@ Bool_t AliSimulation::RunSimulation(Int_t nEvents)
 Bool_t AliSimulation::RunGeneratorOnly()
 {
   // Execute Config.C
+  InitCDB();
+  InitRunNumber();  
+  if (fUseMagFieldFromGRP) {
+    AliGRPManager grpM;
+    grpM.ReadGRPEntry();
+    grpM.SetMagField();
+    AliInfo("Field is locked now. It cannot be changed in Config.C");
+  }
+
   TInterpreter::EErrorCode interpreterError=TInterpreter::kNoError;
   gROOT->LoadMacro(fConfigFileName.Data());
   Long_t interpreterResult=gInterpreter->ProcessLine(gAlice->GetConfigFunction(), &interpreterError);
@@ -2747,32 +2763,12 @@ void AliSimulation::StoreUsedCDBMaps() const
     return;
   }
   //
-  const TMap *cdbMap = AliCDBManager::Instance()->GetStorageMap();	 
-  const TList *cdbList = AliCDBManager::Instance()->GetRetrievedIds();	 
-  //
-  TMap *cdbMapCopy = new TMap(cdbMap->GetEntries());	 
-  cdbMapCopy->SetOwner(1);	 
-  //  cdbMapCopy->SetName("cdbMap");	 
-  TIter iter(cdbMap->GetTable());	 
-  //	 
-  TPair* pair = 0;	 
-  while((pair = dynamic_cast<TPair*> (iter.Next()))){	 
-    TObjString* keyStr = dynamic_cast<TObjString*> (pair->Key());	 
-    TObjString* valStr = dynamic_cast<TObjString*> (pair->Value());
-    if (keyStr && valStr)
-      cdbMapCopy->Add(new TObjString(keyStr->GetName()), new TObjString(valStr->GetName()));	 
-  }	 
-  //	 
-  TList *cdbListCopy = new TList();	 
-  cdbListCopy->SetOwner(1);	 
-  //  cdbListCopy->SetName("cdbList");	 
-  //
-  TIter iter2(cdbList);	 
-  
-  AliCDBId* id=0;
-  while((id = dynamic_cast<AliCDBId*> (iter2.Next()))){	 
-    cdbListCopy->Add(new TObjString(id->ToString().Data()));	 
-  }	 
+  TMap *cdbMapCopy = new TMap();
+  cdbMapCopy->SetName("cdbMap");
+  TList *cdbListCopy = new TList();
+  cdbListCopy->SetName("cdbList");
+  // create map/list accounting for eventual snapshot
+  AliCDBManager::Instance()->CreateMapListCopy(*cdbMapCopy,*cdbListCopy);
   //
   AliRunLoader::Instance()->CdGAFile();
   gDirectory->WriteObject(cdbMapCopy,"cdbMap","kSingleKey");

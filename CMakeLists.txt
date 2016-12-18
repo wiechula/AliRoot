@@ -40,6 +40,7 @@ if(POLICY ${p})
 endforeach()
 
 project(AliRoot CXX C)
+enable_testing()
 
 message(STATUS "CMake platform: ${CMAKE_SYSTEM}")
 message(STATUS "Build folder: ${AliRoot_BINARY_DIR}")
@@ -100,6 +101,11 @@ include(CheckCompiler)
 
 # Utility to generate PARfiles
 include(cmake/GenParFile.cmake)
+
+set(ALILIBSTESTED "" CACHE INTERNAL "ALILIBSTESTED" FORCE)
+include(AddLibraryTested)
+
+include(cmake/modules/MacroOptionalAddSubdirectory.cmake)
 
 # Shared library suffix
 if (NOT CMAKE_SYSTEM_NAME STREQUAL Windows)
@@ -311,6 +317,10 @@ else()
 
   # General flags -> Should be moved into a configuration file
   set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+  # Avoid problems with -fPIE (set automatically by the previous line).
+  set(CMAKE_CXX_COMPILE_OPTIONS_PIE "")
+  set(CMAKE_C_COMPILE_OPTIONS_PIE "")
+  set(CMAKE_Fortran_COMPILE_OPTIONS_PIE "")
   set(CMAKE_NO_SYSTEM_FROM_IMPORTED TRUE)
 
   # Use CMake cache as pseudo-"global" scope for those variables (list of PARfiles, list of DA RPMs)
@@ -322,11 +332,39 @@ else()
   add_subdirectory(RAW)
   add_subdirectory(ANALYSIS)
 
-  # Include Vc own cmake
-  include(Vc/Vc.cmake)
-  if(NOT ROOT_HASVC)
-    add_subdirectory(Vc)
-  endif()
+  # Include Vc ...
+  # try to find an external Vc
+  find_package(Vc 0.7)
+  if(Vc_FOUND) # an external Vc was found
+    if("${Vc_VERSION}" VERSION_GREATER "1.0")
+      message(STATUS "External Vc version ${Vc_VERSION} (>= 1.0) found")
+      # Redefinition of a macro originally under the Vc/ directory which we don't include
+      macro(ALICE_UseVc)
+        include_directories(SYSTEM "${Vc_INCLUDE_DIR}")
+        add_definitions(${Vc_DEFINITIONS})
+        string(REPLACE ";" " " TMP_CMAKE_CXX_VC_FLAGS "${Vc_COMPILE_FLAGS} ${Vc_ARCHITECTURE_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${TMPCMAKE_CXX_VC_FLAGS} ${CMAKE_CXX_FLAGS}")
+      endmacro()
+      link_directories(${Vc_LIB_DIR})
+   else()
+     message(WARNING "External Vc >= 1.0 not found: falling back on Vc >= 0.7")
+     message(STATUS "External Vc version ${Vc_VERSION} (>= 0.7) found")
+     # put here the macros suitable for Vc version 0.7
+     macro(ALICE_UseVc)
+      include_directories(SYSTEM "${Vc_INCLUDE_DIR}")
+      add_definitions(${Vc_DEFINITIONS})
+     endmacro()
+      link_directories(${Vc_LIB_DIR})
+   endif() #Version > 1.0
+  else()
+    # finally we fallback to the deprecated internal Vc
+    message(WARNING "You are using AliRoot's builtin Vc: this is deprecated and it will be dropped soon")
+    # Include Vc own cmake
+    include(Vc/Vc.cmake)
+    if(NOT ROOT_HASVC)
+      add_subdirectory(Vc)
+    endif()
+  endif(Vc_FOUND)
 
   # AliRoot common macros
   add_subdirectory(macros)
@@ -367,7 +405,7 @@ else()
   foreach(mod ${ALIROOT_MODULES})
     list(FIND EXCLUDE_MODULES "${mod}" excl)
     if (excl EQUAL -1)
-      add_subdirectory(${mod})
+      macro_optional_add_subdirectory(${mod})
     else()
       list(REMOVE_ITEM ALIROOT_MODULES ${mod})
       message(WARNING "Excluding module ${mod} as per explicit configuration")
@@ -429,6 +467,14 @@ else()
     cmake/GetGitRevisionDescription.cmake
     cmake/GetGitRevisionDescription.cmake.in
     DESTINATION cmake)
+
+  foreach(TEST_LIB ${ALILIBSTESTED})
+    add_test(load_library_${TEST_LIB}
+      env
+      LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}
+      DYLD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib:$ENV{DYLD_LIBRARY_PATH}
+      root -n -l -b -q "${CMAKE_INSTALL_PREFIX}/test/load_library/LoadLib.C(\"lib${TEST_LIB}\")")
+  endforeach()
 
   # Install test directory
   install(DIRECTORY test/ DESTINATION test USE_SOURCE_PERMISSIONS)

@@ -68,6 +68,8 @@ public:
   static const Double_t kGlueEdge;
   static const Double_t kShiftDDGNDline;
   static const Double_t kShiftline;
+  static const Double_t kRohacell;
+  static const Double_t kShift;
 
 
   /// \brief Retuns MFT Geometry singleton object

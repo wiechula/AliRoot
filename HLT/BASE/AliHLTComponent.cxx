@@ -1,7 +1,7 @@
 // $Id$
 
 //**************************************************************************
-//* This file is property of and copyright by the ALICE HLT Project        * 
+//* This file is property of and copyright by the ALICE HLT Project        *
 //* ALICE Experiment at CERN, All rights reserved.                         *
 //*                                                                        *
 //* Primary Authors: Matthias Richter <Matthias.Richter@ift.uib.no>        *
@@ -19,7 +19,7 @@
 
 //  @file   AliHLTComponent.cxx
 //  @author Matthias Richter, Timm Steinbeck
-//  @date   
+//  @date
 //  @brief  Base class implementation for HLT components. */
 //  @note   The class is both used in Online (PubSub) and Offline (AliRoot)
 //          context
@@ -32,6 +32,7 @@
 #include "AliHLTCTPData.h"
 #include "AliHLTErrorGuard.h"
 #include "AliHLTCDHWrapper.h"
+#include "AliHLTDefinitions.h"
 #include "TString.h"
 #include "TMath.h"
 #include "TObjArray.h"
@@ -69,7 +70,7 @@ ClassImp(AliHLTComponent);
 
 /** stopwatch macro using the stopwatch guard */
 #define ALIHLTCOMPONENT_STOPWATCH(type) AliHLTStopwatchGuard swguard(fpStopwatches!=NULL?reinterpret_cast<TStopwatch*>(fpStopwatches->At((int)type)):NULL)
-//#define ALIHLTCOMPONENT_STOPWATCH(type) 
+//#define ALIHLTCOMPONENT_STOPWATCH(type)
 
 /** stopwatch macro for operations of the base class */
 #define ALIHLTCOMPONENT_BASE_STOPWATCH() ALIHLTCOMPONENT_STOPWATCH(kSWBase)
@@ -164,7 +165,7 @@ AliHLTComponent::~AliHLTComponent()
 
 AliHLTComponentHandler* AliHLTComponent::fgpComponentHandler=NULL;
 
-int AliHLTComponent::SetGlobalComponentHandler(AliHLTComponentHandler* pCH, int bOverwrite) 
+int AliHLTComponent::SetGlobalComponentHandler(AliHLTComponentHandler* pCH, int bOverwrite)
 {
   // see header file for function documentation
   int iResult=0;
@@ -175,7 +176,7 @@ int AliHLTComponent::SetGlobalComponentHandler(AliHLTComponentHandler* pCH, int 
   return iResult;
 }
 
-int AliHLTComponent::UnsetGlobalComponentHandler() 
+int AliHLTComponent::UnsetGlobalComponentHandler()
 {
   // see header file for function documentation
   return SetGlobalComponentHandler(NULL,1);
@@ -217,7 +218,7 @@ int AliHLTComponent::Init(const AliHLTAnalysisEnvironment* comenv, void* environ
       for (int i=0; i<argc && iResult>=0; i++) {
 	argument=argv[i];
   if (argument.IsNull()) continue;
- 
+
   //reconstruct the argument string from argument array
   if (fComponentArgs.size()>0) fComponentArgs+=" ";
   //if an argument contains spaces it means it was single quoted
@@ -466,7 +467,7 @@ int AliHLTComponent::SetComponentDescription(const char* desc)
     }
     delete pTokens;
   }
-  
+
   return iResult;
 }
 
@@ -499,7 +500,8 @@ int AliHLTComponent::ConfigureFromArgumentString(int argc, const char** argv)
     // a sequence of blanks. All characters until the first occurence
     // of a blank are removed. If the remainder contains only whitespaces
     // the argument is a single argument, just having whitespaces at the end.
-    argument.Remove(0, argument.First(' '));
+    Ssiz_t firstSpacePos = argument.First(' ');
+    if (firstSpacePos>=0) argument.Remove(0,firstSpacePos);
     if (argument.IsWhitespace()) {
       stringarray.push_back(argv[i]);
       continue;
@@ -746,16 +748,6 @@ int AliHLTComponent::CheckOCDBEntries(const TMap* const externList)
   return iResult;
 }
 
-void AliHLTComponent::DataType2Topic( const AliHLTComponentDataType type, 
-                                      char *output ) 
-{
-  // this produces a fixed length string, first 8 chars are the data type id, 4 last are origin
-  // so for 
-  //memset( output, 0, kAliHLTComponentDataTypefIDsize+kAliHLTComponentDataTypefOriginSize );
-  memcpy( output, type.fID, kAliHLTComponentDataTypefIDsize );
-  memcpy( output+kAliHLTComponentDataTypefIDsize, type.fOrigin, kAliHLTComponentDataTypefOriginSize );
-}
-
 void AliHLTComponent::DataType2Text( const AliHLTComponentDataType& type, char output[kAliHLTComponentDataTypefIDsize+kAliHLTComponentDataTypefOriginSize+2] ) const
 {
   // see header file for function documentation
@@ -847,13 +839,13 @@ string AliHLTComponent::DataType2Text( const AliHLTComponentDataType& type, int 
 
   // origin typeid
   // aligned to 8 and 4 chars respectively, separated by colon e.g.
-  // TPC :DDL_RAW 
+  // TPC :DDL_RAW
   if (type==kAliHLTVoidDataType) {
     out="VOID:VOID";
   } else {
     // some gymnastics in order to avoid a '0' which is part of either or both
     // ID and origin terminating the whole string. Unfortunately, string doesn't
-    // stop appending at the '0' if the number of elements to append was 
+    // stop appending at the '0' if the number of elements to append was
     // explicitely specified
     string tmp("");
     tmp.append(type.fOrigin, kAliHLTComponentDataTypefOriginSize);
@@ -867,7 +859,7 @@ string AliHLTComponent::DataType2Text( const AliHLTComponentDataType& type, int 
 }
 
 
-void* AliHLTComponent::AllocMemory( unsigned long size ) 
+void* AliHLTComponent::AllocMemory( unsigned long size )
 {
   // see header file for function documentation
   if (fEnvironment.fAllocMemoryFunc)
@@ -877,37 +869,36 @@ void* AliHLTComponent::AllocMemory( unsigned long size )
 }
 
 int AliHLTComponent::MakeOutputDataBlockList( const AliHLTComponentBlockDataList& blocks, AliHLTUInt32_t* blockCount,
-					      AliHLTComponentBlockData** outputBlocks ) 
+					      AliHLTComponentBlockData** outputBlocks )
 {
   // see header file for function documentation
     if ( blockCount==NULL || outputBlocks==NULL )
-	return -EFAULT;
+        return -EFAULT;
     AliHLTUInt32_t count = blocks.size();
     if ( !count )
-	{
-	*blockCount = 0;
-	*outputBlocks = NULL;
-	return 0;
-	}
+    {
+        *blockCount = 0;
+        *outputBlocks = NULL;
+        return 0;
+    }
     *outputBlocks = reinterpret_cast<AliHLTComponentBlockData*>( AllocMemory( sizeof(AliHLTComponentBlockData)*count ) );
     if ( !*outputBlocks )
-	return -ENOMEM;
+        return -ENOMEM;
     for ( unsigned long i = 0; i < count; i++ ) {
-	(*outputBlocks)[i] = blocks[i];
-	if (MatchExactly(blocks[i].fDataType, kAliHLTAnyDataType)) {
-	  (*outputBlocks)[i].fDataType=GetOutputDataType();
-	  /* data type was set to the output data type by the PubSub AliRoot
-	     Wrapper component, if data type of the block was ********:****.
-	     Now handled by the component base class in order to have same
-	     behavior when running embedded in AliRoot
-	  memset((*outputBlocks)[i].fDataType.fID, '*', kAliHLTComponentDataTypefIDsize);
-	  memset((*outputBlocks)[i].fDataType.fOrigin, '*', kAliHLTComponentDataTypefOriginSize);
-	  */
-	}
+        (*outputBlocks)[i] = blocks[i];
+        if (MatchExactly(blocks[i].fDataType, kAliHLTAnyDataType)) {
+            (*outputBlocks)[i].fDataType=GetOutputDataType();
+            /* data type was set to the output data type by the PubSub AliRoot
+               Wrapper component, if data type of the block was ********:****.
+               Now handled by the component base class in order to have same
+               behavior when running embedded in AliRoot
+            memset((*outputBlocks)[i].fDataType.fID, '*', kAliHLTComponentDataTypefIDsize);
+            memset((*outputBlocks)[i].fDataType.fOrigin, '*', kAliHLTComponentDataTypefOriginSize);
+            */
+        }
     }
     *blockCount = count;
     return 0;
-
 }
 
 int AliHLTComponent::GetEventDoneData( unsigned long size, AliHLTComponentEventDoneData** edd ) const
@@ -967,7 +958,7 @@ void AliHLTComponent::ReleaseEventDoneData()
 }
 
 
-int AliHLTComponent::FindMatchingDataTypes(AliHLTComponent* pConsumer, AliHLTComponentDataTypeList* tgtList) 
+int AliHLTComponent::FindMatchingDataTypes(AliHLTComponent* pConsumer, AliHLTComponentDataTypeList* tgtList)
 {
   // see header file for function documentation
   int iResult=0;
@@ -992,7 +983,7 @@ int AliHLTComponent::FindMatchingDataTypes(AliHLTComponent* pConsumer, AliHLTCom
 	iResult++;
 	continue;
       }
-      
+
       AliHLTComponentDataTypeList::iterator itype=itypes.begin();
       for ( ; itype!=itypes.end() && (*itype)!=(*otype) ; itype++) {/* empty body */};
       //if (itype!=itypes.end()) PrintDataTypeContent(*itype, "consumer \'%s\'");
@@ -1013,8 +1004,8 @@ void AliHLTComponent::PrintDataTypeContent(AliHLTComponentDataType& dt, const ch
   const char* fmt="\'%s\'";
   if (format) fmt=format;
   AliHLTLogging::Message(NULL, kHLTLogNone, NULL , NULL, Form(fmt, (DataType2Text(dt)).c_str()));
-  AliHLTLogging::Message(NULL, kHLTLogNone, NULL , NULL, 
-			 Form("%x %x %x %x %x %x %x %x : %x %x %x %x", 
+  AliHLTLogging::Message(NULL, kHLTLogNone, NULL , NULL,
+			 Form("%x %x %x %x %x %x %x %x : %x %x %x %x",
 			      dt.fID[0],
 			      dt.fID[1],
 			      dt.fID[2],
@@ -1055,14 +1046,14 @@ void AliHLTComponent::FillDataType( AliHLTComponentDataType& dataType )
   dataType=kAliHLTAnyDataType;
 }
 
-void AliHLTComponent::CopyDataType(AliHLTComponentDataType& tgtdt, const AliHLTComponentDataType& srcdt) 
+void AliHLTComponent::CopyDataType(AliHLTComponentDataType& tgtdt, const AliHLTComponentDataType& srcdt)
 {
   // see header file for function documentation
   memcpy(&tgtdt.fID[0], &srcdt.fID[0], kAliHLTComponentDataTypefIDsize);
   memcpy(&tgtdt.fOrigin[0], &srcdt.fOrigin[0], kAliHLTComponentDataTypefOriginSize);
 }
 
-void AliHLTComponent::SetDataType(AliHLTComponentDataType& tgtdt, const char* id, const char* origin) 
+void AliHLTComponent::SetDataType(AliHLTComponentDataType& tgtdt, const char* id, const char* origin)
 {
   // see header file for function documentation
   tgtdt.fStructSize=sizeof(AliHLTComponentDataType);
@@ -1095,7 +1086,7 @@ void AliHLTComponent::FillEventData(AliHLTComponentEventData& evtData)
   evtData.fEventCreation_s = kMaxUInt;
 }
 
-void AliHLTComponent::PrintComponentDataTypeInfo(const AliHLTComponentDataType& dt) 
+void AliHLTComponent::PrintComponentDataTypeInfo(const AliHLTComponentDataType& dt)
 {
   // see header file for function documentation
   TString msg;
@@ -1165,7 +1156,7 @@ const TObject* AliHLTComponent::GetFirstInputObject(const AliHLTComponentDataTyp
   return pObj;
 }
 
-const TObject* AliHLTComponent::GetFirstInputObject(const char* dtID, 
+const TObject* AliHLTComponent::GetFirstInputObject(const char* dtID,
 						    const char* dtOrigin,
 						    const char* classname,
 						    int         bForce)
@@ -1242,7 +1233,7 @@ TObject* AliHLTComponent::CreateInputObject(int idx, int bForce)
   } else {
     HLTError("no input blocks available");
   }
-  
+
   return pObj;
 }
 
@@ -1395,7 +1386,7 @@ int AliHLTComponent::Forward(const AliHLTComponentBlockData* pBlock)
     if ((idx=FindInputBlock(pBlock))>=0) {
     } else {
       HLTError("unknown Block %p", pBlock);
-      iResult=-ENOENT;      
+      iResult=-ENOENT;
     }
   }
   if (idx>=0) {
@@ -1421,7 +1412,7 @@ const AliHLTComponentBlockData* AliHLTComponent::GetFirstInputBlock(const AliHLT
   return pBlock;
 }
 
-const AliHLTComponentBlockData* AliHLTComponent::GetFirstInputBlock(const char* dtID, 
+const AliHLTComponentBlockData* AliHLTComponent::GetFirstInputBlock(const char* dtID,
 								    const char* dtOrigin)
 {
   // see header file for function documentation
@@ -1536,7 +1527,7 @@ int AliHLTComponent::SerializeObject(TObject* pObject, void* &buffer_tmp, size_t
     return 0;
 }
 
-int AliHLTComponent::PushBack(const TObject* pObject, const AliHLTComponentDataType& dt, AliHLTUInt32_t spec, 
+int AliHLTComponent::PushBack(const TObject* pObject, const AliHLTComponentDataType& dt, AliHLTUInt32_t spec,
 			      void* pHeader, int headerSize)
 {
   // see header file for function documentation
@@ -1549,7 +1540,7 @@ int AliHLTComponent::PushBack(const TObject* pObject, const AliHLTComponentDataT
     msg.EnableSchemaEvolution(fUseSchema);
     msg.SetCompressionLevel(fCompressionLevel);
     msg.WriteObject(pObject);
-    
+
     //chache the streamer infos during the first few times
     //no need to do this every time as we mostly push the same objects
     if (fUseSchema) {
@@ -1622,12 +1613,21 @@ int AliHLTComponent::PushBack(const void* pBuffer, int iSize, const char* dtID, 
   return PushBack(pBuffer, iSize, dt, spec, pHeader, headerSize);
 }
 
-int AliHLTComponent::PushBack(const std::string& pString, const AliHLTComponentDataType& dt, 
+int AliHLTComponent::PushBack(const std::string& pString, const AliHLTComponentDataType& dt,
 	                      AliHLTUInt32_t spec, void* pHeader, int headerSize)
 {
   int rc = 0;
   rc = InsertOutputBlock(pString.c_str(), pString.size(), dt, spec, pHeader, headerSize);
   return rc;
+}
+
+void AliHLTComponent::AlignOutputBufferFilled()
+{
+	if (fOutputBufferFilled % kAliHLTBlockAlignment)
+	{
+		fOutputBufferFilled += kAliHLTBlockAlignment - fOutputBufferFilled % kAliHLTBlockAlignment;
+		if (fOutputBufferFilled > fOutputBufferSize) fOutputBufferFilled = fOutputBufferSize;
+	}
 }
 
 int AliHLTComponent::InsertOutputBlock(const void* pBuffer, int iBufferSize, const AliHLTComponentDataType& dt, AliHLTUInt32_t spec,
@@ -1653,8 +1653,8 @@ int AliHLTComponent::InsertOutputBlock(const void* pBuffer, int iBufferSize, con
       // in that case it has already been copied
       if (pBuffer!=NULL && pBuffer!=pTgt) {
 	memcpy(pTgt, pBuffer, iBufferSize);
-	
-	//AliHLTUInt32_t firstWord=*((AliHLTUInt32_t*)pBuffer);	
+
+	//AliHLTUInt32_t firstWord=*((AliHLTUInt32_t*)pBuffer);
 	//HLTDebug("copy %d bytes from %p to output buffer %p, first word %#x", iBufferSize, pBuffer, pTgt, firstWord);
       }
       //HLTDebug("buffer inserted to output: size %d data type %s spec %#x", iBlkSize, DataType2Text(dt).c_str(), spec);
@@ -1676,6 +1676,7 @@ int AliHLTComponent::InsertOutputBlock(const void* pBuffer, int iBufferSize, con
     bd.fSpecification = spec;
     fOutputBlocks.push_back( bd );
     fOutputBufferFilled+=bd.fSize;
+	AlignOutputBufferFilled();
   }
 
   return iResult;
@@ -1688,7 +1689,7 @@ int AliHLTComponent::EstimateObjectSize(const TObject* pObject) const
 
   AliHLTMessage msg(kMESS_OBJECT);
   msg.WriteObject(pObject);
-  return msg.Length();  
+  return msg.Length();
 }
 
 AliHLTMemoryFile* AliHLTComponent::CreateMemoryFile(int capacity, const char* dtID,
@@ -1727,6 +1728,7 @@ AliHLTMemoryFile* AliHLTComponent::CreateMemoryFile(int capacity,
 	bd.fSpecification = spec;
 	fOutputBufferFilled+=bd.fSize;
 	fOutputBlocks.push_back( bd );
+	AlignOutputBufferFilled();
       } else {
 	HLTError("can not allocate/grow object array");
 	pFile->CloseMemoryFile(0);
@@ -1805,7 +1807,7 @@ int AliHLTComponent::CloseMemoryFile(AliHLTMemoryFile* pFile)
     while (element!=fMemFiles.end() && iResult>=0) {
       if (*element && *element==pFile) {
 	iResult=pFile->CloseMemoryFile();
-	
+
 	// sync memory files and descriptors
 	if (iResult>=0) {
 	  fOutputBlocks[i].fSize=(*element)->GetSize()+(*element)->GetHeaderSize();
@@ -1830,7 +1832,7 @@ int AliHLTComponent::CreateEventDoneData(AliHLTComponentEventDoneData edd)
   int iResult=0;
 
   AliHLTComponentEventDoneData* newEDD = NULL;
-  
+
   unsigned long newSize=edd.fDataSize;
   if (fEventDoneData)
     newSize += fEventDoneData->fDataSize;
@@ -1935,11 +1937,11 @@ namespace
 } // end of namespace
 
 int AliHLTComponent::ProcessEvent( const AliHLTComponentEventData& evtData,
-				   const AliHLTComponentBlockData* blocks, 
+				   const AliHLTComponentBlockData* blocks,
 				   AliHLTComponentTriggerData& trigData,
-				   AliHLTUInt8_t* outputPtr, 
+				   AliHLTUInt8_t* outputPtr,
 				   AliHLTUInt32_t& size,
-				   AliHLTUInt32_t& outputBlockCnt, 
+				   AliHLTUInt32_t& outputBlockCnt,
 				   AliHLTComponentBlockData*& outputBlocks,
 				   AliHLTComponentEventDoneData*& edd )
 {
@@ -2081,7 +2083,7 @@ int AliHLTComponent::ProcessEvent( const AliHLTComponentEventData& evtData,
 	if (fpInputBlocks[i].fSize>=sizeof(AliHLTComponentTableEntry)) {
 	  const AliHLTComponentTableEntry* entry=reinterpret_cast<AliHLTComponentTableEntry*>(fpInputBlocks[i].fPtr);
 	  if (entry->fStructSize==sizeof(AliHLTComponentTableEntry)) {
-	    if (processingLevel<0 || processingLevel<=(int)entry->fLevel) 
+	    if (processingLevel<0 || processingLevel<=(int)entry->fLevel)
 	      processingLevel=entry->fLevel+1;
 	  }
 	}
@@ -2090,7 +2092,7 @@ int AliHLTComponent::ProcessEvent( const AliHLTComponentEventData& evtData,
       } else {
 	// the processing function is called if there is at least one
 	// non-steering data block. Steering blocks are not filtered out
-	// for sake of performance 
+	// for sake of performance
 	bSkipDataProcessing&=~skipModeDefault;
 	if (compStats.size()>0) {
 	  compStats[0].fInputBlockCount++;
@@ -2214,7 +2216,7 @@ int AliHLTComponent::ProcessEvent( const AliHLTComponentEventData& evtData,
     // increment CTP trigger counters if available
     if (IsDataEvent()) fpCTPData->Increment(trigData);
   }
-  
+
   // Check if the event processing should be skipped because of the
   // down scaling from the event modulo argument. Using a prime number
   // as pre divisor to pseudo-randomise the event number to get a more
@@ -2225,77 +2227,108 @@ int AliHLTComponent::ProcessEvent( const AliHLTComponentEventData& evtData,
   }
 
   AliHLTComponentBlockDataList blockData;
+  AliHLTUInt8_t* orgPtr = outputPtr;
+  AliHLTUInt32_t orgSize = size;
+  AliHLTUInt8_t* tmpOutputPtr = outputPtr;
+  AliHLTUInt32_t tmpOutputSize = size;
+  int tmpOffset = (int) ((size_t) tmpOutputPtr % (size_t) kAliHLTBlockAlignment);;
+  if (tmpOffset)
+  {
+	  tmpOffset = kAliHLTBlockAlignment - tmpOffset;
+	  if (tmpOffset > size)
+	  {
+		  tmpOutputSize = 0;
+		  tmpOffset = 0;
+	  }
+	  else
+	  {
+		  tmpOutputPtr += tmpOffset;
+		  tmpOutputSize -= tmpOffset;
+	  }
+  }
+  fpOutputBuffer=tmpOutputPtr;
+  fOutputBufferSize=tmpOutputSize;
   if (iResult>=0 && !bSkipDataProcessing)
   { // dont delete, sets the scope for the stopwatch guard
     // do not use ALIHLTCOMPONENT_DA_STOPWATCH(); macro
     // in order to avoid 'shadowed variable' warning
     AliHLTStopwatchGuard swguard2(fpStopwatches!=NULL?reinterpret_cast<TStopwatch*>(fpStopwatches->At((int)kSWDA)):NULL);
     AliHLTMisc::AliOnlineGuard onlineGuard;
-    iResult=DoProcessing(evtData, blocks, trigData, outputPtr, size, blockData, edd);
+    iResult=DoProcessing(evtData, blocks, trigData, tmpOutputPtr, tmpOutputSize, blockData, edd);
   } // end of the scope of the stopwatch guard
   if (iResult>=0 && !bSkipDataProcessing) {
     if (fOutputBlocks.size()>0) {
       // High Level interface
 
-      //HLTDebug("got %d block(s) via high level interface", fOutputBlocks.size());      
+      //HLTDebug("got %d block(s) via high level interface", fOutputBlocks.size());
       // sync memory files and descriptors
       AliHLTMemoryFilePList::iterator element=fMemFiles.begin();
       int i=0;
       while (element!=fMemFiles.end() && iResult>=0) {
-	if (*element) {
-	  if ((*element)->IsClosed()==0) {
-	    HLTWarning("memory file has not been closed, force flush");
-	    iResult=CloseMemoryFile(*element);
-	  }
-	}
-	element++; i++;
+        if (*element) {
+          if ((*element)->IsClosed()==0) {
+            HLTWarning("memory file has not been closed, force flush");
+            iResult=CloseMemoryFile(*element);
+          }
+        }
+        element++; i++;
       }
 
       if (iResult>=0) {
-	// create the descriptor list
-	if (blockData.size()>0) {
-	  HLTError("low level and high interface must not be mixed; use PushBack methods to insert data blocks");
-	  iResult=-EFAULT;
-	} else {
-	  if (compStats.size()>0 && IsDataEvent()) {
-	    int offset=AddComponentStatistics(fOutputBlocks, fpOutputBuffer, fOutputBufferSize, fOutputBufferFilled, compStats);
-	    if (offset>0) fOutputBufferFilled+=offset;
-	  }
-	  if (bAddComponentTableEntry) {
-	    int offset=AddComponentTableEntry(fOutputBlocks, fpOutputBuffer, fOutputBufferSize, fOutputBufferFilled, parentComponentTables, processingLevel);
-	    if (offset>0) size+=offset;
-	  }
-	  if (forwardedBlocks.size()>0) {
-	    fOutputBlocks.insert(fOutputBlocks.end(), forwardedBlocks.begin(), forwardedBlocks.end());
-	  }
-	  iResult=MakeOutputDataBlockList(fOutputBlocks, &outputBlockCnt, &outputBlocks);
-	  size=fOutputBufferFilled;
-	}
+        // create the descriptor list
+        if (blockData.size()>0) {
+          HLTError("low level and high interface must not be mixed; use PushBack methods to insert data blocks");
+          iResult=-EFAULT;
+        } else {
+          if (compStats.size()>0 && IsDataEvent()) {
+            int offset=AddComponentStatistics(fOutputBlocks, fpOutputBuffer, fOutputBufferSize, fOutputBufferFilled, compStats);
+            if (offset>0) fOutputBufferFilled+=offset;
+			AlignOutputBufferFilled();
+          }
+          if (bAddComponentTableEntry) {
+            int offset=AddComponentTableEntry(fOutputBlocks, fpOutputBuffer, fOutputBufferSize, fOutputBufferFilled, parentComponentTables, processingLevel);
+            if (offset>0) size+=offset;
+			AlignOutputBufferFilled();
+          }
+          if (forwardedBlocks.size()>0) {
+            fOutputBlocks.insert(fOutputBlocks.end(), forwardedBlocks.begin(), forwardedBlocks.end());
+          }
+          iResult=MakeOutputDataBlockList(fOutputBlocks, &outputBlockCnt, &outputBlocks);
+          tmpOutputSize=fOutputBufferFilled;
+        }
       }
     } else {
       // Low Level interface
       if (blockData.empty() && size!=0) {
-	// set the size to zero because there is no announced data
-	//HLTWarning("no output blocks added by component but output buffer filled %d of %d", size, fOutputBufferSize);
-	size=0;
+        // set the size to zero because there is no announced data
+        //HLTWarning("no output blocks added by component but output buffer filled %d of %d", size, fOutputBufferSize);
+        tmpOutputSize=0;
       }
 
       if (compStats.size()>0) {
-	int offset=AddComponentStatistics(blockData, fpOutputBuffer, fOutputBufferSize, size, compStats);
-	if (offset>0) size+=offset;
+        int offset=AddComponentStatistics(blockData, fpOutputBuffer, fOutputBufferSize, size, compStats);
+        if (offset>0) size+=offset;
       }
       if (bAddComponentTableEntry) {
-	int offset=AddComponentTableEntry(blockData, fpOutputBuffer, fOutputBufferSize, size, parentComponentTables, processingLevel);
-	if (offset>0) size+=offset;
+        int offset=AddComponentTableEntry(blockData, fpOutputBuffer, fOutputBufferSize, size, parentComponentTables, processingLevel);
+        if (offset>0) size+=offset;
       }
       if (forwardedBlocks.size()>0) {
-	blockData.insert(blockData.end(), forwardedBlocks.begin(), forwardedBlocks.end());
+        blockData.insert(blockData.end(), forwardedBlocks.begin(), forwardedBlocks.end());
       }
       iResult=MakeOutputDataBlockList(blockData, &outputBlockCnt, &outputBlocks);
     }
     if (iResult<0) {
       HLTFatal("component %s (%p): can not convert output block descriptor list", GetComponentID(), this);
     }
+	for (int i = 0;i < outputBlockCnt;i++)
+	{
+		if (outputBlocks[i].fPtr == NULL || (outputBlocks[i].fPtr >= orgPtr && outputBlocks[i].fPtr < orgPtr + orgSize))
+		{
+			outputBlocks[i].fOffset += tmpOffset;
+			if (outputBlocks[i].fPtr) outputBlocks[i].fPtr = (void*) ((char*) outputBlocks[i].fPtr - tmpOffset);
+		}
+	}
   }
   if (iResult<0 || bSkipDataProcessing) {
     outputBlockCnt=0;
@@ -2307,8 +2340,18 @@ int AliHLTComponent::ProcessEvent( const AliHLTComponentEventData& evtData,
   }
   if (outputBlockCnt==0) {
     // no output blocks, set size to 0
-    size=0;
+    tmpOutputSize=0;
   }
+
+  int tmpOffset2 = (int) (tmpOutputSize % (size_t) kAliHLTBlockAlignment);
+  tmpOutputSize += tmpOffset;
+  if (tmpOffset2)
+  {
+	  tmpOffset2 = kAliHLTBlockAlignment - tmpOffset2;
+	  if (tmpOffset2 > size - tmpOutputSize) tmpOutputSize = size;
+	  else tmpOutputSize += tmpOffset2;
+  }
+  size = tmpOutputSize;
 
   // reset the internal EventData struct
   FillEventData(fCurrentEventData);
@@ -2347,7 +2390,7 @@ int AliHLTComponent::ProcessEvent( const AliHLTComponentEventData& evtData,
   return iResult;
 }
 
-int  AliHLTComponent::AddComponentStatistics(AliHLTComponentBlockDataList& blocks, 
+int  AliHLTComponent::AddComponentStatistics(AliHLTComponentBlockDataList& blocks,
 					     AliHLTUInt8_t* buffer,
 					     AliHLTUInt32_t bufferSize,
 					     AliHLTUInt32_t offset,
@@ -2387,7 +2430,7 @@ int  AliHLTComponent::AddComponentStatistics(AliHLTComponentBlockDataList& block
 	  element++;
 	}
       }
-    } while (stats.size()>1 && 
+    } while (stats.size()>1 &&
 	     (offset+stats.size()*sizeof(AliHLTComponentStatistics)>bufferSize));
     HLTWarning("too little space in output buffer to add block of %d statistics entries (size %d), available %d, removed %d entries",
 	       originalSize, sizeof(AliHLTComponentStatistics), bufferSize-offset, originalSize-stats.size());
@@ -2416,7 +2459,7 @@ int  AliHLTComponent::AddComponentStatistics(AliHLTComponentBlockDataList& block
   return iResult;
 }
 
-int  AliHLTComponent::AddComponentTableEntry(AliHLTComponentBlockDataList& blocks, 
+int  AliHLTComponent::AddComponentTableEntry(AliHLTComponentBlockDataList& blocks,
 					     AliHLTUInt8_t* buffer,
 					     AliHLTUInt32_t bufferSize,
 					     AliHLTUInt32_t offset,
@@ -2570,7 +2613,7 @@ int AliHLTComponent::AliHLTStopwatchGuard::Resume(const TStopwatch* pSucc)
   return fpStopwatch!=pSucc?1:0;
 }
 
-int AliHLTComponent::SetStopwatch(TObject* pSW, AliHLTStopwatchType type) 
+int AliHLTComponent::SetStopwatch(TObject* pSW, AliHLTStopwatchType type)
 {
   // see header file for function documentation
   int iResult=0;
@@ -2631,7 +2674,7 @@ AliHLTUInt32_t AliHLTComponent::GetRunType() const
 AliHLTUInt32_t    AliHLTComponent::GetTimeStamp() const
 {
   // see header file for function documentation
-  if (fCurrentEventData.fEventCreation_s < kMaxUInt ) { 
+  if (fCurrentEventData.fEventCreation_s < kMaxUInt ) {
     return  fCurrentEventData.fEventCreation_s;
   }
   // using the actual UTC if the time stamp was not set by the framework
@@ -2705,7 +2748,7 @@ int AliHLTComponent::CopyStruct(void* pStruct, unsigned int iStructSize, unsigne
 AliHLTUInt32_t AliHLTComponent::CalculateChecksum(const AliHLTUInt8_t* buffer, int size)
 {
   // see header file for function documentation
-  AliHLTUInt32_t  remainder = 0; 
+  AliHLTUInt32_t  remainder = 0;
   const AliHLTUInt8_t crcwidth=(8*sizeof(AliHLTUInt32_t));
   const AliHLTUInt32_t topbit=1 << (crcwidth-1);
   const AliHLTUInt32_t polynomial=0xD8;  /* 11011 followed by 0's */
@@ -2826,7 +2869,7 @@ int AliHLTComponent::ExtractTriggerData(
   )
 {
   // see header file for function documentation
-  
+
   // Check that the trigger data structure is the correct size.
   if (trigData.fStructSize != sizeof(AliHLTComponentTriggerData))
   {
@@ -2839,12 +2882,12 @@ int AliHLTComponent::ExtractTriggerData(
     }
     return -ENOENT;
   }
-  
+
   // Get the size of the AliHLTEventTriggerData structure without the readout list part.
   // The way we do this here should also handle memory alignment correctly.
   AliHLTEventTriggerData* dummy = NULL;
   size_t sizeWithoutReadout = (char*)(&dummy->fReadoutList) - (char*)(dummy);
-  
+
   // Check that the trigger data pointer points to data of a size we can handle.
   // Either it is the size of AliHLTEventTriggerData or the size of the old
   // version of AliHLTEventTriggerData using AliHLTEventDDLV0 or V1.
@@ -2862,12 +2905,12 @@ int AliHLTComponent::ExtractTriggerData(
     }
     return -EBADF;
   }
-  
+
   AliHLTEventTriggerData* evtData = reinterpret_cast<AliHLTEventTriggerData*>(trigData.fData);
   assert(evtData != NULL);
-  
+
   // Check that the CDH has the right number of words.
-  if ( cdh != NULL and 
+  if ( cdh != NULL and
        evtData->fCommonHeaderWordCnt != gkAliHLTCommonHeaderCount and
        evtData->fCommonHeaderWordCnt != gkAliHLTCommonHeaderCountV2
      )
@@ -2882,7 +2925,7 @@ int AliHLTComponent::ExtractTriggerData(
     }
     return -EBADMSG;
   }
-  
+
   // Check that the readout list has the correct count of words. i.e. something we can handle,
   if (readoutlist != NULL and
       evtData->fReadoutList.fCount != (unsigned)gkAliHLTDDLListSizeV0 and
@@ -2899,7 +2942,7 @@ int AliHLTComponent::ExtractTriggerData(
     }
     return -EPROTO;
   }
-  
+
   if (attributes != NULL)
   {
     *attributes = &evtData->fAttributes;
@@ -2933,7 +2976,7 @@ AliHLTUInt32_t AliHLTComponent::ExtractEventTypeFromCDH(const AliHLTCDHWrapper* 
   return gkAliEventTypeSoftware;
 }
 
-int AliHLTComponent::LoggingVarargs(AliHLTComponentLogSeverity severity, 
+int AliHLTComponent::LoggingVarargs(AliHLTComponentLogSeverity severity,
 				    const char* originClass, const char* originFunc,
 				    const char* file, int line, ... ) const
 {
@@ -2947,7 +2990,7 @@ int AliHLTComponent::LoggingVarargs(AliHLTComponentLogSeverity severity,
   // without problems. But at this point we face the problem with virtual members which
   // are not necessarily const.
   AliHLTComponent* nonconst=const_cast<AliHLTComponent*>(this);
-  AliHLTLogging::SetLogString(this, ", %p", "%s (%s_pfmt_): ", 
+  AliHLTLogging::SetLogString(this, ", %p", "%s (%s_pfmt_): ",
 			      fChainId[0]!=0?fChainId.c_str():nonconst->GetComponentID(),
 			      nonconst->GetComponentID());
   iResult=SendMessage(severity, originClass, originFunc, file, line, AliHLTLogging::BuildLogString(NULL, args, true /*append*/));
@@ -3152,4 +3195,3 @@ int AliHLTComponent::PushBackSchema()
   }
   return rc;
 }
-

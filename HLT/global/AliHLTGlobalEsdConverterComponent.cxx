@@ -68,6 +68,11 @@
 #include "AliSysInfo.h"
 #include "AliHLTSAPTrackerData.h"
 #include "AliFlatESDVertex.h"
+#include "AliHLTTRDDefinitions.h"
+#include "AliHLTTRDTrack.h"
+#include "AliHLTTRDTrackData.h"
+#include "AliHLTTRDTrackPoint.h"
+#include "AliHLTITSTrackPoint.h"
 
 /** ROOT macro for the implementation of ROOT specific class methods */
 ClassImp(AliHLTGlobalEsdConverterComponent)
@@ -131,6 +136,9 @@ void AliHLTGlobalEsdConverterComponent::GetInputDataTypes(AliHLTComponentDataTyp
   list.push_back(AliHLTTPCDefinitions::ClustersXYZDataType() );
   list.push_back(kAliHLTDataTypeFlatESDVertex); // VertexTracks resonctructed using SAP ITS tracks
   list.push_back(kAliHLTDataTypeITSSAPData);    // SAP ITS tracks
+  list.push_back(AliHLTTRDDefinitions::fgkTRDTrackDataType);
+  list.push_back(AliHLTTRDDefinitions::fgkTRDTrackPointDataType);
+  list.push_back(kAliHLTDataTypeITSSAPTrackPoint|kAliHLTDataOriginITS);
 }
 
 AliHLTComponentDataType AliHLTGlobalEsdConverterComponent::GetOutputDataType()
@@ -857,12 +865,21 @@ int AliHLTGlobalEsdConverterComponent::ProcessBlocks(TTree* pTree, AliESDEvent* 
   // Get ITS Standalone primary (SAP) Tracks
 
   if (storeTracks) {
+    const AliHLTITSTrackPointData * trackPoints = 0;
+    for (const AliHLTComponentBlockData* pBlock=GetFirstInputBlock(kAliHLTDataTypeITSSAPTrackPoint|kAliHLTDataOriginITS);
+	 pBlock!=NULL; pBlock=GetNextInputBlock()) {          
+      trackPoints = reinterpret_cast<const AliHLTITSTrackPointData*>(pBlock->fPtr);    
+      fBenchmark.AddInput(pBlock->fSize);
+     break;
+    }
+
     const AliHLTComponentBlockData* pBlock=GetFirstInputBlock(kAliHLTDataTypeITSSAPData|kAliHLTDataOriginITS);
     if (pBlock) {
       fBenchmark.AddInput(pBlock->fSize);
       const AliHLTITSSAPTrackerDataContainer *dataSAP = reinterpret_cast<const AliHLTITSSAPTrackerDataContainer*>(pBlock->fPtr);
       AliITStrackV2 trcV2;
       int ntrITSSAP = dataSAP->fCount;
+      int nClustersRead=0;
       for (int itr=0;itr<ntrITSSAP;itr++) {
 	const AliHLTITSSAPTrackerData& trcFlatSAP = dataSAP->fTracks[itr];
 	AliESDtrack inpESDtrc;
@@ -879,8 +896,30 @@ int AliHLTGlobalEsdConverterComponent::ProcessBlocks(TTree* pTree, AliESDEvent* 
 	  AliESDfriendTrack friendTrack;
 	  trcFlatSAP.paramOut.GetExternalTrackParam(trcV2); // track at the vertex
 	  friendTrack.SetITSOut(trcV2);
+	  if( trackPoints ){
+	    int nPoints = trcFlatSAP.ncl;
+	    if( nClustersRead + nPoints > trackPoints->fCount ){
+	      HLTError("Wrong number of SAP track points");
+	    } else {
+	      vector<AliHLTITSTrackPoint> store;
+	      for( int i=nClustersRead; i<nClustersRead+nPoints; i++){
+		const AliHLTITSTrackPoint &sp = trackPoints->fPoints[i];
+		if( sp.fVolumeID == 0 ) continue; // no track point stored for this ITS cluster for whatever reason
+		store.push_back(sp);
+	      }
+	      nPoints = store.size();
+	      AliTrackPointArray *spArray = new AliTrackPointArray(nPoints);
+	      spArray->SetBit(AliTrackPointArray::kTOFBugFixed);
+	      friendTrack.SetTrackPointArray(spArray);
+	      for( int i=0; i<nPoints; i++){
+		AliTrackPoint p = store[i].GetAliTrackPoint();
+		spArray->AddPoint( i, &p );
+	      }
+	    }
+	  } // trackPoints
 	  pESDfriend->AddTrack(&friendTrack);
 	}
+ 	nClustersRead+=trcFlatSAP.ncl;
       }
     }
   }
@@ -1036,13 +1075,30 @@ int AliHLTGlobalEsdConverterComponent::ProcessBlocks(TTree* pTree, AliESDEvent* 
   */
 
   // 4. convert the HLT TRD tracks to ESD tracks                        
-  if (storeTracks) for (const AliHLTComponentBlockData* pBlock=GetFirstInputBlock(kAliHLTDataTypeTrack | kAliHLTDataOriginTRD);
-       pBlock!=NULL; pBlock=GetNextInputBlock()) {
-    fBenchmark.AddInput(pBlock->fSize);
-    vector<AliHLTGlobalBarrelTrack> tracks;
-    if ((iResult=AliHLTGlobalBarrelTrack::ConvertTrackDataArray(reinterpret_cast<const AliHLTTracksData*>(pBlock->fPtr), pBlock->fSize, tracks))>0) {
-      for (vector<AliHLTGlobalBarrelTrack>::iterator element=tracks.begin();
-	   element!=tracks.end(); element++) {
+  if (storeTracks){
+
+    const AliHLTTRDTrackPointData * trackPoints = 0;
+    for (const AliHLTComponentBlockData* pBlock=GetFirstInputBlock(AliHLTTRDDefinitions::fgkTRDTrackPointDataType);
+	 pBlock!=NULL; pBlock=GetNextInputBlock()) {          
+      trackPoints = reinterpret_cast<const AliHLTTRDTrackPointData*>(pBlock->fPtr);    
+      break;
+    }
+
+    for (const AliHLTComponentBlockData* pBlock=GetFirstInputBlock(AliHLTTRDDefinitions::fgkTRDTrackDataType);
+	 pBlock!=NULL; pBlock=GetNextInputBlock()) {      
+      fBenchmark.AddInput(pBlock->fSize);
+      
+      const AliHLTTRDTrackData* trackData = reinterpret_cast<const AliHLTTRDTrackData*>(pBlock->fPtr);    
+
+      if( pBlock->fSize < sizeof(AliHLTTRDTrackData) || pBlock->fSize < trackData->GetSize()  ){
+	iResult=-EINVAL; break;
+      }
+
+      for (unsigned itr=0; itr<trackData->fCount; itr++) {
+
+	const AliHLTTRDTrackDataRecord &track=trackData->fTracks[itr];
+	AliHLTTRDTrack trdTrack;
+	trdTrack.ConvertFrom( track );
 	
 	Double_t TRDpid[AliPID::kSPECIES], eProb(0.2), restProb((1-eProb)/(AliPID::kSPECIES-1)); //eprob(element->GetTRDpid...);
 	for(Int_t i=0; i<AliPID::kSPECIES; i++){
@@ -1051,27 +1107,61 @@ int AliHLTGlobalEsdConverterComponent::ProcessBlocks(TTree* pTree, AliESDEvent* 
 	  default: TRDpid[i]=restProb; break;
 	  }
 	}
+	// find corresponding ESD track
+
+	int tpcID=trdTrack.GetTPCtrackId();
+	Int_t esdID = -1;
+	if( mapTpcId2esdId.find(tpcID) != mapTpcId2esdId.end() ) esdID = mapTpcId2esdId[tpcID];
 	
-	AliESDtrack iotrack;
-	iotrack.UpdateTrackParams(&(*element),AliESDtrack::kTRDout);
-	iotrack.SetStatus(AliESDtrack::kTRDin);
-	iotrack.SetTRDpid(TRDpid);
-	
-	pESD->AddTrack(&iotrack);
-	if (fVerbosity>0) element->Print();
+	// the TRD tracker assigns the TPC track used as seed for a certain track to the trackID
+
+	if( esdID<0 || esdID>=pESD->GetNumberOfTracks()) continue; 
+
+	AliESDtrack *tESD = pESD->GetTrack( esdID );	
+	if (!tESD) continue;
+
+	tESD->UpdateTrackParams(&trdTrack,AliESDtrack::kTRDout);
+	tESD->SetStatus(AliESDtrack::kTRDin);
+	tESD->SetTRDpid(TRDpid);
+
+	if( pESDfriend ) { 
+	  AliESDfriendTrack *friendTrack = pESDfriend->GetTrack(esdID);
+	  if( friendTrack ){ // fill TRD track and space points	    
+	    friendTrack->SetTRDIn( trdTrack );
+	    int nPoints = track.GetNTracklets();
+	    if( trackPoints && nPoints>0 ){	      
+	      AliTrackPointArray *spArray = new AliTrackPointArray(nPoints);
+	      spArray->SetBit(AliTrackPointArray::kTOFBugFixed);
+	      friendTrack->SetTrackPointArray(spArray);
+	      int iPoint=0;
+	      for( int iLayer=0; iLayer<6; iLayer++){
+		int ind = track.fAttachedTracklets[iLayer];
+		if( ind<0 || ind>=trackPoints->fCount ) continue;
+		const AliHLTTRDTrackPoint &sp = trackPoints->fPoints[ind];
+		AliTrackPoint p( sp.fX[0], sp.fX[1], sp.fX[2], NULL, sp.fVolumeId );
+		spArray->AddPoint( iPoint, &p );
+		p.Print("");
+		iPoint++;
+	      }
+	    }	    
+	  }
+	}
       }
-      HLTInfo("converted %d track(s) to AliESDtrack and added to ESD", tracks.size());
-      iAddedDataBlocks++;
-    } else if (iResult<0) {
-      HLTError("can not extract tracks from data block of type %s (specification %08x) of size %d: error %d", 
-	       DataType2Text(pBlock->fDataType).c_str(), pBlock->fSpecification, pBlock->fSize, iResult);
+      if( iResult>=0 ){    
+	HLTInfo("converted %d track(s) to AliESDtrack and added to ESD", trackData->fCount);
+	iAddedDataBlocks++;
+      } else {
+	HLTError("can not extract tracks from data block of type %s (specification %08x) of size %d: error %d", 
+		 DataType2Text(pBlock->fDataType).c_str(), pBlock->fSpecification, pBlock->fSize, iResult);    
+      }
     }
   }
+
   for (const AliHLTComponentBlockData* pBlock=GetFirstInputBlock(kAliHLTDataTypeCaloCluster | kAliHLTDataOriginAny); pBlock!=NULL; pBlock=GetNextInputBlock()) 
     {
       fBenchmark.AddInput(pBlock->fSize);
       AliHLTCaloClusterHeaderStruct *caloClusterHeaderPtr = reinterpret_cast<AliHLTCaloClusterHeaderStruct*>(pBlock->fPtr);
-
+      
       HLTDebug("%d HLT clusters from spec: 0x%X", caloClusterHeaderPtr->fNClusters, pBlock->fSpecification);
 
       //AliHLTCaloClusterReader reader;

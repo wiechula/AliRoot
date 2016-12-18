@@ -12,12 +12,15 @@
 #include "AliLog.h"
 #include "AliLHCData.h"
 #include "AliLHCDipValT.h"
+#include "AliGRPObject.h"
+#include <TPRegexp.h>
 #include <TGraphErrors.h>
 #include <TAxis.h>
 #include <TMath.h>
 
 Double_t AliLumiTools::fgMuEst = -1; // by default - dummy
 Double_t AliLumiTools::fgXSecEst = -1; // by default - dummy
+Double_t AliLumiTools::fgScaleFactor = 1.;
 
 //___________________________________________________________________
 TGraph* AliLumiTools::GetLumiGraph(Int_t tp, Int_t run, const char * ocdbPathDef)
@@ -88,7 +91,7 @@ TGraph* AliLumiTools::GetLumiFromDIP(Int_t run, const char * ocdbPathDef)
     double t = tref + t0 + dt/2;
     if (dt&0x1) t += 0.5;
     vecRateT[nRateAcc] = t;
-    vecRate[nRateAcc] = (rate1-rate0)/dt*1e6; // convert from Hz/b to Hz/ub
+    vecRate[nRateAcc] = (rate1-rate0)/dt*1e6*fgScaleFactor; // convert from Hz/b to Hz/ub
     //    printf("%lld %lld -> %lld %lld %e\n",t0,t1, tref + t0 + dt/2,dt,rate1);
     t0 = t1;
     rate0 = rate1;
@@ -192,11 +195,11 @@ TGraph* AliLumiTools::GetLumiFromCTP(Int_t run, const char * ocdbPathDef, TStrin
     UInt_t counts1 = useLM ? scaler1->GetLMCB() : scaler1->GetLOCB();
     UInt_t counts2 = useLM ? scaler2->GetLMCB() : scaler2->GetLOCB();
     UInt_t refCounts = (counts2>counts1) ?counts2-counts1 :  counts2+(0xffffffff-counts1)+1;
-    UInt_t t1 = record1->GetTimeStamp()->GetSeconds()+1e-6*record1->GetTimeStamp()->GetMicroSecs();
-    UInt_t t2 = record2->GetTimeStamp()->GetSeconds()+1e-6*record2->GetTimeStamp()->GetMicroSecs();
-    Double_t duration = double(t2)-double(t1);
+    double t1 = record1->GetTimeStamp()->GetSeconds()+1e-6*record1->GetTimeStamp()->GetMicroSecs();
+    double t2 = record2->GetTimeStamp()->GetSeconds()+1e-6*record2->GetTimeStamp()->GetMicroSecs();
+    Double_t duration = t2 - t1;
     if (duration<1e-6) {
-      AliWarningClassF("Time duration between scalers %d %d is %.f, skip",t1,t2,duration);
+      AliWarningClassF("Time duration between scalers %f %f is %.f, skip",t1,t2,duration);
       continue;
     }
     Double_t totalBCs = duration*orbitRate*nBCs;
@@ -204,11 +207,12 @@ TGraph* AliLumiTools::GetLumiFromCTP(Int_t run, const char * ocdbPathDef, TStrin
     Double_t refRate = refMu*orbitRate*nBCs;
     Double_t refLumi = refRate/refSigma;
     //printf("%f %f\n",t2,refLumi);
-    if (nAcc==0) vtime[nAcc]=Double_t(t1);
-    vlumi[nAcc]=refLumi; 
+    if (nAcc==0) vtime[nAcc] = t1;
+    vlumi[nAcc]=refLumi*fgScaleFactor;
     vlumiErr[nAcc]=refCounts > 0 ? refLumi/TMath::Sqrt(refCounts) : 0.0;   
     vtime[++nAcc]=Double_t(t2);
     fgMuEst += refMu;
+    //    printf("#%4d T:%.3f-%.3f -> %.3f | Cnt: %u %u -> %u --> %f\n",r,t1,t2,duration, counts1,counts2,refCounts,refLumi);
   }
   fgMuEst = nAcc>0&&refEff>0 ? fgMuEst/nAcc/refEff : -1;
   if (refEff>0) fgXSecEst /= refEff;
@@ -229,6 +233,77 @@ TGraph* AliLumiTools::GetLumiFromCTP(Int_t run, const char * ocdbPathDef, TStrin
   return grLumi;
 }
 
+//___________________________________________________________________
+Float_t AliLumiTools::GetScaleDnDeta2pp13TeV(int run,const char * ocdbPathDef)
+{
+  //  Get rough ratio of dndeta for this run wrt dndeta of pp@13TeV
+  //
+  AliCDBManager* man = AliCDBManager::Instance();
+  if (!man->IsDefaultStorageSet()) {
+    man->SetDefaultStorage(ocdbPathDef);
+    if (run>=0) man->SetRun(run);
+    else {
+      AliErrorClass("OCDB cannot be configured since run number is not provided"); return 0;
+    }
+  }
+  if (run<0) run = man->GetRun();
+  //
+  // use explicit run number since we may query for run other than in CDB cache
+  const AliGRPObject* grp = (AliGRPObject*)GetCDBObjectForRun(run,"GRP/GRP/Data",ocdbPathDef);
+  float beamE = grp->GetBeamEnergy(); // E per charge
+  double sqrts = beamE+beamE;
+  //
+  // for asymmetric beam we get the energy per charge
+  int beam0 = grp->GetSingleBeamType(0).Atoi();
+  int beam1 = grp->GetSingleBeamType(1).Atoi();
+  if (beam0==0||beam1==0) {
+    AliWarningClass("Did not find GetSingleBeamType, check GetBeamType");
+    TString btypestr = grp->GetBeamType();
+    btypestr.ToLower();
+    TPRegexp protonBeam("(proton|p)\\s*-?\\s*\\1");
+    TPRegexp ionBeam("(lead|pb|ion|a|A)\\s*-?\\s*\\1");
+    TPRegexp protonionBeam("(proton|p)\\s*-?\\s*(lead|pb|ion|a|A)");
+    TPRegexp ionprotonBeam("(lead|pb|ion|a|A)\\s*-?\\s*(proton|p)");
+    if (btypestr.Contains(ionBeam)) {beam0 = 208082; beam1 = 208082;}
+    else if (btypestr.Contains(protonBeam)) {beam0 = 1001; beam1 = 1001;}
+    else if (btypestr.Contains(protonionBeam)) {beam0 = 1001; beam1 = 208082;}
+    else if (btypestr.Contains(ionprotonBeam)) {beam1 = 1001; beam0 = 208082;}
+  }
+  int a0 = beam0/1000, z0 = beam0%1000;
+  int a1 = beam1/1000, z1 = beam1%1000;
+  if (beam0!=beam1) {
+    double e0 = z0*beamE/a0, e1 = z1*beamE/a1; // E per nucleon
+    double p0 = TMath::Sqrt(e0*e0-0.94*0.94);
+    double p1 = TMath::Sqrt(e1*e1-0.94*0.94);
+    sqrts = TMath::Sqrt(2*0.94*0.94 + 2*e0*e1*(1.+p0*p1/(e0*e1)));
+  }
+  //
+  float dndetaRef=0,sqrtsRef=0;
+  const double kdndetaPP13 = 5.3;
+  const double ksqrtsPP13 = 13.0e3;
+  if (a0==1 && a1==1) {
+    dndetaRef = kdndetaPP13;
+    sqrtsRef = ksqrtsPP13;
+  }
+  else if ((a0==1&&a1==208)||(a1==1&&a0==208)) { // pPb
+    dndetaRef = 16.3; // pA @ 5.02TeV
+    sqrtsRef = 5.02e3;
+  }
+  else if (a0==208 && a1==208) {
+    dndetaRef = 600; // pbpb @ 5.02
+    sqrtsRef = 5.02e3;
+  }
+  if (sqrtsRef==0) {
+    AliErrorClassF("Did not find reference for beam %d %d, return 1",beam0,beam1);
+    return 1;
+  }
+  double sfact = TMath::Power(sqrts/sqrtsRef,0.103);
+  double dndeta = dndetaRef*sfact;
+  double rat2pp13 = dndeta/kdndetaPP13;
+  AliInfoClassF("MB dn/deta for %d-%d @ %.2f TeV: %.2f -> ratio to pp@13Tev: %.2f",a0,a1,sqrts/1e3,dndeta,rat2pp13);
+  //
+  return rat2pp13;
+}
 
 //___________________________________
 Bool_t AliLumiTools::GetLumiCTPRefClass(int run, TString& refClass, double &refSigma, double &refEff)
@@ -303,7 +378,10 @@ Bool_t AliLumiTools::GetLumiCTPRefClass(int run, TString& refClass, double &refS
   else if (run>=243399 && run<=243984) { refSigma=6700.; refEff = 0.90; refClass = "C0TVX-B-NOPF-CENTNOTRD"; } // estimates from Martino and MC
   else if (run>=243985 && run<=244912) { refSigma= 21.0; refEff = 0.40; refClass = "C0TVX-B-NOPF-CENTNOTRD"; } // estimates from Martino and MC
   else if (run>=244913 && run<=246994) { refSigma=4600.; refEff = 0.60; refClass = "C0V0M-B-NOPF-CENTNOTRD"; } // estimates from Cvetan and Alberica
-  else if (run>=246995               ) { refSigma= 30.0; refEff = 0.40; refClass = "C0TVX-B-NOPF-CENTNOTRD"; } // estimates from Cvetan and Alberica
+  else if (run>=246995 && run<=256147) { refSigma= 30.0; refEff = 0.40; refClass = "C0TVX-B-NOPF-CENTNOTRD"; } // estimates from Martino and MC
+  else if (run>=256148 && run<=256157) { refSigma= 30.0; refEff = 0.40; refClass = "C0TVX-B-NOPF-CENT";      } // estimates from Martino and MC
+  else if (run>=256158 && run<=265301) { refSigma= 30.0; refEff = 0.40; refClass = "C0TVX-B-NOPF-CENTNOTRD"; } // estimates from Martino and MC
+  else if (run>=265304               ) { refSigma=1590.; refEff = 0.76; refClass = "C0TVX-B-NOPF-CENTNOTRD"; } // taken from old p-Pb
   //
   if (refClass.IsNull() || refSigma<1) {
     AliErrorClassF("Did not find reference class for run %d",run);

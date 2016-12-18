@@ -20,6 +20,7 @@
 #pragma link C++ class AliEMCALTriggerChannelContainer+;
 #pragma link C++ class AliEMCALTriggerChannelContainer::AliEMCALTriggerChannelPosition+;
 #pragma link C++ class AliEMCALTriggerPatchInfo+;
+#pragma link C++ class AliEMCALTriggerPatchADCInfo+;
 #pragma link C++ class AliEMCALTriggerBitConfig+;
 #pragma link C++ class AliEMCALTriggerBitConfigOld+;
 #pragma link C++ class AliEMCALTriggerBitConfigNew+;
@@ -27,5 +28,11 @@
 #pragma link C++ class AliEMCALTriggerOnlineQAPbPb+;
 #pragma link C++ class AliEMCALTriggerOnlineQAPP+;
 #pragma link C++ class AliEMCALTriggerFastOR+;
+
+#pragma link C++ namespace EMCALTrigger;
+#pragma link C++ defined_in namespace EMCALTrigger;
+#pragma link C++ enum EMCALTrigger::EMCalTriggerType_t;
+#pragma link C++ global EMCALTrigger::kEMCL1ADCtoGeV;
+#pragma link C++ global EMCALTrigger::kEMCalTriggerNames;
 
 #endif
