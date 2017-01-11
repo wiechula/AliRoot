@@ -14,10 +14,10 @@
 /// https://www.gnu.org/copyleft/gpl.html
 
 #include "O2CompressedArray.h"
+#include "O2logging.h"
 #include <algorithm>
 #include <cmath>
 #include <map>
-#include <utilities/logging.h>
 #include <zfp/zfp.h>
 
 using O2::CompressedArray;

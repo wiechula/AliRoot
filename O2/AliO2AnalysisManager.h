@@ -11,11 +11,11 @@
 #include <AliAnalysisManager.h>
 
 #include "O2NotImplemented.h"
+#include "O2logging.h"
 #include <AliO2InputHandler.h>
 #include <TChain.h>
 #include <list>
 #include <string>
-#include <utilities/logging.h>
 /// Timeframe aware AliAnalysisManager for O2
 ///
 /// Behaves the same as a normal AliAnalysisManager unless it detects that the
@@ -44,7 +44,7 @@ public:
       // call init
       InitAnalysis();
       // and perform analysis.
-      report(INFO, "start analysis");
+      // report(INFO, "start analysis");
       AliAnalysisManager::StartAnalysis("local", chain);
       return;
     }

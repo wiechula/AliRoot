@@ -30,6 +30,7 @@ include_directories(${ROOT_INCLUDE_DIR}
 # Sources, globbed
 #file(GLOB SRCS "*.cxx")
 set(SRCS
+  O2logging.cxx
   O2Event.cxx
   O2Timeframe.cxx
   O2Track.cxx
@@ -74,7 +75,7 @@ add_library(${MODULE}-object OBJECT ${SRCS} G__${MODULE}.cxx)
 
 # Add a library to the project using the object
 add_library(${MODULE} SHARED $<TARGET_OBJECTS:O2-object>)
-target_link_libraries(${MODULE} ${ALIROOT_DEPENDENCIES} ${ROOT_DEPENDENCIES} utilities)
+target_link_libraries(${MODULE} ${ALIROOT_DEPENDENCIES} ${ROOT_DEPENDENCIES})
 
 # Setting the correct headers for the object as gathered from the dependencies
 target_include_directories(${MODULE}-object PUBLIC $<TARGET_PROPERTY:${MODULE},INCLUDE_DIRECTORIES>)

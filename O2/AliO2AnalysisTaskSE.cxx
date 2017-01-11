@@ -15,8 +15,8 @@
 
 #include "AliO2AnalysisTaskSE.h"
 
-//default constructor
-AliO2AnalysisTaskSE::AliO2AnalysisTaskSE(){}
+// default constructor
+AliO2AnalysisTaskSE::AliO2AnalysisTaskSE() {}
 
-//default destructor
-AliO2AnalysisTaskSE::~AliO2AnalysisTaskSE(){}
+// default destructor
+AliO2AnalysisTaskSE::~AliO2AnalysisTaskSE() {}

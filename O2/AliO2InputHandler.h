@@ -11,13 +11,12 @@
 #include <AliInputEventHandler.h>
 
 #include "AliO2Event.h"
-#include "AliO2Timeframe.h"
 #include "O2NotImplemented.h"
 #include "O2Timeframe.h"
+#include "O2logging.h"
 #include <AliLog.h>
 #include <TFile.h>
 #include <list>
-#include <utilities/logging.h>
 /// Short AliO2InputHandler description
 ///
 /// More detailed AliO2InputHandler description
