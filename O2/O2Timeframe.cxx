@@ -291,14 +291,6 @@ void O2Timeframe::SerializeToBuffer(TBuffer &buffer) {
   buffer.SetByteCount(byteCountPosition, kTRUE);
 }
 
-O2Timeframe *O2Timeframe::NewFromStream(const istream &stream) {
-  O2Timeframe *timeframe = new O2Timeframe();
-  if (!timeframe) {
-    return nullptr;
-  }
-  return timeframe;
-}
-
 size_t O2Timeframe::estimate_compression() {
   Int_t element_count;
   element_count = mVertices.size();

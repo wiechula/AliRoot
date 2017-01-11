@@ -23,8 +23,6 @@ class O2Timeframe : public TObject {
 public:
   /// Default constructor
   O2Timeframe();
-
-  static O2Timeframe *NewFromStream(const istream &stream);
   /// Destructor
   ~O2Timeframe();
   // Reads an ESD event and adds it to the timeframe with the given timestamp

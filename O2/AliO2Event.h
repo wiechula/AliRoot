@@ -130,7 +130,7 @@ public:
   virtual void SetPeriodNumber(UInt_t n) { EXIT_NOT_IMPLEMENTED(); }
   virtual void SetMagneticField(Double_t mf) { EXIT_NOT_IMPLEMENTED(); }
 
-  virtual Int_t GetRunNumber() const { -1; }
+  virtual Int_t GetRunNumber() const { return -1; }
   virtual UInt_t GetPeriodNumber() const { EXIT_NOT_IMPLEMENTED(); }
   virtual Double_t GetMagneticField() const { EXIT_NOT_IMPLEMENTED(); }
 

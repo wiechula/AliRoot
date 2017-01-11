@@ -23,6 +23,7 @@ include_directories(${AliRoot_SOURCE_DIR}/${MODULE})
 # Additional include directories - alphabetical order except ROOT
 include_directories(${ROOT_INCLUDE_DIR}
                     ${AliRoot_SOURCE_DIR}/ANALYSIS/ANALYSIS
+                    ${AliRoot_SOURCE_DIR}/ANALYSIS/ANALYSISalice
                     ${AliRoot_SOURCE_DIR}/STEER/STEERBase
                     ${AliRoot_SOURCE_DIR}/STEER/STEER
 		    ${AliRoot_SOURCE_DIR}/RAW/dateStream)
@@ -59,7 +60,7 @@ generate_dictionary("O2" "${MODULE}LinkDef.h" "${HDRS}" "${incdirs}")
 
 # TODO: set these
 set(ROOT_DEPENDENCIES Core EG Geom Gpad Graf3d MathCore Matrix Physics RIO Tree)
-set(ALIROOT_DEPENDENCIES ANALYSIS STEER AOD ESD)
+set(ALIROOT_DEPENDENCIES ANALYSISalice STEER AOD ESD)
 
 # Generate the ROOT map
 # Dependecies
