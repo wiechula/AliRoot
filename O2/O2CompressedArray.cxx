@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
-#include <zfp/zfp.h>
 
 using O2::CompressedArray;
 
