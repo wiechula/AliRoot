@@ -156,6 +156,7 @@ class AliHLTTPCHWCFEmulatorComponent : public AliHLTProcessor
   Bool_t fProcessingRCU2Data; // processing of RCU2 data - no split in two input branches
   Double_t fIORatioCorrection; // multiplier for data size ratio Output/Input 
   Int_t fDebug; // debug level
+  size_t fForceOutputBufferSize;
   AliHLTTPCHWCFSupport fCFSupport;     // !transient
   AliHLTTPCHWCFEmulator fCFEmulator;   // !transient
   AliHLTComponentBenchmark fBenchmark; // benchmark
