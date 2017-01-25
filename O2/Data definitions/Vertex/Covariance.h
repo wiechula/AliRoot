@@ -2,9 +2,8 @@
 #define TF_DD_VERTEX_COVARIANCE_H
 
 #include "../base.h"
-struct Covariance : ISingle, IVertex {
+struct Covariance : ISingle<IVertex> {
   float cov[10];
-  static const char *Name() { return "Covariance"; }
 };
 
 #endif

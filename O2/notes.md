@@ -82,7 +82,13 @@ We aim to, soon, have a well defined system which allows for a lightweight flexi
  ```
 which will only request and use the transverse momentum and position. Leaving out the covariance
 
-and orientation other momentum components. This example also shows the weakpoint of this method: giant template lists.  But I have faith that this can be made into less of a nuisance to the user than how it looks like here. By using typedefs for common types and/or by using this as a 'set once' setting separate from the analysis task.
+and orientation other momentum components. This example also shows the weakpoint of this method: giant template lists.  But I have faith that this can be made into less of a nuisance to the user than how it looks like here. By using template specialization and typedefs for common types and/or by using this as a 'set once' setting separate from the analysis task itself.
+
+It is already possible to request members of a track in the following fashion
+
+```
+  float pt = track.get<IKinematics>().get<Pt>();
+```
 
  Growing is also natural to this structure. For example, say you want to add a flag to each track to signal if it is a muon candidate.
  Simply define a new template type (Inheriting from `ISingle`, and `ITrack` to show that it is an endpoint of the tree and can be stored in a `Track<...>` template)

@@ -4,18 +4,35 @@
 #include "Position/Spatial.h"
 #include "Position/Temporal.h"
 
-template <typename... T> struct Position : IMulti, ITrack, IVertex {
-  static_assert(
-      all_true<std::is_base_of<IGeneric::IPosition, T>::value...>::value,
-      "Position instanced with non-IPosition type in parameter pack");
+template <typename... T>
+struct Position : IMulti<ITrack>, IMulti<IVertex>, IGeneric::IPosition {
+  using IThis = IGeneric::IPosition;
+  static_assert(all_true<std::is_base_of<IData<IThis>, T>::value...>::value,
+                "Position instanced with non-IPosition type in parameter pack");
   static const char *Name() { return "Position"; }
-  typedef struct {
-    std::tuple<T...> mTuple;
-    template <typename G>
-    std::enable_if<is_one_of<G, T...>::value, typename G::Data_t> Get() {
-      return get_element_by_type<G>(mTuple);
-    }
-  } Data_t;
+  std::tuple<typename std::conditional<
+      std::is_base_of<ISingle<IThis>, T>::value, T *, T>::type...>
+      mTuple;
+  template <typename G, typename std::enable_if<is_one_of<G, T...>::value>::type
+                            * = nullptr,
+            unsigned index = first_true<is_one_of<G, T>::value...>::value,
+            typename basetype =
+                typename std::tuple_element<index, std::tuple<T...>>::type>
+  constexpr typename std::conditional<
+      std::is_base_of<ISingle<IThis>, basetype>::value, basetype *,
+      basetype>::type
+  Get() const {
+    return std::get<index>(mTuple);
+  }
+  template <typename G,
+            typename std::enable_if<any_true<
+                (std::is_base_of<G, T>::value &&
+                 !std::is_same<G, T>::value)...>::value>::type * = nullptr,
+            unsigned index = first_true<std::is_base_of<G, T>::value...>::value>
+  constexpr typename std::tuple_element<index, std::tuple<T...>>::type
+  Get() const {
+    return std::get<index>(mTuple);
+  }
 };
 
 typedef Position<Temporal, Spatial> PositionAll;
