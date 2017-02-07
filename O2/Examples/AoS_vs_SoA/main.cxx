@@ -38,7 +38,7 @@ int main() {
     // Compute the efective bandwidth achieved
     size_t size_filter_array = number_of_tracks * 4;
     size_t size_passing_tracks =
-        (sizeof(FlatTrack::flat_type) - 4) * number_of_tracks /
+        (sizeof(MinimalTrack::flat_type) - 4) * number_of_tracks /
         one_in; // subtract 4 to prevent double counting the filter variable.
     double highest_bandwith =
         (size_filter_array + size_passing_tracks) / fastest;
@@ -67,7 +67,7 @@ int main() {
     double median = timings[repetitions_per_test / 2];
     size_t size_filter_array = number_of_tracks * 4;
     size_t size_passing_tracks =
-        (sizeof(FlatTrack::flat_type) - 4) * number_of_tracks /
+        (sizeof(MinimalTrack::flat_type) - 4) * number_of_tracks /
         one_in; // subtract 4 to prevent double counting the filter variable.
     double highest_bandwith =
         (size_filter_array + size_passing_tracks) / fastest;
@@ -97,7 +97,7 @@ int main() {
     double median = timings[repetitions_per_test / 2];
     size_t size_filter_array = number_of_tracks * 4;
     size_t size_passing_tracks =
-        (sizeof(FlatTrack::flat_type) - 4) * number_of_tracks /
+        (sizeof(MinimalTrack::flat_type) - 4) * number_of_tracks /
         one_in; // subtract 4 to prevent double counting the filter variable.
     double highest_bandwith =
         (size_filter_array + size_passing_tracks) / fastest;
