@@ -50,6 +50,7 @@ AliHLTTPCHWCFSupport::AliHLTTPCHWCFSupport()
   : 
   AliHLTLogging(),
   fProcessingRCU2Data(0),
+  fUseGain(1),
   fEventMemory(0),
   fEventMCMemory(0)
 {
@@ -71,6 +72,7 @@ AliHLTTPCHWCFSupport::AliHLTTPCHWCFSupport(const AliHLTTPCHWCFSupport&)
   : 
   AliHLTLogging(),
   fProcessingRCU2Data(0),
+  fUseGain(1),
   fEventMemory(0),
   fEventMCMemory(0)
 {
@@ -167,10 +169,13 @@ AliHLTUInt32_t *AliHLTTPCHWCFSupport::ReadMapping( int slice, int patch, const c
   AliTPCcalibDB *calib = AliTPCcalibDB::Instance();  
   AliTPCCalPad * gainTPC = 0;
   AliTPCCalROC * gainROC = 0;
-  if( calib ) gainTPC = calib->GetPadGainFactor();
-  if( gainTPC ) gainROC = gainTPC->GetCalROC(sector);  // pad gains per given sector
-  else{      
-    HLTWarning("No TPC gain calibration found");  
+  if (fUseGain)
+  {
+    if( calib ) gainTPC = calib->GetPadGainFactor();
+    if( gainTPC ) gainROC = gainTPC->GetCalROC(sector);  // pad gains per given sector
+    else{
+      HLTWarning("No TPC gain calibration found");
+    }
   }
 
   TString filename;
