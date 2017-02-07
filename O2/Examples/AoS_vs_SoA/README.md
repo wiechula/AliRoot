@@ -38,10 +38,18 @@ sudo chrt 99 ./comparison
 ```
 **Note:** this will cause all other programs to almost certainly freeze up for the duration of the comparison. This is expected behavior. This should only take a few seconds.
 
- Output is of the form `probability result minimum median maximum bandwidth` for each version, where: `probability` is the odds of a track passing the initial filter, `result` is the computed sum (included only to prevent optimizations from removing it), `minimum` is the shortest time taken of all iterations (in ns), `median` is the median time, `maximum` is the maximum time, `bandwidth` is the predicted effective bandwidth in GB/s (4 bytes for each track that does not pass the filter and sizeof(Track) bytes for each track that does, divided by the `minimum` time).
+ Output is of the form `probability minimum median maximum bandwidth result` for each version, where: `probability` is the odds of a track passing the initial filter, `result` is the computed sum (included only to prevent optimizations from removing it), `minimum` is the shortest time taken of all iterations (in ns), `median` is the median time, `maximum` is the maximum time, `bandwidth` is the predicted effective bandwidth in GB/s (4 bytes for each track that does not pass the filter and sizeof(Track) bytes for each track that does, divided by the `minimum` time).
+
+## plotting
+There is a provided Gnuplot script for making a plot of the effective bandwidth (as shown in media/bandwidth.png). To use it
+save the results of the binary to a file, for example `data.dat`. Then run
+```
+gnuplot -e "data='data.dat'" make_plot.gnuplot
+```
+And the script will produce a png called `bandwidth.png`.
 
 ## expected results
-The following results were obtained on an i7-4750HQ based system with a theoretical max bandwidth of 25.6 GB/s.
+The following results were obtained on an i7-7700HQ based system with a theoretical max bandwidth of 34.1 GB/s (but ~30 is in line with benchmarks).
 ![](media/bandwidth.png "Measured effective bandwidth")
 The dip near the start can be explained by the access pattern, where a lot of data gets pulled in from other cache-lines when a track passes the filter, but are not likely to pass the filter themselves resulting in wasted bandwidth.
 
