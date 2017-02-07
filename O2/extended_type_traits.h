@@ -44,31 +44,16 @@ template <bool... b> struct BoolArray {};
 template <bool... b>
 using all_true = std::is_same<BoolArray<b...>, BoolArray<(b, true)...>>;
 
-// template <int N, typename... Args>
-// using Nth = typename std::remove_reference<decltype(
-//     std::get<N>(std::declval<std::tuple<Args...>>()))>::type;
-//
-// // Template to find the first element of a bool array which is true
-// template <unsigned N = 0, bool... b> struct first_true {
-//   static_assert(N < sizeof...(b), "No element true");
-//   static constexpr int Element(unsigned index) {
-//     return std::array<bool, sizeof...(b)>{b...}[index];
-//   }
-//   static constexpr unsigned value =
-//       first_true::Element(N) ? N : first_true<N + 1, b...>::value;
-// };
-
 template <bool... b> struct first_true {
   template <
       unsigned index = 0,
-      typename std::enable_if<index<sizeof...(b) - 1>::type * =
+      typename std::enable_if<index<sizeof...(b)-1>::type * =
                                   nullptr> static constexpr unsigned check() {
     static_assert(index < sizeof...(b), "none are true");
     return std::get<index>(std::make_tuple(b...)) ? index : check<index + 1>();
   }
-  template <
-      unsigned index = 0,
-      typename std::enable_if<index >= sizeof...(b) - 1>::type * = nullptr>
+  template <unsigned index = 0,
+            typename std::enable_if<index >= sizeof...(b)-1>::type * = nullptr>
   static constexpr unsigned check() {
     static_assert(index < sizeof...(b), "none are true");
     return std::get<index>(std::make_tuple(b...)) ? index : 0;
@@ -78,12 +63,12 @@ template <bool... b> struct first_true {
 
 template <bool... b> struct any_true {
   template <unsigned index = 0,
-            typename std::enable_if<index<sizeof...(b) - 1>::type * =
+            typename std::enable_if<index<sizeof...(b)-1>::type * =
                                         nullptr> static constexpr bool check() {
     return std::get<index>(std::make_tuple(b...)) ? true : check<index + 1>();
   }
-  template <unsigned index, typename std::enable_if<
-                                index == sizeof...(b) - 1>::type * = nullptr>
+  template <unsigned index = 0,
+            typename std::enable_if<index == sizeof...(b)-1>::type * = nullptr>
   static constexpr bool check() {
     return std::get<index>(std::make_tuple(b...));
   }
