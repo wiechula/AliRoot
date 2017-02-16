@@ -4,7 +4,7 @@
 #include <chrono>
 
 int main() {
-  constexpr unsigned number_of_tracks = 1 << 26;
+  constexpr unsigned number_of_tracks = 1 << 24;
   constexpr int max_one_in = 1 << 24;      // 1<<24 ~= one in 17 million
   constexpr int repetitions_per_test = 11; // run each the analysis this many
                                            // times in a row to get some

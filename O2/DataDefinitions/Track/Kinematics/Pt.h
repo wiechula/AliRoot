@@ -1,14 +1,13 @@
-#ifndef TF_DD_TRACK_KINEMATICS_TEMPORAL_DEF_H
-#define TF_DD_TRACK_KINEMATICS_TEMPORAL_DEF_H
+#ifndef TF_DD_TRACK_KINEMATICS_PT_DEF_H
+#define TF_DD_TRACK_KINEMATICS_PT_DEF_H
 
-#include "../Kinematics.h"
-namespace track {
-struct Pt : ISingle, Parent<IKinematics> {
-  using flat_type = Pt;
+#include "../../base.h"
+
+DEFINE_SINGLE(Pt, IKinematics) {
   float mPt;
   operator float() { return mPt; }
   void set(float pt) { mPt = pt; }
-  const static std::string Name() { return ParentName() + "/Pt"; }
+  SINGLE_BODY(Pt, IKinematics);
 };
-}
+
 #endif

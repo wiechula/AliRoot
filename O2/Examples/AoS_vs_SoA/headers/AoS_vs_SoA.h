@@ -10,7 +10,7 @@ typedef float v8f __attribute__((vector_size(32)));
 
 using namespace track;
 using MinimalTrack = Track<MuonScore, Position<SpatialAll>, Kinematics<Pt>>;
-using FlatTrack = TrackAll;
+using FlatTrack = MinimalTrack;
 // Creates a SoA track container and fills the "muonScores" array with random
 // numbers. count is the number of tracks created.
 TrackAll createTrackContainer(unsigned count);

@@ -35,10 +35,10 @@ TrackAll createTrackContainer(unsigned count) {
   trackCollection.GetRef<MuonScore>() =
       (MuonScore *)valloc(sizeof(MuonScore) * count);
   auto muonScores = trackCollection.GetRef<MuonScore>();
-  auto *Pt = trackCollection.Get<IKinematics>().GetRef<track::Pt>();
-  auto *x = trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<X>();
-  auto *y = trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<Y>();
-  auto *z = trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<Z>();
+  auto *Pt = trackCollection.GetRef<IKinematics>().GetRef<track::Pt>();
+  auto *x = trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<X>();
+  auto *y = trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<Y>();
+  auto *z = trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<Z>();
   // reset the rng for reliability
   srand(0);
   for (unsigned u = 0; u < count; u++) {
@@ -54,12 +54,12 @@ TrackAll createTrackContainer(unsigned count) {
 
 /// Clears up the space allocated by `createTrackContainer`.
 void freeTrackContainer(TrackAll &trackCollection) {
-  free(trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<X>());
-  free(trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<Y>());
-  free(trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<Z>());
-  // free(trackCollection.Get<IPosition>().GetRef<Temporal>());
-  free(trackCollection.Get<IKinematics>().GetRef<Pt>());
-  // free(trackCollection.Get<IKinematics>().GetRef<Orientation>());
+  free(trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<X>());
+  free(trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<Y>());
+  free(trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<Z>());
+  // free(trackCollection.GetRef<IPosition>().GetRef<Temporal>());
+  free(trackCollection.GetRef<IKinematics>().GetRef<Pt>());
+  // free(trackCollection.GetRef<IKinematics>().GetRef<Orientation>());
   // free(trackCollection.GetRef<Covariance>());
 }
 
@@ -109,10 +109,10 @@ double analyseMuons(TrackAll &trackCollection, unsigned count, int oneIn) {
   unsigned cutoff = RAND_MAX / oneIn;
   // get the arrays from the struct
   auto *muonScores = trackCollection.GetRef<MuonScore>();
-  auto *Pt = trackCollection.Get<IKinematics>().GetRef<track::Pt>();
-  auto *x = trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<X>();
-  auto *y = trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<Y>();
-  auto *z = trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<Z>();
+  auto *Pt = trackCollection.GetRef<IKinematics>().GetRef<track::Pt>();
+  auto *x = trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<X>();
+  auto *y = trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<Y>();
+  auto *z = trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<Z>();
   float arbitrary = 0;
 // perform the following loop in parallel, reducing over arbitrary, splitting
 // the work in chunks of 1024 iterations each
@@ -136,13 +136,13 @@ double analyseMuons_v(TrackAll &trackCollection, unsigned count, int oneIn) {
   v8i *muonScores =
       reinterpret_cast<v8i *>(trackCollection.GetRef<MuonScore>());
   v8f *Pt = reinterpret_cast<v8f *>(
-      trackCollection.Get<IKinematics>().GetRef<track::Pt>());
+      trackCollection.GetRef<IKinematics>().GetRef<track::Pt>());
   v8f *x = reinterpret_cast<v8f *>(
-      trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<X>());
+      trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<X>());
   v8f *y = reinterpret_cast<v8f *>(
-      trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<Y>());
+      trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<Y>());
   v8f *z = reinterpret_cast<v8f *>(
-      trackCollection.Get<IPosition>().GetRef<ISpatial>().GetRef<Z>());
+      trackCollection.GetRef<IPosition>().GetRef<ISpatial>().GetRef<Z>());
   double arbitrary = 0;
 
   // vector of all zeros
@@ -161,6 +161,7 @@ double analyseMuons_v(TrackAll &trackCollection, unsigned count, int oneIn) {
       // what follows is a bit of magic to if 'muon < cutoff' for any of the 8
       // elements
       // get max element-wise off cutoff and muon
+      // TODO: switched from unsigned to signed. can use normal cmplt
       __m256i max = _mm256_max_epu32((__m256i)cutoff, (__m256i)muon);
       // cutoff >= muonscores
       __m256i cmp = _mm256_cmpeq_epi32(max, (__m256i)cutoff);
@@ -173,7 +174,7 @@ double analyseMuons_v(TrackAll &trackCollection, unsigned count, int oneIn) {
         v8f blend = _mm256_blendv_ps(
             zero, Pt[u] - r, (__m256)cmp); // pt-r if the corresponding element
                                            // passes the filter, zero otherwise
-        arbitrary_v += blend; // add the blend to the sum.
+        arbitrary_v += blend;              // add the blend to the sum.
       }
     }
     // sum arbitrary_v into arbitrary

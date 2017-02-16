@@ -1,15 +1,13 @@
-#ifndef TF_DD_TRACK_POSITION_SPATIAL_X_H
-#define TF_DD_TRACK_POSITION_SPATIAL_X_H
+#ifndef TF_DD_TRACK_TRACK_POSITION_SPATIAL_X_DEF_H
+#define TF_DD_TRACK_TRACK_POSITION_SPATIAL_X_DEF_H
 
-#include "../Spatial.h"
-namespace track {
-struct X : ISingle, Parent<ISpatial> {
-  using flat_type = X;
-  float x;
-  operator float() { return x; }
-  void set(float x) { this->x = x; }
-  const static std::string Name() { return ParentName() + "/X"; }
+#include "../../../base.h"
+
+DEFINE_SINGLE(X, ISpatial) {
+  float mX;
+  operator float() { return mX; }
+  void set(float X) { mX = X; }
+  SINGLE_BODY(X, ISpatial);
 };
-}
 
 #endif

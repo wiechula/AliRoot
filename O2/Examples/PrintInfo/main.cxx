@@ -2,10 +2,16 @@
 #include "../../DataDefinitions/Vertex.h"
 #include <iostream>
 
+template <typename... T> class test : public T... { int x; };
+
 using namespace track;
 int main(int argc, char **argv) {
+
   using myTrack =
       Track<Kinematics<Pt>, Position<Temporal, SpatialAll>, MuonScore>;
+  test<myTrack> x;
+  myTrack track;
+  track.Get<IKinematics>();
   std::cout << "Pt for tracks is located at: " << track::Pt::Name()
             << std::endl;
   std::cout << "TrackAll is located at: " << TrackAll::Name() << std::endl;
