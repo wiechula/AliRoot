@@ -503,7 +503,7 @@ int AliHLTTPCHWClusterDecoderComponent::DoEvent(const AliHLTComponentEventData& 
       }
     }
 #else
-    HLTWarning("Using compiler that does not support clz, disabling significant bit truncation for HLT clusters");
+    HLTFatal("Using compiler that does not support clz, disabling significant bit truncation for HLT clusters");
 #endif
   }
 
