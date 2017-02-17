@@ -501,8 +501,13 @@ int AliHLTTPCHWClusterDecoderComponent::DoEvent(const AliHLTComponentEventData& 
           int ldz = sizeof(unsigned int) * 8 - __builtin_clz(val);
           if (val && ldz > fSignificantBitsCharge)
           {
-            if (val & (1 << (ldz - fSignificantBitsCharge - 1))) val += (1 << (ldz - fSignificantBitsCharge - 1));
+            if (val & (1 << (ldz - fSignificantBitsCharge - 1)))
+            {
+              val += (1 << (ldz - fSignificantBitsCharge - 1));
+              ldz = sizeof(unsigned int) * 8 - __builtin_clz(val);
+            }
             val &= ((1 << ldz) - 1) ^ ((1 << (ldz - fSignificantBitsCharge)) - 1);
+            //printf("CHANGING X %x --> %x\n", clusters->fClusters[j].fCharge, val);
             clusters->fClusters[j].fCharge = val;
           }
           
@@ -510,8 +515,13 @@ int AliHLTTPCHWClusterDecoderComponent::DoEvent(const AliHLTComponentEventData& 
           ldz = sizeof(unsigned int) * 8 - __builtin_clz(val);
           if (val && ldz > fSignificantBitsCharge)
           {
-            if (val & (1 << (ldz - fSignificantBitsCharge - 1))) val += (1 << (ldz - fSignificantBitsCharge - 1));
+            if (val & (1 << (ldz - fSignificantBitsCharge - 1)))
+            {
+              val += (1 << (ldz - fSignificantBitsCharge - 1));
+              ldz = sizeof(unsigned int) * 8 - __builtin_clz(val);
+            }
             val &= ((1 << ldz) - 1) ^ ((1 << (ldz - fSignificantBitsCharge)) - 1);
+            //printf("CHANGING Y %x --> %x\n", clusters->fClusters[j].fQMax, val);
             clusters->fClusters[j].fQMax = val;
           }
         }
@@ -521,8 +531,13 @@ int AliHLTTPCHWClusterDecoderComponent::DoEvent(const AliHLTComponentEventData& 
           int ldz = sizeof(unsigned int) * 8 - __builtin_clz(val);
           if (val && ldz > fSignificantBitsWidth)
           {
-            if (val & (1 << (ldz - fSignificantBitsWidth - 1))) val += (1 << (ldz - fSignificantBitsWidth - 1));
+            if (val & (1 << (ldz - fSignificantBitsWidth - 1)))
+            {
+              val += (1 << (ldz - fSignificantBitsWidth - 1));
+              ldz = sizeof(unsigned int) * 8 - __builtin_clz(val);
+            }
             val &= ((1 << ldz) - 1) ^ ((1 << (ldz - fSignificantBitsWidth)) - 1);
+            //printf("CHANGING A %f --> %f\n", clusters->fClusters[j].fSigmaPad2, (float) val / AliHLTTPCDefinitions::fgkClusterParameterDefinitions[AliHLTTPCDefinitions::kSigmaY2].fScale);
             clusters->fClusters[j].fSigmaPad2 = (float) val / AliHLTTPCDefinitions::fgkClusterParameterDefinitions[AliHLTTPCDefinitions::kSigmaY2].fScale;
           }
           
@@ -530,8 +545,14 @@ int AliHLTTPCHWClusterDecoderComponent::DoEvent(const AliHLTComponentEventData& 
           ldz = sizeof(unsigned int) * 8 - __builtin_clz(val);
           if (val && ldz > fSignificantBitsWidth)
           {
-            if (val & (1 << (ldz - fSignificantBitsWidth - 1))) val += (1 << (ldz - fSignificantBitsWidth - 1));
+            if (val & (1 << (ldz - fSignificantBitsWidth - 1)))
+            {
+              val += (1 << (ldz - fSignificantBitsWidth - 1));
+              ldz = sizeof(unsigned int) * 8 - __builtin_clz(val);
+            }
             val &= ((1 << ldz) - 1) ^ ((1 << (ldz - fSignificantBitsWidth)) - 1);
+            //printf("CHANGING B %f --> %f (%x --> %x, %d, %d)\n", clusters->fClusters[j].fSigmaTime2, (float) val / AliHLTTPCDefinitions::fgkClusterParameterDefinitions[AliHLTTPCDefinitions::kSigmaZ2].fScale,
+            //  (unsigned int) round(clusters->fClusters[j].fSigmaTime2*AliHLTTPCDefinitions::fgkClusterParameterDefinitions[AliHLTTPCDefinitions::kSigmaZ2].fScale), val, ldz, fSignificantBitsWidth);
             clusters->fClusters[j].fSigmaTime2 = (float) val / AliHLTTPCDefinitions::fgkClusterParameterDefinitions[AliHLTTPCDefinitions::kSigmaZ2].fScale;
           }
         }
