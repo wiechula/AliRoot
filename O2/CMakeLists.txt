@@ -32,25 +32,13 @@ include_directories(${ROOT_INCLUDE_DIR}
 #file(GLOB SRCS "*.cxx")
 set(SRCS
   O2logging.cxx
-  O2Event.cxx
-  O2Timeframe.cxx
-  O2Track.cxx
-  O2Vertex.cxx
-  O2CompressedArray.cxx
-  AliO2Event.cxx
-  AliO2Track.cxx
-  AliO2Vertex.cxx
-  AliO2AnalysisManager.cxx
-  AliO2InputHandler.cxx
-  AliO2AnalysisTaskSE.cxx
+  ESDEventConverter.cxx
 )
 
 # Headers, from sources
 string(REPLACE ".cxx" ".h" HDRS "${SRCS}")
 set(HDRS
   ${HDRS}
-  O2NotImplemented.h
-  InterfaceTimestampped.h
 )
 
 # Generate the dictionary
@@ -65,7 +53,7 @@ set(ALIROOT_DEPENDENCIES ANALYSISalice STEER AOD ESD)
 # Generate the ROOT map
 # Dependecies
 set(LIBDEPS ${ALIROOT_DEPENDENCIES} ${ROOT_DEPENDENCIES})
-generate_rootmap("O2" "${LIBDEPS}" "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}LinkDef.h")
+generate_rootmap("O2" "${LIBDEPS}" "${AliRoot_SOURCE_DIR}/${MODULE}LinkDef.h")
 
 # Generate a PARfile target for this library
 add_target_parfile(${MODULE} "${SRCS}" "${HDRS}" "${MODULE}LinkDef.h" "${LIBDEPS}")
@@ -118,3 +106,8 @@ if(ALIROOT_STATIC)
             ARCHIVE DESTINATION lib
             LIBRARY DESTINATION lib)
 endif(ALIROOT_STATIC)
+
+# ECS things
+install(DIRECTORY ecs DESTINATION include)
+install(DIRECTORY Entities DESTINATION include)
+install(DIRECTORY Components DESTINATION include)
