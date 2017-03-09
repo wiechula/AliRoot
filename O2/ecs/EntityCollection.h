@@ -21,6 +21,8 @@ namespace ecs {
 ///
 template <typename Entity> class EntityCollectionInner {
 protected:
+  uint64_t mSize;
+  uint64_t mOffset;
   /// how many entities there are
   uint64_t mCount;
   /// data pointer for each component of the entity. Direct Component* for basic
@@ -50,7 +52,7 @@ public:
         (uint64_t *)mComponentCollections[index],
         (C *)((uint64_t *)mComponentCollections[index] + 2 * mCount));
   }
-  size_t size() const { return mCount; }
+  size_t size() const { return mSize; }
 };
 
 /// The 'real' EntityCollection.
@@ -61,10 +63,10 @@ private:
   /// handler instead.
   template <unsigned N = 0,
             typename std::enable_if<N<Entity::Size>::type * = nullptr> void
-                internal_tryGetHandler(Handler &handler) {
+                internal_tryGetHandler(const Handler &handler) {
     this->mComponentCollections[N] =
         (void *)handler
-            .template getComponentData<
+            .template getUntypedComponentData<
                 Entity, typename Entity::template TypeOf<N>::type>()
             .data();
     internal_tryGetHandler<N + 1>(handler);
@@ -72,17 +74,22 @@ private:
   /// termination specialization
   template <unsigned N,
             typename std::enable_if<N == Entity::Size>::type * = nullptr>
-  void internal_tryGetHandler(Handler &handler) {}
+  void internal_tryGetHandler(const Handler &handler) {}
 
 public:
   /// Construct a collection from a handler reference, grabbing the data
   /// pointers from there.
-  EntityCollection<Entity>(Handler &handler) {
+  EntityCollection<Entity>(const Handler &handler, size_t offset = 0,
+                           int64_t size = -1) {
+    this->mOffset = offset;
     this->mCount = handler.getCount<Entity>();
+    this->mSize = size >= 0 ? size : this->mCount - offset;
     internal_tryGetHandler<0>(handler);
   }
   // returns an Entity i.e. (index, reference) pair
-  Entity operator[](size_t index) { return Entity(this, index); }
+  const Entity operator[](size_t index) const {
+    return Entity(this, index + this->mOffset);
+  }
 };
 }
 #endif

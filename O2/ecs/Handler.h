@@ -34,9 +34,11 @@ class Handler {
   // We can efficiently add files using mmap, this means that we have to keep
   // files open until we terminate however, so we keep track of them here. Close
   // *should* be called automatically as the file handles get their dtor called.
-  std::vector<boost::iostreams::mapped_file_source> mMappedFiles;
+  boost::iostreams::mapped_file_source mMappedFile;
 
 public:
+  Handler() {}
+  Handler(const std::string &filename) { readFile(filename); }
   // serialize to file.
   void toFile(const std::string &filename) {
     std::ofstream file;
@@ -83,7 +85,7 @@ public:
     boost::iostreams::mapped_file_source file;
     file.open(filename.c_str());
     if (file.is_open()) {
-      mMappedFiles.push_back(file);
+      mMappedFile = file;
       // Get pointer to the data
       char *bytestream = (char *)file.data();
       uint32_t nEntities = *((uint32_t *)bytestream);
@@ -127,10 +129,21 @@ public:
   // Returns ComponentData for a given entity and component. Throws if those
   // don't exist.
   template <typename Entity, typename Component>
-  const ComponentData getComponentData() {
-    std::cout << "someone requested " << typeid(Entity).name() << "/"
-              << typeid(Component).name() << std::endl;
+  const ComponentData getUntypedComponentData() const {
+    // std::cout << "someone requested " << typeid(Entity).name() << "/"
+    //           << typeid(Component).name() << std::endl;
     return mMapping.at(Entity::Id()).mMapping.at(Component::Id());
+  }
+
+  template <typename Entity, typename Component,
+            typename std::enable_if<!std::is_base_of<
+                IVariableComponent, Component>::value>::type * = nullptr>
+  const Slice<Component> getTypedComponentData() const {
+    // std::cout << "someone requested " << typeid(Entity).name() << "/"
+    //           << typeid(Component).name() << std::endl;
+    auto untyped = getUntypedComponentData<Entity, Component>();
+    return Slice<Component>((Component *)untyped.data(),
+                            untyped.size() / sizeof(Component));
   }
 
   /// sets the Entity count for the given entity to count.
@@ -168,7 +181,7 @@ public:
     entityData.mMapping[Component::Id()] = cData;
   }
 
-  template <typename Entity> uint64_t getCount() {
+  template <typename Entity> uint64_t getCount() const {
     try {
       return mMapping.at(Entity::Id()).mCount;
     } catch (...) {

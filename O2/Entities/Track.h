@@ -17,6 +17,12 @@ public:
     auto z = this->template get<track::Z>();
     return sqrtf(x * x + y * y + z * z);
   }
+  template <typename U = Track<Components...>,
+            typename std::enable_if<U::template Contains<track::Pt>()>::type * =
+                nullptr>
+  float pt() const {
+    return this->template get<track::Pt>();
+  }
 };
 }
 

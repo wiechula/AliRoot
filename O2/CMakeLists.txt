@@ -39,6 +39,8 @@ set(SRCS
 string(REPLACE ".cxx" ".h" HDRS "${SRCS}")
 set(HDRS
   ${HDRS}
+  O2AnalysisManager.h
+  O2AnalysisTask.h
 )
 
 # Generate the dictionary

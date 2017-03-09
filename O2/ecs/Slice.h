@@ -11,7 +11,7 @@ template <typename T> class Slice {
   T *mData;
 
 public:
-  Slice<T>(T *data = nullptr, size_t size = 0) : mData(data), mSize(size) {}
+  Slice<T>(T *data = nullptr, size_t size = 0) : mSize(size), mData(data) {}
   // Slice<T>(Slice<T> &other) : mData(other.mData), mSize(other.mSize){};
   T *data() { return mData; }
   const T *data() const { return mData; }
@@ -25,6 +25,8 @@ public:
     }
     this[index];
   }
+  T *begin() { return data(); }
+  T *end() { return data() + mSize; }
 };
 }
 #endif
