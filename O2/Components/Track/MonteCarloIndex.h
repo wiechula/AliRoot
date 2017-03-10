@@ -15,7 +15,7 @@ public:
     return other;
   }
   void set(int32_t index) { mIndex = index; }
-  static uint16_t Id() { return ids::Components::MonteCarloIndex; }
+  static const char *Id() { return "MonteCarloIndex"; }
 };
 }
 }

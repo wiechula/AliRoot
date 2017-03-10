@@ -19,7 +19,8 @@ enum Components : uint16_t {
   Covariance,
   ChargeSign,
   Mass,
-  MonteCarloIndex
+  MonteCarloIndex,
+  PdgCode
 };
 }
 }

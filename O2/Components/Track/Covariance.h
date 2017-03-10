@@ -17,7 +17,7 @@ public:
       mCovariance[i] = 0;
     }
   }
-  static uint16_t Id() { return ids::Components::Covariance; }
+  static const char *Id() { return "Covariance"; }
 };
 }
 }

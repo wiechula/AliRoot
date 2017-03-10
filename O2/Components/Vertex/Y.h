@@ -15,7 +15,7 @@ public:
     return other;
   }
   void set(float Y) { mY = Y; }
-  static uint16_t Id() { return ids::Components::Y; }
+  static const char *Id() { return "Y"; }
 };
 }
 }

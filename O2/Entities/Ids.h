@@ -3,7 +3,7 @@
 #include <cstdint>
 namespace ecs {
 namespace ids {
-enum Entities : uint16_t { Track, Vertex, Cluster, MonteCarloTrack };
+enum Entities : uint16_t { Track, Vertex, Cluster, McTrack };
 }
 }
 

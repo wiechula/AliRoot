@@ -1,11 +1,14 @@
 #include "ESDEventConverter.h"
 #include <AliESDEvent.h>
+#include <AliMCEvent.h>
+#include <AliMCParticle.h>
 #include <TRandom2.h>
 
 using namespace ecs;
 
-void ESDEventConverter::addESDEvent(const AliESDEvent *event,
-                                    double timestampNs) {
+void ESDEventConverter::addESDEvent(double timestampNs,
+                                    const AliESDEvent *event,
+                                    const AliMCEvent *mcEvent) {
   TRandom2 rng;
   int numberOfTracks = event->GetNumberOfTracks();
   if (0 == numberOfTracks) {
@@ -16,11 +19,10 @@ void ESDEventConverter::addESDEvent(const AliESDEvent *event,
   mVertexY.push_back(vertex->GetY());
   mVertexZ.push_back(vertex->GetZ());
   mVertexT.push_back(timestampNs +
-                     rng.Gaus(timestampNs, sqrt(10000 * numberOfTracks)));
+                     rng.Gaus(timestampNs, 100 / sqrt(numberOfTracks)));
   Double_t cov[6];
   vertex->GetCovarianceMatrix(cov);
   mVertexCovariance.push_back(cov);
-  mVertexESDEventIndex.push_back(mEventCounter);
   mVertexSignalToNoiseX.push_back(vertex->GetXSNR());
   mVertexSignalToNoiseY.push_back(vertex->GetYSNR());
   mVertexSignalToNoiseZ.push_back(vertex->GetZSNR());
@@ -37,12 +39,16 @@ void ESDEventConverter::addESDEvent(const AliESDEvent *event,
   mVertexUsedTracksIndicesMapping.push_back(nIndices);
   mVertexUsedTracksIndicesOffset += nIndices;
 
+  mVertexESDEventMapping.push_back(ecs::vertex::ESDEventMapping(
+      mTrackX.size(), numberOfTracks, mTrackXMc.size(),
+      mcEvent ? mcEvent->GetNumberOfTracks() : 0));
+
   for (int i = 0; i < numberOfTracks; i++) {
     AliESDtrack *esdTrack = event->GetTrack(i);
     AliExternalTrackParam param;
     param.CopyFromVTrack(esdTrack);
 
-    mTrackEventIndex.push_back(mEventCounter);
+    // mTrackEventIndex.push_back(mEventCounter);
     mTrackX.push_back(param.GetX());
     mTrackY.push_back(param.GetY());
     mTrackZ.push_back(param.GetZ());
@@ -54,20 +60,35 @@ void ESDEventConverter::addESDEvent(const AliESDEvent *event,
     mTrackSinAlpha.push_back(param.GetSnp());
     mTrackTanLambda.push_back(param.GetTgl());
     mTrackMass.push_back(param.M());
-    mTrackMonteCarloIndex.push_back(esdTrack->GetLabel());
+    /// Documentation? sign used as flag, absolute value corresponds actual
+    /// index. What is the value if there is no mapping for this track?
+    if (mcEvent) {
+      Int_t label = esdTrack->GetLabel();
+      mTrackMonteCarloIndex.push_back(abs(esdTrack->GetLabel()));
+    } else {
+      // No track associated
+      mTrackMonteCarloIndex.push_back(-1);
+    }
     mTrackChargeSign.push_back(param.Charge() > 0);
-    //     // Check if this track is global or ITS
-    //     if (NULL == track->GetInnerParam()) {
-    //   // ITS track, box the time in bins of 5000ns and assign the central
-    //   time
-    //   mITSTracks.push_back(
-    //       O2ITSTrack(track, 5000.0 * floor(timestampNs / 5000.0) + 2500));
-    // }
-    // else {
-    //   // global track, guass of width 100ns
-    //   mGlobalTracks.push_back(
-    //       O2GlobalTrack(track, rng.Gaus(timestampNs, 100)));
-    // }
+  }
+  if (mcEvent) {
+    int numberOfTracks = mcEvent->GetNumberOfTracks();
+    for (int i = 0; i < numberOfTracks; i++) {
+      const AliMCParticle *mcTrack =
+          (const AliMCParticle *)mcEvent->GetTrack(i);
+      // AliExternalTrackParam param;
+      // param.CopyFromVTrack(mcTrack);
+      // TODO: PDG code
+      // mTrackEventIndexMc.push_back(mEventCounter);
+      // TODO: what are these for MC?
+      mTrackXMc.push_back(mcTrack->Xv());
+      mTrackYMc.push_back(mcTrack->Yv());
+      mTrackZMc.push_back(mcTrack->Zv());
+      mTrackTMc.push_back(timestampNs);
+      // TODO: other components
+      mTrackPtMc.push_back(mcTrack->Pt());
+      mTrackPdgCodeMc.push_back(mcTrack->PdgCode());
+    }
   }
   mEventCounter++;
 }
@@ -86,8 +107,8 @@ void ESDEventConverter::toFile(const std::string &filename) {
   h.forceInsertComponentData<Vertex_t, vertex::T>(mVertexT.data());
   h.forceInsertComponentData<Vertex_t, vertex::Covariance>(
       mVertexCovariance.data());
-  h.forceInsertComponentData<Vertex_t, vertex::ESDEventIndex>(
-      mVertexESDEventIndex.data());
+  h.forceInsertComponentData<Vertex_t, vertex::ESDEventMapping>(
+      mVertexESDEventMapping.data());
   h.forceInsertComponentData<Vertex_t, vertex::SignalToNoiseX>(
       mVertexSignalToNoiseX.data());
   h.forceInsertComponentData<Vertex_t, vertex::SignalToNoiseY>(
@@ -103,6 +124,7 @@ void ESDEventConverter::toFile(const std::string &filename) {
       mVertexUsedTracksIndices.data());
 
   size_t trackCount = mTrackX.size();
+
   h.forceInsertEntity<Track_t>(trackCount);
   h.forceInsertComponentData<Track_t, track::Covariance>(
       mTrackCovariance.data());
@@ -118,8 +140,19 @@ void ESDEventConverter::toFile(const std::string &filename) {
   h.forceInsertComponentData<Track_t, track::Y>(mTrackY.data());
   h.forceInsertComponentData<Track_t, track::Z>(mTrackZ.data());
   h.forceInsertComponentData<Track_t, track::T>(mTrackT.data());
-  h.forceInsertComponentData<Track_t, track::ESDEventIndex>(
-      mTrackEventIndex.data());
+  // h.forceInsertComponentData<Track_t, track::ESDEventIndex>(
+  //     mTrackEventIndex.data());
+
+  size_t trackCountMc = mTrackXMc.size();
+  if (trackCountMc) {
+    h.forceInsertEntity<MC_t>(trackCountMc);
+    h.forceInsertComponentData<MC_t, track::Pt>(mTrackPtMc.data());
+    h.forceInsertComponentData<MC_t, track::X>(mTrackXMc.data());
+    h.forceInsertComponentData<MC_t, track::Y>(mTrackYMc.data());
+    h.forceInsertComponentData<MC_t, track::Z>(mTrackZMc.data());
+    h.forceInsertComponentData<MC_t, track::T>(mTrackTMc.data());
+    h.forceInsertComponentData<MC_t, track::PdgCode>(mTrackPdgCodeMc.data());
+  }
   // h.forceInsertComponentData<Track_t, TrackToClusterMapping>(
   //     mapTable.data(), map.size(), map.data());
   // and we tell h to serialize this data to the the file "buffer.bin"

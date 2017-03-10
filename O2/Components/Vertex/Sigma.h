@@ -15,7 +15,7 @@ public:
     return other;
   }
   void set(float Sigma) { mSigma = Sigma; }
-  static uint16_t Id() { return ids::Components::Sigma; }
+  static const char *Id() { return "Sigma"; }
 };
 }
 }

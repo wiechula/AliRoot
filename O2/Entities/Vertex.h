@@ -6,7 +6,7 @@
 namespace ecs {
 template <typename... Components> class Vertex : public Entity<Components...> {
 public:
-  static uint16_t Id() { return ecs::ids::Entities::Vertex; }
+  static const char *Id() { return "Vertex"; }
   using ecs::Entity<Components...>::Entity;
   template <typename U = Vertex<Components...>,
             typename std::enable_if<U::template Contains<

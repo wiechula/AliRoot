@@ -3,7 +3,8 @@
 
 #include "Vertex/ChiSquared.h"
 #include "Vertex/Covariance.h"
-#include "Vertex/ESDEventIndex.h"
+// #include "Vertex/ESDEventIndex.h"
+#include "Vertex/ESDEventMapping.h"
 #include "Vertex/Ids.h"
 #include "Vertex/Sigma.h"
 #include "Vertex/SignalToNoiseX.h"

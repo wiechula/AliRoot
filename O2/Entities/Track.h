@@ -6,7 +6,7 @@
 namespace ecs {
 template <typename... Components> class Track : public Entity<Components...> {
 public:
-  static uint16_t Id() { return ecs::ids::Entities::Track; }
+  static const char *Id() { return "Track"; }
   using ecs::Entity<Components...>::Entity;
   template <typename U = Track<Components...>,
             typename std::enable_if<U::template Contains<

@@ -16,7 +16,7 @@ public:
     return other;
   }
   void set(uint64_t index) { mIndex = index; }
-  static uint16_t Id() { return ids::Components::ClusterMapping; }
+  static const char *Id() { return "ClusterMapping"; }
 };
 }
 }

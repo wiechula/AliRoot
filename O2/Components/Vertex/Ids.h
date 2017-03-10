@@ -18,7 +18,8 @@ enum Components : uint16_t {
   SignalToNoiseZ,
   ChiSquared,
   Sigma,
-  UsedTracksIndices
+  UsedTracksIndices,
+  ESDEventMapping
 };
 }
 }

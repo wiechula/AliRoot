@@ -4,6 +4,7 @@
 #include "VariableComponent.h"
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -17,8 +18,14 @@ namespace ecs {
 /// rewritten before going into production
 class Handler {
   // The identifiers used for Entities and Components
-  using EntityKey = uint16_t;
-  using ComponentKey = uint16_t;
+  using EntityKey = const char *;
+  using ComponentKey = const char *;
+  // A struct for use with the map for comparing strings
+  struct CmpStr {
+    bool operator()(char const *a, char const *b) const {
+      return std::strcmp(a, b) < 0;
+    }
+  };
   // What we store for each component, a Slice char is just a size+ptr pair.
   using ComponentData = Slice<char>;
   // what we store for each entity
@@ -27,10 +34,10 @@ class Handler {
     // How many of this entity are there?
     uint64_t mCount;
     // A mapping for the associated components to their data.
-    std::map<ComponentKey, ComponentData> mMapping;
+    std::map<ComponentKey, ComponentData, CmpStr> mMapping;
   };
   // Map entities to data.
-  std::map<EntityKey, EntityData> mMapping;
+  std::map<EntityKey, EntityData, CmpStr> mMapping;
   // We can efficiently add files using mmap, this means that we have to keep
   // files open until we terminate however, so we keep track of them here. Close
   // *should* be called automatically as the file handles get their dtor called.
@@ -41,8 +48,10 @@ public:
   Handler(const std::string &filename) { readFile(filename); }
   // serialize to file.
   void toFile(const std::string &filename) {
+    uint32_t headersize;
     std::ofstream file;
     file.open(filename.c_str(), std::ios::binary | std::ios::out);
+    file.seekp(sizeof(headersize));
     uint32_t nEntities = mMapping.size();
     std::cout << "Writting " << nEntities << " entities\n";
     file.write(reinterpret_cast<const char *>(&nEntities), sizeof(nEntities));
@@ -51,21 +60,29 @@ public:
       uint64_t count = entityIt->second.mCount;
       EntityKey eKey = entityIt->first;
       uint32_t nComponents = entityIt->second.mMapping.size();
-      file.write(reinterpret_cast<const char *>(&eKey), sizeof(eKey));
+      file.write(eKey, strlen(eKey) + 1);
       file.write(reinterpret_cast<const char *>(&count), sizeof(count));
       file.write(reinterpret_cast<const char *>(&nComponents),
                  sizeof(nComponents));
-      std::cout << "Wrote entity : " << eKey << ", " << count << ", "
-                << nComponents << std::endl;
+      std::cout << "Wrote entity " << eKey << ", count = " << count
+                << ", nComponents = " << nComponents << std::endl;
       for (auto componentIt = entityIt->second.mMapping.begin();
            componentIt != entityIt->second.mMapping.end(); ++componentIt) {
         ComponentKey cKey = componentIt->first;
-        uint64_t size = componentIt->second.size();
-        file.write(reinterpret_cast<const char *>(&cKey), sizeof(cKey));
-        file.write(reinterpret_cast<const char *>(&size), sizeof(size));
-        std::cout << "wrote " << cKey << ", " << size << "\n";
+        uint64_t cSize = componentIt->second.size();
+        file.write(cKey, strlen(cKey) + 1);
+        file.write(reinterpret_cast<const char *>(&cSize), sizeof(cSize));
+        std::cout << "wrote " << eKey << "/" << cKey << ", size = " << cSize
+                  << "\n";
       }
     }
+    // Now put at the front the size of our header.
+    headersize = file.tellp();
+    file.seekp(0);
+    file.write(reinterpret_cast<const char *>(&headersize), sizeof(headersize));
+    std::cout << "header size is " << headersize << std::endl;
+    // and print the data
+    file.seekp(headersize);
     for (auto entityIt = mMapping.begin(); entityIt != mMapping.end();
          ++entityIt) {
       // size_t count = entityIt->second.mCount;
@@ -81,6 +98,19 @@ public:
 
   /// readback data from file. Use Boost's memory mapped files so that data
   /// isn't actually read from disk unless it is accessed.
+  /// Reminder: data is stored as [
+  /// [ headerSize
+  ///   nDistinctEntities,
+  ///   nDistinctEntities*[
+  ///    EntityKey,
+  ///    number of entites,
+  ///    number of components,
+  ///    nComponents*[
+  ///     key,
+  ///     size
+  ///    ]
+  ///  ]
+  /// ] followed by the component data, in order as it has been read.
   void readFile(const std::string &filename) {
     boost::iostreams::mapped_file_source file;
     file.open(filename.c_str());
@@ -88,34 +118,31 @@ public:
       mMappedFile = file;
       // Get pointer to the data
       char *bytestream = (char *)file.data();
+      uint32_t headersize = *((uint32_t *)bytestream);
+      std::cout << headersize << std::endl;
+      bytestream += 4;
       uint32_t nEntities = *((uint32_t *)bytestream);
       std::cout << "reading " << nEntities << " entities" << std::endl;
       bytestream += 4;
-      size_t componentBlockSize = sizeof(ComponentKey) + sizeof(uint64_t);
+      char *datastart = (char *)file.data() + headersize;
       for (unsigned u = 0; u < nEntities; u++) {
-        bytestream += sizeof(EntityKey) + sizeof(uint64_t);
-        uint32_t nComponents = *((uint32_t *)bytestream);
-        bytestream += sizeof(uint32_t) + nComponents * componentBlockSize;
-      }
-      char *datastart = bytestream;
-      bytestream = (char *)file.data() + 4;
-      for (unsigned u = 0; u < nEntities; u++) {
-        EntityKey eKey = *((EntityKey *)bytestream);
-        bytestream += sizeof(EntityKey);
+        EntityKey eKey = bytestream;
+        bytestream += strlen(eKey) + 1;
         uint64_t count = *((uint64_t *)bytestream);
         bytestream += sizeof(count);
         uint32_t nComponents = *((uint32_t *)bytestream);
         bytestream += sizeof(uint32_t);
-        std::cout << "Read entity : " << eKey << ", " << count << ", "
-                  << nComponents << std::endl;
+        std::cout << "Read entity " << eKey << ", count = " << count
+                  << ", nComponents = " << nComponents << std::endl;
         EntityData &eData = mMapping[eKey];
         eData.mCount = count;
         for (uint32_t c = 0; c < nComponents; c++) {
-          ComponentKey cKey = *((ComponentKey *)bytestream);
-          bytestream += sizeof(cKey);
+          ComponentKey cKey = bytestream;
+          bytestream += strlen(cKey) + 1;
           uint64_t cSize = *((uint64_t *)bytestream);
           bytestream += 8;
-          std::cout << "read " << cKey << ", " << cSize << "\n";
+          std::cout << "read " << eKey << "/" << cKey << ", size = " << cSize
+                    << "\n";
           ComponentData cData(datastart, cSize);
           eData.mMapping[cKey] = cData;
           datastart += cSize;

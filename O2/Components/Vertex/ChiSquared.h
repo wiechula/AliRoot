@@ -15,7 +15,7 @@ public:
     return other;
   }
   void set(float ChiSquared) { mChiSquared = ChiSquared; }
-  static uint16_t Id() { return ids::Components::ChiSquared; }
+  static const char *Id() { return "ChiSquared"; }
 };
 }
 }

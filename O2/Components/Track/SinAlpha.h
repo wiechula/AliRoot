@@ -15,7 +15,7 @@ public:
     return other;
   }
   void set(float SinAlpha) { mSinAlpha = SinAlpha; }
-  static uint16_t Id() { return ids::Components::SinAlpha; }
+  static const char *Id() { return "SinAlpha"; }
 };
 }
 }

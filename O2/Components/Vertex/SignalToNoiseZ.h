@@ -15,7 +15,7 @@ public:
     return other;
   }
   void set(float SignalToNoiseZ) { mSignalToNoiseZ = SignalToNoiseZ; }
-  static uint16_t Id() { return ids::Components::SignalToNoiseZ; }
+  static const char *Id() { return "SignalToNoiseZ"; }
 };
 }
 }

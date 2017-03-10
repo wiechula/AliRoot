@@ -16,7 +16,7 @@ public:
     return other;
   }
   void set(uint32_t index) { mIndex = index; }
-  static uint16_t Id() { return ids::Components::UsedTracksIndices; }
+  static const char *Id() { return "UsedTracksIndices"; }
 };
 }
 }

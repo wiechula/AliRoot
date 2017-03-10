@@ -15,7 +15,7 @@ public:
     return other;
   }
   void set(bool ChargeSign) { mChargeSign = ChargeSign; }
-  static uint16_t Id() { return ids::Components::ChargeSign; }
+  static const char *Id() { return "ChargeSign"; }
 };
 }
 }

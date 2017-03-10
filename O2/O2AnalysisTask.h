@@ -1,5 +1,6 @@
 #ifndef ALI_O2_ANALYSIS_TASK_H
 #define ALI_O2_ANALYSIS_TASK_H
+#include "Entities/McTrack.h"
 #include "Entities/Track.h"
 #include "Entities/Vertex.h"
 #include "ecs/EntityCollection.h"
@@ -33,48 +34,45 @@ public:
   virtual void finish() {}
 };
 
-template <typename Vertex, typename Track>
+template <typename Vertex, typename Track, typename McTrack = ecs::McTrack<>>
 class O2ESDAnalysisTask : public O2AnalysisTask {
   class Event {
-    const Vertex mVertex;
+    unsigned mId;
+    const ecs::EntityCollection<Vertex> mVertices;
     const ecs::EntityCollection<Track> mTracks;
+    const ecs::EntityCollection<McTrack> mMcTracks;
 
   public:
-    Event(const Vertex vertex, const ecs::EntityCollection<Track> tracks)
-        : mVertex(vertex), mTracks(tracks) {}
-    const Vertex &getVertex() const { return mVertex; }
+    Event(const ecs::EntityCollection<Vertex> vertices,
+          const ecs::EntityCollection<Track> tracks,
+          const ecs::EntityCollection<McTrack> mcTracks)
+        : mVertices(vertices), mTracks(tracks), mMcTracks(mcTracks) {}
+    const Vertex &getVertex() const { return mVertices[0]; }
     const ecs::EntityCollection<Track> &getTracks() const { return mTracks; }
     size_t getNumberOfTracks() const { return mTracks.size(); }
+    const ecs::EntityCollection<Track> &getTracks() { return mTracks; }
+    const ecs::EntityCollection<McTrack> &getMcTracks() { return mMcTracks; }
     const Track getTrack(size_t id) const { return mTracks[id]; }
+    const McTrack getMcTrack(size_t label) const { return mMcTracks[label]; }
   };
   std::vector<Event> mEvents;
 
 protected:
-  virtual size_t numberOfEvents() {
-    return getHandler()->template getCount<Vertex>();
-  }
+  virtual size_t numberOfEvents() { return mEvents.size(); }
   virtual void init() {
     std::cout << "init ESD called \n";
-    ecs::EntityCollection<Vertex> vertices(*getHandler());
-    auto eventIndices =
-        getHandler()
-            ->template getTypedComponentData<ecs::Track<>,
-                                             ecs::track::ESDEventIndex>();
-    unsigned start = 0;
-    unsigned value = eventIndices[0];
-    unsigned u;
-    for (u = 1; u < eventIndices.size(); u++) {
-      if (eventIndices[u] != value) {
-        mEvents.push_back(Event(
-            vertices[mEvents.size()],
-            ecs::EntityCollection<Track>(*getHandler(), start, u - start)));
-        start = u;
-        value = eventIndices[u];
-      }
+    ecs::EntityCollection<ecs::Vertex<ecs::vertex::ESDEventMapping>>
+        verticesMapping(*getHandler());
+    for (int i = 0; i < verticesMapping.size(); i++) {
+      auto map =
+          verticesMapping[i].template get<ecs::vertex::ESDEventMapping>();
+      mEvents.push_back(
+          Event(ecs::EntityCollection<Vertex>(*getHandler(), i, 1),
+                ecs::EntityCollection<Track>(*getHandler(), map.trackStart(),
+                                             map.trackCount()),
+                ecs::EntityCollection<McTrack>(
+                    *getHandler(), map.mcTrackStart(), map.mcTrackCount())));
     }
-    mEvents.push_back(
-        Event(vertices[start],
-              ecs::EntityCollection<Track>(*getHandler(), start, u - start)));
     std::cout << "created " << mEvents.size() << " Events\n";
   }
   Event getEvent() const { return mEvents[getCurrentEvent()]; }

@@ -15,7 +15,7 @@ public:
     return other;
   }
   void set(float TanLambda) { mTanLambda = TanLambda; }
-  static uint16_t Id() { return ids::Components::TanLambda; }
+  static const char *Id() { return "TanLambda"; }
 };
 }
 }

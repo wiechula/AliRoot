@@ -15,7 +15,7 @@ public:
     return other;
   }
   void set(float Mass) { mMass = Mass; }
-  static uint16_t Id() { return ids::Components::Mass; }
+  static const char *Id() { return "Mass"; }
 };
 }
 }
