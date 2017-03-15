@@ -46,7 +46,19 @@ class Handler {
 public:
   Handler() {}
   Handler(const std::string &filename) { readFile(filename); }
-  // serialize to file.
+  /// serialize to file as:
+  /// [ headerSize
+  ///   nDistinctEntities,
+  ///   nDistinctEntities*[
+  ///    EntityKey,
+  ///    number of entites with said key,
+  ///    number of components,
+  ///    nComponents*[
+  ///     key,
+  ///     size in bytes of data
+  ///    ]
+  ///  ]
+  /// ] followed by the component data, in order as it has been read.
   void toFile(const std::string &filename) {
     uint32_t headersize;
     std::ofstream file;
