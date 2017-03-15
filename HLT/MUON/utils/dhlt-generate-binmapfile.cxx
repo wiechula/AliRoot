@@ -12,17 +12,18 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
-AliHLTMUONMapping::mpDE* CreateMapping();
+std::vector<AliHLTMUONMapping::mpDE> CreateMapping( Int_t firstChamber, Int_t lastChamber );
 
 void FindNeighbours(AliHLTMUONMapping::mpDE &de, UChar_t iPlane);
 
-int WriteMapping(AliHLTMUONMapping::mpDE* detectionElements, const char* mapfile);
+int WriteMapping(std::vector<AliHLTMUONMapping::mpDE> detectionElements, const char* mapfile);
 
 //______________________________________________________________________________
-AliHLTMUONMapping::mpDE* CreateMapping()
+std::vector<AliHLTMUONMapping::mpDE> CreateMapping( Int_t firstChamber, Int_t lastChamber )
 {
   /// fill the mpDE and mpPad structures once for all
 
@@ -30,11 +31,10 @@ AliHLTMUONMapping::mpDE* CreateMapping()
 
   cout << "Creating mapping..." << endl;
 
-  AliHLTMUONMapping::mpDE* detectionElements = new AliHLTMUONMapping::mpDE[AliHLTMUONMapping::NumberOfDetectionElements()];
+  std::vector<AliHLTMUONMapping::mpDE> detectionElements;
 
-  UChar_t iDE = 0;
   UInt_t padId = 0;
-  for (Int_t iCh = 0; iCh < AliMUONConstants::NCh(); ++iCh) {
+  for (Int_t iCh = firstChamber; iCh <= lastChamber; ++iCh) {
     AliMpDEIterator deIt;
     deIt.First(iCh);
 
@@ -44,9 +44,8 @@ AliHLTMUONMapping::mpDE* CreateMapping()
 
       cout << "DE " << deId << "..." << flush;
 
-      AliHLTMUONMapping::mpDE &de = detectionElements[iDE];
+      AliHLTMUONMapping::mpDE de;
       de.id = deId;
-      //fDEIndices.Add(deId, iDE);
 
       const AliMpVSegmentation* seg[2] =
       { AliMpSegmentation::Instance()->GetMpSegmentation(deId,AliMp::kCath0),
@@ -112,8 +111,9 @@ AliHLTMUONMapping::mpDE* CreateMapping()
 
       }
 
-      ++iDE;
       deIt.Next();
+
+      detectionElements.push_back(de);
 
     }
 
@@ -170,7 +170,7 @@ void FindNeighbours(AliHLTMUONMapping::mpDE &de, UChar_t iPlane)
 }
 
 //______________________________________________________________________________
-int WriteMapping(AliHLTMUONMapping::mpDE* detectionElements, const char* mapfile)
+int WriteMapping(std::vector<AliHLTMUONMapping::mpDE> detectionElements, const char* mapfile)
 {
   cout << "Writing mapping to " << mapfile << endl;
 
@@ -179,13 +179,11 @@ int WriteMapping(AliHLTMUONMapping::mpDE* detectionElements, const char* mapfile
     return 1;
   }
 
-  Int_t numberOfDetectionElements = AliHLTMUONMapping::NumberOfDetectionElements();
+  Int_t numberOfDetectionElements = detectionElements.size();
 
   out.write((char*)&numberOfDetectionElements,sizeof(Int_t));
 
-  for ( UChar_t i = 0; i < numberOfDetectionElements; ++i ) {
-
-    AliHLTMUONMapping::mpDE& de(detectionElements[i]);
+  for ( AliHLTMUONMapping::mpDE &de : detectionElements ) {
 
     out.write((char*)&de.id,sizeof(Int_t));
     out.write((char*)&de.iCath[0],sizeof(UChar_t)*2);
@@ -229,6 +227,7 @@ int main(int argc, char** argv) {
   const char* cdbPath = NULL;
   Int_t run = -1;
   string binmapfile="binmapfile.dat";
+  Int_t chamberRange[2] = {0,AliMUONConstants::NCh()-1};
 
   for (int i = 0; i < argc; i++) {
 
@@ -268,8 +267,6 @@ int main(int argc, char** argv) {
     // get the run number
     if (strcmp(argv[i], "-run") == 0) {
 
-      cout << "toto : " << argv[i] << endl;
-
       if (run != -1) {
         cout << "Run number was already specified. Will replace previous value given by -run." << endl;
       }
@@ -290,6 +287,30 @@ int main(int argc, char** argv) {
 
       ++i;
       continue;
+    }
+
+    // get the chamber range
+    for ( Int_t ival=0; ival<2; ival++ ) {
+      const char* argName = ( ival==0 ) ? "-first" : "-last";
+      if (strcmp(argv[i], argName) == 0) {
+
+        if (argc <= i+1) {
+          cerr << "The run number was not specified." << endl;
+          return 3;
+        }
+
+        char* cpErr = NULL;
+        chamberRange[ival] = Int_t( strtol(argv[i+1], &cpErr, 0) );
+        if (cpErr == NULL or *cpErr != '\0' or run < 0) {
+          cerr << "Cannot convert "<< argv[i+1] << " to a valid run number. Expected a positive integer value." << endl;
+          return 4;
+        }
+
+        cout << argName << chamberRange[ival] << endl;
+
+        ++i;
+        continue;
+      }
     }
   }
 
@@ -320,15 +341,25 @@ int main(int argc, char** argv) {
     cdbManager->SetRun(run);
   }
 
+  // Check the chamber range
+  if ( chamberRange[0] > chamberRange[1] ) {
+    cerr << "First chamber (" << chamberRange[0] << ") must be smaller than last chamber (" << chamberRange[1] << ")" << endl;
+  }
+  else {
+    for ( Int_t ival=0; ival>2; ival++ ) {
+      if ( chamberRange[ival] >= 0 && chamberRange[ival] < AliMUONConstants::NCh() ) continue;
+      cerr << "Chamber number must be in the range 0 - 13. MCH: 0-9; MTR: 10-13" << endl;
+      return 8;
+    }
+  }
+
   // Load the MUON mapping from CDB and create the internal mapping
   // MUON mapping also needed for raw data decoding
   if (!AliMUONCDB::LoadMapping()) return 8;
 
-  AliHLTMUONMapping::mpDE* detectionElements = CreateMapping();
+  std::vector<AliHLTMUONMapping::mpDE> detectionElements = CreateMapping(chamberRange[0],chamberRange[1]);
 
   int rv = WriteMapping(detectionElements, binmapfile.c_str());
-
-  delete[] detectionElements;
 
   return rv;
 }
