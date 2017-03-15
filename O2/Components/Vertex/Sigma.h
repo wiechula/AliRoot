@@ -1,6 +1,6 @@
 #ifndef ALI_O2_COMPONENSigmaS_VERTEX_SIGMA_H
 #define ALI_O2_COMPONENSigmaS_VERTEX_SIGMA_H
-#include "Ids.h"
+#include <cstdint>
 namespace ecs {
 namespace vertex {
 class Sigma {

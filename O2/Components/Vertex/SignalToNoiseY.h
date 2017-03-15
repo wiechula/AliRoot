@@ -1,6 +1,6 @@
 #ifndef ALI_O2_COMPONENTS_VERTEX_SIGNAL_TO_NOISE_Y_H
 #define ALI_O2_COMPONENTS_VERTEX_SIGNAL_TO_NOISE_Y_H
-#include "Ids.h"
+#include <cstdint>
 namespace ecs {
 namespace vertex {
 class SignalToNoiseY {

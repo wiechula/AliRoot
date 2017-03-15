@@ -1,5 +1,6 @@
 #ifndef ECS_ENTITY_H
 #define ECS_ENTITY_H
+#include "Dependency.h"
 #include "EntityCollection.h"
 #include "Slice.h"
 #include "VariableComponent.h"
@@ -15,16 +16,16 @@ template <typename... Components> class Entity {
   // First we define some public meta-template features.
 public:
   using Self = Entity<Components...>;
-  using ComponentsTuple = std::tuple<Components...>;
-  constexpr static size_t Size = sizeof...(Components);
+  using ComponentsTuple = decltype(std::tuple_cat(
+      std::conditional<std::is_base_of<IDependency, Components>::value,
+                       Components, std::tuple<Components>>::type...));
+  constexpr static size_t Size = std::tuple_size<ComponentsTuple>::value;
 
-  // IndexOf returns the index of a component in the paramater pack
-  // "Components..."
-  template <typename G,
-            typename std::enable_if<is_one_of<G, Components...>::value>::type
-                * = nullptr>
+  // IndexOf returns the index of a component in the component list
+  template <typename G, typename std::enable_if<tuple_contains<
+                            G, ComponentsTuple>::value>::type * = nullptr>
   constexpr static int IndexOf() {
-    return first_true<std::is_base_of<G, Components>::value...>::value;
+    return tuple_index_of<G, ComponentsTuple>::value;
   }
 
   // define type<N> as the type of the N'th component
@@ -37,24 +38,23 @@ public:
   template <typename Head, typename... Rest,
             typename std::enable_if<0 != sizeof...(Rest)>::type * = nullptr>
   constexpr static bool Contains() {
-    return any_true<std::is_same<Head, Components>::value...>::value &&
-           Contains<Rest...>();
+    return tuple_contains<Head, ComponentsTuple>::value && Contains<Rest...>();
   }
   // Specialization to stop recursion
   template <typename Head> constexpr static bool Contains() {
-    return any_true<std::is_same<Head, Components>::value...>::value;
+    return tuple_contains<Head, ComponentsTuple>::value;
   }
 
   // Checks if none of the types in <Head, Rest...> are included.
   template <typename Head, typename... Rest,
             typename std::enable_if<0 != sizeof...(Rest)>::type * = nullptr>
   constexpr static bool DoesntContain() {
-    return !any_true<std::is_same<Head, Components>::value...>::value &&
+    return !tuple_contains<Head, ComponentsTuple>::value &&
            DoesntContain<Rest...>();
   }
   // Specialization to stop recursion
   template <typename Head> constexpr static bool DoesntContain() {
-    return !any_true<std::is_same<Head, Components>::value...>::value;
+    return !tuple_contains<Head, ComponentsTuple>::value;
   }
 
 private:

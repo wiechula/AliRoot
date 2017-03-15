@@ -1,6 +1,6 @@
 #ifndef ALI_O2_COMPONENTS_VERTEX_COVARIANCE_H
 #define ALI_O2_COMPONENTS_VERTEX_COVARIANCE_H
-#include "Ids.h"
+
 namespace ecs {
 namespace vertex {
 class Covariance {

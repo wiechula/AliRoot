@@ -1,6 +1,6 @@
 #ifndef ALI_O2_COMPONENENTS_VERTEX_ESD_EVENT_MAPPING_H
 #define ALI_O2_COMPONENENTS_VERTEX_ESD_EVENT_MAPPING_H
-#include "Ids.h"
+#include <cstdint>
 namespace ecs {
 namespace vertex {
 class ESDEventMapping {

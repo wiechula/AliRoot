@@ -1,6 +1,6 @@
 #ifndef ALI_O2_COMPONENTS_VERTEX_CHI_SQUARED_H
 #define ALI_O2_COMPONENTS_VERTEX_CHI_SQUARED_H
-#include "Ids.h"
+
 namespace ecs {
 namespace vertex {
 class ChiSquared {

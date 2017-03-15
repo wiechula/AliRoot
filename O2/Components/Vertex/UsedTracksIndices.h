@@ -1,7 +1,7 @@
 #ifndef ALI_O2_COMPONENENTS_VERTEX_USED_TRACKS_INDICES_H
 #define ALI_O2_COMPONENENTS_VERTEX_USED_TRACKS_INDICES_H
 #include "../../ecs/VariableComponent.h"
-#include "Ids.h"
+#include <cstdint>
 namespace ecs {
 namespace vertex {
 class UsedTracksIndices : IVariableComponent {

@@ -1,7 +1,8 @@
 #ifndef ALI_O2_COMPONENTS_TRACK_CLUSTER_MAPPING_H
 #define ALI_O2_COMPONENTS_TRACK_CLUSTER_MAPPING_H
 #include "../../ecs/VariableComponent.h"
-#include "Ids.h"
+#include <cstdint>
+
 namespace ecs {
 namespace track {
 class ClusterMapping : IVariableComponent {

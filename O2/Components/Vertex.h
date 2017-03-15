@@ -1,11 +1,11 @@
 #ifndef ALI_O2_COMPONENTS_VERTEX_H
 #define ALI_O2_COMPONENTS_VERTEX_H
 
+#include "Vertex/Virtual/SpatialPosition.h"
+
 #include "Vertex/ChiSquared.h"
 #include "Vertex/Covariance.h"
-// #include "Vertex/ESDEventIndex.h"
 #include "Vertex/ESDEventMapping.h"
-#include "Vertex/Ids.h"
 #include "Vertex/Sigma.h"
 #include "Vertex/SignalToNoiseX.h"
 #include "Vertex/SignalToNoiseY.h"
