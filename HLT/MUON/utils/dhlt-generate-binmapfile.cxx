@@ -16,11 +16,29 @@
 
 using namespace std;
 
+UShort_t GetColumn ( Int_t localBoardId );
+
 std::vector<AliHLTMUONMapping::mpDE> CreateMapping( Int_t firstChamber, Int_t lastChamber );
 
 void FindNeighbours(AliHLTMUONMapping::mpDE &de, UChar_t iPlane);
 
 int WriteMapping(std::vector<AliHLTMUONMapping::mpDE> detectionElements, const char* mapfile);
+
+//______________________________________________________________________________
+UShort_t GetColumn ( Int_t localBoardId )
+{
+  /// Get column from local board id
+  Int_t iboard = (localBoardId-1)%117;
+  Int_t colChange[6] = {16,38,60,76,92,108};
+  UShort_t icol = 6;
+  for ( UShort_t ichange=0; ichange<6; ichange++ ) {
+    if ( iboard < colChange[ichange] ) {
+      icol = ichange;
+      break;
+    }
+  }
+  return icol;
+}
 
 //______________________________________________________________________________
 std::vector<AliHLTMUONMapping::mpDE> CreateMapping( Int_t firstChamber, Int_t lastChamber )
@@ -93,6 +111,7 @@ std::vector<AliHLTMUONMapping::mpDE> CreateMapping( Int_t firstChamber, Int_t la
           de.padIndices[iPlane[iCath]].Add(padId, iPad+1);
 
           de.pads[iPad].iDigit = 0;
+          if ( deId >= 1100 ) de.pads[iPad].iDigit = GetColumn(pad.GetManuId());
           de.pads[iPad].nNeighbours = 0;
           de.pads[iPad].area[0][0] = pad.GetPositionX() - pad.GetDimensionX();
           de.pads[iPad].area[0][1] = pad.GetPositionX() + pad.GetDimensionX();
