@@ -6,7 +6,7 @@
 
 namespace ecs {
 namespace generic {
-class Pt : Dependency<Px, Py> {};
+class Pt : public Dependency<Px, Py> {};
 }
 }
 #endif

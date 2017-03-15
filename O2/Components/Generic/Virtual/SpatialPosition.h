@@ -7,7 +7,7 @@
 
 namespace ecs {
 namespace generic {
-class SpatialPosition : Dependency<X, Y, Z> {};
+class SpatialPosition : public Dependency<X, Y, Z> {};
 }
 }
 #endif

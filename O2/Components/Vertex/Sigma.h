@@ -1,5 +1,5 @@
-#ifndef ALI_O2_COMPONENSigmaS_VERTEX_SIGMA_H
-#define ALI_O2_COMPONENSigmaS_VERTEX_SIGMA_H
+#ifndef ALI_O2_COMPONENTS_VERTEX_SIGMA_H
+#define ALI_O2_COMPONENTS_VERTEX_SIGMA_H
 #include <cstdint>
 namespace ecs {
 namespace vertex {

@@ -1,8 +1,8 @@
 #ifndef ALI_O2_COMPONENTS_PARTICLE_H
 #define ALI_O2_COMPONENTS_PARTICLE_H
 
-#include "Partice/Virtual/Pt.h"
-#include "Partice/Virtual/SpatialPosition.h"
+#include "Particle/Virtual/Pt.h"
+#include "Particle/Virtual/SpatialPosition.h"
 
 #include "Particle/PdgCode.h"
 #include "Particle/Px.h"
