@@ -1,16 +1,18 @@
 #ifndef ALI_O2_WRAPPER_ESD_EVENT_CONVERTER_H
 #define ALI_O2_WRAPPER_ESD_EVENT_CONVERTER_H
-#include "Entities/McTrack.h"
+
+#include "Entities/Particle.h"
 #include "Entities/Track.h"
 #include "Entities/Vertex.h"
 
 class AliESDEvent;
 class AliMCEvent;
 class ESDEventConverter {
+  bool mContainsMcInfo = false;
   unsigned mEventCounter = 0;
   using Track_t = ecs::Track<>;
-  using MC_t = ecs::McTrack<>;
   using Vertex_t = ecs::Vertex<>;
+  using Particle_t = ecs::Particle<>;
 
   std::vector<ecs::vertex::X> mVertexX;
   std::vector<ecs::vertex::Y> mVertexY;
@@ -34,22 +36,28 @@ class ESDEventConverter {
   std::vector<ecs::track::Z> mTrackZ;
   std::vector<ecs::track::T> mTrackT;
   std::vector<ecs::track::Covariance> mTrackCovariance;
-  std::vector<ecs::track::Pt> mTrackPt;
-  std::vector<ecs::track::SinAlpha> mTrackSinAlpha;
-  std::vector<ecs::track::TanLambda> mTrackTanLambda;
-  std::vector<ecs::track::Mass> mTrackMass;
-  std::vector<ecs::track::MonteCarloIndex> mTrackMonteCarloIndex;
+  std::vector<ecs::track::Px> mTrackPx;
+  std::vector<ecs::track::Py> mTrackPy;
+  std::vector<ecs::track::Pz> mTrackPz;
   std::vector<ecs::track::ChargeSign> mTrackChargeSign;
+  std::vector<ecs::track::Mass> mTrackMass;
+  // Only makes sense for MCTracks
+  std::vector<ecs::track::mc::MonteCarloIndex> mTrackMonteCarloIndex;
+  std::vector<ecs::track::mc::AmbiguousClustersFlag> mAmbiguousClustersFlag;
 
   // std::vector<ecs::track::ESDEventIndex> mTrackEventIndexMc;
-  std::vector<ecs::track::X> mTrackXMc;
-  std::vector<ecs::track::Y> mTrackYMc;
-  std::vector<ecs::track::Z> mTrackZMc;
-  std::vector<ecs::track::T> mTrackTMc;
-  std::vector<ecs::track::Pt> mTrackPtMc;
-  std::vector<ecs::track::PdgCode> mTrackPdgCodeMc;
+  std::vector<ecs::particle::X> mParticleX;
+  std::vector<ecs::particle::Y> mParticleY;
+  std::vector<ecs::particle::Z> mParticleZ;
+  std::vector<ecs::particle::T> mParticleT;
+  std::vector<ecs::particle::Px> mParticlePx;
+  std::vector<ecs::particle::Py> mParticlePy;
+  std::vector<ecs::particle::Pz> mParticlePz;
+  // std::vector<ecs::Particle::Pt> mTrackPtMc;
+  std::vector<ecs::particle::PdgCode> mParticlePdgCode;
 
 public:
+  void useMcInfo(bool setTo) { mContainsMcInfo = setTo; }
   /// Reads data from an AliESDEvent and copies it into it's own buffers. Uses
   /// the given timestamp as a 'real' event time to generate simulated detection
   /// times.

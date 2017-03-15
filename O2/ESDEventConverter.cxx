@@ -14,6 +14,9 @@ void ESDEventConverter::addESDEvent(double timestampNs,
   if (0 == numberOfTracks) {
     return;
   }
+  if (mContainsMcInfo && (nullptr == mcEvent)) {
+    return;
+  }
   const AliESDVertex *vertex = event->GetVertex();
   mVertexX.push_back(vertex->GetX());
   mVertexY.push_back(vertex->GetY());
@@ -29,6 +32,7 @@ void ESDEventConverter::addESDEvent(double timestampNs,
   mVertexChiSquared.push_back(vertex->GetChi2());
   mVertexSigma.push_back(vertex->GetDispersion());
   int nIndices = vertex->GetNIndices();
+  // TODO: verify
   // How many tracks were already added before this event.
   size_t trackIndexOffset = mTrackX.size();
   UShort_t *indices = vertex->GetIndices();
@@ -39,55 +43,47 @@ void ESDEventConverter::addESDEvent(double timestampNs,
   mVertexUsedTracksIndicesMapping.push_back(nIndices);
   mVertexUsedTracksIndicesOffset += nIndices;
 
-  mVertexESDEventMapping.push_back(ecs::vertex::ESDEventMapping(
-      mTrackX.size(), numberOfTracks, mTrackXMc.size(),
-      mcEvent ? mcEvent->GetNumberOfTracks() : 0));
+  mVertexESDEventMapping.push_back(
+      ecs::vertex::ESDEventMapping(mTrackX.size(), numberOfTracks));
 
   for (int i = 0; i < numberOfTracks; i++) {
     AliESDtrack *esdTrack = event->GetTrack(i);
-    AliExternalTrackParam param;
-    param.CopyFromVTrack(esdTrack);
 
-    // mTrackEventIndex.push_back(mEventCounter);
-    mTrackX.push_back(param.GetX());
-    mTrackY.push_back(param.GetY());
-    mTrackZ.push_back(param.GetZ());
+    mTrackX.push_back(esdTrack->GetX());
+    mTrackY.push_back(esdTrack->GetY());
+    mTrackZ.push_back(esdTrack->GetZ());
     mTrackT.push_back(timestampNs + rng.Gaus(timestampNs, 100));
     Double_t cov[15];
     esdTrack->GetExternalCovariance(cov);
     mTrackCovariance.push_back(cov);
-    mTrackPt.push_back(param.Pt());
-    mTrackSinAlpha.push_back(param.GetSnp());
-    mTrackTanLambda.push_back(param.GetTgl());
-    mTrackMass.push_back(param.M());
+    mTrackPx.push_back(esdTrack->Px());
+    mTrackPy.push_back(esdTrack->Py());
+    mTrackPz.push_back(esdTrack->Pz());
+    mTrackMass.push_back(esdTrack->M());
+    mTrackChargeSign.push_back(esdTrack->Charge() > 0);
     /// Documentation? sign used as flag, absolute value corresponds actual
     /// index. What is the value if there is no mapping for this track?
-    if (mcEvent) {
+    if (mContainsMcInfo) {
       Int_t label = esdTrack->GetLabel();
-      mTrackMonteCarloIndex.push_back(abs(esdTrack->GetLabel()));
-    } else {
-      // No track associated
-      mTrackMonteCarloIndex.push_back(-1);
+      mTrackMonteCarloIndex.push_back(abs(label) + mParticleX.size());
+      mAmbiguousClustersFlag.push_back(label >= 0);
     }
-    mTrackChargeSign.push_back(param.Charge() > 0);
   }
-  if (mcEvent) {
-    int numberOfTracks = mcEvent->GetNumberOfTracks();
-    for (int i = 0; i < numberOfTracks; i++) {
-      const AliMCParticle *mcTrack =
+  if (mContainsMcInfo) {
+    int numberOfParticles = mcEvent->GetNumberOfTracks();
+    for (int i = 0; i < numberOfParticles; i++) {
+      const AliMCParticle *mcParticle =
           (const AliMCParticle *)mcEvent->GetTrack(i);
-      // AliExternalTrackParam param;
-      // param.CopyFromVTrack(mcTrack);
-      // TODO: PDG code
-      // mTrackEventIndexMc.push_back(mEventCounter);
-      // TODO: what are these for MC?
-      mTrackXMc.push_back(mcTrack->Xv());
-      mTrackYMc.push_back(mcTrack->Yv());
-      mTrackZMc.push_back(mcTrack->Zv());
-      mTrackTMc.push_back(timestampNs);
-      // TODO: other components
-      mTrackPtMc.push_back(mcTrack->Pt());
-      mTrackPdgCodeMc.push_back(mcTrack->PdgCode());
+
+      mParticleX.push_back(mcParticle->Xv());
+      mParticleY.push_back(mcParticle->Yv());
+      mParticleZ.push_back(mcParticle->Zv());
+      mParticleT.push_back(timestampNs); // ignoring secondaries and
+                                         // lifetimes.
+      mParticlePx.push_back(mcParticle->Px());
+      mParticlePy.push_back(mcParticle->Py());
+      mParticlePz.push_back(mcParticle->Pz());
+      mParticlePdgCode.push_back(mcParticle->PdgCode());
     }
   }
   mEventCounter++;
@@ -126,32 +122,42 @@ void ESDEventConverter::toFile(const std::string &filename) {
   size_t trackCount = mTrackX.size();
 
   h.forceInsertEntity<Track_t>(trackCount);
-  h.forceInsertComponentData<Track_t, track::Covariance>(
-      mTrackCovariance.data());
-  h.forceInsertComponentData<Track_t, track::Pt>(mTrackPt.data());
-  h.forceInsertComponentData<Track_t, track::SinAlpha>(mTrackSinAlpha.data());
-  h.forceInsertComponentData<Track_t, track::TanLambda>(mTrackTanLambda.data());
-  h.forceInsertComponentData<Track_t, track::Mass>(mTrackMass.data());
-  h.forceInsertComponentData<Track_t, track::MonteCarloIndex>(
-      mTrackMonteCarloIndex.data());
-  h.forceInsertComponentData<Track_t, track::ChargeSign>(
-      mTrackChargeSign.data());
+
   h.forceInsertComponentData<Track_t, track::X>(mTrackX.data());
   h.forceInsertComponentData<Track_t, track::Y>(mTrackY.data());
   h.forceInsertComponentData<Track_t, track::Z>(mTrackZ.data());
   h.forceInsertComponentData<Track_t, track::T>(mTrackT.data());
+  h.forceInsertComponentData<Track_t, track::Px>(mTrackPx.data());
+  h.forceInsertComponentData<Track_t, track::Py>(mTrackPy.data());
+  h.forceInsertComponentData<Track_t, track::Pz>(mTrackPz.data());
+
+  h.forceInsertComponentData<Track_t, track::Covariance>(
+      mTrackCovariance.data());
+  h.forceInsertComponentData<Track_t, track::Mass>(mTrackMass.data());
+  h.forceInsertComponentData<Track_t, track::ChargeSign>(
+      mTrackChargeSign.data());
+
   // h.forceInsertComponentData<Track_t, track::ESDEventIndex>(
   //     mTrackEventIndex.data());
 
-  size_t trackCountMc = mTrackXMc.size();
+  size_t trackCountMc = mParticleX.size();
   if (trackCountMc) {
-    h.forceInsertEntity<MC_t>(trackCountMc);
-    h.forceInsertComponentData<MC_t, track::Pt>(mTrackPtMc.data());
-    h.forceInsertComponentData<MC_t, track::X>(mTrackXMc.data());
-    h.forceInsertComponentData<MC_t, track::Y>(mTrackYMc.data());
-    h.forceInsertComponentData<MC_t, track::Z>(mTrackZMc.data());
-    h.forceInsertComponentData<MC_t, track::T>(mTrackTMc.data());
-    h.forceInsertComponentData<MC_t, track::PdgCode>(mTrackPdgCodeMc.data());
+
+    h.forceInsertComponentData<Track_t, track::mc::MonteCarloIndex>(
+        mTrackMonteCarloIndex.data());
+    h.forceInsertComponentData<Track_t, track::mc::AmbiguousClustersFlag>(
+        mAmbiguousClustersFlag.data());
+
+    h.forceInsertEntity<Particle_t>(trackCountMc);
+    h.forceInsertComponentData<Particle_t, particle::X>(mParticleX.data());
+    h.forceInsertComponentData<Particle_t, particle::Y>(mParticleY.data());
+    h.forceInsertComponentData<Particle_t, particle::Z>(mParticleZ.data());
+    h.forceInsertComponentData<Particle_t, particle::T>(mParticleT.data());
+    h.forceInsertComponentData<Particle_t, particle::Px>(mParticlePx.data());
+    h.forceInsertComponentData<Particle_t, particle::Py>(mParticlePy.data());
+    h.forceInsertComponentData<Particle_t, particle::Pz>(mParticlePz.data());
+    h.forceInsertComponentData<Particle_t, particle::PdgCode>(
+        mParticlePdgCode.data());
   }
   // h.forceInsertComponentData<Track_t, TrackToClusterMapping>(
   //     mapTable.data(), map.size(), map.data());
