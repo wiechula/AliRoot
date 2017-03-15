@@ -34,8 +34,12 @@ public:
       for (auto &task : mTasks) {
         task->UserInit();
       }
-#pragma omp for schedule(dynamic) collapse(2)
+      // TODO: We can start running in parallel over files once a merging scheme
+      // is defined. When we do this, the tasks need to become copies per file
+      // too.
+      //#pragma omp for schedule(dynamic) collapse(2)
       for (auto &handler : mHandlers) {
+#pragma omp for
         for (auto &task : mTasks) {
           task->setHandler(handler);
           task->init();
