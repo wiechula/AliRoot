@@ -41,6 +41,7 @@ set(HDRS
   ${HDRS}
   O2AnalysisManager.h
   O2AnalysisTask.h
+  O2ESDAnalysisTask.h
 )
 
 # Generate the dictionary
