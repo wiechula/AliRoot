@@ -25,11 +25,13 @@ public:
     TExMap padIndices[2]; // indices+1 of pads from their ID
   };
 
-  static int NumberOfDetectionElements() { return 156; }
+  static int NumberOfDetectionElements() { return 228; }
 
   static mpDE* ReadMapping(const char* mapfile);
 
   static Bool_t AreOverlapping(Float_t area1[2][2], Float_t area2[2][2], Float_t precision);
+
+  static Bool_t AreOverlappingExcludeCorners(Float_t area1[2][2], Float_t area2[2][2]);
 
 };
 

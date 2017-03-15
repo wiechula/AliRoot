@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cassert>
 #include <iostream>
+#include "TMath.h"
 
 using namespace std;
 
@@ -60,7 +61,7 @@ AliHLTMUONMapping::mpDE* AliHLTMUONMapping::ReadMapping(const char* mapfile)
     delete[] themap;
   }
 
-  if ( totalNumberOfPads != 1064008 ) {
+  if ( totalNumberOfPads != 1064008+20992 ) {
     delete[] detectionElements;
     return 0x0;
   }
@@ -81,4 +82,24 @@ Bool_t AliHLTMUONMapping::AreOverlapping(Float_t area1[2][2], Float_t area2[2][2
 
   return kTRUE;
 
+}
+
+
+//_________________________________________________________________________________________________
+Bool_t AliHLTMUONMapping::AreOverlappingExcludeCorners(Float_t area1[2][2], Float_t area2[2][2])
+{
+  /// check if the two areas overlap (excluding pad corners)
+  /// precision in cm: positive = increase pad size / negative = decrease pad size
+
+  Float_t precision = 1.e-4;
+  if ( AreOverlapping(area1, area2, precision) ) {
+    for ( Int_t ip1=0; ip1<2; ++ip1 ) {
+      for ( Int_t ip2=0; ip2<2; ++ip2 ) {
+        if ( TMath::Abs(area1[0][ip1] - area2[0][1-ip1]) < precision && TMath::Abs(area1[1][ip2] - area2[1][1-ip2]) < precision ) return kFALSE;
+      }
+    }
+    return kTRUE;
+  }
+
+  return kFALSE;
 }

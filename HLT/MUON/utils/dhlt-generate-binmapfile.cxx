@@ -34,7 +34,7 @@ AliHLTMUONMapping::mpDE* CreateMapping()
 
   UChar_t iDE = 0;
   UInt_t padId = 0;
-  for (Int_t iCh = 0; iCh < AliMUONConstants::NTrackingCh(); ++iCh) {
+  for (Int_t iCh = 0; iCh < AliMUONConstants::NCh(); ++iCh) {
     AliMpDEIterator deIt;
     deIt.First(iCh);
 
@@ -136,7 +136,25 @@ void FindNeighbours(AliHLTMUONMapping::mpDE &de, UChar_t iPlane)
     // loop over next pads to find the neighbours
     for (UShort_t iPad2 = iPad1+1; iPad2 < lastPad; ++iPad2) {
 
-      if (AliHLTMUONMapping::AreOverlapping(de.pads[iPad1].area, de.pads[iPad2].area, 1.e-4)) {
+      // For the tracking, the pad neighbours of x are as following:
+      //  --- --- ---
+      // |   |   |   |
+      //  --- --- ---
+      // |   | x |   |
+      //  --- --- ---
+      // |   |   |   |
+      //  --- --- ---
+      // For the trigger, which has much larger strip, we define as neighbours:
+      //      ---
+      //     |   |
+      //  --- --- ---
+      // |   | x |   |
+      //  --- --- ---
+      //     |   |
+      //      ---
+
+      Bool_t hasOverlap = ( de.id >= 1100 ) ? AliHLTMUONMapping::AreOverlappingExcludeCorners(de.pads[iPad1].area, de.pads[iPad2].area) : AliHLTMUONMapping::AreOverlapping(de.pads[iPad1].area, de.pads[iPad2].area, 1.e-4);
+      if ( hasOverlap ) {
 
         de.pads[iPad1].neighbours[de.pads[iPad1].nNeighbours] = iPad2;
         ++de.pads[iPad1].nNeighbours;
