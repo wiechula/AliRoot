@@ -16,9 +16,11 @@ template <typename... Components> class Entity {
   // First we define some public meta-template features.
 public:
   using Self = Entity<Components...>;
+  // defines a single tuple containing all the components that were given to
+  // Enity, unrolling any dependencies.
+  // can contain duplicates if duplicates are given.
   using ComponentsTuple = decltype(std::tuple_cat(
-      std::conditional<std::is_base_of<IDependency, Components>::value,
-                       Components, std::tuple<Components>>::type...));
+      std::declval<typename GetDependencyTuple<Components>::type>()...));
   constexpr static size_t Size = std::tuple_size<ComponentsTuple>::value;
 
   // IndexOf returns the index of a component in the component list
@@ -77,7 +79,7 @@ public:
   template <typename G /*The type we requests*/,
             typename std::enable_if<
                 !std::is_base_of<IVariableComponent, G>::value &&
-                is_one_of<G, Components...>::value>::type * = nullptr>
+                tuple_contains<G, ComponentsTuple>::value>::type * = nullptr>
   constexpr G get() const {
     return mCollection->template get<G>()[mId];
   }
@@ -87,7 +89,7 @@ public:
   template <typename G /*The type we requests*/,
             typename std::enable_if<
                 std::is_base_of<IVariableComponent, G>::value &&
-                is_one_of<G, Components...>::value>::type * = nullptr>
+                tuple_contains<G, ComponentsTuple>::value>::type * = nullptr>
   Slice<G> get() const {
     std::pair<uint64_t *, G *> data = mCollection->template get<G>();
     uint64_t index = data.first[2 * mId + 0];

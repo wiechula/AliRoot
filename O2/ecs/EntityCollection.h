@@ -21,15 +21,14 @@ namespace ecs {
 ///
 template <typename Entity> class EntityCollectionInner {
 protected:
-  uint64_t mSize;
+  uint64_t mSize = 0;
   uint64_t mOffset;
   /// how many entities there are
-  uint64_t mCount;
+  uint64_t mCount = 0;
   /// data pointer for each component of the entity. Direct Component* for basic
   /// components, special structure for N->M mapped components (array of index,
   /// size pairs for each entity followed by the array of component values)
   void *mComponentCollections[Entity::Size];
-  EntityCollectionInner<Entity>(){};
 
 public:
   // Get a pointer to the component array based on type.
@@ -77,14 +76,18 @@ private:
   void internal_tryGetHandler(const Handler &handler) {}
 
 public:
+  EntityCollection<Entity>() {}
   /// Construct a collection from a handler reference, grabbing the data
   /// pointers from there.
-  EntityCollection<Entity>(const Handler &handler, size_t offset = 0,
-                           int64_t size = -1) {
+  void fill(const Handler &handler, size_t offset = 0, int64_t size = -1) {
     this->mOffset = offset;
     this->mCount = handler.getCount<Entity>();
     this->mSize = size >= 0 ? size : this->mCount - offset;
     internal_tryGetHandler<0>(handler);
+  }
+  EntityCollection<Entity>(const Handler &handler, size_t offset = 0,
+                           int64_t size = -1) {
+    fill(handler, offset, size);
   }
   // returns an Entity i.e. (index, reference) pair
   const Entity operator[](size_t index) const {
