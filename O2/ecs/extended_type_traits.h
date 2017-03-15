@@ -13,6 +13,36 @@ template <typename F, typename S, typename... T> struct is_one_of<F, S, T...> {
       std::is_same<F, S>::value || is_one_of<F, T...>::value;
 };
 
+// extend to Tuples
+namespace detail {
+struct null {};
+}
+
+template <typename T, typename Tuple> struct tuple_contains;
+
+template <typename T, typename... Ts>
+struct tuple_contains<T, std::tuple<Ts...>>
+    : std::conditional<
+          std::is_same<
+              std::tuple<typename std::conditional<std::is_same<T, Ts>::value,
+                                                   detail::null, Ts>::type...>,
+              std::tuple<Ts...>>::value,
+          std::false_type, std::true_type>::type {};
+
+// get the index of a type in a tuple, fails to compile if not present.
+template <class T, class Tuple> struct tuple_index_of;
+
+template <class T, class... Types>
+struct tuple_index_of<T, std::tuple<T, Types...>> {
+  static const std::size_t value = 0;
+};
+
+template <class T, class U, class... Types>
+struct tuple_index_of<T, std::tuple<U, Types...>> {
+  static const std::size_t value =
+      1 + tuple_index_of<T, std::tuple<Types...>>::value;
+};
+
 // Template to check if condition holds true for all members of a parameter
 // pack.
 template <bool... b> struct BoolArray {};
