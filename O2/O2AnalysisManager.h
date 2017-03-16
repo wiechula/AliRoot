@@ -2,6 +2,7 @@
 #define ALI_O2_ANALYSIS_MANAGER_H
 #include "O2AnalysisTask.h"
 #include "ecs/Handler.h"
+#include <iostream>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -27,33 +28,7 @@ public:
     return *mTasks[mTasks.size() - 1];
   }
 
-  void startAnalysis() {
-#pragma omp parallel
-    {
-#pragma omp for schedule(dynamic)
-      for (auto &task : mTasks) {
-        task->UserInit();
-      }
-      // TODO: We can start running in parallel over files once a merging scheme
-      // is defined. When we do this, the tasks need to become copies per file
-      // too.
-      //#pragma omp for schedule(dynamic) collapse(2)
-      for (auto &handler : mHandlers) {
-#pragma omp for
-        for (auto &task : mTasks) {
-          task->setHandler(handler);
-          task->init();
-          for (size_t event = 0; event < task->numberOfEvents(); event++) {
-            task->execute(event);
-          }
-        }
-      }
-#pragma omp for schedule(dynamic)
-      for (auto &task : mTasks) {
-        task->finish();
-      }
-    }
-  }
+  void startAnalysis();
 };
 
 #endif

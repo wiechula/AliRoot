@@ -33,13 +33,13 @@ include_directories(${ROOT_INCLUDE_DIR}
 set(SRCS
   O2logging.cxx
   ESDEventConverter.cxx
+  O2AnalysisManager.cxx
 )
 
 # Headers, from sources
 string(REPLACE ".cxx" ".h" HDRS "${SRCS}")
 set(HDRS
   ${HDRS}
-  O2AnalysisManager.h
   O2AnalysisTask.h
   O2ESDAnalysisTask.h
 )
@@ -77,11 +77,11 @@ set_target_properties(${MODULE}-object PROPERTIES COMPILE_DEFINITIONS $<TARGET_P
 target_include_directories(${MODULE} PUBLIC ${incdirs})
 
 # Additional compilation flags for the object
-set_target_properties(O2-object PROPERTIES COMPILE_FLAGS "")
+set_target_properties(O2-object PROPERTIES COMPILE_FLAGS "-fopenmp")
 
 # System dependent: Modify the way the library is build
 if(${CMAKE_SYSTEM} MATCHES Darwin)
-    set_target_properties(O2 PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+    set_target_properties(O2 PROPERTIES LINK_FLAGS "-undefined dynamic_lookup -fopenmp")
 endif(${CMAKE_SYSTEM} MATCHES Darwin)
 
 # Installation
@@ -93,7 +93,7 @@ install(FILES ${HDRS} DESTINATION include)
 # Static version if DA enabled
 if(ALIROOT_STATIC)
     add_library(${MODULE}-static STATIC $<TARGET_OBJECTS:O2-object>)
-    set_target_properties(${MODULE}-static PROPERTIES OUTPUT_NAME ${MODULE})
+    set_target_properties(${MODULE}-static PROPERTIES OUTPUT_NAME ${MODULE} "-fopenmp ")
 
     # list of shared dependencies / the name of the variable containing the list of static ones
     generate_static_dependencies("${ALIROOT_DEPENDENCIES}" "STATIC_ALIROOT_DEPENDENCIES")

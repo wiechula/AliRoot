@@ -31,7 +31,8 @@ class O2ESDAnalysisTask : public O2AnalysisTask {
   ecs::EntityCollection<Particle> mParticles;
   std::vector<Event> mEvents;
 
-protected:
+public:
+  virtual ~O2ESDAnalysisTask(){};
   virtual size_t numberOfEvents() { return mEvents.size(); }
   virtual void init() {
     ecs::EntityCollection<ecs::Vertex<ecs::vertex::ESDEventMapping>>
