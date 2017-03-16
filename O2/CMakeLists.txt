@@ -31,7 +31,6 @@ include_directories(${ROOT_INCLUDE_DIR}
 # Sources, globbed
 #file(GLOB SRCS "*.cxx")
 set(SRCS
-  O2logging.cxx
   ESDEventConverter.cxx
   O2AnalysisManager.cxx
 )
