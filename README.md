@@ -1,4 +1,47 @@
 This branch (only for towards-run3-muon-devs) has been tested to compile using : 
 
-aliBuild -w ../sw --disable simulation,generators,GEANT4,GEANT4_VMC,pythia,pythia6,hijing,fastjet,GEANT3 build
-AliRoot
+  aliBuild -w ../sw --defaults o2-daq-la build O2
+
+(where defaults-o2-daq-la.sh is simply based of o2-daq but removing the disabling of AliRoot and adding disabling of
+fastjet)
+
+```yaml
+package: defaults-o2-la
+version: v1
+env:
+  CXXFLAGS: "-fPIC -g -O2 -std=c++11"
+  CFLAGS: "-fPIC -g -O2"
+  CMAKE_BUILD_TYPE: "RELWITHDEBINFO"
+disable:
+  - AliEn-Runtime
+  - simulation
+  - generators
+  - GEANT4
+  - GEANT3
+  - GEANT4_VMC
+  - pythia
+  - pythia6
+  - hijing
+  - fastjet
+overrides:
+  ROOT:
+    tag: "v6-08-02"
+    source: https://github.com/root-mirror/root
+    requires:
+      - GSL
+      - opengl:(?!osx)
+      - Xdevel:(?!osx)
+      - FreeType:(?!osx)
+  GSL:
+    prefer_system_check: |
+      printf "#include \"gsl/gsl_version.h\"\n#define GSL_V GSL_MAJOR_VERSION * 100 + GSL_MINOR_VERSION\n# if (GSL_V < 116)\n#error \"Cannot use system's gsl. Notice we only support versions from 1.16 (included)\"\n#endif\nint main(){}" | gcc  -I$(brew --prefix gsl)/include -xc++ - -o /dev/null
+  protobuf:
+    version: "%(tag_basename)s"
+    tag: "v3.0.2"
+  O2:
+    version: "%(short_hash)s%(defaults_upper)s"
+---
+# This file is included in any build recipe and it's only used to set
+# environment variables. Which file to actually include can be defined by the
+# "--defaults" option of alibuild.
+```
