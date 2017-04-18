@@ -21,6 +21,7 @@ public:
 
   enum EHLTTRDTracker {
     kNLayers = 6,
+    kNStacks = 5,
     kNSectors = 18,
     kNChambers = 540
   };
@@ -28,7 +29,9 @@ public:
   // struct to hold the information on the space points
   struct AliHLTTRDSpacePointInternal {
     double fX[3];
+    double fCov[2];
     int fId;
+    int fLabel;
     unsigned short fVolumeId;
   };
 
@@ -42,7 +45,6 @@ public:
   void EnableDebugOutput() { fDebugOutput = true; }
   void SetPtThreshold(float minPt) { fMinPt = minPt; }
   void SetChi2Threshold(float maxChi2) { fMaxChi2 = maxChi2; }
-  void Rotate(const double alpha, const double * const loc, double *glb);
   int GetDetectorNumber(const double zPos, double alpha, int layer);
   bool AdjustSector(AliHLTTRDTrack *t);
 
