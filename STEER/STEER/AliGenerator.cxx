@@ -479,7 +479,10 @@ Bool_t AliGenerator:: ApplyUserTrigger()
       return kTRUE;
     }
     else{
-      if(!fUserTrigger(fStack)){return kFALSE;}
+      if(!fUserTrigger(fStack)){
+	fStack->Reset();
+	return kFALSE;
+      }
       else return kTRUE;
     }
   }
