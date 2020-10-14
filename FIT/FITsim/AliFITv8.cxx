@@ -1731,7 +1731,7 @@ void AliFITv8::CreateGeometry() {
   /// T0 implementation done here
   Int_t *idtmed = fIdtmed->GetArray();
   Float_t zdetC = 85; // center of mother volume
-  Float_t zdetA = 650;
+  Float_t zdetA = 333;
 
   Int_t idrotm[999];
   Double_t x, y, z;
@@ -1817,8 +1817,10 @@ void AliFITv8::CreateGeometry() {
                     6.0,  6.0,  -0.1, -0.1,  0.1,   0.1,   -6.0,  -6.0,
                     -7.0, -6.0, -6.0, -11.9, -11.9, -12.9, -11.9, -11.9};
 
-  TGeoVolumeAssembly *stlinA = new TGeoVolumeAssembly("0STL"); // A side mother
+  TGeoVolumeAssembly *stlinA = new TGeoVolumeAssembly("0STL"); // A side mother/
+
   TGeoVolumeAssembly *stlinC = new TGeoVolumeAssembly("0STR"); // C side mother
+  /*
   // FIT interior
   // tube inside T0A
   Float_t pinnertube[3] = {3.95, 4.0, 6.22};
@@ -1830,7 +1832,7 @@ void AliFITv8::CreateGeometry() {
   TVirtualMC::GetMC()->Gsvolu("0OUT", "TUBE", idtmed[kAl], poutertube, 3);
   TGeoVolume *outertube = gGeoManager->GetVolume("0OUT");
   stlinA->AddNode(outertube, 1, new TGeoTranslation(0, 0, 0));
-
+  */
   TVirtualMC::GetMC()->Gsvolu("0INS", "BOX", idtmed[kOpAir], pinstart, 3);
   TGeoVolume *ins = gGeoManager->GetVolume("0INS");
   TGeoTranslation *tr[52];
