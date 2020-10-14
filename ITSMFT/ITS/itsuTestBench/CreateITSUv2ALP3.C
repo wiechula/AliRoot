@@ -83,7 +83,6 @@ void CreateITSUv2ALP3()
   seg0->Store("itsSegmentations.root");
   //
   seg0->Print();
-  cout<<"<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>"<<endl;
   //
   double dzLr,rLr,phi0,turbo;
   int nStaveLr,nModPerStaveLr,idLr;
