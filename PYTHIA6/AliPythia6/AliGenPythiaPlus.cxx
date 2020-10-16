@@ -913,7 +913,11 @@ void AliGenPythiaPlus::Generate()
   ///---------------------------------------------------------------------------
   // Application of the user trigger
   if(!ApplyUserTrigger()) continue;
+<<<<<<< HEAD
   //----------------------------------------------------------------------------
+=======
+  ///---------------------------------------------------------------------------
+>>>>>>> b252535... Adding ApplyUserTrigger() to AliGenPythiaPlus.cxx
 	
 	GetSubEventTime();
 
