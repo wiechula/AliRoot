@@ -2410,7 +2410,10 @@ void AliTPCv2::StepManager()
   Int_t   pdg    = mc->TrackPid();
   
   if(TMath::Abs(charge)<=0. && pdg!=kPdgMonopole) return; // take only charged particles (except magnetic monopoles)
-  
+ 	
+  if(pdg==kPdgMonopole && TMath::Abs(charge)<=0.) // need to take care of monopoles with 0 charge (safety for later used formulae)   
+	  charge = 0.00001;
+
   // check the sensitive volume
 
   id = mc->CurrentVolID(copy); // vol ID and copy number (starts from 1!)
