@@ -280,7 +280,7 @@ void GPUReconstructionConvert::RunZSEncoder(const S& in, std::unique_ptr<unsigne
       if (ZSEncoderGetRow(a) != ZSEncoderGetRow(b)) {
         return ZSEncoderGetRow(a) <= ZSEncoderGetRow(b);
       }
-      return ZSEncoderGetPad(a) <= ZSEncoderGetPad(b);
+      return ZSEncoderGetPad(a) < ZSEncoderGetPad(b);
     });
     int lastEndpoint = -1, lastRow = GPUCA_ROW_COUNT, lastTime = -1;
     long hbf = -1, nexthbf = 0;

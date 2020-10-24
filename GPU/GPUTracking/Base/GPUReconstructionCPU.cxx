@@ -171,6 +171,7 @@ int GPUReconstructionCPU::InitDevice()
     mBlockCount = getOMPMaxThreads();
   }
   mThreadId = GetThread();
+  mProcShadow.mProcessorsProc = processors();
   return 0;
 }
 

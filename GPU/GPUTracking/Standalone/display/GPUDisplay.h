@@ -244,6 +244,7 @@ class GPUDisplay
   void SetInfo(Args... args)
   {
     snprintf(mInfoText2, 1024, args...);
+    GPUInfo("%s", mInfoText2);
     mInfoText2Timer.ResetStart();
   }
   void PrintGLHelpText(float colorValue);
@@ -266,6 +267,7 @@ class GPUDisplay
   void SetColorGlobalTracks();
   void SetColorFinal();
   void SetColorGrid();
+  void SetColorGridTRD();
   void SetColorMarked();
   void SetCollisionColor(int col);
   void setQuality();
@@ -287,6 +289,7 @@ class GPUDisplay
   vboList DrawTracks(const GPUTPCTracker& tracker, int global);
   void DrawFinal(int iSlice, int /*iCol*/, GPUTPCGMPropagator* prop, std::array<vecpod<int>, 2>& trackList, threadVertexBuffer& threadBuffer);
   vboList DrawGrid(const GPUTPCTracker& tracker);
+  vboList DrawGridTRD(int sector);
   void DoScreenshot(char* filename, float mAnimateTime = -1.f);
   void PrintHelp();
   void createQuaternionFromMatrix(float* v, const float* mat);
@@ -360,6 +363,7 @@ class GPUDisplay
   int mHideRejectedTracks = 1;
   int mMarkAdjacentClusters = 0;
   int mMarkFakeClusters = 0;
+  int mTrackFilter = 0;
 
   vecpod<std::array<int, 37>> mCollisionClusters;
   int mNCollissions = 1;
@@ -412,6 +416,7 @@ class GPUDisplay
   vecpod<std::array<vboList, N_FINAL_TYPE>> mGlDLFinal[NSLICES];
   vecpod<vboList> mGlDLPoints[NSLICES][N_POINTS_TYPE];
   vboList mGlDLGrid[NSLICES];
+  vboList mGlDLGridTRD[NSLICES / 2];
   vecpod<DrawArraysIndirectCommand> mCmdBuffer;
 };
 } // namespace gpu

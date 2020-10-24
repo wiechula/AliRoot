@@ -154,9 +154,11 @@ class GPUChainTracking : public GPUChain, GPUReconstructionHelpers::helperDelega
   int DoTRDGPUTracking();
   int RunTPCCompression();
   int RunTPCDecompression();
+  int RunRefit();
 
   // Getters / setters for parameters
   const TPCFastTransform* GetTPCTransform() const { return processors()->calibObjects.fastTransform; }
+  const TPCCFCalibration* GetTPCCalibration() const { return processors()->calibObjects.tpcCalibration; }
   const TPCdEdxCalibrationSplines* GetdEdxSplines() const { return processors()->calibObjects.dEdxSplines; }
   const o2::base::MatLayerCylSet* GetMatLUT() const { return processors()->calibObjects.matLUT; }
   const GPUTRDGeometry* GetTRDGeometry() const { return (GPUTRDGeometry*)processors()->calibObjects.trdGeometry; }
@@ -165,6 +167,7 @@ class GPUChainTracking : public GPUChain, GPUReconstructionHelpers::helperDelega
   void SetMatLUT(std::unique_ptr<o2::base::MatLayerCylSet>&& lut);
   void SetTRDGeometry(std::unique_ptr<o2::trd::TRDGeometryFlat>&& geo);
   void SetTPCFastTransform(const TPCFastTransform* tpcFastTransform) { processors()->calibObjects.fastTransform = tpcFastTransform; }
+  void SetTPCCFCalibration(const TPCCFCalibration* tpcCalibration) { processors()->calibObjects.tpcCalibration = tpcCalibration; }
   void SetdEdxSplines(const TPCdEdxCalibrationSplines* dEdxSplines) { processors()->calibObjects.dEdxSplines = dEdxSplines; }
   void SetMatLUT(const o2::base::MatLayerCylSet* lut) { processors()->calibObjects.matLUT = lut; }
   void SetTRDGeometry(const o2::trd::TRDGeometryFlat* geo) { processors()->calibObjects.trdGeometry = geo; }
@@ -172,6 +175,7 @@ class GPUChainTracking : public GPUChain, GPUReconstructionHelpers::helperDelega
   void SetOutputControlCompressedClusters(GPUOutputControl* v) { mOutputCompressedClusters = v; }
   void SetOutputControlClustersNative(GPUOutputControl* v) { mOutputClustersNative = v; }
   void SetOutputControlTPCTracks(GPUOutputControl* v) { mOutputTPCTracks = v; }
+  void SetOutputControlClusterLabels(GPUOutputControl* v) { mOutputClusterLabels = v; }
 
   const void* mConfigDisplay = nullptr; // Abstract pointer to Standalone Display Configuration Structure
   const void* mConfigQA = nullptr;      // Abstract pointer to Standalone QA Configuration Structure
@@ -214,6 +218,7 @@ class GPUChainTracking : public GPUChain, GPUReconstructionHelpers::helperDelega
   void PrintMemoryStatistics() override;
   void PrepareDebugOutput();
   void PrintDebugOutput();
+  void PrintOutputStat();
 
   bool ValidateSteps();
   bool ValidateSettings();
@@ -232,6 +237,7 @@ class GPUChainTracking : public GPUChain, GPUReconstructionHelpers::helperDelega
 
   // Ptr to detector / calibration objects
   std::unique_ptr<TPCFastTransform> mTPCFastTransformU;               // Global TPC fast transformation object
+  std::unique_ptr<TPCCFCalibration> mTPCCalibrationU;                 // TPC gain calibration and cluster finder parameters
   std::unique_ptr<TPCdEdxCalibrationSplines> mdEdxSplinesU;           // TPC dEdx calibration splines
   std::unique_ptr<o2::base::MatLayerCylSet> mMatLUTU;                 // Material Lookup Table
   std::unique_ptr<o2::trd::TRDGeometryFlat> mTRDGeometryU;            // TRD Geometry
@@ -241,6 +247,7 @@ class GPUChainTracking : public GPUChain, GPUReconstructionHelpers::helperDelega
   GPUOutputControl* mOutputCompressedClusters = nullptr;
   GPUOutputControl* mOutputClustersNative = nullptr;
   GPUOutputControl* mOutputTPCTracks = nullptr;
+  GPUOutputControl* mOutputClusterLabels = nullptr;
 
   std::unique_ptr<GPUTPCCFChainContext> mCFContext;
 

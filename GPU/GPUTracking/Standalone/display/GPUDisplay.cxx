@@ -401,9 +401,18 @@ inline void GPUDisplay::SetColorFinal()
 inline void GPUDisplay::SetColorGrid()
 {
   if (mInvertColors) {
-    mDrawColor = {0.5, 0.5, 0};
+    mDrawColor = {0.5, 0.5, 0.0};
   } else {
     mDrawColor = {0.7, 0.7, 0.0};
+  }
+  ActivateColor();
+}
+inline void GPUDisplay::SetColorGridTRD()
+{
+  if (mInvertColors) {
+    mDrawColor = {0.5, 0.5, 0.5};
+  } else {
+    mDrawColor = {0.7, 0.7, 0.5};
   }
   ActivateColor();
 }
@@ -722,14 +731,14 @@ GPUDisplay::vboList GPUDisplay::DrawClusters(const GPUTPCTracker& tracker, int s
           if (mQA && mQA->clusterRemovable(cid, mMarkAdjacentClusters == 17)) {
             draw = select == tMARKED;
           }
-        } else if ((mMarkAdjacentClusters & 2) && (attach & GPUTPCGMMergerTypes::attachTube)) {
+        } else if ((mMarkAdjacentClusters & 2) && (attach & gputpcgmmergertypes::attachTube)) {
           draw = select == tMARKED;
-        } else if ((mMarkAdjacentClusters & 1) && (attach & (GPUTPCGMMergerTypes::attachGood | GPUTPCGMMergerTypes::attachTube)) == 0) {
+        } else if ((mMarkAdjacentClusters & 1) && (attach & (gputpcgmmergertypes::attachGood | gputpcgmmergertypes::attachTube)) == 0) {
           draw = select == tMARKED;
-        } else if ((mMarkAdjacentClusters & 4) && (attach & GPUTPCGMMergerTypes::attachGoodLeg) == 0) {
+        } else if ((mMarkAdjacentClusters & 4) && (attach & gputpcgmmergertypes::attachGoodLeg) == 0) {
           draw = select == tMARKED;
         } else if (mMarkAdjacentClusters & 8) {
-          if (fabsf(tracker.GetConstantMem()->ioPtrs.mergedTracks[attach & GPUTPCGMMergerTypes::attachTrackMask].GetParam().GetQPt()) > 20.f) {
+          if (fabsf(tracker.GetConstantMem()->ioPtrs.mergedTracks[attach & gputpcgmmergertypes::attachTrackMask].GetParam().GetQPt()) > 20.f) {
             draw = select == tMARKED;
           }
         }
@@ -888,7 +897,17 @@ void GPUDisplay::DrawFinal(int iSlice, int /*iCol*/, GPUTPCGMPropagator* prop, s
 
       size_t startCountInner = mVertexBuffer[iSlice].size();
       bool drawing = false;
-      if (mTRDTrackIds[i]) {
+
+      if (mTrackFilter) {
+        if (mTrackFilter == 2 && (!trdTracker().PreCheckTrackTRDCandidate(*track) || !trdTracker().CheckTrackTRDCandidate((GPUTRDTrackGPU)*track))) {
+          break;
+        }
+        if (mTrackFilter == 1 && mTRDTrackIds[i] == -1) {
+          break;
+        }
+      }
+
+      if (mTRDTrackIds[i] != -1) {
         auto& trk = trdTracker().Tracks()[mTRDTrackIds[i]];
         for (int k = 5; k >= 0; k--) {
           int cid = trk.GetTrackletIndex(k);
@@ -1115,6 +1134,71 @@ GPUDisplay::vboList GPUDisplay::DrawGrid(const GPUTPCTracker& tracker)
   return (vboList(startCount, mVertexBufferStart[iSlice].size() - startCount, iSlice));
 }
 
+GPUDisplay::vboList GPUDisplay::DrawGridTRD(int sector)
+{
+  // TODO: tilted pads ignored at the moment
+  size_t startCount = mVertexBufferStart[sector].size();
+  size_t startCountInner = mVertexBuffer[sector].size();
+  auto geo = mChain->GetTRDGeometry();
+  int trdsector = NSLICES / 2 - 1 - sector;
+  float alpha = geo->GetAlpha() / 2.f + geo->GetAlpha() * trdsector;
+  if (trdsector >= 9) {
+    alpha -= 2 * M_PI;
+  }
+  for (int iLy = 0; iLy < GPUTRDTracker::EGPUTRDTracker::kNLayers; ++iLy) {
+    for (int iStack = 0; iStack < GPUTRDTracker::EGPUTRDTracker::kNStacks; ++iStack) {
+      int iDet = geo->GetDetector(iLy, iStack, trdsector);
+      auto matrix = geo->GetClusterMatrix(iDet);
+      if (!matrix) {
+        continue;
+      }
+      auto pp = geo->GetPadPlane(iDet);
+      for (int i = 0; i < pp->GetNrows(); ++i) {
+        float xyzLoc1[3];
+        float xyzLoc2[3];
+        float xyzGlb1[3];
+        float xyzGlb2[3];
+        xyzLoc1[0] = xyzLoc2[0] = geo->AnodePos();
+        xyzLoc1[1] = pp->GetCol0();
+        xyzLoc2[1] = pp->GetColEnd();
+        xyzLoc1[2] = xyzLoc2[2] = pp->GetRowPos(i) - pp->GetRowPos(pp->GetNrows() / 2);
+        matrix->LocalToMaster(xyzLoc1, xyzGlb1);
+        matrix->LocalToMaster(xyzLoc2, xyzGlb2);
+        float x1Tmp = xyzGlb1[0];
+        xyzGlb1[0] = xyzGlb1[0] * cosf(alpha) + xyzGlb1[1] * sinf(alpha);
+        xyzGlb1[1] = -x1Tmp * sinf(alpha) + xyzGlb1[1] * cosf(alpha);
+        float x2Tmp = xyzGlb2[0];
+        xyzGlb2[0] = xyzGlb2[0] * cosf(alpha) + xyzGlb2[1] * sinf(alpha);
+        xyzGlb2[1] = -x2Tmp * sinf(alpha) + xyzGlb2[1] * cosf(alpha);
+        mVertexBuffer[sector].emplace_back(xyzGlb1[0] / GL_SCALE_FACTOR, xyzGlb1[1] / GL_SCALE_FACTOR, xyzGlb1[2] / GL_SCALE_FACTOR);
+        mVertexBuffer[sector].emplace_back(xyzGlb2[0] / GL_SCALE_FACTOR, xyzGlb2[1] / GL_SCALE_FACTOR, xyzGlb2[2] / GL_SCALE_FACTOR);
+      }
+      for (int j = 0; j < pp->GetNcols(); ++j) {
+        float xyzLoc1[3];
+        float xyzLoc2[3];
+        float xyzGlb1[3];
+        float xyzGlb2[3];
+        xyzLoc1[0] = xyzLoc2[0] = geo->AnodePos();
+        xyzLoc1[1] = xyzLoc2[1] = pp->GetColPos(j) + pp->GetColSize(j) / 2.f;
+        xyzLoc1[2] = pp->GetRow0() - pp->GetRowPos(pp->GetNrows() / 2);
+        xyzLoc2[2] = pp->GetRowEnd() - pp->GetRowPos(pp->GetNrows() / 2);
+        matrix->LocalToMaster(xyzLoc1, xyzGlb1);
+        matrix->LocalToMaster(xyzLoc2, xyzGlb2);
+        float x1Tmp = xyzGlb1[0];
+        xyzGlb1[0] = xyzGlb1[0] * cosf(alpha) + xyzGlb1[1] * sinf(alpha);
+        xyzGlb1[1] = -x1Tmp * sinf(alpha) + xyzGlb1[1] * cosf(alpha);
+        float x2Tmp = xyzGlb2[0];
+        xyzGlb2[0] = xyzGlb2[0] * cosf(alpha) + xyzGlb2[1] * sinf(alpha);
+        xyzGlb2[1] = -x2Tmp * sinf(alpha) + xyzGlb2[1] * cosf(alpha);
+        mVertexBuffer[sector].emplace_back(xyzGlb1[0] / GL_SCALE_FACTOR, xyzGlb1[1] / GL_SCALE_FACTOR, xyzGlb1[2] / GL_SCALE_FACTOR);
+        mVertexBuffer[sector].emplace_back(xyzGlb2[0] / GL_SCALE_FACTOR, xyzGlb2[1] / GL_SCALE_FACTOR, xyzGlb2[2] / GL_SCALE_FACTOR);
+      }
+    }
+  }
+  insertVertexList(sector, startCountInner, mVertexBuffer[sector].size());
+  return (vboList(startCount, mVertexBufferStart[sector].size() - startCount, sector));
+}
+
 int GPUDisplay::DrawGLScene(bool mixAnimation, float mAnimateTime)
 {
   try {
@@ -1161,7 +1245,9 @@ int GPUDisplay::DrawGLScene_internal(bool mixAnimation, float mAnimateTime)
     if ((size_t)mMerger.GetConstantMem()->ioPtrs.nMergedTracks > mTRDTrackIds.size()) {
       mTRDTrackIds.resize(mMerger.GetConstantMem()->ioPtrs.nMergedTracks);
     }
-    memset(mTRDTrackIds.data(), 0, sizeof(mTRDTrackIds[0]) * mMerger.GetConstantMem()->ioPtrs.nMergedTracks);
+    for (unsigned int i = 0; i < mMerger.GetConstantMem()->ioPtrs.nMergedTracks; i++) {
+      mTRDTrackIds[i] = -1;
+    }
     for (int i = 0; i < trdTracker().NTracks(); i++) {
       if (trdTracker().Tracks()[i].GetNtracklets()) {
         mTRDTrackIds[trdTracker().Tracks()[i].GetTPCtrackId()] = i;
@@ -1588,6 +1674,9 @@ int GPUDisplay::DrawGLScene_internal(bool mixAnimation, float mAnimateTime)
         mGlDLLines[iSlice][tTRACKLET] = DrawTracklets(tracker);
         mGlDLLines[iSlice][tSLICETRACK] = DrawTracks(tracker, 0);
         mGlDLGrid[iSlice] = DrawGrid(tracker);
+        if (iSlice < NSLICES / 2) {
+          mGlDLGridTRD[iSlice] = DrawGridTRD(iSlice);
+        }
       }
 
       GPUCA_OPENMP(barrier)
@@ -1762,7 +1851,8 @@ int GPUDisplay::DrawGLScene_internal(bool mixAnimation, float mAnimateTime)
 #endif
   }
 
-#define LOOP_SLICE for (int iSlice = (mCfg.drawSlice == -1 ? 0 : mCfg.drawRelatedSlices ? (mCfg.drawSlice % 9) : mCfg.drawSlice); iSlice < NSLICES; iSlice += (mCfg.drawSlice == -1 ? 1 : mCfg.drawRelatedSlices ? 9 : NSLICES))
+#define LOOP_SLICE for (int iSlice = (mCfg.drawSlice == -1 ? 0 : mCfg.drawRelatedSlices ? (mCfg.drawSlice % (NSLICES / 4)) : mCfg.drawSlice); iSlice < NSLICES; iSlice += (mCfg.drawSlice == -1 ? 1 : mCfg.drawRelatedSlices ? (NSLICES / 4) : NSLICES))
+#define LOOP_SLICE2 for (int iSlice = (mCfg.drawSlice == -1 ? 0 : mCfg.drawRelatedSlices ? (mCfg.drawSlice % (NSLICES / 4)) : mCfg.drawSlice) % (NSLICES / 2); iSlice < NSLICES / 2; iSlice += (mCfg.drawSlice == -1 ? 1 : mCfg.drawRelatedSlices ? (NSLICES / 4) : NSLICES))
 #define LOOP_COLLISION for (int iCol = (mCfg.showCollision == -1 ? 0 : mCfg.showCollision); iCol < mNCollissions; iCol += (mCfg.showCollision == -1 ? 1 : mNCollissions))
 #define LOOP_COLLISION_COL(cmd) \
   LOOP_COLLISION                \
@@ -1774,8 +1864,14 @@ int GPUDisplay::DrawGLScene_internal(bool mixAnimation, float mAnimateTime)
   }
 
   if (mCfg.drawGrid) {
-    SetColorGrid();
-    LOOP_SLICE drawVertices(mGlDLGrid[iSlice], GL_LINES);
+    if (mCfg.drawTPC) {
+      SetColorGrid();
+      LOOP_SLICE drawVertices(mGlDLGrid[iSlice], GL_LINES);
+    }
+    if (mCfg.drawTRD) {
+      SetColorGridTRD();
+      LOOP_SLICE2 drawVertices(mGlDLGridTRD[iSlice], GL_LINES);
+    }
   }
   if (mCfg.drawClusters) {
     if (mCfg.drawTRD) {

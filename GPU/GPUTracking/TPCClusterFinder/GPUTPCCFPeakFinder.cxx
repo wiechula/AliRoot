@@ -22,6 +22,7 @@
 #include "Array2D.h"
 #include "CfUtils.h"
 #include "PackedCharge.h"
+#include "TPCCFCalibration.h"
 
 using namespace GPUCA_NAMESPACE::gpu;
 using namespace GPUCA_NAMESPACE::gpu::tpccf;
@@ -31,7 +32,7 @@ GPUdii() void GPUTPCCFPeakFinder::Thread<0>(int nBlocks, int nThreads, int iBloc
 {
   Array2D<PackedCharge> chargeMap(reinterpret_cast<PackedCharge*>(clusterer.mPchargeMap));
   Array2D<uchar> isPeakMap(clusterer.mPpeakMap);
-  findPeaksImpl(get_num_groups(0), get_local_size(0), get_group_id(0), get_local_id(0), smem, chargeMap, clusterer.mPpositions, clusterer.mPmemory->counters.nPositions, clusterer.mPisPeak, isPeakMap);
+  findPeaksImpl(get_num_groups(0), get_local_size(0), get_group_id(0), get_local_id(0), smem, chargeMap, clusterer.mPpositions, clusterer.mPmemory->counters.nPositions, clusterer.Param().rec, clusterer.mPisPeak, isPeakMap);
 }
 
 GPUdii() bool GPUTPCCFPeakFinder::isPeak(
@@ -40,12 +41,13 @@ GPUdii() bool GPUTPCCFPeakFinder::isPeak(
   const ChargePos& pos,
   ushort N,
   const Array2D<PackedCharge>& chargeMap,
+  const GPUSettingsRec& calib,
   ChargePos* posBcast,
   PackedCharge* buf)
 {
   ushort ll = get_local_id(0);
 
-  bool belowThreshold = (q <= QMAX_CUTOFF);
+  bool belowThreshold = (q <= calib.tpcCFqmaxCutoff);
 
   ushort lookForPeaks;
   ushort partId = CfUtils::partition(
@@ -67,7 +69,7 @@ GPUdii() bool GPUTPCCFPeakFinder::isPeak(
     ll,
     0,
     N,
-    CfConsts::InnerNeighbors,
+    cfconsts::InnerNeighbors,
     posBcast,
     buf);
 
@@ -97,6 +99,7 @@ GPUd() void GPUTPCCFPeakFinder::findPeaksImpl(int nBlocks, int nThreads, int iBl
                                               const Array2D<PackedCharge>& chargeMap,
                                               const ChargePos* positions,
                                               SizeT digitnum,
+                                              const GPUSettingsRec& calib,
                                               uchar* isPeakPredicate,
                                               Array2D<uchar>& peakMap)
 {
@@ -109,7 +112,7 @@ GPUd() void GPUTPCCFPeakFinder::findPeaksImpl(int nBlocks, int nThreads, int iBl
   Charge charge = pos.valid() ? chargeMap[pos].unpack() : Charge(0);
 
   uchar peak;
-  peak = isPeak(smem, charge, pos, SCRATCH_PAD_SEARCH_N, chargeMap, smem.posBcast, smem.buf);
+  peak = isPeak(smem, charge, pos, SCRATCH_PAD_SEARCH_N, chargeMap, calib, smem.posBcast, smem.buf);
 
   // Exit early if dummy. See comment above.
   bool iamDummy = (idx >= digitnum);
@@ -119,5 +122,5 @@ GPUd() void GPUTPCCFPeakFinder::findPeaksImpl(int nBlocks, int nThreads, int iBl
 
   isPeakPredicate[idx] = peak;
 
-  peakMap[pos] = (uchar(charge > CHARGE_THRESHOLD) << 1) | peak;
+  peakMap[pos] = (uchar(charge > calib.tpcCFinnerThreshold) << 1) | peak;
 }

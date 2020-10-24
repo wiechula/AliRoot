@@ -25,7 +25,9 @@
 
 using namespace GPUCA_NAMESPACE::gpu;
 
+#ifndef GPUCA_GPUCODE_DEVICE
 GPUd() void GPUdEdx::clear() { new (this) GPUdEdx; }
+#endif
 
 GPUd() void GPUdEdx::computedEdx(GPUdEdxInfo& GPUrestrict() output, const GPUParam& GPUrestrict() param)
 {
@@ -56,7 +58,7 @@ GPUd() void GPUdEdx::computedEdx(GPUdEdxInfo& GPUrestrict() output, const GPUPar
   output.NHitsSubThresholdOROC3 = countOROC3;
 }
 
-GPUd() float GPUdEdx::GetSortTruncMean(float* GPUrestrict() array, int count, int trunclow, int trunchigh)
+GPUd() float GPUdEdx::GetSortTruncMean(GPUCA_DEDX_STORAGE_TYPE* GPUrestrict() array, int count, int trunclow, int trunchigh)
 {
   trunclow = count * trunclow / 128;
   trunchigh = count * trunchigh / 128;
@@ -66,7 +68,7 @@ GPUd() float GPUdEdx::GetSortTruncMean(float* GPUrestrict() array, int count, in
   CAAlgo::sort(array, array + count);
   float mean = 0;
   for (int i = trunclow; i < trunchigh; i++) {
-    mean += array[i];
+    mean += array[i] * (1.f / scalingFactor<GPUCA_DEDX_STORAGE_TYPE>::factor);
   }
   return (mean / (trunchigh - trunclow));
 }

@@ -19,7 +19,7 @@
 
 #include "GPUTRDTrackletWord.h"
 using namespace GPUCA_NAMESPACE::gpu;
-#ifndef __OPENCL__
+#ifndef GPUCA_GPUCODE_DEVICE
 #include <new>
 #endif
 
