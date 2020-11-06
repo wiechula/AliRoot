@@ -294,12 +294,14 @@ void AliGenExtFile::Generate()
 
 	KeepTrack(nt);
 	fNprimaries++;
+	SetHighWaterMark(nt);
     } // track loop
 
     // User Trigger
     if(fSetUserTrig){
       AliStack *stack = AliRunLoader::Instance()->Stack();
       if(!fUserTrigger(stack)){
+	stack->Clean();
         consecutiveDiscardedEvents++;
         if(consecutiveDiscardedEvents>fLimitDiscardedEvents){AliFatal(Form("More than %i events discarded consequently",fLimitDiscardedEvents));}
         continue;
@@ -312,6 +314,7 @@ void AliGenExtFile::Generate()
       AliInfo(Form("mult cut : %i",fMultCut));
       AliStack *stack = AliRunLoader::Instance()->Stack();
       if(!MultiplicityTrigger(stack)){
+	stack->Clean();
         consecutiveDiscardedEvents++;
         if(consecutiveDiscardedEvents>fLimitDiscardedEvents){AliFatal(Form("More than %i events discarded consequently",fLimitDiscardedEvents));}
         continue;
@@ -324,6 +327,7 @@ void AliGenExtFile::Generate()
       AliInfo(Form("pT cut : %f GeV/c",fPtCut));
       AliStack *stack = AliRunLoader::Instance()->Stack();
       if(!PtTrigger(stack)){
+	stack->Clean();
         consecutiveDiscardedEvents++;
         if(consecutiveDiscardedEvents>fLimitDiscardedEvents){AliFatal(Form("More than %i events discarded consequently",fLimitDiscardedEvents));}
         continue;
@@ -344,7 +348,6 @@ void AliGenExtFile::Generate()
 
   } // event loop
 
-  SetHighWaterMark(nt);
   CdEventFile();
 }
 

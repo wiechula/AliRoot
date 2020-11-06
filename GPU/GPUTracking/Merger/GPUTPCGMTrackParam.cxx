@@ -48,7 +48,7 @@
 #include "AliHLTTPCClusterMCData.h"
 #endif
 
-#ifndef __OPENCL__
+#ifndef GPUCA_GPUCODE_DEVICE
 #include <cmath>
 #include <cstdlib>
 #endif
@@ -67,7 +67,7 @@ GPUd() bool GPUTPCGMTrackParam::Fit(const GPUTPCGMMerger* GPUrestrict() merger, 
 
   GPUdEdx dEdx;
   GPUTPCGMPropagator prop;
-  GPUTPCGMMergerTypes::InterpolationErrors interpolation;
+  gputpcgmmergertypes::InterpolationErrors interpolation;
   prop.SetMaterialTPC();
   prop.SetPolynomialField(&merger->Param().polynomialField);
   prop.SetMaxSinPhi(maxSinPhi);
@@ -316,6 +316,8 @@ GPUd() bool GPUTPCGMTrackParam::Fit(const GPUTPCGMMerger* GPUrestrict() merger, 
       } else if (retVal == 2) { // cluster far away form the track
         if (allowModification) {
           MarkClusters(clusters, ihitMergeFirst, ihit, wayDirection, GPUTPCGMMergedTrackHit::flagRejectDistance);
+        } else if (iWay == nWays - 1) {
+          MarkClusters(clusters, ihitMergeFirst, ihit, wayDirection, GPUTPCGMMergedTrackHit::flagRejectErr);
         }
         nMissed++;
         nMissed2++;
@@ -338,6 +340,14 @@ GPUd() bool GPUTPCGMTrackParam::Fit(const GPUTPCGMMerger* GPUrestrict() merger, 
     dEdx.computedEdx(*dEdxOut, param);
   }
   Alpha = prop.GetAlpha();
+  MoveToReference(prop, param, Alpha);
+  NormalizeAlpha(Alpha);
+
+  return (ok);
+}
+
+GPUd() void GPUTPCGMTrackParam::MoveToReference(GPUTPCGMPropagator& prop, const GPUParam& param, float& Alpha)
+{
   if (param.rec.TrackReferenceX <= 500) {
     for (int k = 0; k < 3; k++) // max 3 attempts
     {
@@ -360,13 +370,6 @@ GPUd() bool GPUTPCGMTrackParam::Fit(const GPUTPCGMMerger* GPUrestrict() merger, 
     ConstrainSinPhi();
     Alpha += dAngle;
   }
-  if (Alpha > M_PI) {
-    Alpha -= 2 * M_PI;
-  } else if (Alpha <= -M_PI) {
-    Alpha += 2 * M_PI;
-  }
-
-  return (ok);
 }
 
 GPUd() void GPUTPCGMTrackParam::MirrorTo(GPUTPCGMPropagator& GPUrestrict() prop, float toY, float toZ, bool inFlyDirection, const GPUParam& param, unsigned char row, unsigned char clusterState, bool mirrorParameters)
@@ -511,10 +514,10 @@ GPUd() void GPUTPCGMTrackParam::AttachClusters(const GPUTPCGMMerger* GPUrestrict
   const int nBinsY = row.Grid().Ny();
   const int idOffset = tracker.Data().ClusterIdOffset();
   const int* ids = &(tracker.Data().ClusterDataIndex()[row.HitNumberOffset()]);
-  unsigned int myWeight = Merger->TrackOrderAttach()[iTrack] | GPUTPCGMMergerTypes::attachAttached | GPUTPCGMMergerTypes::attachTube;
+  unsigned int myWeight = Merger->TrackOrderAttach()[iTrack] | gputpcgmmergertypes::attachAttached | gputpcgmmergertypes::attachTube;
   GPUAtomic(unsigned int)* const weights = Merger->ClusterAttachment();
   if (goodLeg) {
-    myWeight |= GPUTPCGMMergerTypes::attachGoodLeg;
+    myWeight |= gputpcgmmergertypes::attachGoodLeg;
   }
   for (int k = 0; k <= nz; k++) {
     const int mybin = bin + k * nBinsY;

@@ -435,7 +435,7 @@ void AliITSsimulationSDD::HitsToAnalogDigits( AliITSmodule *mod ) {
     AliITShit* h=(AliITShit*)hits->At(ii);
     if(h){ 
       tof=h->GetTOF()*1E9; 
-      AliDebug(1,Form("TOF for hit %d on mod %d (particle %d)=%g",ii,fModule,h->Track(),tof));
+      AliDebug(5,Form("TOF for hit %d on mod %d (particle %d)=%g",ii,fModule,h->Track(),tof));
     }
 
     Float_t corrx=0, corrz=0;
@@ -459,7 +459,15 @@ void AliITSsimulationSDD::HitsToAnalogDigits( AliITSmodule *mod ) {
     
     // Compute number of segments to brake step path into
     drTime = drPath/driftSpeed;  //   Drift Time
-    sigA   = TMath::Sqrt(2.*dfCoeff*drTime+s1*s1);// Sigma along the anodes
+    Double_t sig2A=2.*dfCoeff*drTime+s1*s1; // square of sigma along the anodes
+    if(sig2A < 0 || sig2A > 1E6){
+      // protection for negative or too large values of sig2A causing FPE with fluka when computing sqrt
+      // The maximum value of sig2A should be of about 50000, a safety margin is applied cutting at 1e6
+      AliInfo(Form("Anomalous sigma^2 (%e) at anodes: drPath=%e driftSpeed=%e drTime=%e dfCoeff=%e s1=%e",
+		   sig2A,drPath,driftSpeed,drTime,dfCoeff,s1));
+      continue;
+    }
+    sigA   = TMath::Sqrt(sig2A);// Sigma along the anodes
     // calcuate the number of time the path length should be split into.
     nOfSplits = (Int_t) (1. + 10000.*pathInSDD/sigA);
     if(fFlag) nOfSplits = 1;

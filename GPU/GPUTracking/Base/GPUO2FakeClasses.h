@@ -85,6 +85,9 @@ namespace GPUCA_NAMESPACE
 {
 namespace gpu
 {
+class TPCCFCalibration
+{
+};
 class TPCdEdxCalibrationSplines
 {
 };

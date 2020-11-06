@@ -230,7 +230,11 @@ void GPUChainTracking::DumpSettings(const char* dir)
     f += "tpctransform.dump";
     DumpFlatObjectToFile(processors()->calibObjects.fastTransform, f.c_str());
   }
-
+  if (processors()->calibObjects.tpcCalibration != nullptr) {
+    f = dir;
+    f += "tpccalibration.dump";
+    DumpStructToFile(processors()->calibObjects.tpcCalibration, f.c_str());
+  }
 #ifdef HAVE_O2HEADERS
   if (processors()->calibObjects.dEdxSplines != nullptr) {
     f = dir;
@@ -258,6 +262,10 @@ void GPUChainTracking::ReadSettings(const char* dir)
   f += "tpctransform.dump";
   mTPCFastTransformU = ReadFlatObjectFromFile<TPCFastTransform>(f.c_str());
   processors()->calibObjects.fastTransform = mTPCFastTransformU.get();
+  f = dir;
+  f += "tpccalibration.dump";
+  mTPCCalibrationU = ReadStructFromFile<TPCCFCalibration>(f.c_str());
+  processors()->calibObjects.tpcCalibration = mTPCCalibrationU.get();
 #ifdef HAVE_O2HEADERS
   f = dir;
   f += "dedxsplines.dump";

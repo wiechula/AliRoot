@@ -21,7 +21,7 @@ if(ALIGPU_BUILD_TYPE STREQUAL "ALIROOT")
 else()
   if(OPENGL_FOUND
      AND GLFW_FOUND
-     AND (ALIGPU_BUILD_TYPE STREQUAL "O2" OR GLEW_FOUND)
+     AND ((ALIGPU_BUILD_TYPE STREQUAL "O2" AND TARGET AliceO2::DebugGUI) OR GLEW_FOUND)
      AND OPENGL_GLU_FOUND
      AND NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(GPUCA_EVENT_DISPLAY ON)
@@ -135,8 +135,9 @@ set(HDRS_INSTALL
 
 # Sources only for O2
 if(ALIGPU_BUILD_TYPE STREQUAL "O2")
-  set(SRCS ${SRCS} Interface/GPUO2Interface.cxx Interface/GPUO2InterfaceConfigurableParam.cxx)
-  set(HDRS_CINT_O2 ${HDRS_CINT_O2} Interface/GPUO2Interface.h Interface/GPUO2InterfaceConfigurableParam.h dEdx/TPCdEdxCalibrationSplines.h)
+  set(SRCS ${SRCS} Interface/GPUO2Interface.cxx Interface/GPUO2InterfaceRefit.cxx Interface/GPUO2InterfaceConfigurableParam.cxx)
+  set(HDRS_CINT_O2 ${HDRS_CINT_O2} Interface/GPUO2Interface.h Interface/GPUO2InterfaceRefit.h Interface/GPUO2InterfaceConfigurableParam.h dEdx/TPCdEdxCalibrationSplines.h)
+  set(HDRS_CINT_O2_ADDITIONAL Base/GPUSettings.h Base/GPUSettingsList.h) # Manual depencies for ROOT dictionary generation
 endif()
 
 # Sources for O2 and for Standalone if requested in config file
@@ -170,7 +171,9 @@ if(ALIGPU_BUILD_TYPE STREQUAL "O2" OR CONFIG_O2_EXTENSIONS)
         TPCClusterFinder/GPUTPCCFMCLabelFlattener.cxx
         TPCClusterFinder/GPUTPCCFDecodeZS.cxx
         TPCClusterFinder/GPUTPCCFGather.cxx
-        dEdx/TPCdEdxCalibrationSplines.cxx)
+        TPCClusterFinder/TPCCFCalibration.cxx
+        dEdx/TPCdEdxCalibrationSplines.cxx
+        Refit/GPUTrackingRefit.cxx)
 
     set(SRCS_NO_H ${SRCS_NO_H}
         TPCClusterFinder/GPUTPCClusterFinderDump.cxx)
@@ -268,6 +271,7 @@ if(ALIGPU_BUILD_TYPE STREQUAL "O2")
                                             HLTHeaders
                                             Interface
                                             Merger
+                                            Refit
                                             DataCompression
                                             TPCClusterFinder
                  TARGETVARNAME targetName
@@ -278,7 +282,7 @@ if(ALIGPU_BUILD_TYPE STREQUAL "O2")
     PRIVATE $<TARGET_PROPERTY:O2::Framework,INTERFACE_INCLUDE_DIRECTORIES>)
 
   o2_target_root_dictionary(${MODULE}
-                            HEADERS ${HDRS_CINT_O2}
+                            HEADERS ${HDRS_CINT_O2} ${HDRS_CINT_O2_ADDITIONAL}
                             LINKDEF GPUTrackingLinkDef_O2.h)
 
   target_compile_definitions(${targetName} PRIVATE GPUCA_O2_LIB

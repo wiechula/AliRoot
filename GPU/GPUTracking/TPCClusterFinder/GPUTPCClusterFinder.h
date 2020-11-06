@@ -24,6 +24,7 @@
 #include "GPUProcessor.h"
 #include "GPUDataTypes.h"
 #include "CfFragment.h"
+#include "TPCCFCalibration.h"
 
 namespace o2
 {
@@ -34,6 +35,8 @@ namespace dataformats
 {
 template <typename TruthElement>
 class MCTruthContainer;
+template <typename TruthElement>
+class ConstMCTruthContainerView;
 } // namespace dataformats
 
 namespace tpc
@@ -47,6 +50,7 @@ class Digit;
 namespace GPUCA_NAMESPACE::gpu
 {
 struct GPUTPCClusterMCInterim;
+struct TPCCFCalibration;
 
 struct ChargePos;
 
@@ -103,6 +107,9 @@ class GPUTPCClusterFinder : public GPUProcessor
   ChargePos* mPpeakPositions = nullptr;
   ChargePos* mPfilteredPeakPositions = nullptr;
   unsigned char* mPisPeak = nullptr;
+  uint* mPclusterPosInRow = nullptr; // store the index where the corresponding cluster is stored in a bucket.
+                                     // Required when MC are enabled to write the mc data to the correct position.
+                                     // Set to >= mNMaxClusterPerRow if cluster was discarded.
   ushort* mPchargeMap = nullptr;
   unsigned char* mPpeakMap = nullptr;
   uint* mPindexMap = nullptr;
@@ -112,9 +119,10 @@ class GPUTPCClusterFinder : public GPUProcessor
   int* mPbuf = nullptr;
   Memory* mPmemory = nullptr;
 
-  o2::dataformats::MCTruthContainer<o2::MCCompLabel> const* mPinputLabels = nullptr;
-  uint* mPlabelHeaderOffset = nullptr;
-  uint* mPlabelDataOffset = nullptr;
+  o2::dataformats::ConstMCTruthContainerView<o2::MCCompLabel> const* mPinputLabels = nullptr;
+  uint* mPlabelsInRow = nullptr;
+  uint mPlabelsHeaderGlobalOffset = 0;
+  uint mPlabelsDataGlobalOffset = 0;
 
   int mISlice = 0;
   constexpr static int mScanWorkGroupSize = GPUCA_THREAD_COUNT_SCAN;
@@ -128,9 +136,12 @@ class GPUTPCClusterFinder : public GPUProcessor
   unsigned int mNBufs = 0;
 
   short mMemoryId = -1;
+  short mScratchId = -1;
   short mZSId = -1;
   short mZSOffsetId = -1;
   short mOutputId = -1;
+
+  GPUdi() float getGainCorrection(tpccf::Row, tpccf::Pad) const;
 
 #ifndef GPUCA_GPUCODE
   void DumpDigits(std::ostream& out);

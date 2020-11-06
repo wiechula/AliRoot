@@ -100,6 +100,9 @@ AliGenPythiaPlus::AliGenPythiaPlus():
     fHFoff(kFALSE),    
     fTriggerParticle(0),
     fTriggerEta(0.9),
+    fTriggerY(999.),
+    fTriggerMinPt(-1),
+    fTriggerMaxPt(1000),
     fTriggerMultiplicity(0),
     fTriggerMultiplicityEta(0),
     fTriggerMultiplicityEtaMin(0),
@@ -213,6 +216,9 @@ AliGenPythiaPlus::AliGenPythiaPlus(AliPythiaBase* pythia)
      fHFoff(kFALSE),    
      fTriggerParticle(0),
      fTriggerEta(0.9),     
+     fTriggerY(999.),
+     fTriggerMinPt(-1),
+     fTriggerMaxPt(1000),
      fTriggerMultiplicity(0),
      fTriggerMultiplicityEta(0),
      fTriggerMultiplicityEtaMin(0),
@@ -511,6 +517,13 @@ void AliGenPythiaPlus::Init()
     case kPyMBRCentralDiffraction:
         break;
     }
+
+//
+// For the cases kPyCharm* and kPyBeauty*
+// Set fMaxLifeTime to 0.7 mm/c to have the decays of charm and beauty hadrons done by PYTHIA and not by Geant
+//
+    if(fFlavorSelect == 4 || fFlavorSelect == 5) fMaxLifeTime=0.7;
+
 //
 //
 //  JetFinder for Trigger
@@ -696,6 +709,9 @@ void AliGenPythiaPlus::Generate()
 	Int_t nc = 0;        // Total n. of selected particles
 	Int_t nParents = 0;  // Selected parents
 	Int_t nTkbles = 0;   // Trackable particles
+	Bool_t trigPartOK = (fTriggerParticle==0) ? kTRUE : kFALSE;
+	Bool_t hqYrangeOK = fUseYCutHQ ? kFALSE : kTRUE;
+
 	if (fProcess != kPyMbDefault && 
 	    fProcess != kPyMb && 
 	    fProcess != kPyMbWithDirectPhoton && 
@@ -713,7 +729,7 @@ void AliGenPythiaPlus::Generate()
 	    fProcess != kPyJetsPWHG &&
             fProcess != kPyCharmPWHG &&
      fProcess != kPyBeautyPWHG) {
-	    
+
 	    for (i = 0; i < np; i++) {
 		TParticle* iparticle = (TParticle *) fParticles.At(i);
 		Int_t ks = iparticle->GetStatusCode();
@@ -721,10 +737,21 @@ void AliGenPythiaPlus::Generate()
 // No initial state partons
 		if (ks==21) continue;
 //
+// Trigger particle selection
+//
+		if(fTriggerParticle!=0 && kf == fTriggerParticle && TMath::Abs(iparticle->Eta()) < fTriggerEta && TMath::Abs(iparticle->Y())<fTriggerY && iparticle->Pt()>fTriggerMinPt && iparticle->Pt()<fTriggerMaxPt) trigPartOK=kTRUE;
+//
 // Heavy Flavor Selection
 //
 		// quark ?
 		kf = TMath::Abs(kf);
+		// Heavy quark Y range cut
+		if(kf==fFlavorSelect && fUseYCutHQ){
+		  Double_t y = 9999.;
+		  if(iparticle->Energy()-TMath::Abs(iparticle->Pz()) > FLT_EPSILON) y = 0.5*TMath::Log((iparticle->Energy()+iparticle->Pz()+1.e-13)/(iparticle->Energy()-iparticle->Pz()+1.e-13));
+		  if(y>fYMinHQ && y<fYMaxHQ) hqYrangeOK=kTRUE;
+		}
+
 		Int_t kfl = kf;
 		// Resonance
 
@@ -848,6 +875,8 @@ void AliGenPythiaPlus::Generate()
 //
 
   	    } // particle selection loop
+	    if(!trigPartOK) nc=0;
+	    if(fUseYCutHQ && !hqYrangeOK) nc=0;
 	    if (nc > 0) {
 		for (i = 0; i < np; i++) {
 		    if (!pSelected[i]) continue;
@@ -880,6 +909,11 @@ void AliGenPythiaPlus::Generate()
   	} else {
 	    nc = GenerateMB();
 	} // mb ?
+
+  ///---------------------------------------------------------------------------
+  // Application of the user trigger
+  if(!ApplyUserTrigger()) continue;
+  ///---------------------------------------------------------------------------
 	
 	GetSubEventTime();
 
@@ -1009,7 +1043,9 @@ Int_t  AliGenPythiaPlus::GenerateMB()
 	    kf = CheckPDGCode(iparticle->GetPdgCode());
 	    if (kf != fTriggerParticle) continue;
 	    if (iparticle->Pt() == 0.) continue;
+	    if (TMath::Abs(iparticle->Y()) > fTriggerY) continue;
 	    if (TMath::Abs(iparticle->Eta()) > fTriggerEta) continue;
+	    if ( iparticle->Pt() > fTriggerMaxPt || iparticle->Pt() < fTriggerMinPt ) continue;
 	    triggered = kTRUE;
 	    break;
 	}

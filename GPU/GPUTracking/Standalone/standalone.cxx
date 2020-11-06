@@ -178,6 +178,7 @@ int ReadConfiguration(int argc, char** argv)
 #ifndef HAVE_O2HEADERS
   configStandalone.runTRD = configStandalone.rundEdx = configStandalone.runCompression = configStandalone.runTransformation = configStandalone.testSyncAsync = configStandalone.testSync = 0;
   configStandalone.rec.ForceEarlyTPCTransform = 1;
+  configStandalone.runRefit = false;
 #endif
 #ifndef GPUCA_TPC_GEOMETRY_O2
   configStandalone.rec.mergerReadFromTrackerDirectly = 0;
@@ -269,6 +270,8 @@ int ReadConfiguration(int argc, char** argv)
     return 1;
   }
 #endif
+
+  configStandalone.proc.showOutputStat = true;
   return (0);
 }
 
@@ -372,12 +375,15 @@ int SetupReconstruction()
   if (configStandalone.runTransformation != -1) {
     steps.steps.setBits(GPUDataTypes::RecoStep::TPCConversion, configStandalone.runTransformation > 0);
   }
+  steps.steps.setBits(GPUDataTypes::RecoStep::Refit, configStandalone.runRefit);
   if (!configStandalone.runMerger) {
     steps.steps.setBits(GPUDataTypes::RecoStep::TPCMerging, false);
     steps.steps.setBits(GPUDataTypes::RecoStep::TRDTracking, false);
     steps.steps.setBits(GPUDataTypes::RecoStep::TPCdEdx, false);
     steps.steps.setBits(GPUDataTypes::RecoStep::TPCCompression, false);
+    steps.steps.setBits(GPUDataTypes::RecoStep::Refit, false);
   }
+
   if (configStandalone.TF.bunchSim || configStandalone.TF.nMerge) {
     steps.steps.setBits(GPUDataTypes::RecoStep::TRDTracking, false);
   }
@@ -548,37 +554,16 @@ int LoadEvent(int iEvent, int x)
 
 void OutputStat(GPUChainTracking* t, long long int* nTracksTotal = nullptr, long long int* nClustersTotal = nullptr)
 {
-  int nTracks = 0, nAttachedClusters = 0, nAttachedClustersFitted = 0, nAdjacentClusters = 0;
+  int nTracks = 0;
   for (unsigned int k = 0; k < t->mIOPtrs.nMergedTracks; k++) {
     if (t->mIOPtrs.mergedTracks[k].OK()) {
       nTracks++;
-      nAttachedClusters += t->mIOPtrs.mergedTracks[k].NClusters();
-      nAttachedClustersFitted += t->mIOPtrs.mergedTracks[k].NClustersFitted();
     }
   }
-  unsigned int nCls = configStandalone.proc.doublePipeline ? t->mIOPtrs.clustersNative->nClustersTotal : t->GetTPCMerger().NMaxClusters();
-  for (unsigned int k = 0; k < nCls; k++) {
-    int attach = t->mIOPtrs.mergedTrackHitAttachment[k];
-    if (attach & GPUTPCGMMergerTypes::attachFlagMask) {
-      nAdjacentClusters++;
-    }
-  }
-
   if (nTracksTotal && nClustersTotal) {
     *nTracksTotal += nTracks;
     *nClustersTotal += t->mIOPtrs.nMergedTrackHits;
   }
-
-  char trdText[1024] = "";
-  if (t->GetRecoSteps() & GPUDataTypes::RecoStep::TRDTracking) {
-    int nTracklets = 0;
-    for (unsigned int k = 0; k < t->mIOPtrs.nTRDTracks; k++) {
-      auto& trk = t->mIOPtrs.trdTracks[k];
-      nTracklets += trk.GetNtracklets();
-    }
-    snprintf(trdText, 1024, " - TRD Tracker reconstructed %d tracks (%d tracklets)", t->mIOPtrs.nTRDTracks, nTracklets);
-  }
-  printf("Output Tracks: %d (%d / %d / %d / %d clusters (fitted / attached / adjacent / total))%s\n", nTracks, nAttachedClustersFitted, nAttachedClusters, nAdjacentClusters, nCls, trdText);
 }
 
 int RunBenchmark(GPUReconstruction* recUse, GPUChainTracking* chainTrackingUse, int runs, int iEvent, long long int* nTracksTotal, long long int* nClustersTotal, int threadId = 0, HighResTimer* timerPipeline = nullptr)
@@ -739,8 +724,6 @@ int main(int argc, char** argv)
   if (configStandalone.proc.doublePipeline) {
     pipelineThread.reset(new std::thread([]() { rec->RunPipelineWorker(); }));
   }
-
-  // hlt.SetRunMerger(configStandalone.merger); //TODO!
 
   if (configStandalone.seed == -1) {
     std::random_device rd;

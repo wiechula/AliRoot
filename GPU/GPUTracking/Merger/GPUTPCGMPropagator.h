@@ -41,7 +41,7 @@ namespace gpu
 {
 class GPUTPCGMTrackParam;
 struct GPUParam;
-namespace GPUTPCGMMergerTypes
+namespace gputpcgmmergertypes
 {
 struct InterpolationErrorHit;
 }
@@ -104,9 +104,9 @@ class GPUTPCGMPropagator
 
   GPUd() int PropagateToXAlphaBz(float posX, float posAlpha, bool inFlyDirection);
 
-  GPUd() int Update(float posY, float posZ, int iRow, const GPUParam& param, short clusterState, char rejectChi2, GPUTPCGMMergerTypes::InterpolationErrorHit* inter, bool refit);
+  GPUd() int Update(float posY, float posZ, int iRow, const GPUParam& param, short clusterState, char rejectChi2, gputpcgmmergertypes::InterpolationErrorHit* inter, bool refit);
   GPUd() int Update(float posY, float posZ, short clusterState, bool rejectChi2, float err2Y, float err2Z);
-  GPUd() int InterpolateReject(float posY, float posZ, short clusterState, char rejectChi2, GPUTPCGMMergerTypes::InterpolationErrorHit* inter, float err2Y, float err2Z);
+  GPUd() int InterpolateReject(float posY, float posZ, short clusterState, char rejectChi2, gputpcgmmergertypes::InterpolationErrorHit* inter, float err2Y, float err2Z);
   GPUd() float PredictChi2(float posY, float posZ, int iRow, const GPUParam& param, short clusterState) const;
   GPUd() float PredictChi2(float posY, float posZ, float err2Y, float err2Z) const;
   GPUd() int RejectCluster(float chiY, float chiZ, unsigned char clusterState)
@@ -136,6 +136,7 @@ class GPUTPCGMPropagator
   GPUd() void GetErr2(float& err2Y, float& err2Z, const GPUParam& param, float posZ, int iRow, short clusterState) const;
 
   GPUd() float GetAlpha() const { return mAlpha; }
+  GPUd() void SetAlpha(float v) { mAlpha = v; }
   GPUd() float GetQPt0() const { return mT0.GetQPt(); }
   GPUd() float GetSinPhi0() const { return mT0.GetSinPhi(); }
   GPUd() float GetCosPhi0() const { return mT0.GetCosPhi(); }

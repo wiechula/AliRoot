@@ -23,13 +23,19 @@
 #include "GPUDef.h"
 #include "GPUDataTypes.h"
 
+#if defined(__HIPCC__)
+#define GPUCA_CUB hipcub
+#else
+#define GPUCA_CUB cub
+#endif
+
+#ifndef GPUCA_GPUCODE_GENRTC
 #ifdef GPUCA_GPUCODE
 #ifdef __CUDACC__
 #include <cub/cub.cuh>
-#define GPUCA_CUB cub
 #elif defined(__HIPCC__)
 #include <hipcub/hipcub.hpp>
-#define GPUCA_CUB hipcub
+#endif
 #endif
 #endif
 
@@ -101,5 +107,7 @@ class GPUMemClean16 : public GPUKernelTemplate
 };
 } // namespace gpu
 } // namespace GPUCA_NAMESPACE
+
+#undef GPUCA_CUB
 
 #endif
