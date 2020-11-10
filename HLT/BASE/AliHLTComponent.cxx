@@ -51,6 +51,7 @@
 #include <ctime>
 #include <stdint.h>
 #include "TStreamerInfo.h"
+#include "TMap.h"
 
 #include <time.h>
 #include <sys/time.h>
