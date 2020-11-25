@@ -825,15 +825,6 @@ void AliFITv8::initializeCells(const std::string &cellType,
           new TGeoVolume(newbCellName.c_str(), bCellCs, medium); // Cell volume
     }
 
-    // if (isSensitive) {
-    // mSensitiveVolumeNames.push_back(aCell->GetName());
-    // mSensitiveVolumeNames.push_back(bCell->GetName());
-    // std::cout<<" AliFITv8::info, Sensitive cell in Ring "<<ir<<", Aname =
-    // "<<aCell->GetName()<<" Bname = "<<bCell->GetName()<<std::endl;
-    //}
-    // else{
-    // std::cout<<" Adding Non-sensitive cells in Ring number "<<ir<<std::endl;
-    //}
 
   } // sNumberOfCellRings
 
@@ -1731,7 +1722,7 @@ void AliFITv8::CreateGeometry() {
   /// T0 implementation done here
   Int_t *idtmed = fIdtmed->GetArray();
   Float_t zdetC = 85; // center of mother volume
-  Float_t zdetA = 333;
+  Float_t zdetA = 335;
 
   Int_t idrotm[999];
   Double_t x, y, z;
@@ -1820,19 +1811,6 @@ void AliFITv8::CreateGeometry() {
   TGeoVolumeAssembly *stlinA = new TGeoVolumeAssembly("0STL"); // A side mother/
 
   TGeoVolumeAssembly *stlinC = new TGeoVolumeAssembly("0STR"); // C side mother
-  /*
-  // FIT interior
-  // tube inside T0A
-  Float_t pinnertube[3] = {3.95, 4.0, 6.22};
-  TVirtualMC::GetMC()->Gsvolu("0TIN", "TUBE", idtmed[kAl], pinnertube, 3);
-  TGeoVolume *innertube = gGeoManager->GetVolume("0TIN");
-  stlinA->AddNode(innertube, 1, new TGeoTranslation(0, 0, 0));
-  // tube around T0A
-  Float_t poutertube[3] = {41, 41.1, 6.54};
-  TVirtualMC::GetMC()->Gsvolu("0OUT", "TUBE", idtmed[kAl], poutertube, 3);
-  TGeoVolume *outertube = gGeoManager->GetVolume("0OUT");
-  stlinA->AddNode(outertube, 1, new TGeoTranslation(0, 0, 0));
-  */
   TVirtualMC::GetMC()->Gsvolu("0INS", "BOX", idtmed[kOpAir], pinstart, 3);
   TGeoVolume *ins = gGeoManager->GetVolume("0INS");
   TGeoTranslation *tr[52];
@@ -1878,7 +1856,6 @@ void AliFITv8::CreateGeometry() {
 
   TGeoVolume *alice = gGeoManager->GetVolume("ALIC");
   alice->AddNode(stlinA, 1, new TGeoTranslation(0, 0, zdetA));
-  // alice->AddNode(stlinC,1,new TGeoTranslation(0,0, -zdetC ) );
   TGeoRotation *rotC = new TGeoRotation("rotC", 90., 0., 90., 90., 180., 0.);
   alice->AddNode(stlinC, 1, new TGeoCombiTrans(0., 0., -zdetC, rotC));
 
@@ -2334,19 +2311,6 @@ void AliFITv8::Init() {
   fIdSens1 =
       TVirtualMC::GetMC()->VolId("0REG"); // <--- 0REG is sensitive volume Id?
 
-  // fIdSens1=TVirtualMC::GetMC()->VolId("0TOP");
-
-  // Defining the sensitive volumes  (old)
-  /*
-  for (Int_t Sec = 0; Sec < nSectors; Sec++) {
-    for (Int_t Ring = 0; Ring < nRings; Ring++) {
-      fIdV0Plus[Sec][Ring] =
-  TVirtualMC::GetMC()->VolId(Form("V0Plus%dSec%d",Ring+1,Sec+1)); //// ***
-  Rihan:TBE for Scint. Sector and Rings: std::cout<<"Info::Init() => Adding
-  Scint cell id "<<fIdV0Plus[Sec][Ring]<<std::endl;
-    }
-    } */
-
   ////// Rihan:New sensitive volume ==>
   for (Int_t Sec = 0; Sec < 8; Sec++) {
     for (Int_t Ring = 0; Ring < sNumberOfCellRings; Ring++) {
@@ -2447,8 +2411,6 @@ void AliFITv8::StepManager() {
       hits[11] = fSenseless; // Track length is sensless for T0+
       hits[12] = fSenseless; // Photon production for V0+
 
-      // printf("T0 :::volumes pmt %i mcp %i vol %i x %f y %f z %f particle %f
-      // all \n",  vol[0], vol[1],  vol[2], hits[0], hits[1], hits[2], hits[4]);
 
       if (TVirtualMC::GetMC()->TrackPid() ==
           50000050) { // If particles is photon then ...
@@ -2511,42 +2473,6 @@ void AliFITv8::StepManager() {
     RingNumber = getRingNumberFromMCcellId(id);
 
     /// this was the old map:
-    /*
-      if ( (id == fIdV0Plus[0][0]) || (id == fIdV0Plus[1][0]) || (id ==
-      fIdV0Plus[2][0]) || (id == fIdV0Plus[3][0]) || (id == fIdV0Plus[4][0]) ||
-      (id == fIdV0Plus[5][0]) || (id == fIdV0Plus[6][0]) || (id ==
-      fIdV0Plus[7][0]) || (id == fIdV0Plus[8][0]) || (id == fIdV0Plus[9][0]) ||
-      (id == fIdV0Plus[10][0]) || (id == fIdV0Plus[11][0]) || (id ==
-      fIdV0Plus[12][0]) || (id == fIdV0Plus[13][0]) || (id == fIdV0Plus[14][0])
-      || (id == fIdV0Plus[15][0]) ) RingNumber = 1; else if ( (id ==
-      fIdV0Plus[0][1]) || (id == fIdV0Plus[1][1]) || (id == fIdV0Plus[2][1]) ||
-      (id == fIdV0Plus[3][1]) || (id == fIdV0Plus[4][1]) || (id ==
-      fIdV0Plus[5][1]) || (id == fIdV0Plus[6][1]) || (id == fIdV0Plus[7][1]) ||
-      (id == fIdV0Plus[8][1]) || (id == fIdV0Plus[9][1]) || (id ==
-      fIdV0Plus[10][1]) || (id == fIdV0Plus[11][1]) || (id == fIdV0Plus[12][1])
-      || (id == fIdV0Plus[13][1]) || (id == fIdV0Plus[14][1]) || (id ==
-      fIdV0Plus[15][1]) ) RingNumber = 2; else if ( (id == fIdV0Plus[0][2]) ||
-      (id == fIdV0Plus[1][2]) || (id == fIdV0Plus[2][2]) || (id ==
-      fIdV0Plus[3][2]) || (id == fIdV0Plus[4][2]) || (id == fIdV0Plus[5][2]) ||
-      (id == fIdV0Plus[6][2]) || (id == fIdV0Plus[7][2]) || (id ==
-      fIdV0Plus[8][2]) || (id == fIdV0Plus[9][2]) || (id == fIdV0Plus[10][2]) ||
-      (id == fIdV0Plus[11][2]) || (id == fIdV0Plus[12][2]) || (id ==
-      fIdV0Plus[13][2]) || (id == fIdV0Plus[14][2]) || (id == fIdV0Plus[15][2])
-      ) RingNumber = 3; else if ( (id == fIdV0Plus[0][3]) || (id ==
-      fIdV0Plus[1][3]) || (id == fIdV0Plus[2][3]) || (id == fIdV0Plus[3][3]) ||
-      (id == fIdV0Plus[4][3]) || (id == fIdV0Plus[5][3]) || (id ==
-      fIdV0Plus[6][3]) || (id == fIdV0Plus[7][3]) || (id == fIdV0Plus[8][3]) ||
-      (id == fIdV0Plus[9][3]) || (id == fIdV0Plus[10][3]) || (id ==
-      fIdV0Plus[11][3]) || (id == fIdV0Plus[12][3]) || (id == fIdV0Plus[13][3])
-      || (id == fIdV0Plus[14][3]) || (id == fIdV0Plus[15][3]) ) RingNumber = 4;
-      else if ( (id == fIdV0Plus[0][4]) || (id == fIdV0Plus[1][4]) || (id ==
-      fIdV0Plus[2][4]) || (id == fIdV0Plus[3][4]) || (id == fIdV0Plus[4][4]) ||
-      (id == fIdV0Plus[5][4]) || (id == fIdV0Plus[6][4]) || (id ==
-      fIdV0Plus[7][4]) || (id == fIdV0Plus[8][4]) || (id == fIdV0Plus[9][4]) ||
-      (id == fIdV0Plus[10][4]) || (id == fIdV0Plus[11][4]) || (id ==
-      fIdV0Plus[12][4]) || (id == fIdV0Plus[13][4]) || (id == fIdV0Plus[14][4])
-      || (id == fIdV0Plus[15][4]) ) RingNumber = 5; else RingNumber = 0;
-    */
 
     if (RingNumber < 1) {
       std::cout << "\n\n  MC cell id = " << id
