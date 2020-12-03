@@ -1115,8 +1115,6 @@ AliESDtrackCuts* AliESDtrackCuts::GetStandardRun3GlobalTrackCuts()
   /// creates an AliESDtrackCuts object equivalent to selecting global tracks in Run3
 
   AliESDtrackCuts* esdTrackCuts = GetStandardITSTPCTrackCuts2011();
-  // disable 'golden chi2 cut' that is not available in Run3
-  esdTrackCuts->SetMaxChi2TPCConstrainedGlobal(1e10);
   // disable kink rejection cut that is not available in Run3 (yet?)
   esdTrackCuts->SetAcceptKinkDaughters(kTRUE);
   // add default kinematic cuts
