@@ -809,11 +809,24 @@ void AliDecayerPythia8::ForceHadronicD(Int_t optUse4Bodies, Int_t optUseDtoV0, I
     }
 
     if (optForceLcChannel == 1) { // force only Lc -> p K pi
-    fPythia8->ReadString("4122:onIfMatch = 2212 321 211"); 
+    // Lambda_c -> p K*
+    fPythia8->ReadString("4122:onIfMatch = 2212 313");
+    // Lambda_c -> Delta K
+    fPythia8->ReadString("4122:onIfMatch = 2224 321");
+    // Lambda_c -> Lambda(1520) pi
+    fPythia8->ReadString("4122:onIfMatch = 3124 211");
+    // Lambda_c -> p K pi
+    fPythia8->ReadString("4122:onIfMatch = 2212 321 211");
     }
 
     if (optForceLcChannel == 2) { // force only Lc -> p K0S
-    fPythia8->ReadString("4122:onIfMatch = 2212 311");
+      fPythia8->ReadString("4122:onIfMatch = 2212 311");
+      // for K0 -> K0s
+      fPythia8->ReadString("311:onMode = off");
+      fPythia8->ReadString("311:onIfAll = 310");
+      // for K0s -> pi+pi-
+      fPythia8->ReadString("310:onMode = off");
+      fPythia8->ReadString("310:onIfAll = 211 211");
     }
 
     // Xic+ -> pK*0

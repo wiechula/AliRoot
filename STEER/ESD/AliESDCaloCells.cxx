@@ -107,7 +107,7 @@ AliESDCaloCells & AliESDCaloCells::operator =(const AliESDCaloCells& source)
     }
     
     if(source.fHGLG)
-      memcpy(fCellNumber,source.fHGLG,fNCells*sizeof(Bool_t));
+      memcpy(fHGLG,source.fHGLG,fNCells*sizeof(Bool_t));
     memcpy(fCellNumber,source.fCellNumber,fNCells*sizeof(Short_t));
     memcpy(fAmplitude, source.fAmplitude, fNCells*sizeof(Double32_t));
     memcpy(fTime,      source.fTime,      fNCells*sizeof(Double32_t));
