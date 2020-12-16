@@ -2412,7 +2412,7 @@ void AliTPCv2::StepManager()
   if(TMath::Abs(charge)<=0. && pdg!=kPdgMonopole) return; // take only charged particles (except magnetic monopoles)
  	
   if(pdg==kPdgMonopole && TMath::Abs(charge)<=0.) // need to take care of monopoles with 0 charge (safety for later used formulae)   
-	  charge = 0.00001;
+	  charge = 0.000001;
 
   // check the sensitive volume
 
