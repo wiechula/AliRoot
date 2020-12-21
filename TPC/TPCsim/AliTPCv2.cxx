@@ -2411,9 +2411,6 @@ void AliTPCv2::StepManager()
   
   if(TMath::Abs(charge)<=0. && pdg!=kPdgMonopole) return; // take only charged particles (except magnetic monopoles)
  	
-  if(pdg==kPdgMonopole && TMath::Abs(charge)<=0.) // need to take care of monopoles with 0 charge (safety for later used formulae)   
-	  charge = 0.000001;
-
   // check the sensitive volume
 
   id = mc->CurrentVolID(copy); // vol ID and copy number (starts from 1!)
@@ -2516,32 +2513,8 @@ void AliTPCv2::StepManager()
     // Calculate number of ionization electrons nel
     Int_t nel=0;
 
-    // Stepsize in cm
-    Double_t stepSize = mc->TrackStep();
-    // printf("Stepsize %f\n", stepSize);
-    // if(stepSize > 0.25)
-    //   printf("Stepsize %f\n", stepSize);
-    TLorentzVector mom;
-    mc->TrackMomentum(mom);
-    Float_t ptot = mom.P();
-    // beta*gamma = p/E * E/m = p/m
-    Float_t betaGamma = ptot/mc->TrackMass();
-    betaGamma = TMath::Max(betaGamma,(Float_t)7.e-3); // protection against too small bg
-    TVectorD *bbpar = fTPCParam->GetBetheBlochParametersMC(); //get parametrization from OCDB
-    // Mean free path in cm
-    const Float_t prim = fTPCParam->GetNprim();
-    // Note that the charge**2 is to be able to handle e.g. light nuclei
-    const Double_t mfp = 1.0 / (charge*charge*prim*AliExternalTrackParam::BetheBlochAleph(betaGamma,(*bbpar)(0),(*bbpar)(1),(*bbpar)(2),(*bbpar)(3),(*bbpar)(4)));
-
-    const Double_t meanNcoll = stepSize/mfp;
-    const Double_t nColl = mc->GetRandom()->Poisson(meanNcoll);
-    // Variables needed to generate random powerlaw distributed energy loss
-    const Double_t alpha = -1 * fTPCParam->GetExp(); // NA49/G3 value
-    const Double_t alpha_p1 = alpha+1;
+    // parameters needed for magnetic monopoles as well
     const Double_t Emin = fTPCParam->GetFpot();
-    const Double_t Emax = fTPCParam->GetEend();
-    const Double_t Kmin = TMath::Power(Emin, alpha_p1);
-    const Double_t Kmax = TMath::Power(Emax, alpha_p1);
     const Double_t wIon = fTPCParam->GetWmean();
 
     // special treatmeant of magnetic monopoles
@@ -2549,6 +2522,33 @@ void AliTPCv2::StepManager()
       nel = (Int_t)((mc->Edep()-Emin)/wIon) + 1;
     }
     else{
+
+      // Stepsize in cm
+      Double_t stepSize = mc->TrackStep();
+      // printf("Stepsize %f\n", stepSize);
+      // if(stepSize > 0.25)
+      //   printf("Stepsize %f\n", stepSize);
+      TLorentzVector mom;
+      mc->TrackMomentum(mom);
+      Float_t ptot = mom.P();
+      // beta*gamma = p/E * E/m = p/m
+      Float_t betaGamma = ptot/mc->TrackMass();
+      betaGamma = TMath::Max(betaGamma,(Float_t)7.e-3); // protection against too small bg
+      TVectorD *bbpar = fTPCParam->GetBetheBlochParametersMC(); //get parametrization from OCDB
+      // Mean free path in cm
+      const Float_t prim = fTPCParam->GetNprim();
+      // Note that the charge**2 is to be able to handle e.g. light nuclei
+      const Double_t mfp = 1.0 / (charge*charge*prim*AliExternalTrackParam::BetheBlochAleph(betaGamma,(*bbpar)(0),(*bbpar)(1),(*bbpar)(2),(*bbpar)(3),(*bbpar)(4)));
+
+      const Double_t meanNcoll = stepSize/mfp;
+      const Double_t nColl = mc->GetRandom()->Poisson(meanNcoll);
+      // Variables needed to generate random powerlaw distributed energy loss
+      const Double_t alpha = -1 * fTPCParam->GetExp(); // NA49/G3 value
+      const Double_t alpha_p1 = alpha+1;
+      const Double_t Emax = fTPCParam->GetEend();
+      const Double_t Kmin = TMath::Power(Emin, alpha_p1);
+      const Double_t Kmax = TMath::Power(Emax, alpha_p1);
+      
       for(Int_t n = 0; n < nColl; n++) {
 	// Use GEANT3 / NA49 expression:
 	// P(Edep) ~ k * Edep^alpha
