@@ -3441,7 +3441,8 @@ Float_t AliPIDResponse::GetTOFsignalTunedOnData(const AliVTrack *t) const
   /// Calculate the TOF signal tuned on data by adding a tail
   Double_t tofSignal = t->GetTOFsignalTunedOnData();
 
-  if(tofSignal <  99999) return (Float_t)tofSignal; // it has been already set
+
+//  if(tofSignal <  99999) return (Float_t)tofSignal; // it has been already set
 
   // read additional mismatch fraction
   Float_t addmism = GetTOFPIDParams()->GetTOFadditionalMismForMC();
@@ -3481,9 +3482,9 @@ Float_t AliPIDResponse::GetTOFsignalTunedOnData(const AliVTrack *t) const
 
     // check if mismatch
     Bool_t isMism = kFALSE;
-    if(TMath::Abs(tofSignal - expt[type]) > 5) isMism = kTRUE;
+    if(TMath::Abs(tofSignal - expt[type]) > 5*sigmaResp) isMism = kTRUE;
 
-    Float_t cexptime = expt[type] + tail;
+    Float_t cexptime = expt[type] + tail + fTOFResponse.GetStartTime(t->P());
     if(!isMism) tofSignal = fTOFResponse.AdjustResolutionTuned(sigmaResp, tofSignal, cexptime, tofHeader->GetTOFResolution(), fTOFResponse.GetTimeResolution()); // adjust resolution to match OADB for MC
   }
 

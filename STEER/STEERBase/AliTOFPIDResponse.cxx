@@ -299,7 +299,7 @@ Int_t AliTOFPIDResponse::GetStartTimeMask(Float_t mom) const {
 }
 Double_t AliTOFPIDResponse::AdjustResolutionTuned(float sigmaResp, float timeor, float timetail, float sigmaSim, float sigmaOADB){ // adjust resolution to match OADB for MC
 // ciao
-  float resAddTail = 35;
+  float resAddTail = 40;
   float sigmacurr = sqrt(sigmaResp*sigmaResp + resAddTail*resAddTail - sigmaOADB*sigmaOADB + sigmaSim*sigmaSim);
   float weight = 0;
 
@@ -314,7 +314,7 @@ Double_t AliTOFPIDResponse::AdjustResolutionTuned(float sigmaResp, float timeor,
   else{ // degradate response
     timeor += gRandom->Gaus(0, sqrt(sigmaResp*sigmaResp - sigmacurr*sigmacurr));
   }
-  
+
   return (timeor + weight*timetail)/(1 + weight);
 
 }
