@@ -2392,7 +2392,6 @@ void AliPIDResponse::SetTOFResponse(AliVEvent *vevent,EStartTimeType_t option){
 	flagT0T0=kTRUE;
     }
 
-
     AliTOFHeader *tofHeader = (AliTOFHeader*)vevent->GetTOFHeader();
 
     if (tofHeader) { // read global info and T0-TOF
@@ -3442,7 +3441,8 @@ Float_t AliPIDResponse::GetTOFsignalTunedOnData(const AliVTrack *t) const
   /// Calculate the TOF signal tuned on data by adding a tail
   Double_t tofSignal = t->GetTOFsignalTunedOnData();
 
-  if(tofSignal <  99999) return (Float_t)tofSignal; // it has been already set
+
+//  if(tofSignal <  99999) return (Float_t)tofSignal; // it has been already set
 
   // read additional mismatch fraction
   Float_t addmism = GetTOFPIDParams()->GetTOFadditionalMismForMC();
@@ -3452,7 +3452,42 @@ Float_t AliPIDResponse::GetTOFsignalTunedOnData(const AliVTrack *t) const
     else if(centr > 20) addmism *= 0.33;
   }
 
-  tofSignal = t->GetTOFsignal() + fTOFResponse.GetTailRandomValue(t->Pt(),t->Eta(),t->GetTOFsignal(),addmism);
+  const AliVEvent *vevent = t->GetEvent();
+  AliTOFHeader *tofHeader = NULL;
+ 
+  if(vevent) tofHeader = (AliTOFHeader*) vevent->GetTOFHeader();
+
+  Float_t tail = fTOFResponse.GetTailRandomValue(t->Pt(),t->Eta(),t->GetTOFsignal(),addmism);
+  
+  tofSignal = t->GetTOFsignal() + tail;
+
+  AliPID::EParticleType type = AliPID::kPion;
+  // get MC particle
+  AliVParticle *mcPart = fCurrentMCEvent->GetTrack(TMath::Abs(t->GetLabel()));
+  if (mcPart != NULL && tofHeader) { // protect against label-0 track (initial proton in Pythia events)
+    type = AliPID::kPion;
+    Int_t iS = TMath::Abs(mcPart->PdgCode());
+
+    Double_t expt[AliPID::kSPECIESC];
+    t->GetIntegratedTimes(expt,AliPID::kSPECIESC);
+
+    for (Int_t ipart=0; ipart<AliPID::kSPECIESC; ++ipart) {
+      if (iS == AliPID::ParticleCode(ipart)) {
+        type = (AliPID::EParticleType) ipart;
+        break;
+      }
+    }
+
+    float sigmaResp = GetExpectedSigmaTOF(t, type);
+
+    // check if mismatch
+    Bool_t isMism = kFALSE;
+    if(TMath::Abs(tofSignal - expt[type]) > 5*sigmaResp) isMism = kTRUE;
+
+    Float_t cexptime = expt[type] + tail + fTOFResponse.GetStartTime(t->P());
+    if(!isMism) tofSignal = fTOFResponse.AdjustResolutionTuned(sigmaResp, tofSignal, cexptime, tofHeader->GetTOFResolution(), fTOFResponse.GetTimeResolution()); // adjust resolution to match OADB for MC
+  }
+
   const_cast<AliVTrack*>(t)->SetTOFsignalTunedOnData(tofSignal);
   return (Float_t)tofSignal;
 }
