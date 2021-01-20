@@ -19,32 +19,10 @@ set(SRCS
     AliTPCSpaceCharge3DCalc.cxx)
 string(REPLACE ".cxx" ".h" HDRS_CINT "${SRCS}")
 
-if(${ALIGPU_BUILD_TYPE} STREQUAL "O2")
-  o2_add_library(TPCSpaceChargeBase
-                 TARGETVARNAME targetName
-                 PUBLIC_LINK_LIBRARIES ROOT::Matrix ROOT::Hist
-                 PUBLIC_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_LIST_DIR}
-                 SOURCES ${SRCS})
-
-  o2_target_root_dictionary(TPCSpaceChargeBase
-                            HEADERS ${HDRS_CINT}
-                            LINKDEF TPCSpaceChargeBaseLinkDef.h)
-
-  o2_add_test(SpaceChargeBase
-              SOURCES ctest/testTPCSpaceChargeBase.cxx
-              COMPONENT_NAME gpu
-              LABELS gpu
-              PUBLIC_LINK_LIBRARIES O2::TPCSpaceChargeBase)
-
-  target_compile_definitions(${targetName} PRIVATE GPUCA_O2_LIB)
-
-  install(FILES ${HDRS_CINT} DESTINATION include/GPU)
-endif()
-
 if(${ALIGPU_BUILD_TYPE} STREQUAL "ALIROOT")
   add_definitions(-DGPUCA_ALIROOT_LIB)
   include_directories(SYSTEM ${ROOT_INCLUDE_DIR})
-  include_directories(${AliRoot_SOURCE_DIR}/GPU/TPCSpaceChargeBase)
+  include_directories(${AliRoot_SOURCE_DIR}/TPC/TPCSpaceChargeBase)
 
   # Generate the dictionary
   get_directory_property(incdirs INCLUDE_DIRECTORIES)
