@@ -14,22 +14,32 @@
 //* provided "as is" without express or implied warranty.                  *\
 //**************************************************************************
 
-/// \file GPUTPCClusterFinderKernels.h
+/// \file GPUTrackingRefitKernel.h
 /// \author David Rohr
 
-#ifndef O2_GPU_GPUTPCCLUSTERFINDERKERNEL_H
-#define O2_GPU_GPUTPCCLUSTERFINDERKERNEL_H
+#ifndef GPUTRACKINGREFITKERNEL_H
+#define GPUTRACKINGREFITKERNEL_H
 
-#include "clusterFinderDefs.h"
-#include "GPUTPCCFChargeMapFiller.h"
-#include "GPUTPCCFPeakFinder.h"
-#include "GPUTPCCFNoiseSuppression.h"
-#include "GPUTPCCFDeconvolution.h"
-#include "GPUTPCCFStreamCompaction.h"
-#include "GPUTPCCFClusterizer.h"
-#include "GPUTPCCFMCLabelFlattener.h"
-#include "GPUTPCCFCheckPadBaseline.h"
-#include "GPUTPCCFDecodeZS.h"
-#include "GPUTPCCFGather.h"
+#include "GPUGeneralKernels.h"
+#include "GPUConstantMem.h"
+
+namespace o2::gpu
+{
+
+class GPUTrackingRefitKernel : public GPUKernelTemplate
+{
+ public:
+  GPUhdi() CONSTEXPR static GPUDataTypes::RecoStep GetRecoStep() { return GPUDataTypes::RecoStep::TPCCompression; }
+
+  enum K : int {
+    mode0asGPU = 0,
+    mode1asTrackParCov = 1,
+  };
+
+  template <int iKernel = defaultKernel>
+  GPUd() static void Thread(int nBlocks, int nThreads, int iBlock, int iThread, GPUsharedref() GPUSharedMemory& GPUrestrict() smem, processorType& GPUrestrict() processors);
+};
+
+} // namespace o2::gpu
 
 #endif

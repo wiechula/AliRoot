@@ -24,7 +24,7 @@
 #include "GPUProcessor.h"
 #include "GPUDataTypes.h"
 #include "CfFragment.h"
-#include "TPCCFCalibration.h"
+#include "TPCPadGainCalib.h"
 
 namespace o2
 {
@@ -50,9 +50,11 @@ class Digit;
 namespace GPUCA_NAMESPACE::gpu
 {
 struct GPUTPCClusterMCInterim;
-struct TPCCFCalibration;
+struct TPCPadGainCalib;
 
 struct ChargePos;
+
+class GPUTPCGeometry;
 
 class GPUTPCClusterFinder : public GPUProcessor
 {
@@ -102,6 +104,7 @@ class GPUTPCClusterFinder : public GPUProcessor
   unsigned char* mPzs = nullptr;
   ZSOffset* mPzsOffsets = nullptr;
   MinMaxCN* mMinMaxCN = nullptr;
+  unsigned char* mPpadHasLostBaseline = nullptr;
   tpc::Digit* mPdigits = nullptr; // input digits, only set if ZS is skipped
   ChargePos* mPpositions = nullptr;
   ChargePos* mPpeakPositions = nullptr;
@@ -141,7 +144,7 @@ class GPUTPCClusterFinder : public GPUProcessor
   short mZSOffsetId = -1;
   short mOutputId = -1;
 
-  GPUdi() float getGainCorrection(tpccf::Row, tpccf::Pad) const;
+  GPUdi() const GPUTPCGeometry* getGeometry() const;
 
 #ifndef GPUCA_GPUCODE
   void DumpDigits(std::ostream& out);

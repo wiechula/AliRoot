@@ -84,19 +84,20 @@ struct ClusterNativeAccess;
 } // namespace tpc
 } // namespace o2
 
-class AliHLTTPCClusterMCLabel;
+struct AliHLTTPCClusterMCLabel;
 
 namespace GPUCA_NAMESPACE::gpu
 {
 class GPUChainTracking;
-class GPUTPCMCInfo;
+class GPUParam;
+struct GPUTPCMCInfo;
 struct GPUQAGarbageCollection;
 
 class GPUQA
 {
  public:
   GPUQA();
-  GPUQA(GPUChainTracking* chain, const GPUSettingsQA* config = nullptr);
+  GPUQA(GPUChainTracking* chain, const GPUSettingsQA* config = nullptr, const GPUParam* param = nullptr);
   ~GPUQA();
 
   int InitQA(int tasks = -1);
@@ -145,6 +146,8 @@ class GPUQA
   };
 
   int InitQACreateHistograms();
+  int DoClusterCounts(unsigned long long int* attachClusterCounts, int mode = 0);
+  void PrintClusterCount(int mode, int& num, const char* name, unsigned long long int n, unsigned long long int normalization);
 
   void SetAxisSize(TH1F* e);
   void SetLegend(TLegend* l);
@@ -212,6 +215,7 @@ class GPUQA
 
   GPUChainTracking* mTracking;
   const GPUSettingsQA& mConfig;
+  const GPUParam& mParam;
 
   const char* str_perf_figure_1 = "ALICE Performance 2018/03/20";
   // const char* str_perf_figure_2 = "2015, MC pp, #sqrt{s} = 5.02 TeV";
@@ -280,6 +284,8 @@ class GPUQA
   TPad* mPNCl;
   TLegend* mLNCl;
 
+  std::vector<TH2F*> mHistClusterCount;
+
   std::vector<TH1F>* mHist1D = nullptr;
   std::vector<TH2F>* mHist2D = nullptr;
   std::vector<TH1D>* mHist1Dd = nullptr;
@@ -310,7 +316,7 @@ class GPUQA
 
   int mMCTrackMin = -1, mMCTrackMax = -1;
 
-  const o2::tpc::ClusterNativeAccess* mClNative;
+  const o2::tpc::ClusterNativeAccess* mClNative = nullptr;
 };
 
 inline bool GPUQA::SuppressTrack(int iTrack) const { return (mConfig.matchMCLabels.size() && !mGoodTracks[mNEvents][iTrack]); }

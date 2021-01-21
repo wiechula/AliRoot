@@ -14,10 +14,10 @@
 //* provided "as is" without express or implied warranty.                  *\
 //**************************************************************************
 
-/// \file TPCCFCalibration.cxx
+/// \file TPCPadGainCalib.cxx
 /// \author Felix Weiglhofer
 
-#include "TPCCFCalibration.h"
+#include "TPCPadGainCalib.h"
 
 #include "GPUTPCGeometry.h"
 #include "DataFormatsTPC/Constants.h"
@@ -25,7 +25,7 @@
 
 using namespace GPUCA_NAMESPACE::gpu;
 
-TPCCFCalibration::TPCCFCalibration()
+TPCPadGainCalib::TPCPadGainCalib()
 {
   GPUTPCGeometry geo{};
   int offset = 0;
@@ -35,7 +35,7 @@ TPCCFCalibration::TPCCFCalibration()
   }
 }
 
-TPCCFCalibration::TPCCFCalibration(const o2::tpc::CalDet<float>& gainMap) : TPCCFCalibration()
+TPCPadGainCalib::TPCPadGainCalib(const o2::tpc::CalDet<float>& gainMap) : TPCPadGainCalib()
 {
   for (int sector = 0; sector < o2::tpc::constants::MAXSECTOR; sector++) {
     for (int p = 0; p < TPC_PADS_IN_SECTOR; p++) {

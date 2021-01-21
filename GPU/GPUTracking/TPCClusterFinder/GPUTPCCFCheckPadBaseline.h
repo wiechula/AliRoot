@@ -14,31 +14,40 @@
 //* provided "as is" without express or implied warranty.                  *\
 //**************************************************************************
 
-/// \file PeakFinder.h
+/// \file GPUTPCCFCheckPadBaseline.h
 /// \author Felix Weiglhofer
 
-#ifndef O2_GPU_PEAK_FINDER_H
-#define O2_GPU_PEAK_FINDER_H
+#ifndef O2_GPU_GPU_TPC_CF_CHECK_PAD_BASELINE_H
+#define O2_GPU_GPU_TPC_CF_CHECK_PAD_BASELINE_H
 
 #include "GPUGeneralKernels.h"
 #include "GPUConstantMem.h"
 
 #include "clusterFinderDefs.h"
-#include "Array2D.h"
-#include "PackedCharge.h"
 
 namespace GPUCA_NAMESPACE::gpu
 {
 
-struct ChargePos;
-
-class GPUTPCCFPeakFinder : public GPUKernelTemplate
+class GPUTPCCFCheckPadBaseline : public GPUKernelTemplate
 {
 
+ private:
+  // Only use these constants on device side...
+  // Use getPadsPerBlock() for host side
+  enum {
+    PadsPerBlockGPU = 4, // Number of pads in a single cache line
+    PadsPerBlockCPU = 1,
+#ifdef GPUCA_GPUCODE
+    PadsPerBlock = PadsPerBlockGPU,
+#else
+    PadsPerBlock = PadsPerBlockCPU,
+#endif
+    NumOfCachedTimebins = GPUCA_GET_THREAD_COUNT(GPUCA_LB_GPUTPCCFCheckPadBaseline) / PadsPerBlock,
+  };
+
  public:
-  struct GPUSharedMemory : public GPUKernelTemplate::GPUSharedMemoryScan64<short, GPUCA_GET_THREAD_COUNT(GPUCA_LB_CLUSTER_FINDER)> {
-    ChargePos posBcast[SCRATCH_PAD_WORK_GROUP_SIZE];
-    PackedCharge buf[SCRATCH_PAD_WORK_GROUP_SIZE * SCRATCH_PAD_SEARCH_N];
+  struct GPUSharedMemory {
+    tpccf::Charge charges[PadsPerBlock][NumOfCachedTimebins];
   };
 
 #ifdef HAVE_O2HEADERS
@@ -54,13 +63,17 @@ class GPUTPCCFPeakFinder : public GPUKernelTemplate
     return GPUDataTypes::RecoStep::TPCClusterFinding;
   }
 
-  template <int iKernel = defaultKernel, typename... Args>
-  GPUd() static void Thread(int nBlocks, int nThreads, int iBlock, int iThread, GPUSharedMemory& smem, processorType& clusterer, Args... args);
+  // Use this to get num of pads per block on host side. Can't use constant there.
+  static int getPadsPerBlock(bool isGPU)
+  {
+    return (isGPU) ? PadsPerBlockGPU : PadsPerBlockCPU;
+  }
+
+  template <int iKernel = defaultKernel>
+  GPUd() static void Thread(int nBlocks, int nThreads, int iBlock, int iThread, GPUSharedMemory& smem, processorType& clusterer);
 
  private:
-  static GPUd() void findPeaksImpl(int, int, int, int, GPUSharedMemory&, const Array2D<PackedCharge>&, const uchar*, const ChargePos*, tpccf::SizeT, const GPUSettingsRec&, const TPCPadGainCalib&, uchar*, Array2D<uchar>&);
-
-  static GPUd() bool isPeak(GPUSharedMemory&, tpccf::Charge, const ChargePos&, ushort, const Array2D<PackedCharge>&, const GPUSettingsRec&, ChargePos*, PackedCharge*);
+  GPUd() static ChargePos padToChargePos(int pad, const GPUTPCClusterFinder&);
 };
 
 } // namespace GPUCA_NAMESPACE::gpu
