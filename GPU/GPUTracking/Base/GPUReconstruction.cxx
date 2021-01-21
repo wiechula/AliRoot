@@ -127,6 +127,19 @@ void GPUReconstruction::GetITSTraits(std::unique_ptr<o2::its::TrackerTraits>* tr
   }
 }
 
+int GPUReconstruction::SetNOMPThreads(int n)
+{
+#ifdef WITH_OPENMP
+  omp_set_num_threads(mProcessingSettings.ompThreads = std::max(1, n < 0 ? mMaxOMPThreads : std::min(n, mMaxOMPThreads)));
+  if (mProcessingSettings.debugLevel >= 3) {
+    GPUInfo("Set number of OpenMP threads to %d (%d requested)", mProcessingSettings.ompThreads, n);
+  }
+  return n > mMaxOMPThreads;
+#else
+  return 1;
+#endif
+}
+
 int GPUReconstruction::Init()
 {
   if (mMaster) {
@@ -272,14 +285,16 @@ int GPUReconstruction::InitPhaseBeforeDevice()
   if (mProcessingSettings.ompThreads <= 0) {
     mProcessingSettings.ompThreads = omp_get_max_threads();
   } else {
+    mProcessingSettings.ompAutoNThreads = false;
     omp_set_num_threads(mProcessingSettings.ompThreads);
   }
 #else
   mProcessingSettings.ompThreads = 1;
 #endif
+  mMaxOMPThreads = mProcessingSettings.ompThreads;
   mMaxThreads = std::max(mMaxThreads, mProcessingSettings.ompThreads);
   if (IsGPU()) {
-    mNStreams = std::max(mProcessingSettings.nStreams, 3);
+    mNStreams = std::max<int>(mProcessingSettings.nStreams, 3);
   }
 
   if (mProcessingSettings.doublePipeline && (mChains.size() != 1 || mChains[0]->SupportsDoublePipeline() == false || !IsGPU() || mProcessingSettings.memoryAllocationStrategy != GPUMemoryResource::ALLOCATION_GLOBAL)) {
@@ -296,7 +311,7 @@ int GPUReconstruction::InitPhaseBeforeDevice()
     mChains[i]->RegisterPermanentMemoryAndProcessors();
     size_t memPrimary, memPageLocked;
     mChains[i]->MemorySize(memPrimary, memPageLocked);
-    if (!IsGPU() || mOutputControl.OutputType == GPUOutputControl::AllocateInternal) {
+    if (!IsGPU() || mOutputControl.useInternal()) {
       memPageLocked = memPrimary;
     }
     mDeviceMemorySize += memPrimary;
@@ -306,7 +321,7 @@ int GPUReconstruction::InitPhaseBeforeDevice()
     mDeviceMemorySize = mProcessingSettings.forceMemoryPoolSize;
   } else if (mProcessingSettings.forceMemoryPoolSize > 2) {
     mDeviceMemorySize = mProcessingSettings.forceMemoryPoolSize;
-    if (!IsGPU() || mOutputControl.OutputType == GPUOutputControl::AllocateInternal) {
+    if (!IsGPU() || mOutputControl.useInternal()) {
       mHostMemorySize = mDeviceMemorySize;
     }
   }
@@ -508,7 +523,7 @@ size_t GPUReconstruction::AllocateRegisteredMemoryHelper(GPUMemoryResource* res,
 
 void GPUReconstruction::AllocateRegisteredMemoryInternal(GPUMemoryResource* res, GPUOutputControl* control, GPUReconstruction* recPool)
 {
-  if (mProcessingSettings.memoryAllocationStrategy == GPUMemoryResource::ALLOCATION_INDIVIDUAL && (control == nullptr || control->OutputType == GPUOutputControl::AllocateInternal)) {
+  if (mProcessingSettings.memoryAllocationStrategy == GPUMemoryResource::ALLOCATION_INDIVIDUAL && (control == nullptr || control->useInternal())) {
     if (!(res->mType & GPUMemoryResource::MEMORY_EXTERNAL)) {
       if (res->mPtrDevice && res->mReuse < 0) {
         operator delete(res->mPtrDevice GPUCA_OPERATOR_NEW_ALIGNMENT);
@@ -541,14 +556,14 @@ void GPUReconstruction::AllocateRegisteredMemoryInternal(GPUMemoryResource* res,
       res->mOverrideSize = GPUCA_BUFFER_ALIGNMENT;
     }
     if ((!IsGPU() || (res->mType & GPUMemoryResource::MEMORY_HOST) || mProcessingSettings.keepDisplayMemory) && !(res->mType & GPUMemoryResource::MEMORY_EXTERNAL)) { // keepAllMemory --> keepDisplayMemory
-      if (control && control->OutputType == GPUOutputControl::UseExternalBuffer) {
-        if (control->OutputAllocator) {
+      if (control && control->useExternal()) {
+        if (control->allocator) {
           res->mSize = std::max((size_t)res->SetPointers((void*)1) - 1, res->mOverrideSize);
-          res->mPtr = control->OutputAllocator(res->mSize);
+          res->mPtr = control->allocator(res->mSize);
           res->mSize = std::max<size_t>((char*)res->SetPointers(res->mPtr) - (char*)res->mPtr, res->mOverrideSize);
         } else {
           void* dummy = nullptr;
-          res->mSize = AllocateRegisteredMemoryHelper(res, res->mPtr, control->OutputPtr, control->OutputBase, control->OutputMaxSize, &GPUMemoryResource::SetPointers, dummy);
+          res->mSize = AllocateRegisteredMemoryHelper(res, res->mPtr, control->ptrCurrent, control->ptrBase, control->size, &GPUMemoryResource::SetPointers, dummy);
         }
       } else {
         res->mSize = AllocateRegisteredMemoryHelper(res, res->mPtr, recPool->mHostMemoryPool, recPool->mHostMemoryBase, recPool->mHostMemorySize, &GPUMemoryResource::SetPointers, recPool->mHostMemoryPoolEnd);
@@ -1008,6 +1023,9 @@ void GPUReconstruction::SetInputControl(void* ptr, size_t size)
 {
   mInputControl.set(ptr, size);
 }
+
+GPUReconstruction::GPUThreadContext::GPUThreadContext() = default;
+GPUReconstruction::GPUThreadContext::~GPUThreadContext() = default;
 
 std::unique_ptr<GPUReconstruction::GPUThreadContext> GPUReconstruction::GetThreadContext() { return std::unique_ptr<GPUReconstruction::GPUThreadContext>(new GPUThreadContext); }
 

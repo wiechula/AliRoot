@@ -14,22 +14,30 @@
 //* provided "as is" without express or implied warranty.                  *\
 //**************************************************************************
 
-/// \file GPUTPCClusterFinderKernels.h
+/// \file GPUCommonArray.h
 /// \author David Rohr
 
-#ifndef O2_GPU_GPUTPCCLUSTERFINDERKERNEL_H
-#define O2_GPU_GPUTPCCLUSTERFINDERKERNEL_H
+#ifndef GPUCOMMONFAIRARRAY_H
+#define GPUCOMMONFAIRARRAY_H
 
-#include "clusterFinderDefs.h"
-#include "GPUTPCCFChargeMapFiller.h"
-#include "GPUTPCCFPeakFinder.h"
-#include "GPUTPCCFNoiseSuppression.h"
-#include "GPUTPCCFDeconvolution.h"
-#include "GPUTPCCFStreamCompaction.h"
-#include "GPUTPCCFClusterizer.h"
-#include "GPUTPCCFMCLabelFlattener.h"
-#include "GPUTPCCFCheckPadBaseline.h"
-#include "GPUTPCCFDecodeZS.h"
-#include "GPUTPCCFGather.h"
+#ifndef GPUCA_GPUCODE_DEVICE
+#include <array>
+#endif
+
+#include "GPUCommonDef.h"
+namespace o2::gpu::gpustd
+{
+#ifdef GPUCA_GPUCODE_DEVICE
+template <typename T, size_t N>
+struct array {
+  GPUd() T& operator[](size_t i) { return m_internal_V__[i]; }
+  GPUd() const T& operator[](size_t i) const { return m_internal_V__[i]; }
+  T m_internal_V__[N];
+};
+#else
+template <typename T, size_t N>
+using array = std::array<T, N>;
+#endif
+} // namespace o2::gpu::gpustd
 
 #endif

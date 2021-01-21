@@ -37,7 +37,7 @@ namespace GPUCA_NAMESPACE
 namespace gpu
 {
 
-class GPUTrackingInOutZS;
+struct GPUTrackingInOutZS;
 
 class GPUTrackingInputProvider : public GPUProcessor
 {
