@@ -276,6 +276,23 @@ public:
 
   Double_t GetTrackdEdx(const AliVTrack* track) const;
 
+  //===| New resolution parametrization |=======================================
+  void SetResolutionParametrization(TF1* fun) { fSigmaParametrization = fun; }
+  TF1* GetResolutionParametrization() const { return fSigmaParametrization; }
+
+  void SetMultiplicityNormalization(Double_t norm) { fMultiplicityNormalization = norm; }
+  Double_t GetMultiplicityNormalization() const { return fMultiplicityNormalization; }
+
+  /// index PID estimator as in AliTPCdEdxInfo: 0-IROC, 1-OROCmedium, 2-OROClong, 3-OROCall, 4-FullTrack
+  Double_t GetExpectedSigmaTF1(const AliVTrack* track,
+                               AliPID::EParticleType species,
+                               Int_t dEdxType = 4) const;
+
+  void GetTF1ParametrizationValues(Double_t values[7],
+                                   const AliVTrack* track,
+                                   AliPID::EParticleType species,
+                                   Int_t dEdxType = 4) const;
+
   //===| Initialisation |=======================================================
   Bool_t InitFromOADB(const Int_t run, Int_t pass, TString passName,
                       const char* oadbFile="$ALICE_PHYSICS/OADB/COMMON/PID/data/TPCPIDResponseOADB.root",
@@ -291,7 +308,9 @@ public:
   //===| Helpers |==============================================================
   static TString GetChecksum(const TObject* obj);
   static TObjArray* GetMultiplicityCorrectionArrayFromString(const TString& corrections);
-
+  //
+  static Double_t BetheBlochAleph(Double_t bg, Double_t kp1, Double_t kp2, Double_t kp3, Double_t kp4, Double_t kp5);
+  static double   sigmadEdxPt(double p, double PID, double resol=0.01 );
 protected:
   Double_t GetExpectedSignal(const AliVTrack* track,
                              AliPID::EParticleType species,
@@ -368,6 +387,10 @@ private:
 
   ETPCPileupCorrectionStrategy fPileupCorrectionStrategy; // Pileup correction strategy
   Bool_t fPileupCorrectionRequested; // If pileup correction was configured in the OADB object
+
+  //===| New resolution parametrization |=======================================
+  TF1*     fSigmaParametrization;      // Resolution parametrization
+  Double_t fMultiplicityNormalization; // Value for the multiplicity normalisation in the sigma parametrization
 
   // Information on reconstruction data used
   TString fRecoPassNameUsed;          //! Name or number of the actually used reconstruction pass

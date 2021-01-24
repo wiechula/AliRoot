@@ -1,4 +1,4 @@
-    /**************************************************************************
+ /**************************************************************************
  * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
  *                                                                        *
  * Author: The ALICE Off-line Project.                                    *
@@ -104,6 +104,8 @@ AliTPCPIDResponse::AliTPCPIDResponse():
   fOROClongWeight(1.),
   fPileupCorrectionStrategy(kPileupCorrectionInExpectedSignal),
   fPileupCorrectionRequested(kFALSE),
+  fSigmaParametrization(0x0),
+  fMultiplicityNormalization(1),
   fRecoPassNameUsed(),
   fSplineArray()
 {
@@ -238,6 +240,8 @@ AliTPCPIDResponse::AliTPCPIDResponse(const AliTPCPIDResponse& that):
   fOROClongWeight(that.fOROClongWeight),
   fPileupCorrectionStrategy(that.fPileupCorrectionStrategy),
   fPileupCorrectionRequested(that.fPileupCorrectionRequested),
+  fSigmaParametrization(that.fSigmaParametrization),
+  fMultiplicityNormalization(that.fMultiplicityNormalization),
   fRecoPassNameUsed(that.fRecoPassNameUsed),
   fSplineArray()
 {
@@ -360,6 +364,9 @@ AliTPCPIDResponse& AliTPCPIDResponse::operator=(const AliTPCPIDResponse& that)
   fOROClongWeight            = that.fOROClongWeight;
   fPileupCorrectionStrategy  = that.fPileupCorrectionStrategy;
   fPileupCorrectionRequested = that.fPileupCorrectionRequested;
+  fPileupCorrectionRequested = that.fPileupCorrectionRequested;
+  fSigmaParametrization      = that.fSigmaParametrization;
+  fMultiplicityNormalization = that.fMultiplicityNormalization;
   fRecoPassNameUsed          = that.fRecoPassNameUsed;
 
   return *this;
@@ -643,6 +650,11 @@ Double_t AliTPCPIDResponse::GetExpectedSigma(const AliVTrack* track,
   // for the specified particle type 
   //
   
+  // use TF1 sigma parametrization if provided
+  if (fSigmaParametrization) {
+    return GetExpectedSigmaTF1(track, species);
+  }
+
   //if (!responseFunction)
     //return 999;
     
@@ -1999,6 +2011,18 @@ Bool_t AliTPCPIDResponse::InitFromOADB(const Int_t run, const Int_t pass, TStrin
     AliInfoF("Setting multiplicity estimator %d (%s)", (Int_t)fMultiplityEstimator, names[fMultiplityEstimator].Data());
   }
 
+  //===| sigma parametrization TF1 |============================================
+  fSigmaParametrization = static_cast<TF1*>(arr->FindObject("SigmaParametrization"));
+  if (fSigmaParametrization) {
+    AliInfoF("Setting sigma parametrization function %s", fSigmaParametrization->GetTitle());
+  }
+
+  const TNamed *multiplicityNormalization = static_cast<TNamed*>(arr->FindObject("MultiplicityNormalization"));
+  if (multiplicityNormalization) {
+    fMultiplicityNormalization = TString(multiplicityNormalization->GetTitle()).Atof();
+    AliInfoF("Setting multiplicity normalization %.2f", fMultiplicityNormalization);
+  }
+
   return kTRUE;
 }
 
@@ -2264,4 +2288,71 @@ TString AliTPCPIDResponse::GetChecksum(const TObject* obj)
   gSystem->Exec(Form("rm -rf %s", uniquePathName.Data()));
 
   return checksum;
+}
+
+Double_t AliTPCPIDResponse::GetExpectedSigmaTF1(const AliVTrack* track, AliPID::EParticleType species, Int_t dEdxType) const
+{
+  Double_t values[7];
+  GetTF1ParametrizationValues(values, track, species, dEdxType);
+  return fSigmaParametrization->EvalPar(values);
+}
+
+void AliTPCPIDResponse::GetTF1ParametrizationValues(Double_t values[7], const AliVTrack* track, AliPID::EParticleType species, Int_t dEdxType) const
+{
+  const Double_t maxCl[5] = {63, 64, 32, 96, 159};
+  const Double_t ncl = track->GetTPCsignalN();
+  const Double_t p = track->GetTPCmomentum();
+  const Double_t bg = p / AliPID::ParticleMassZ(Int_t(species));
+  const Double_t bbAlpeh = AliExternalTrackParam::BetheBlochAleph(bg);
+
+  values[0] = fMIP / bbAlpeh;
+  values[1] = track->GetTPCTgl();
+  values[2] = track->GetTPCmomentum();
+  values[3] = Double_t(species);
+  values[4] = track->GetInnerParam() ? track->GetInnerParam()->GetSigned1Pt() : track->GetSigned1Pt();
+  values[5] = TMath::Sqrt(maxCl[dEdxType]  / ncl);
+  values[6] = fCurrentEventMultiplicity / fMultiplicityNormalization;
+}
+
+
+/// This is the empirical ALEPH parameterization of the Bethe-Bloch formula.
+/// Compared to the  AliExternalTrackParam::BetheBlochAleph here it is save version not failing in minimization
+/// \param bg    - beta gamma
+/// \param kp1
+/// \param kp2
+/// \param kp3
+/// \param kp4
+/// \param kp5
+/// \return
+Double_t  AliTPCPIDResponse::BetheBlochAleph(Double_t bg, Double_t kp1, Double_t kp2, Double_t kp3, Double_t kp4, Double_t kp5){
+  //
+  // It is normalized to 1 at the minimum.
+  //
+  if (bg<0) return 0;
+  const Double_t kEpsilon=1e-12;
+  Double_t beta = bg/TMath::Sqrt(1.+ bg*bg);
+  if (beta<kEpsilon) beta=kEpsilon;
+  if (bg<kEpsilon) bg=kEpsilon;
+  Double_t aa = TMath::Power(beta,kp4);
+  Double_t bb = TMath::Power(1./bg,kp5);
+  bb=TMath::Log(TMath::Abs(kp3+bb));
+  return (kp2-aa-bb)*kp1/aa;
+}
+
+
+/// returns relative dEdx resolution contribution due relative pt resolution
+/// defualt pt resolution 1% * sqrt(dEdx)
+/// \param p        - particle momenta
+/// \param PID      - particle PID
+/// \param resol    - elative resolution - at low pt should be ~ 1 per MIP
+/// \return
+double AliTPCPIDResponse::sigmadEdxPt(double p, double PID, double resol ){
+  Double_t mass =AliPID::ParticleMass(PID);
+  double bg = p/mass;
+  double dEdx = AliExternalTrackParam::BetheBlochAleph(bg);
+  double deltaP=resol*TMath::Sqrt(dEdx);
+  double bgDelta=p*(1+deltaP)/mass;
+  double dEdx2=AliExternalTrackParam::BetheBlochAleph(bgDelta);
+  double deltaRel = TMath::Abs(dEdx2-dEdx)/dEdx;
+  return deltaRel;
 }
