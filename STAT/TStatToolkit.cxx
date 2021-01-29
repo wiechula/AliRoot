@@ -3018,7 +3018,7 @@ void TStatToolkit::MakePDFMap(THnBase *histo, TTreeSRedirector *pcstream, TMatri
   Bool_t exportGraph=kFALSE;
   Bool_t exportGraphCumulative=kFALSE;
   Bool_t LTMFitRange=kFALSE;
-  Float_t LTMFitInfo[3]={};
+  Float_t LTMFitInfo[3]={1.0,6,0};
   TGraphErrors *graphHisto=0;
   TGraphErrors *graphCumulative=0;
 
@@ -3097,7 +3097,7 @@ void TStatToolkit::MakePDFMap(THnBase *histo, TTreeSRedirector *pcstream, TMatri
   ULong64_t fitProgress = nfits/100;
   //
   // setup fit function, at the moment full root fit
-  static TF1 fgaus("fgaus","gaus",-10,10);
+  TF1 fgaus("fgaus","gaus",xax->GetXmin(),xax->GetXmax());
   fgaus.SetRange(xax->GetXmin(),xax->GetXmax());
   //  TGraph grafFit(tgtNb);
   TH1F* hfit = new TH1F("hfit","hfit",tgtNb,xax->GetXmin(),xax->GetXmax());
@@ -3184,7 +3184,7 @@ void TStatToolkit::MakePDFMap(THnBase *histo, TTreeSRedirector *pcstream, TMatri
     }
     //
     // >> ------------- do fit
-    float mean=0,mom2=0,rms=0,m3=0, m4=0, nrm=0,meanG=0,rmsG=0,chi2G=0,maxVal=0,entriesG=0,mean0=0, rms0=0;
+    float mean=0,mom2=0,rms=0,m3=0, m4=0, nrm=0,meanG=0,rmsG=0,chi2G=0,maxVal=0,entriesG=0,mean0=0, rms0=0,ndf=0;
     hfit->Reset();
     for (int ip=tgtNb;ip--;) {
       //grafFit.SetPoint(ip,binX[ip],binY[ip]);
@@ -3241,8 +3241,8 @@ void TStatToolkit::MakePDFMap(THnBase *histo, TTreeSRedirector *pcstream, TMatri
     }else{
       fgaus.SetRange(xax->GetXmin(),xax->GetXmax());
     }
-    if (nrm>kMinStatLTM&&LTMFitInfo){  /// id specified in options - set fit ranges as nsigma of LTM. if range smaller than 3 bins add bin before and after
-      if ((*vecLTM[nestimators-1])[1]>5) {
+    if (nrm>kMinStatLTM&&LTMFitInfo[1]>0){  /// id specified in options - set fit ranges as nsigma of LTM. if range smaller than 3 bins add bin before and after
+      if ((*vecLTM[nestimators-1])[2]*LTMFitInfo[1]>hfit->GetXaxis()->GetBinWidth(0)) {
         Double_t xMin = (*vecLTM[nestimators - 1])[1] - (*vecLTM[nestimators - 1])[2] * LTMFitInfo[1] - LTMFitInfo[2];
         Double_t xMax = (*vecLTM[nestimators - 1])[1] + (*vecLTM[nestimators - 1])[2] * LTMFitInfo[1] + LTMFitInfo[2];
         if (xMax - xMin < 4 * hfit->GetXaxis()->GetBinWidth(0)) {
@@ -3260,16 +3260,20 @@ void TStatToolkit::MakePDFMap(THnBase *histo, TTreeSRedirector *pcstream, TMatri
       fgaus.SetParError(0,nrm/(rms/hfit->GetBinWidth(nbins1D)));
       fgaus.SetParError(1,rms);
       fgaus.SetParError(2,rms);
+      for (Int_t i=0; i<3; i++) fgaus.SetParLimits(i,0,0);    //in ROOT6 prameters were sometimes stuck - reset limtis
       //grafFit.Fit(&fgaus,/*maxVal<kUseLLFrom ? "qnrl":*/"qnr");
       TFitResultPtr fitPtr= hfit->Fit(&fgaus,maxVal<kUseLLFrom ? "qnrlS+":"qnrS+");
       //TFitResultPtr fitPtr= hfit->Fit(&fgaus,"qnrlS");
       entriesG = fgaus.GetParameter(0);
       meanG = fgaus.GetParameter(1);
       rmsG  = fgaus.GetParameter(2);
-      chi2G = fgaus.GetChisquare()/fgaus.GetNumberFreeParameters();
+      chi2G = fgaus.GetChisquare()/fgaus.GetNDF();
+      ndf=fgaus.GetNDF();
       TFitResult * result = fitPtr.Get();
       if (result!=NULL){
         isFitValid = result->IsValid();
+      }else {
+        isFitValid = kFALSE;
       }
       //
     }
@@ -3280,6 +3284,7 @@ void TStatToolkit::MakePDFMap(THnBase *histo, TTreeSRedirector *pcstream, TMatri
     if (kDumpHistoFraction>=1.){ /// dump all histograms fraction>=1 independent of the status
       hDump=hfit;
     }
+    fgaus.SetRange(xax->GetXmin(),xax->GetXmax());
     if (hDump){
       hfit->GetListOfFunctions()->AddLast(&fgaus);
       (*pcstream)<<TString::Format("%sDump", tname).Data()<<
@@ -3294,6 +3299,7 @@ void TStatToolkit::MakePDFMap(THnBase *histo, TTreeSRedirector *pcstream, TMatri
                  "m4="<<m4<<            // m4 (kurtosis) of the last dimension
                  "binMedian="<<binMedian<< //binned median value of 1D histogram
                  "entriesG="<<entriesG<<
+                 "ndf="<<ndf<<          // number of degreed of freedom
                  "meanG="<<meanG<<     // mean of the gaus fit
                  "rmsG="<<rmsG<<       // rms of the gaus fit
                  "vecLTM.="<<vecLTM[0]<<   // LTM  frac% statistic
@@ -3316,6 +3322,7 @@ void TStatToolkit::MakePDFMap(THnBase *histo, TTreeSRedirector *pcstream, TMatri
                "meanG="<<meanG<<     // mean of the gaus fit
                "rmsG="<<rmsG<<       // rms of the gaus fit
                "vecLTM.="<<vecLTM[0]<<   // LTM  frac% statistic
+               "ndf="<<ndf<<          // number of degrees of freedom
                "chi2G="<<chi2G;      // chi2 of the gaus fit
 
     if (exportGraph){
